@@ -21,6 +21,18 @@ sidebar_order: 21
 > security-auditor review (CTX-0077) with P0 sign-off on 2026-08-29; see [P0 Review Sign-off](#p0-review-sign-off) and the
 > [P0 review checklist](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/reviews/p0-review-checklist.md). The lifecycle is `Draft -> experimental review evidence -> Accepted (2026-08-29) -> normative`.
 
+**Repository archival note (2026-09-14).** The repository counts and lists
+below (`seven` formal repositories, the `bitty-mcp` rows, and the
+`bitty-plugins/bitty-mcp` local checkout) are retained as accepted on
+2026-08-29. Since then `bitty-mcp` was archived because its MCP tool-surface
+functionality is covered by `bitty-ai`, and the estate added `bitty-ai`,
+`bitty-plugins`, and the project documentation repositories
+(`bitty-terminal-docs`, `bitty-ai-docs`, `bitty-plugins-docs`). The live
+repository list and protection state are maintained in the
+[Repository map](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/repository-map.md); the accepted governance
+mechanisms (licenses, protections, ownership, and release flow) continue to
+apply to the live repositories.
+
 ## Purpose and scope
 
 [OQ-024](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) asks: _what licenses, branch
