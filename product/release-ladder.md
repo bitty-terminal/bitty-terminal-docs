@@ -23,7 +23,7 @@ sidebar_order: 21
   [Proposed Delivery Sequence](proposed-delivery-sequence.md) without weakening
   normative security controls. `R-004` clipboard evidence was re-audited at
   `bitty` `7a4ee41` (baseline `de134ec`) per
-  [`docs/security/audits/clipboard-2026-09.md`](https://github.com/bitty-terminal/bitty/blob/7a4ee41/docs/security/audits/clipboard-2026-09.md)
+  [`security/audits/clipboard-2026-09.md`](../security/audits/clipboard-2026-09.md)
   (2026-08-31, CTX-0097) and remains `Open` with residual platform-backend,
   real-window UX, and `8192`-byte bound-scope limits; `R-005`/`R-006`/`R-007`
   at `bitty` `d4d75e9` (`5bdcdbd`/`0afc94d`/`d4d75e9`, Issues #137/#138/#139,
@@ -50,10 +50,10 @@ sidebar_order: 21
   not authorize publication or compatibility. Closing any open question still
   requires its RFC/ADR with independent review per the
   [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
-- Companion evidence: `bitty/docs/product/release-ladder.md` (draft,
-  `be3bdb4`) records the crate publish order and `cargo publish --dry-run`
+- Companion evidence: [`release-mechanics.md`](../development/release-mechanics.md)
+  (draft, CTX-0044) records the crate publish order and `cargo publish --dry-run`
   verification for the workspace. This document mirrors that intent for
-  `bitty-docs` navigation. For `R-004`, the companion evidence is at `7a4ee41`
+  navigation. For `R-004`, the companion evidence is at `7a4ee41`
   (baseline `de134ec`, audit above) and remains `Open`; for `R-005`/`R-006`/`R-007`,
   companion evidence is at `d4d75e9` (`5bdcdbd`/`0afc94d`/`d4d75e9`, Issues
   #137/#138/#139) per `project-state.json` and remains `Mitigated` (not
@@ -145,6 +145,9 @@ sidebar_order: 21
 
 - Candidate spine and early-deferral: canonical in
   [Proposed Delivery Sequence](proposed-delivery-sequence.md#candidate-build-order-spine).
+- Crate publish order and workspace version mapping:
+  [Release mechanics](../development/release-mechanics.md) (CTX-0044 draft) and the
+  `cargo publish --dry-run` records in [G1 publish log](g1-publish-log.md).
 - Compatibility and platform bars: [ADR 0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md),
   [Compatibility Milestone RFC](../specifications/compatibility-milestone-rfc.md) (M1).
 - First real single-window slice: [Single-Window Vertical Slice Acceptance Plan](vertical-slice-acceptance.md)

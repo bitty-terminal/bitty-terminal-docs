@@ -21,7 +21,8 @@ documents live under `docs/`.
 ## Authority and composition
 
 - This repository owns terminal-platform architecture, specifications,
-  configuration, interfaces, product, reference, and user-facing documents.
+  configuration, interfaces, product, reference, user-facing, engineering
+  evidence, and platform security audit documents.
 - Shared cross-project governance lives in
   [bitty-docs](https://github.com/bitty-terminal/bitty-docs): decisions, the
   security corpus, sources, findings, reviews, handoff, project state, roadmap,
@@ -37,16 +38,18 @@ documents live under `docs/`.
 
 ## Content trees
 
-| Tree                                           | Entry points                                                                                                                                        |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `architecture/`                                | [Architecture diagrams](../architecture/README.md), [overview](../architecture/overview.md), [core boundaries](../architecture/core-boundaries.md). |
-| `specifications/`                              | [Specification register](../specifications/README.md) and the versioned technical contracts.                                                        |
-| `configuration/`                               | [Lua configuration and XDG layout](../configuration/lua-and-xdg.md), [theme presets](../configuration/themes.md).                                   |
-| `interfaces/`                                  | [Command-line interface](../interfaces/cli.md), [rich content](../interfaces/rich-content.md).                                                      |
-| `product/`                                     | [Vision](../product/vision.md), [panel vision](../product/panel-vision.md), [release ladder](../product/release-ladder.md), and delivery plans.     |
-| `user-guide/`, `tutorials/`, `how-to/`         | [User guide](../user-guide/README.md), [tutorials](../tutorials/README.md), [how-to guides](../how-to/README.md).                                   |
-| `reference/`, `requirements/`                  | [Reference](../reference/README.md) and [requirements](../requirements/README.md) registers.                                                        |
-| `examples/`, `migrations/`, `troubleshooting/` | [Examples](../examples/README.md), [migrations](../migrations/README.md), [troubleshooting](../troubleshooting/README.md).                          |
+| Tree                                           | Entry points                                                                                                                                                                                                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `architecture/`                                | [Architecture diagrams](../architecture/README.md), [overview](../architecture/overview.md), [core boundaries](../architecture/core-boundaries.md).                                                                                                       |
+| `specifications/`                              | [Specification register](../specifications/README.md) and the versioned technical contracts.                                                                                                                                                              |
+| `configuration/`                               | [Lua configuration and XDG layout](../configuration/lua-and-xdg.md), [theme presets](../configuration/themes.md).                                                                                                                                         |
+| `interfaces/`                                  | [Command-line interface](../interfaces/cli.md), [rich content](../interfaces/rich-content.md).                                                                                                                                                            |
+| `product/`                                     | [Vision](../product/vision.md), [panel vision](../product/panel-vision.md), [release ladder](../product/release-ladder.md), and delivery plans.                                                                                                           |
+| `development/`                                 | [Release mechanics](../development/release-mechanics.md) (crate publish order and version mapping) and the [maintainability report](../development/maintainability.md).                                                                                   |
+| `security/`                                    | Platform [clipboard](../security/audits/clipboard-2026-09.md), [resource loader](../security/audits/resource-loader-2026-09.md), [rich image](../security/audits/rich-image-2026-09.md), and [VT parser](../security/audits/vt-parser-2026-09.md) audits. |
+| `user-guide/`, `tutorials/`, `how-to/`         | [User guide](../user-guide/README.md), [tutorials](../tutorials/README.md), [how-to guides](../how-to/README.md).                                                                                                                                         |
+| `reference/`, `requirements/`                  | [Reference](../reference/README.md) and [requirements](../requirements/README.md) registers.                                                                                                                                                              |
+| `examples/`, `migrations/`, `troubleshooting/` | [Examples](../examples/README.md), [migrations](../migrations/README.md), [troubleshooting](../troubleshooting/README.md).                                                                                                                                |
 
 ## Process documents
 

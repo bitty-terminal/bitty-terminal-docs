@@ -176,8 +176,9 @@ this draft remains neither accepted nor a release or user-ready claim.
 
 ## Companion release ladder (CTX-0044 draft)
 
-This section records the concrete companion proposed in bitty CTX-0044
-`docs/projects/bitty/product/release-ladder.md` (branch `ctx-0044/docs-release-ladder`,
+This section records the concrete companion proposed in bitty CTX-0044 and
+maintained as [`development/release-mechanics.md`](../development/release-mechanics.md)
+(branch `ctx-0044/docs-release-ladder`,
 worktree `.worktrees/ctx-0044-docs-release-ladder` in the `bitty`
 repository) on top of CTX-0043
 `chore(crate): prepare workspace for crates.io v0.1.0`
@@ -202,7 +203,7 @@ seven `publish = false`). It does **not** accept this record.
 - The ladder overlays this publish order on the candidate spine without
   weakening normative security controls; acceptance of any slice still
   requires its RFC/ADR with independent review. The companion file
-  `bitty/docs/product/release-ladder.md` (draft, `status: draft`) is the
-  reviewable source for the table and verification gates
+  [`development/release-mechanics.md`](../development/release-mechanics.md)
+  (draft, `status: draft`) is the reviewable source for the table and verification gates
   (`cargo publish --dry-run` leaf PASS, dependent crates valid but awaiting
   index, `just check` green).

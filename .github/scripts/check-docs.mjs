@@ -121,6 +121,7 @@ const CJK_PATTERN =
 const CONTENT_ROOTS = new Set([
   "architecture",
   "configuration",
+  "development",
   "examples",
   "extensibility",
   "how-to",
@@ -129,6 +130,7 @@ const CONTENT_ROOTS = new Set([
   "product",
   "reference",
   "requirements",
+  "security",
   "specifications",
   "troubleshooting",
   "tutorials",

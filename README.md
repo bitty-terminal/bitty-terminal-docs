@@ -10,7 +10,10 @@ terminal-platform documents were imported from `bitty-docs`
 (`docs/projects/bitty/` at `c664214`) with history preserved. AI-core and
 plugin-ecosystem documents were split out to the separately migrated
 `bitty-ai-docs` and `bitty-plugins-docs` repositories, and every
-cross-repository link uses an absolute URL.
+cross-repository link uses an absolute URL. CTX-0002 recovered the
+evidence and operations documents that bitty PR #663 removed without a
+docs-repository destination, adding the `development/` and `security/audits/`
+trees and the crate publish ladder at `development/release-mechanics.md`.
 
 ## Scope
 
@@ -21,6 +24,8 @@ This repository owns:
 - Configuration, extensibility, examples, migrations, and troubleshooting
   guidance.
 - Reference material derived from verified implementation evidence.
+- Engineering evidence, release operations, and platform security audit
+  records recovered from the `bitty` repository.
 
 This repository does not own:
 
