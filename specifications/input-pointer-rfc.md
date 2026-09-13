@@ -76,7 +76,7 @@ Normative sources this RFC must not weaken:
   PerPlugin 1024 events/256 KiB / Global 8192 events/2 MiB, DropOldest v1
   default, `BoundedText`, and capability-checked host APIs.
 - [Clipboard audit at 7a4ee41](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/evidence-matrix.md) and
-  [`docs/security/audits/clipboard-2026-09.md`](https://github.com/bitty-terminal/bitty/blob/7a4ee41/docs/security/audits/clipboard-2026-09.md)
+  [`security/audits/clipboard-2026-09.md`](../security/audits/clipboard-2026-09.md)
   (CTX-0097, R-004 remains **Open**): OSC 52 read/write separate decisions,
   `CLIPBOARD_MAX_BYTES=8192` bounded paste, `23` suspicious-paste + `13`
   paste unit tests, and residual platform-backend/UX gaps.
@@ -774,7 +774,7 @@ vs `Accepted` vs `Verified` remain distinct per `project-state.json`.
   [Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md),
   [P0 Acceptance Criteria](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md),
   [Evidence Matrix](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/evidence-matrix.md),
-  [Clipboard audit at 7a4ee41](https://github.com/bitty-terminal/bitty/blob/7a4ee41/docs/security/audits/clipboard-2026-09.md).
+  [Clipboard audit at 7a4ee41](../security/audits/clipboard-2026-09.md).
 - Platform: [ADR 0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md),
   [Technology Strategy](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/technology-strategy.md).
 - Prior input discussion: `docs/projects/bitty/extensibility/plugin-system.md` input-encoding

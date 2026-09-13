@@ -355,9 +355,9 @@ offline note.
 - The [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md)
   candidate ladder `v0.1` through `v1.0` remains candidate maturity
   labels, not calendar promises. When the companion
-  `bitty/docs/product/release-ladder.md` staging is accepted, its
-  `0.1.0` through `0.9.0` mapping overlays this policy without weakening
-  it.
+  [release mechanics](../development/release-mechanics.md) staging is
+  accepted, its `0.1.0` through `0.9.0` mapping overlays this policy
+  without weakening it.
 
 ### MSRV and toolchain pins
 
