@@ -21,9 +21,9 @@ product build workflow.
 1. Read the root `AGENTS.md` and the workspace-level guidance before editing.
 2. Read the [documentation workflow](documentation-workflow.md) — it defines the
    frontmatter schema, status meanings, and review expectations for every
-   document under `docs/`.
-3. Check the [documentation map](../README.md) for the current tree and the
-   planned structure.
+   canonical document in the root topic trees and under `docs/`.
+3. Check the [documentation map](../README.md) for the content trees and process
+   documents.
 4. Enter the repository with a scoped CarryCtx task and a non-overlapping file
    scope before editing.
 5. Run `just check` locally before every push.
@@ -35,7 +35,7 @@ product build workflow.
 - `just fmt-check` — Prettier formatting for every supported file type.
 - `just markdownlint` — Markdown linting per `.markdownlint-cli2.jsonc`.
 - `just links` — repository-local links and heading fragments, offline.
-- `just metadata` — the exact flat frontmatter schema under `docs/`.
+- `just metadata` — the exact flat frontmatter schema for canonical documents.
 - `just language` — English-only Markdown.
 - `just agents` — AGENTS.md and TODO.md line budgets.
 - `just hygiene` — no generated, database, or editor artifacts.

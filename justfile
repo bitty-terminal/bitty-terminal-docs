@@ -22,7 +22,7 @@ markdownlint:
 links:
     bun .github/scripts/check-docs.mjs links
 
-# Validate the exact flat frontmatter schema for every document under docs/.
+# Validate the exact flat frontmatter schema for every canonical document.
 metadata:
     bun .github/scripts/check-docs.mjs metadata
 
@@ -43,7 +43,7 @@ svg:
     #!/usr/bin/env bash
     set -euo pipefail
     command -v xmllint >/dev/null || { echo "xmllint (libxml2-utils) is required" >&2; exit 1; }
-    find docs -name '*.svg' -print0 | xargs -0 -r xmllint --noout
+    git ls-files -z --cached --others --exclude-standard -- '*.svg' | xargs -0 -r xmllint --noout
 
 # Validate GitHub Actions syntax using the locally installed actionlint.
 actionlint:

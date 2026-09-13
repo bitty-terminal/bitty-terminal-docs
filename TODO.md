@@ -9,13 +9,14 @@ than accumulating here.
 - [x] Bootstrap repository scaffold (CTX-0187 Phase 1): docs-quality toolchain,
       docs-quality workflow, CarryCtx baseline, documentation skeleton, labels, and
       repository metadata.
-- [ ] Phase 2 (separately tracked): migrate the terminal-platform documents from
-      bitty-docs `docs/projects/bitty/` with history preserved, rewriting links and
-      preserving each document's status and `website_publish` flag.
+- [x] Terminal-platform content migration (CTX-0001): import bitty-docs
+      `docs/projects/bitty/` at `c664214` with history preserved; split AI-core
+      and plugin-ecosystem documents to the sibling repositories; retarget
+      cross-repository links to absolute URLs.
 - [ ] Later phase: wire this repository into `bitty` as the `docs/` submodule
       and complete cross-repository link and CI notes.
 
 ## Blocked / open
 
-- Content migration is not part of Phase 1. Until migration lands, the tree
-  intentionally contains only the documentation map and development workflow.
+- Website consumption of `website_publish: true` documents remains a later
+  phase.

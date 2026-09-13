@@ -12,12 +12,11 @@
 ## Current phase
 
 - Documentation and project foundations come before product implementation.
-- The repository was bootstrapped in CTX-0187 Phase 1 with the docs-quality
-  toolchain and an empty skeleton; terminal-platform documents migrate in a
-  later, separately tracked phase.
+- CTX-0187 Phase 1 bootstrapped the toolchain and skeleton; CTX-0001 imported
+  the terminal-platform corpus from `bitty-docs` (`docs/projects/bitty` at
+  `c664214`). AI-core and plugin documents moved to the `bitty-ai-docs` and
+  `bitty-plugins-docs` repositories.
 - Never describe a planned, proposed, or unverified feature as implemented.
-  Until migration lands, the tree contains only the documentation map and the
-  development workflow.
 
 ## Read before acting
 
@@ -98,8 +97,9 @@ Milestone: ... | RFC: ... | Task: CTX-XXXX` header; a missing header is
 
 - English is the only canonical documentation language. Do not add CJK content,
   translations, locale directories, or multilingual routes; i18n is deferred.
-- Every `docs/**/*.md` file uses the exact flat frontmatter schema in
-  `docs/development/documentation-workflow.md`; its `title` matches the H1.
+- Every canonical document (root topic trees and `docs/**`) uses the exact flat
+  frontmatter schema in `docs/development/documentation-workflow.md`; `title`
+  matches the H1.
 - Separate normative requirements, accepted decisions, proposals, and current
   implementation status; cross-link one authoritative definition instead of
   copying divergent wording.
