@@ -35,7 +35,7 @@ line budgets, hygiene, SVG well-formedness, and Actions syntax.
 just fmt-check           # verify formatting without changing files
 just fmt                 # format every supported file type
 just links               # validate repository-local Markdown links
-just metadata            # validate the flat docs/ frontmatter schema
+just metadata            # validate the canonical document frontmatter schema
 just language            # keep repository-owned Markdown English-only
 just check               # full local gate pipeline (same logical gates as CI)
 ```
@@ -44,9 +44,9 @@ just check               # full local gate pipeline (same logical gates as CI)
 
 - Read `AGENTS.md` before working. It defines scope, authority, the CarryCtx
   workflow, and workspace hygiene for this repository.
-- Every document under `docs/` uses the exact flat frontmatter schema defined
-  in `docs/development/documentation-workflow.md`; its `title` must match the
-  H1.
+- Every canonical document (root topic trees and `docs/`) uses the exact flat
+  frontmatter schema defined in `docs/development/documentation-workflow.md`;
+  its `title` must match the H1.
 - English is the only canonical documentation language.
 - Label statements as normative, accepted, proposed, experimental,
   implemented, or unverified. Never turn a design intention into a

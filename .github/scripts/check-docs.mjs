@@ -118,6 +118,22 @@ const METADATA_ENUMS = new Map([
 ]);
 const CJK_PATTERN =
   /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}\u3000-\u303f]/u;
+const CONTENT_ROOTS = new Set([
+  "architecture",
+  "configuration",
+  "examples",
+  "extensibility",
+  "how-to",
+  "interfaces",
+  "migrations",
+  "product",
+  "reference",
+  "requirements",
+  "specifications",
+  "troubleshooting",
+  "tutorials",
+  "user-guide",
+]);
 
 const requestedMode = process.argv[2] ?? "all";
 const validModes = new Set([
@@ -715,9 +731,10 @@ async function checkHygiene() {
 const markdownFiles = await walk(ROOT, (path) =>
   path.toLowerCase().endsWith(".md"),
 );
-const documentFiles = markdownFiles.filter((file) =>
-  repoPath(file).startsWith("docs/"),
-);
+const documentFiles = markdownFiles.filter((file) => {
+  const path = repoPath(file);
+  return path.startsWith("docs/") || CONTENT_ROOTS.has(path.split("/")[0]);
+});
 const selectedModes =
   requestedMode === "all"
     ? ["links", "metadata", "language", "agents", "hygiene"]

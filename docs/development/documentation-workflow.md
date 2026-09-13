@@ -12,8 +12,9 @@ sidebar_order: 20
 # Documentation workflow
 
 This policy defines how this repository maintains English-language canonical
-documentation for its documented scope. It applies before content migration and
-continues once the scope's implementation repository ships code.
+documentation for its documented scope. It applies to the migrated
+terminal-platform corpus and continues once the scope's implementation
+repository ships code.
 
 ## Scope and authority
 
@@ -38,19 +39,17 @@ them.
 
 ## Repository layout
 
-Documents live under `docs/` and follow the
-[documentation map](../README.md). New topic trees are added only when real
-content exists; empty placeholder pages are avoided so the tree does not imply
-work that has not happened.
+Canonical platform documents live in topic trees at the repository root and
+follow the [documentation map](../README.md). This repository's own process
+documents live under `docs/`. New topic trees are added only when real content
+exists; empty placeholder pages are avoided so the tree does not imply work that
+has not happened.
 
-| Path                | Owns                                          |
-| ------------------- | --------------------------------------------- |
-| `docs/development/` | Contributor policy and workflow.              |
-| `docs/<topic>/`     | Canonical documents for the documented scope. |
-
-The repository was bootstrapped with this skeleton only. Existing content is
-migrated in a later, separately tracked phase; until then the topic trees remain
-intentionally small.
+| Path                | Owns                                           |
+| ------------------- | ---------------------------------------------- |
+| `<topic>/`          | Canonical documents for the terminal platform. |
+| `docs/README.md`    | Documentation map and authority rules.         |
+| `docs/development/` | Contributor policy and workflow.               |
 
 ## Document types and authority
 
@@ -71,7 +70,8 @@ source of implementation evidence.
 
 ## Required metadata
 
-Every `docs/**/*.md` file begins with YAML frontmatter containing exactly these
+Every canonical platform document in the root topic trees, and every process
+document under `docs/`, begins with YAML frontmatter containing exactly these
 flat, ordered, plain scalar fields:
 
 | Field             | Allowed value or rule                                                                                                       |

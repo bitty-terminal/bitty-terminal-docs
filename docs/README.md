@@ -13,10 +13,10 @@ sidebar_order: 1
 
 This index is the entry point for the canonical documentation of the Bitty
 terminal platform — the product implemented by the `bitty` repository. The
-repository is in its bootstrap state (CTX-0187 Phase 1): the docs-quality
-toolchain and this skeleton exist, while the platform documents are migrated
-from `bitty-docs` in a later, separately tracked phase. Nothing on this page
-claims migrated content.
+terminal-platform corpus was migrated from `bitty-docs` (`docs/projects/bitty/`
+at revision `c664214`) with history preserved in CTX-0001. Platform content
+lives in topic trees at the repository root; this repository's own process
+documents live under `docs/`.
 
 ## Authority and composition
 
@@ -25,40 +25,35 @@ claims migrated content.
 - Shared cross-project governance lives in
   [bitty-docs](https://github.com/bitty-terminal/bitty-docs): decisions, the
   security corpus, sources, findings, reviews, handoff, project state, roadmap,
-  and releases. This repository links to those documents instead of copying
-  them.
+  and releases. This repository links to those documents with absolute URLs
+  instead of copying them.
 - Sibling documentation repositories:
-  [bitty-ai-docs](https://github.com/bitty-terminal/bitty-ai-docs) (AI core)
-  and
+  [bitty-ai-docs](https://github.com/bitty-terminal/bitty-ai-docs) (AI core) and
   [bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs)
-  (plugin ecosystem).
-- The repository is designed to be mounted at `bitty/docs` as a Git submodule
-  in a later wiring phase.
+  (plugin ecosystem). Documents migrated to those repositories are referenced
+  from surviving pages by absolute cross-repository URL.
+- The repository is designed to be mounted at `bitty/docs` as a Git submodule in
+  a later wiring phase.
 
-## Current tree
+## Content trees
+
+| Tree                                           | Entry points                                                                                                                                        |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `architecture/`                                | [Architecture diagrams](../architecture/README.md), [overview](../architecture/overview.md), [core boundaries](../architecture/core-boundaries.md). |
+| `specifications/`                              | [Specification register](../specifications/README.md) and the versioned technical contracts.                                                        |
+| `configuration/`                               | [Lua configuration and XDG layout](../configuration/lua-and-xdg.md), [theme presets](../configuration/themes.md).                                   |
+| `interfaces/`                                  | [Command-line interface](../interfaces/cli.md), [rich content](../interfaces/rich-content.md).                                                      |
+| `product/`                                     | [Vision](../product/vision.md), [panel vision](../product/panel-vision.md), [release ladder](../product/release-ladder.md), and delivery plans.     |
+| `user-guide/`, `tutorials/`, `how-to/`         | [User guide](../user-guide/README.md), [tutorials](../tutorials/README.md), [how-to guides](../how-to/README.md).                                   |
+| `reference/`, `requirements/`                  | [Reference](../reference/README.md) and [requirements](../requirements/README.md) registers.                                                        |
+| `examples/`, `migrations/`, `troubleshooting/` | [Examples](../examples/README.md), [migrations](../migrations/README.md), [troubleshooting](../troubleshooting/README.md).                          |
+
+## Process documents
 
 | Document                                                        | Purpose                                                   |
 | --------------------------------------------------------------- | --------------------------------------------------------- |
 | [Development](development/README.md)                            | Contributor entry point and local gates.                  |
 | [Documentation workflow](development/documentation-workflow.md) | Normative authoring, metadata, status, and review policy. |
-
-## Planned structure
-
-The terminal-platform documents migrate into topic trees equivalent to the
-current `bitty-docs` `docs/projects/bitty/` layout:
-
-| Planned tree                                                                           | Content                                                  |
-| -------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `architecture/`                                                                        | System context, layers, and core boundaries.             |
-| `specifications/`                                                                      | Versioned technical contracts with verification duties.  |
-| `configuration/`                                                                       | Lua/XDG configuration model and themes.                  |
-| `interfaces/`                                                                          | CLI, IPC, rich content, and automation contracts.        |
-| `product/`                                                                             | Vision, release ladder, and acceptance plans.            |
-| `user-guide/`, `tutorials/`, `how-to/`, `troubleshooting/`, `migrations/`, `examples/` | User-facing documentation once behavior is verified.     |
-| `requirements/`, `reference/`, `extensibility/`                                        | Requirements, factual reference, and extension surfaces. |
-
-Trees are created only as real content lands; empty placeholder pages are not
-added.
 
 ## Maintaining the corpus
 

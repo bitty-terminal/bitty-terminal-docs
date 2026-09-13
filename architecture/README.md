@@ -82,7 +82,7 @@ Every HTML model in `interactive/` is powered by the shared diagram engine
 ## Directory Layout
 
 ```text
-docs/projects/bitty/architecture/
+architecture/
 ├── README.md                 # this file — interactive architecture index
 ├── glossary.yaml             # single node and edge data dictionary
 ├── overview.md               # system context, invariants, data flows

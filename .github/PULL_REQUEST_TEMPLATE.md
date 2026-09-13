@@ -18,7 +18,7 @@
 - [ ] `just fmt-check` passes (Prettier 3.9.6)
 - [ ] `just markdownlint` passes (markdownlint-cli2 0.23.1)
 - [ ] `just links` passes (local Markdown links and fragments)
-- [ ] `just metadata` passes (frontmatter schema under `docs/`)
+- [ ] `just metadata` passes (canonical document frontmatter schema)
 - [ ] `just language` passes (English-only Markdown)
 - [ ] `just agents` passes (AGENTS.md and TODO.md budgets)
 - [ ] `just hygiene` passes (no generated or temporary artifacts)

@@ -12,10 +12,10 @@ sidebar_order: 11
 # Final Architecture Diagrams
 
 This directory holds the vector SVG exports for every architecture diagram under
-`docs/projects/bitty/architecture/`. Each SVG is a maintained export synchronized with the
+`architecture/`. Each SVG is a maintained export synchronized with the
 canonical architecture models and features an embedded interactive link pointing
 directly to its rich, operable HTML canvas equivalent under
-`docs/projects/bitty/architecture/interactive/`.
+`architecture/interactive/`.
 
 - Interactive suite: [`../interactive/index.html`](../interactive/index.html).
 - Canonical source of truth: [`../glossary.yaml`](../glossary.yaml) — the

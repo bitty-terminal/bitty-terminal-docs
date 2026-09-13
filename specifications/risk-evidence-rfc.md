@@ -533,8 +533,6 @@ Closes OQ-025: this RFC closes that open question at the design level; the regis
 
 > P0 review per CTX-0078 tracks acceptance of OQ-025 via this RFC. Frontmatter is `accepted` and [open-questions.md](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) is updated per its close rule. This section records passing sign-off and closes OQ-025.
 
-<!-- markdownlint-disable MD013 -->
-
 | Role                                  | Reviewer          | Verdict | Evidence / scope                                                                                                                                                                                                                                                                                                                                                                                                                                              | Date       |
 | ------------------------------------- | ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | security-auditor                      | `bitty-security`  | pass    | R-001..R-022 traceability to P0-AC-001..034, register State rules, evidence taxonomy `unit`/`integration`/`adversarial`/`manual-audit`/`ci-gate`, safe-mode invariance, no weakening of overview invariants 1..10                                                                                                                                                                                                                                             | 2026-08-28 |
@@ -542,16 +540,10 @@ Closes OQ-025: this RFC closes that open question at the design level; the regis
 | category-owner (architecture)         | `bitty-architect` | pass    | Traceability R-001..R-022 to P0-AC, normative controls, evidence taxonomy artifact storage CarryCtx linkage, stage deadline vs deferral, safe-mode invariance                                                                                                                                                                                                                                                                                                 | 2026-08-29 |
 | docs-curator                          | `bitty-curator`   | pass    | Frontmatter `accepted`, lifecycle `Draft -> experimental review evidence -> Accepted (2026-08-29) -> normative`, links to [Risk register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md), [P0-AC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md), [Threat model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md), English-only | 2026-08-29 |
 
-<!-- markdownlint-enable MD013 -->
-
-<!-- markdownlint-disable MD013 -->
-
 As of 2026-08-29, the register and P0-AC remain the normative contracts with the traceability and evidence gates now accepted; crate
 presence alone (including any headless measurement harness in `bitty`) does not
 imply that a risk is mitigated, per
 [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md).
-
-<!-- markdownlint-enable MD013 -->
 
 ## References
 

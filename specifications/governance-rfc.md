@@ -208,8 +208,6 @@ public remotes are already pushed with `main` protected as squash-only
 with required checks; this RFC makes that observation a governed
 contract and records the full flag set:
 
-<!-- markdownlint-disable MD013 -->
-
 | Setting                                  | Accepted value                                                                                                                                                                                                                                                         |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Default branch                           | `main`                                                                                                                                                                                                                                                                 |
@@ -741,16 +739,12 @@ Closes OQ-024: this RFC closes that open question at the design level; the regis
 
 > P0 review per CTX-0077 tracks acceptance of OQ-024 via this RFC. Frontmatter is `accepted` and [open-questions.md](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) is updated per its close rule. This section records passing sign-off and closes OQ-024.
 
-<!-- markdownlint-disable MD013 -->
-
 | Role                                  | Reviewer          | Verdict | Evidence / scope                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Date       |
 | ------------------------------------- | ----------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | security-auditor                      | `bitty-security`  | pass    | R-015, R-019, R-022, T-12, P0-AC-033 family, MIT license allowlist, supply-chain lane, dependency governance, distribution integrity, branch protection provenance, CodeQL `javascript`+`actions`                                                                                                                                                                                                                                                                                                     | 2026-08-28 |
 | category-owner (security-and-quality) | `bitty-quality`   | pass    | License MIT file placement `LICENSE` SPDX, branch protection squash-only strict CODEOWNERS conversation-resolution, compatibility policy semver MSRV 1.85 Tier 1 deprecation >=1 minor, release train `Docs-PR`/`Code-PR` trailers pinned website consumption                                                                                                                                                                                                                                         | 2026-08-29 |
 | category-owner (architecture)         | `bitty-architect` | pass    | Branch protection table `Required main status checks` per repository, ownership rules org teams CODEOWNERS paths, cross-repository train dependency-ordered merges atomic-evidence `gitleaks`/`cargo deny` gates                                                                                                                                                                                                                                                                                      | 2026-08-29 |
 | docs-curator                          | `bitty-curator`   | pass    | Frontmatter `accepted`, lifecycle `Draft -> experimental review evidence -> Accepted (2026-08-29) -> normative`, links to [Repository map](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/repository-map.md) and [P0 review checklist](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/reviews/p0-review-checklist.md) and [website content contract](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/website-content-contract.md), English-only | 2026-08-29 |
-
-<!-- markdownlint-enable MD013 -->
 
 ## References
 

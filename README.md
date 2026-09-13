@@ -5,11 +5,12 @@ terminal platform — the product implemented by the `bitty` repository. It owns
 the English-language architecture, specification, configuration, interface,
 product, reference, and user-facing documentation for the terminal platform.
 
-**Current state: bootstrap skeleton (CTX-0187 Phase 1).** The repository was
-created empty and scaffolded with the docs-quality toolchain and governance
-files only. No terminal-platform documents have been migrated yet; migration is
-a later, separately tracked phase. This README describes the repository
-contract, not migrated content.
+**Current state: terminal-platform corpus migrated (CTX-0001).** The
+terminal-platform documents were imported from `bitty-docs`
+(`docs/projects/bitty/` at `c664214`) with history preserved. AI-core and
+plugin-ecosystem documents were split out to the separately migrated
+`bitty-ai-docs` and `bitty-plugins-docs` repositories, and every
+cross-repository link uses an absolute URL.
 
 ## Scope
 
@@ -38,28 +39,29 @@ Cross-project contracts and registers are linked, never copied.
 The repository is intended to be mounted at `bitty/docs` as a Git submodule so
 platform documentation version-matches the implementation it describes. The
 submodule wiring is a later phase; the standalone repository is fully
-self-contained and passes its own gates. Until content migration lands, the
-tree contains only the documentation map and the development workflow.
+self-contained and passes its own gates. Platform content lives in topic trees
+at the repository root; this repository's process documents stay under `docs/`.
 
 ## Structure
 
-| Path                             | Purpose                                                      |
-| -------------------------------- | ------------------------------------------------------------ |
-| `docs/README.md`                 | Documentation map and authority rules for this repository.   |
-| `docs/development/`              | Contributor workflow and the normative documentation policy. |
-| `docs/<topic>/`                  | Canonical platform documents (to be migrated).               |
-| `TODO.md`                        | Work register for this repository.                           |
-| `AGENTS.md`                      | Agent scope, CarryCtx workflow, and local gate rules.        |
-| `.github/scripts/check-docs.mjs` | Links, metadata, language, budgets, and hygiene checks.      |
-| `justfile`                       | Pinned docs-quality commands; `just check` is the gate.      |
+| Path                             | Purpose                                                                                                                            |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/README.md`                 | Documentation map and authority rules for this repository.                                                                         |
+| `docs/development/`              | Contributor workflow and the normative documentation policy.                                                                       |
+| `<topic>/`                       | Canonical platform documents (architecture, specifications, configuration, interfaces, product, reference, and user-facing trees). |
+| `TODO.md`                        | Work register for this repository.                                                                                                 |
+| `AGENTS.md`                      | Agent scope, CarryCtx workflow, and local gate rules.                                                                              |
+| `.github/scripts/check-docs.mjs` | Links, metadata, language, budgets, and hygiene checks.                                                                            |
+| `justfile`                       | Pinned docs-quality commands; `just check` is the gate.                                                                            |
 
 ## Authority and status
 
 - The
   [documentation workflow](https://github.com/bitty-terminal/bitty-terminal-docs/blob/main/docs/development/documentation-workflow.md)
   is normative for authoring, metadata, status, and review.
-- Every document under `docs/` carries the flat frontmatter schema and declares
-  its own status; design intention must never read as implemented behavior.
+- Every canonical document (root topic trees and `docs/`) carries the flat
+  frontmatter schema and declares its own status; design intention must never
+  read as implemented behavior.
 - When statements conflict, the canonical bitty-docs security corpus takes
   precedence. Implementation claims require evidence from the owning code
   repository.
