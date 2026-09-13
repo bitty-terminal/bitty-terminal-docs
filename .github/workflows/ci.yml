@@ -1,0 +1,58 @@
+name: Docs quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-quality:
+    name: Docs quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Check formatting
+        run: bunx --bun prettier@3.9.6 --check . --ignore-unknown
+
+      - name: Lint Markdown
+        run: bunx --bun markdownlint-cli2@0.23.1
+
+      - name: Check local links
+        run: bun .github/scripts/check-docs.mjs links
+
+      - name: Check documentation metadata
+        run: bun .github/scripts/check-docs.mjs metadata
+
+      - name: Enforce English-only Markdown
+        run: bun .github/scripts/check-docs.mjs language
+
+      - name: Check documentation file budgets
+        run: bun .github/scripts/check-docs.mjs agents
+
+      - name: Check repository hygiene
+        run: bun .github/scripts/check-docs.mjs hygiene
+
+      - name: Validate architecture SVG assets
+        run: |
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y --no-install-recommends libxml2-utils
+          find docs -name '*.svg' -print0 | xargs -0 -r xmllint --noout
+
+      - name: Lint GitHub Actions workflows
+        uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color -shellcheck=

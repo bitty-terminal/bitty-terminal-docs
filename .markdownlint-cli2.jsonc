@@ -1,0 +1,23 @@
+{
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD025": {
+      "front_matter_title": "",
+    },
+  },
+  "globs": ["**/*.md"],
+  "ignores": [
+    ".git",
+    ".worktrees",
+    ".trash",
+    "tmp",
+    "node_modules",
+    "build",
+    "dist",
+    "site",
+    "_site",
+    "target",
+    "coverage",
+  ],
+}

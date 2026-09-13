@@ -1,0 +1,7 @@
+# Git hooks are managed by lefthook. Install them with: just hooks-install
+# All tool versions live in the justfile; this file only wires hooks to it.
+
+commit-msg:
+  commands:
+    commit-check:
+      run: just commit-check {1}
