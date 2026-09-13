@@ -11,21 +11,20 @@ sidebar_order: 10
 
 # Bitty terminal platform documentation
 
-This directory will hold the per-project documentation for the Bitty terminal
+This directory holds the per-project documentation for the Bitty terminal
 platform: core architecture, VT and PTY behavior, UI and rendering,
 configuration, plugin host, IPC and agent surfaces, packaging, and the
 terminal-facing user and contributor guides.
 
 ## Current stage
 
-The partition exists, but the terminal-platform documents have not moved yet.
-They remain in their existing top-level directories (`architecture/`,
-`specifications/`, `configuration/`, `product/`, `interfaces/`,
-`user-guide/`, `tutorials/`, `how-to/`, `reference/`, `examples/`,
-`extensibility/`, `requirements/`, `troubleshooting/`, `migrations/`) until a
-later, separately scoped migration moves them here with `git mv`, rewrites
-links, and preserves each document's `website_publish` flag and deprecation
-status. This page does not claim that any listed content has moved or changed.
+The terminal-platform documents migrated here in Phase 2 (CTX-0185) from
+`architecture/`, `specifications/`, `configuration/`, `product/`,
+`interfaces/`, `user-guide/`, `tutorials/`, `how-to/`, `reference/`,
+`examples/`, `extensibility/`, `requirements/`, `troubleshooting/`, and
+`migrations/` with `git mv`, rewritten links, and preserved `website_publish`
+flags. Shared cross-project governance remains in the repository top-level
+directories.
 
 ## Related
 
