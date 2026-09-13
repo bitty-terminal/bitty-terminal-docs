@@ -14,6 +14,9 @@ sidebar_order: 10
 Reference documentation will describe verified, versioned product contracts in
 a factual and lookup-oriented form. Bitty is pre-implementation, so no stable
 CLI, configuration keys, Lua API, plugin API, or protocol reference exists yet.
+The [terminal compatibility matrix](compatibility-matrix.md) is the first draft
+reference page: it records per-scenario evidence status rather than promising
+stable behavior.
 
 ## Planned reference sets
 
@@ -23,6 +26,7 @@ CLI, configuration keys, Lua API, plugin API, or protocol reference exists yet.
 | Configuration | Locations, precedence, fields, types, defaults, reload behavior, diagnostics, and migrations.      | Accepted configuration schema and parser/reconciler tests.              |
 | Lua           | Runtime version, allowed libraries, modules, functions, types, errors, budgets, and compatibility. | Versioned host API and isolation/capability tests.                      |
 | Plugin API    | Manifest, lifecycle, commands, events, UI, services, capabilities, versioning, and package rules.  | Accepted Plugin API specification, SDK tests, and compatibility policy. |
+| Compatibility | Terminal compatibility matrix: areas, scenarios, evidence status, and gaps (draft).                | Compat-lab corpora, named tests, and env-gated local PTY probes.        |
 | Protocols     | Terminal compatibility, structured content, IPC, debug, MCP, and wire schemas.                     | Versioned specifications and interoperability/security tests.           |
 
 ## Reference versus design
