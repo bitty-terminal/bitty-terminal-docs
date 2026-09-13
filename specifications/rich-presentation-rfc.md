@@ -203,17 +203,17 @@ Status: **accepted initial values** parameterized for harness coverage. Changing
 a value requires an RFC revision, never silent drift. Floors are enforced;
 unknown or out-of-range budget keys fail validation closed.
 
-| ID    | Dimension                         | Accepted default                              | Enforcement point                         |
-| ----- | --------------------------------- | --------------------------------------------- | ----------------------------------------- |
-| IMG-1 | Max compressed payload per image  | 4 MiB                                         | parser payload cap before adapter         |
-| IMG-2 | Max decoded dimensions per image  | 4096 x 4096                                   | before allocation                         |
-| IMG-3 | Max decoded bytes per image       | 64 MiB (width x height x 4, overflow-checked) | before allocation                         |
-| IMG-4 | Max total `ImageStore` bytes      | 256 MiB                                       | store admission; evict oldest on overflow |
-| IMG-5 | Max image count                   | 256                                           | store admission                           |
-| IMG-6 | Max animation frames per image    | 64                                            | adapter; excess frames discarded          |
-| IMG-7 | Max total decoded animation bytes | IMG-3 x IMG-6, bounded by IMG-4               | store admission                           |
-| IMG-8 | Max placement count per terminal  | 128                                           | placement admission                       |
-| IMG-9 | Animated frame rate               | at most 30 fps, host-throttled                | renderer pacing                           |
+| ID    | Dimension                         | Accepted default                                                 | Enforcement point                         |
+| ----- | --------------------------------- | ---------------------------------------------------------------- | ----------------------------------------- |
+| IMG-1 | Max compressed payload per image  | 4 MiB                                                            | parser payload cap before adapter         |
+| IMG-2 | Max decoded dimensions per image  | 4096 x 4096                                                      | before allocation                         |
+| IMG-3 | Max decode peak memory per image  | 64 MiB (width x height x peak_bytes_per_pixel, overflow-checked) | before allocation                         |
+| IMG-4 | Max total `ImageStore` bytes      | 256 MiB                                                          | store admission; evict oldest on overflow |
+| IMG-5 | Max image count                   | 256                                                              | store admission                           |
+| IMG-6 | Max animation frames per image    | 64                                                               | adapter; excess frames discarded          |
+| IMG-7 | Max total decoded animation bytes | IMG-3 x IMG-6, bounded by IMG-4                                  | store admission                           |
+| IMG-8 | Max placement count per terminal  | 128                                                              | placement admission                       |
+| IMG-9 | Animated frame rate               | at most 30 fps, host-throttled                                   | renderer pacing                           |
 
 Notes:
 
@@ -222,6 +222,36 @@ Notes:
 - IMG-4 is an aggregate budget across all protocols and all terminals of one
   window; it follows the isolation budget floor and maximum policy in the
   [Isolation Resource RFC](isolation-resource-rfc.md).
+
+IMG-3 is a **peak-memory ceiling**, not a resident-bytes count: the
+pre-decode charge is the overflow-checked formula
+`width x height x peak_bytes_per_pixel`, plus bounded fixed codec overhead
+(the encoded input and row/upsampler scratch) outside the formula. The factor
+is `4` for a direct RGBA8 write and higher where the decoder materializes a
+full-size internal buffer:
+
+| Decode path                                                                                               | `peak_bytes_per_pixel` |
+| --------------------------------------------------------------------------------------------------------- | ---------------------- |
+| Direct RGBA8 output (PNG, baseline JPEG, WebP lossless with alpha)                                        | `4`                    |
+| Full-size decoder scratch (lossy `VP8` without alpha, lossless `VP8L` without alpha, conservative `VP8X`) | `8`                    |
+| Progressive JPEG (SOF2) 4:2:0 or grayscale                                                                | `8`                    |
+| Progressive JPEG 4:4:4                                                                                    | `10`                   |
+| Progressive JPEG with four full-resolution components                                                     | `12`                   |
+| Lossy WebP with alpha (`ALPH` chunk plus lossy `VP8`)                                                     | `11`                   |
+
+Progressive JPEG charges `4 + 2 x ceil(sum(h_i x v_i) / (h_max x v_max))`,
+floored at `8`, from the SOF2 component table.
+
+Under the BG-3 file-backed background decode alias this tightens the accepted
+set: `4096 x 4096` non-alpha WebP is rejected pre-allocation (largest accepted
+square side `2896`; `3840 x 2160` lossy WebP still fits at about `63.3 MiB`),
+progressive 4:2:0 `2896 x 2896` and 4:4:4 `2590 x 2590` are accepted, and
+lossy-alpha `2469 x 2469` is accepted (`2470 x 2470` is rejected). The sniff
+also fails closed on a `VP8X` chunk crossing the declared RIFF container and
+on PNG sample depths outside `{1, 2, 4, 8}`. `bitty` PR #656 (merge `af913ee`,
+CTX-0395, `crates/bitty-rich/src/background.rs`) implements the charge, with
+the peak per accepted subformat pinned in
+`crates/bitty-rich/tests/background_peak_memory.rs`.
 
 ### Kitty chunked-intake implementation evidence (bitty #376)
 
@@ -682,7 +712,7 @@ Accepted policy for v1:
 | Budget                           | Applies to                 | Accepted ceiling |
 | -------------------------------- | -------------------------- | ---------------- |
 | `ImageStore` bytes               | all images of one window   | 256 MiB          |
-| Decoded bytes per image          | one image                  | 64 MiB           |
+| Decode peak memory per image     | one image                  | 64 MiB           |
 | Image count                      | one store                  | 256              |
 | Placement count                  | one terminal               | 128              |
 | Scene nodes per `RichBlock`      | one block                  | 2048             |
