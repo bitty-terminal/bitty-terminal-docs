@@ -202,7 +202,7 @@ through host services. Before executing a plugin, its manifest completes
 discovery, version checks, dependency resolution, and permission evaluation.
 
 The [Capability families in the Security
-Overview](../security/overview.md#capability-families) are normative. The Core
+Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md#capability-families) are normative. The Core
 and Plugin boundary must distinguish at least:
 
 - Terminal semantic read, raw read, self input, all-terminal input, and manage;
