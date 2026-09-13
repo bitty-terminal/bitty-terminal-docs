@@ -47,9 +47,9 @@ routing, layout, scrolling, and damage tracking are core mechanisms. Markdown,
 AI, JSON, CSV, diagnostics, notebooks, and other semantics belong in plugins.
 
 Bounded parsing and resource policy are normative in the
-[security overview](../../../security/overview.md). Rich-content exhaustion and local
+[security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md). Rich-content exhaustion and local
 resource access remain open risks R-002, R-003, R-005, and R-021 in the
-[security risk register](../../../security/risk-register.md).
+[security risk register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md).
 
 ## Rich content must have an explicit semantic source
 
@@ -232,7 +232,7 @@ diagnosed or resolved by explicit policy.
 
 Presentation must not rely on the last plugin loaded. Ownership, conflict
 handling, alternate-screen restrictions, and safe overlays are specified in
-[Plugin system](../extensibility/plugin-system.md).
+[Plugin system](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/plugin-system.md).
 
 ## Developer tools direction
 

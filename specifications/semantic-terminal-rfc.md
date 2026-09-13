@@ -235,7 +235,7 @@ proposal-only.
 > subsection claims nothing beyond the P1-P5 Implemented-only slices above.
 > Bitty Beacon is a working name recorded from the local research note
 > `016.md`; the note is provenance, not evidence. Tracked as
-> [OQ-089](../../../decisions/open-questions.md).
+> [OQ-089](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 
 P3 labels addressable targets inside the visible grid; P6 generalizes target
 registration. The candidate P7 direction applies the same engine to the whole
@@ -259,7 +259,7 @@ typing a label performs the associated action.
      registering plugin's existing capabilities and consent, and a dispatch
      that maps to a process or terminal operation still passes the accepted
      scopes and the candidate command audit
-     ([AI Architecture](ai-architecture.md), OQ-087).
+     ([AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ai-architecture.md), OQ-087).
 - **Label allocation (candidate).** Single-key labels are the default while
   the target count is small; beyond a threshold the allocator extends to
   two-character labels. Labels are drawn from a handedness-scoped pool (left
@@ -299,14 +299,14 @@ owners.
 - The composer must never intercept input outside its explicit mode, must fail
   open to raw PTY behavior, and must not weaken paste inspection or clipboard
   policy ([Terminal State RFC](terminal-state-rfc.md),
-  [Isolation Resource RFC](isolation-resource-rfc.md)).
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)).
 - The hint annotation layer is ephemeral presentation with fixed bounds; it
-  grants no capability and bypasses no allowlist ([Plugin Platform RFC](plugin-platform-rfc.md)).
+  grants no capability and bypasses no allowlist ([Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)).
 - Composer submission via bracketed paste preserves existing paste-safety
   handling rather than inventing a new input path
   ([Input and Pointer Contract](input-pointer-rfc.md)).
 - IPC or agent exposure of folding, hints, or composition needs its own scoped
-  review under the [IPC and Agent RFC](ipc-agent-rfc.md) and the
+  review under the [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) and the
   [Risk Evidence RFC](risk-evidence-rfc.md); this draft grants nothing.
 
 ## Open questions
@@ -340,7 +340,7 @@ P1-P5 implementations above are evidence only and close none of them.
   would build on; P6 waits for its acceptance.
 - [Input and Pointer Contract](input-pointer-rfc.md): owns key handling that
   P3/P4 must not break.
-- [IPC and Agent RFC](ipc-agent-rfc.md): owns any future remote exposure.
+- [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md): owns any future remote exposure.
 - Roadmap placement is proposed in
-  [Now / Next / Later](../../../roadmap/now-next-later.md) only after acceptance;
+  [Now / Next / Later](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/roadmap/now-next-later.md) only after acceptance;
   this draft changes no horizon by existing.

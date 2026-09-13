@@ -13,14 +13,14 @@ sidebar_order: 19
 
 > Status: **accepted** on 2026-08-28 by the project initiator. This document defines the accepted
 > instrumentation, observability event pipeline, and versioned debug protocol for
-> the plugin runtime and the DevTools boundary; it closes [OQ-019](../../../decisions/open-questions.md)
+> the plugin runtime and the DevTools boundary; it closes [OQ-019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)
 > at the design level. It does not describe implemented behavior, does not authorize
 > shipped, stable, or compatibility-guaranteed behavior, and does not weaken any
 > normative security control. Experimental implementation may exist as review evidence
 > but carries no compatibility promise beyond the accepted contract. Acceptance was
 > per independent category-owner, docs-curator, and security-auditor review (CTX-0053)
 > with P0 sign-off simulated 2026-08-28; see [P0 Review Sign-off](#p0-review-sign-off)
-> and the [P0 review checklist](../../../reviews/p0-review-checklist.md). The lifecycle is
+> and the [P0 review checklist](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/reviews/p0-review-checklist.md). The lifecycle is
 > `Draft -> experimental review evidence -> Accepted -> normative`.
 >
 > Amendment A1 (Implemented-only, CTX-0124 design plus `bitty` CTX-0183,
@@ -55,7 +55,7 @@ sidebar_order: 19
 
 ## Purpose and scope
 
-[OQ-019](../../../decisions/open-questions.md) asks: _when do DevTools, record/replay,
+[OQ-019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) asks: _when do DevTools, record/replay,
 debug protocol, and MCP adapter enter the roadmap?_ The sequencing half remains
 owned by product governance and the
 [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md).
@@ -79,14 +79,14 @@ In scope:
 Out of scope (owned elsewhere):
 
 - plugin capability identifiers and manifest schema (OQ-012, accepted in
-  [Plugin Platform RFC](plugin-platform-rfc.md));
+  [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - Plugin API v1 namespaces and lifecycle generations (OQ-011, accepted in
-  [Plugin Platform RFC](plugin-platform-rfc.md));
+  [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - event phases, drop policy, and three-level queue budgets (OQ-013, accepted
-  in [Plugin Platform RFC](plugin-platform-rfc.md); values tuned in
-  [Isolation Resource RFC](isolation-resource-rfc.md));
+  in [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); values tuned in
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md));
 - Lua runtime, standard-library subset, module resolution, and diagnostics
-  (OQ-009, accepted in [Lua Runtime RFC](lua-runtime-rfc.md); follow-ups
+  (OQ-009, accepted in [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md); follow-ups
   OQ-030, OQ-031, OQ-032);
 - IPC wire format and per-action scopes for `bitty ctl` (OQ-018);
 - image, rich-block, and structured-transport contracts (OQ-008, OQ-015, OQ-016);
@@ -98,21 +98,21 @@ in the security corpus.
 
 ## Normative sources this specification must not weaken
 
-- [Security Overview](../../../security/overview.md): default posture
+- [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md): default posture
   (PTY, plugins, projects, IPC/MCP/Agent, packages, and reference repos are
   untrusted until a narrow grant); invariants 2, 3, 4, 6, 9, 10; trust
   boundaries for IPC/MCP, DevTools, and packages; capability families;
   P0 baseline including plugin limits, safe-mode recovery, and fuzz/testing
   rows.
-- [Threat Model](../../../security/threat-model.md): assets, actors, boundary map,
+- [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md): assets, actors, boundary map,
   principal data flows, abuse cases T-06, T-07, T-09, T-10, T-11, and
   T-14, and the MCP/Agents/DevTools lane that labels terminal output
   untrusted observation data and distinguishes `debug.inspect`,
   `debug.trace`, and `debug.control`.
-- [Security Risk Register](../../../security/risk-register.md): R-006, R-007,
+- [Security Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md): R-006, R-007,
   R-011, R-013, R-014, and R-018 as they touch the plugin runtime and
   observability surfaces.
-- [P0 Security Acceptance Criteria](../../../security/p0-acceptance-criteria.md):
+- [P0 Security Acceptance Criteria](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md):
   P0-AC-013 through P0-AC-016, P0-AC-021 through P0-AC-026, P0-AC-033,
   and the verification-method conventions.
 - [Architecture Overview](../architecture/overview.md): the candidate
@@ -124,12 +124,12 @@ in the security corpus.
   core/plugin ownership split, reliability row (traces, record/replay hooks,
   debug instrumentation), and the rule that plugins and DevTools do not hold
   GPU objects, window handles, PTY file descriptors, or internal Rust handles.
-- [Plugin Platform RFC](plugin-platform-rfc.md): manifest, capability
+- [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md): manifest, capability
   model, lifecycle generations, and the authoritative event-pipeline section
   for delivery, ordering, and drop policy that this RFC references but does
   not duplicate.
-- [Lua Runtime RFC](lua-runtime-rfc.md) and
-  [Isolation Resource RFC](isolation-resource-rfc.md): VM construction,
+- [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md) and
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md): VM construction,
   diagnostics classes, and the budget dimensions (RC-1, RC-2, RC-4, RC-5)
   whose counters this RFC exposes as observable state.
 
@@ -158,7 +158,7 @@ this RFC must be corrected.
 2. An observability event pipeline carries instrumentation records out of
    hot paths through per-consumer bounded queues with coalescing,
    batching, and counted drops; it references the single authoritative
-   drop policy in [Plugin Platform RFC](plugin-platform-rfc.md) rather
+   drop policy in [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) rather
    than refixing it.
 3. A versioned, JSON-framed debug protocol exposes the plugin runtime
    (VMs, generations, handlers, queues, budgets, diagnostics) under the
@@ -192,7 +192,7 @@ this RFC must be corrected.
 5. Fail-closed. If the instrumentation subsystem cannot start or detects
    that enforcement machinery is disabled, the runtime refuses to load
    plugins that require that machinery rather than running unbounded
-   (FS-7 parity with [Isolation Resource RFC](isolation-resource-rfc.md)).
+   (FS-7 parity with [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)).
 
 ### Instrumentation points
 
@@ -218,7 +218,7 @@ rules from P0-AC-026 before the record enters the observability queue.
 Instrumentation itself consumes budgets:
 
 - per-queue event text is bounded by `EVENT_MAX_BYTES` 8 KiB
-  (`BoundedText` strict parity with [Plugin Platform RFC](plugin-platform-rfc.md));
+  (`BoundedText` strict parity with [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - per-wakeup batching obeys 32 events or 8 KiB aggregate;
 - per-consumer queues follow the three-level family accepted for the
   plugin event pipeline but are enforced separately for observability
@@ -249,7 +249,7 @@ can be asserted independently.
    violations, budget hard-gate suspensions) preserve one-by-one delivery
    up to the queue bound.
 3. Drops follow the single authoritative statement in
-   [Plugin Platform RFC](plugin-platform-rfc.md#delivery-ordering-batching-and-coalescing)
+   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md#delivery-ordering-batching-and-coalescing)
    rather than critiquing it: the observability pipeline references
    DropOldest as the accepted v1 default (consumer converges to latest
    state) and documents DropNewest as the alternative, with per-queue
@@ -264,7 +264,7 @@ plugin doctor` and `bitty dev doctor`.
 5. Batching is bounded: at most 32 records or 8 KiB per wakeup,
    whichever is smaller, so one burst cannot turn into a single
    oversized callback. Tuning belongs with the budget owners in
-   [Isolation Resource RFC](isolation-resource-rfc.md).
+   [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md).
 
 ### Publisher and drain
 
@@ -379,7 +379,7 @@ schema-validated; unknown fields fail closed.
 | `bitty.debug/disposeGeneration` | `control` | `pluginId`, `generation`                                                         | Disposal receipt with reclaimed task, timer, queue, and handle counts                                           |
 
 All methods respect generation ownership: resources are addressed as
-`(PluginId, generation)`, consistent with [Plugin Platform RFC](plugin-platform-rfc.md)
+`(PluginId, generation)`, consistent with [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
 lifecycle generations. Methods that touch terminal state (for example
 `getSnapshot`) inherit the `terminal.*` capability checks on top of the
 debug scope so that DevTools cannot expand its authority through a debug
@@ -862,12 +862,12 @@ require a follow-up decision:
 
 ## Acceptance criteria
 
-This RFC is accepted on 2026-08-28 and closes [OQ-019](../../../decisions/open-questions.md).
-The following criteria were satisfied per the [open-question register](../../../decisions/open-questions.md)
+This RFC is accepted on 2026-08-28 and closes [OQ-019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
+The following criteria were satisfied per the [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)
 rules:
 
 1. The prose and every identifier in the OQ-019 row of
-   [open-questions.md](../../../decisions/open-questions.md) have independent
+   [open-questions.md](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) have independent
    category-owner, docs-curator, and security-reviewer sign-off, including
    every scope boundary and the record/replay staging.
 2. Affected documents were synchronized in the same change: the DevTools
@@ -882,13 +882,13 @@ rules:
 4. The draft text in this file is updated to record acceptance date
    and initiator, frontmatter is `accepted`, and links from
    [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md)
-   and the [decision register](../../../decisions/index.md) reflect the
+   and the [decision register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md) reflect the
    accepted protocol version without claiming implementation.
 
 ## P0 Review Sign-off
 
 > P0 review per CTX-0053 tracks acceptance of OQ-019 via this RFC. Frontmatter is `accepted` and
-> [open-questions.md](../../../decisions/open-questions.md) is updated per its close
+> [open-questions.md](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) is updated per its close
 > rule. This section records passing sign-off and closes OQ-019.
 
 | Role                          | Reviewer          | Verdict | Evidence / scope                                                                                                                                                                                                 | Date       |
@@ -899,6 +899,6 @@ rules:
 | docs-curator                  | `bitty-curator`   | pass    | Frontmatter `accepted`, taxonomy, links to [Architecture Overview](../architecture/overview.md) and [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md), English-only, decision-register sync | 2026-08-28 |
 
 As of 2026-08-28, instrumentation and the debug protocol remain design contracts
-per [ADR 0003](../../../decisions/adrs/ADR-0003-core-workspace-topology.md) and the
+per [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) and the
 [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md); crate
 presence does not imply shipped behavior.

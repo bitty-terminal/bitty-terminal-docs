@@ -32,7 +32,7 @@ evidence matrix remains `pending`. The `bitty` workspace is spine-complete
 `bitty-package` (lifecycle and integrity model accepted, OQ-021, 2026-08-27;
 signatures still draft), `bitty-lua`, `bitty-rich`, `bitty-ipc`, `bitty-agent`,
 plus `bitty-app` and the retained `bitty-core` seed) per
-[ADR 0003](../../../decisions/adrs/ADR-0003-core-workspace-topology.md); tail crates
+[ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md); tail crates
 are `Implemented` but not yet `Verified` and do not imply shipped or
 compatibility-guaranteed behavior.
 
@@ -70,8 +70,8 @@ New requirements should pass through these two questions first.
 - First-party and community plugins use the same API, capabilities, and
   lifecycle, with no private channel (Governance RFC OQ-024).
 - The authoritative Plugin API v1 contract text lives in the `bitty-docs`
-  corpus ([Plugin API v1 Lua Surface RFC](../specifications/plugin-api-v1-lua-surface-rfc.md),
-  [ADR 0009](../../../decisions/adrs/ADR-0009-plugin-api-v1-lua-surface.md)). The
+  corpus ([Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-api-v1-lua-surface-rfc.md),
+  [ADR 0009](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0009-plugin-api-v1-lua-surface.md)). The
   `bitty` repository owns the implementation and parity evidence; the SDK is
   generated output and development support (Plugin Platform RFC).
 - The debug protocol sits inside the core boundary. DevTools and MCP consume it
@@ -80,9 +80,9 @@ New requirements should pass through these two questions first.
 ## Normative security constraints
 
 The authoritative security requirements are the
-[Security Overview](../../../security/overview.md), the
-[Threat Model](../../../security/threat-model.md), and the
-[Security Risk Register](../../../security/risk-register.md). This page describes only
+[Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md), the
+[Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md), and the
+[Security Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md). This page describes only
 their effect on Core and Plugin ownership:
 
 - Protocol correctness, Terminal Truth, rendering, input encoding, the PTY, and
@@ -109,7 +109,7 @@ security-auditor and P0-AC acceptance evidence per the
 The table describes architecture ownership. It does not claim that every
 capability or protocol belongs in the first milestone. Crate presence is
 spine-complete (16 crates `be3bdb4`) per
-[ADR 0003](../../../decisions/adrs/ADR-0003-core-workspace-topology.md) and is
+[ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) and is
 `Implemented` (soak ~808 headless tests) but not yet `Verified`; `bitty-package`
 lifecycle and integrity model is `Accepted` (OQ-021, 2026-08-27) with signatures
 still draft, `bitty-lua` `Accepted` (OQ-009/030-032), and the tail crates
@@ -358,7 +358,7 @@ dependency-conflict resolution, service disappearance semantics, and UI
 composition conflicts (multiple plugins claiming panels, status areas, or
 input). Dependency cycles are already rejected and lifecycle, capability,
 and event-storm controls are already accepted in the
-[Plugin Platform RFC](../specifications/plugin-platform-rfc.md); the three
+[Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); the three
 open items above still require their own RFCs.
 
 ## Pending decisions
@@ -370,9 +370,9 @@ open items above still require their own RFCs.
 - The implementation mechanism for per-plugin VMs, asynchronous callbacks, and
   resource-budget thresholds and enforcement. The VM bridge, lifecycle, source
   staging, and host-service wiring are defined by the accepted
-  [Plugin Host Runtime RFC](../specifications/plugin-host-runtime-rfc.md)
+  [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-host-runtime-rfc.md)
   (OQ-033/OQ-034/OQ-035, ratified through
-  [ADR 0010](../../../decisions/adrs/ADR-0010-plugin-host-runtime-acceptance.md));
+  [ADR 0010](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0010-plugin-host-runtime-acceptance.md));
   implementation evidence remains per-crate.
 - Plugin signing, source trust, installation, and update models.
 - The default bundled-plugin set and disabling behavior.

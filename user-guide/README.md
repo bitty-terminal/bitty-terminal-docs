@@ -32,7 +32,7 @@ the owning product repository provides current evidence.
 ## Useful design context
 
 Until user behavior exists, readers can consult the [product vision](../product/vision.md)
-for intent and the [security overview](../../../security/overview.md) for normative
+for intent and the [security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) for normative
 pre-implementation constraints. These are design documents, not usage guides.
 
 Reference-style facts will live in the [reference section](../reference/README.md).

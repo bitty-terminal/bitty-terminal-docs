@@ -15,13 +15,13 @@ sidebar_order: 18
 > `bitty` `c0aadd2` + `a8735d0` — candidate contract for review with
 > experimental code evidence (not `Accepted`/`Verified`). This document proposes
 > the Input and Pointer contract referenced by
-> [OQ-004](../../../decisions/open-questions.md) (compatibility milestone) and
-> [OQ-007](../../../decisions/open-questions.md) (terminal state) but does not close
+> [OQ-004](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) (compatibility milestone) and
+> [OQ-007](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) (terminal state) but does not close
 > either question; accepted behavior remains the existing
 > [Terminal State RFC](terminal-state-rfc.md),
 > [Compatibility Milestone RFC](compatibility-milestone-rfc.md),
-> [Platform tiers ADR](../../../decisions/adrs/ADR-0002-platform-support-tiers.md),
-> [Plugin Platform RFC](plugin-platform-rfc.md), clipboard audit at
+> [Platform tiers ADR](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md),
+> [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md), clipboard audit at
 > `bitty` `7a4ee41` (CTX-0097), and
 > [Performance Budget RFC](performance-budget-rfc.md). Experimental code
 > at `c0aadd2` (CTX-0095 PR #148, Kitty `7727` opt-in, mouse
@@ -68,14 +68,14 @@ Normative sources this RFC must not weaken:
   modes (1000/1002/1003/1006), focus (1004), alternate scroll (1007),
   bracketed paste (2004), synchronized updates (2026), and Kitty keyboard as
   opt-in enhancement.
-- [ADR 0002 Platform Support Tiers](../../../decisions/adrs/ADR-0002-platform-support-tiers.md):
+- [ADR 0002 Platform Support Tiers](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md):
   Tier 1 is Linux x86_64 (Wayland+X11), Windows x86_64 ConPTY, macOS ARM64
   13+; Tier 2 is Linux ARM64, macOS x86_64, FreeBSD x86_64.
-- [Plugin Platform RFC](plugin-platform-rfc.md): event classes
+- [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md): event classes
   (observation/interception), queue budgets PerSubscription 64 /
   PerPlugin 1024 events/256 KiB / Global 8192 events/2 MiB, DropOldest v1
   default, `BoundedText`, and capability-checked host APIs.
-- [Clipboard audit at 7a4ee41](../../../security/evidence-matrix.md) and
+- [Clipboard audit at 7a4ee41](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/evidence-matrix.md) and
   [`docs/security/audits/clipboard-2026-09.md`](https://github.com/bitty-terminal/bitty/blob/7a4ee41/docs/security/audits/clipboard-2026-09.md)
   (CTX-0097, R-004 remains **Open**): OSC 52 read/write separate decisions,
   `CLIPBOARD_MAX_BYTES=8192` bounded paste, `23` suspicious-paste + `13`
@@ -83,10 +83,10 @@ Normative sources this RFC must not weaken:
 - [Performance Budget RFC](performance-budget-rfc.md): PB-4 input latency
   ≤ 8 ms p50 / ≤ 15 ms p99 and the invariant that plugins do not enter the
   input hot path.
-- [Security Overview](../../../security/overview.md),
-  [Threat Model](../../../security/threat-model.md) (T-01, T-04, T-06, T-07, T-13),
-  [Risk Register](../../../security/risk-register.md) (R-004, R-006, R-007, R-008),
-  and [P0 Acceptance Criteria](../../../security/p0-acceptance-criteria.md)
+- [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md),
+  [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md) (T-01, T-04, T-06, T-07, T-13),
+  [Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md) (R-004, R-006, R-007, R-008),
+  and [P0 Acceptance Criteria](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md)
   (P0-AC-007/008, P0-AC-011/012).
 
 ## Terminology
@@ -224,7 +224,7 @@ Candidate precedence inside the resolver:
 The boundary must stay deterministic: Core, plugins, and the terminal never
 ambiguously compete for one keypress. Plugin bindings remain suggestions
 under the accepted precedence (explicit user mapping wins) from the
-[Plugin Platform RFC](plugin-platform-rfc.md); this section only adds the
+[Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); this section only adds the
 emergency, overlay, and terminal-fallthrough ordering around it.
 
 ## Mod plus Leader and discoverability (candidate)
@@ -264,7 +264,7 @@ emergency, overlay, and terminal-fallthrough ordering around it.
   and category and Bitty derives help content, command-palette search,
   shortcut-conflict diagnostics, and Leader menus from that single
   registry. The registry itself is owned by the
-  [Plugin Platform RFC](plugin-platform-rfc.md); this section only states
+  [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); this section only states
   the input-side consumption requirement.
 
 ## Shipped keymap dispatch and help overlay (implementation evidence)
@@ -664,7 +664,7 @@ PerPlugin VM, budgets, and queue budgets:
 
 All controls are candidate until the implementation tasks deliver focused
 tests, fuzz corpora, and independent security-auditor review per
-[P0-AC-007/008/011/012](../../../security/p0-acceptance-criteria.md) and the
+[P0-AC-007/008/011/012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md) and the
 [Risk Evidence RFC](risk-evidence-rfc.md).
 
 ## Reconciliation with accepted contracts
@@ -749,12 +749,12 @@ contract.
 This RFC does not close OQ-004 or OQ-007; those remain **Accepted** via their
 own RFCs. It is registered as a **Draft** in
 [Specifications](README.md) and linked from the
-[Decision Register](../../../decisions/index.md) candidate queue; experimental
+[Decision Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md) candidate queue; experimental
 implementation exists at `bitty` `c0aadd2` + `a8735d0` (CTX-0095/0098,
 `Implemented` experimental not `Verified`) as review evidence per CTX-0116.
 Future acceptance would update those indexes, the open-question register only
 via a registered decision, and the machine-readable
-[`project-state.json`](../../../project/project-state.json) (synchronized `a8735d0`,
+[`project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json) (synchronized `a8735d0`,
 chain `d4d75e9 -> c0aadd2 -> 7e3104d -> a8735d0`, lifecycle
 `Draft -> Experimental Implementation -> Accepted -> Verified`) only after
 implementation evidence and auditor sign-off. `Draft` vs `Experimental`
@@ -766,16 +766,16 @@ vs `Accepted` vs `Verified` remain distinct per `project-state.json`.
   [Architecture Overview](../architecture/overview.md).
 - Specifications: [Terminal State RFC](terminal-state-rfc.md),
   [Compatibility Milestone RFC](compatibility-milestone-rfc.md),
-  [Plugin Platform RFC](plugin-platform-rfc.md),
-  [Isolation Resource RFC](isolation-resource-rfc.md),
+  [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md),
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md),
   [Performance Budget RFC](performance-budget-rfc.md).
-- Security: [Security Overview](../../../security/overview.md),
-  [Threat Model](../../../security/threat-model.md),
-  [Risk Register](../../../security/risk-register.md),
-  [P0 Acceptance Criteria](../../../security/p0-acceptance-criteria.md),
-  [Evidence Matrix](../../../security/evidence-matrix.md),
+- Security: [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md),
+  [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md),
+  [Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md),
+  [P0 Acceptance Criteria](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md),
+  [Evidence Matrix](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/evidence-matrix.md),
   [Clipboard audit at 7a4ee41](https://github.com/bitty-terminal/bitty/blob/7a4ee41/docs/security/audits/clipboard-2026-09.md).
-- Platform: [ADR 0002](../../../decisions/adrs/ADR-0002-platform-support-tiers.md),
-  [Technology Strategy](../../../project/technology-strategy.md).
+- Platform: [ADR 0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md),
+  [Technology Strategy](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/technology-strategy.md).
 - Prior input discussion: `docs/projects/bitty/extensibility/plugin-system.md` input-encoding
   note and `docs/projects/bitty/architecture/overview.md` input-path sketch.

@@ -22,8 +22,8 @@ not become a second implementation of runtime behavior hidden inside argument
 parsing.
 
 IPC authentication, client scope, and untrusted terminal-output requirements
-are normative in the [security overview](../../../security/overview.md) and
-[threat model](../../../security/threat-model.md).
+are normative in the [security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) and
+[threat model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md).
 
 ## Candidate direction: one executable registry, many frontends
 
@@ -232,7 +232,7 @@ loading the plugin VM. `bitty --help` should place optional aliases under an
 `Extensions` section so users can distinguish core and third-party behavior.
 
 Package lifecycle and external executable extensions are covered in
-[Package management](../extensibility/package-management.md).
+[Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md).
 
 ## Shipped slice: `bitty plugin` management
 
@@ -358,7 +358,7 @@ same safe-mode precedence applies to all three. Non-safe behavior is unchanged.
 Implementation note: `bitty-app::config_cli::load_merged_config` returns
 `bitty_config::safe_merged()` when `--safe` is set. The contrast obligations for
 the safe outline pair are AC-1..AC-3 in
-[RFC-0001](../../../decisions/rfcs/RFC-0001-appearance-configuration.md); the safe
+[RFC-0001](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md); the safe
 decoration invariant is rule 5 of the
 [Workspace Compositor Specification](../specifications/workspace-compositor.md);
 the layer model is owned by the

@@ -18,7 +18,7 @@ sidebar_order: 29
 > origin `main` revision `b761c0320977051383673ee4e8a4b26c35f57d05`
 > (2026-09-13). It does not claim behavior beyond that revision, does not
 > change any accepted contract, and does not close an open question. It
-> registers the new open questions [OQ-050 through OQ-052](../../../decisions/open-questions.md)
+> registers the new open questions [OQ-050 through OQ-052](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)
 > and cites the existing doc-local items OQ-S1 through OQ-S7 in the
 > [Semantic Terminal RFC](semantic-terminal-rfc.md) instead of duplicating
 > them.
@@ -94,7 +94,7 @@ authoritative for layout-algorithm ownership.
   `panel:bitty-terminal.git-panel`). Rules must resolve against stable panel
   identity, stay presentation-only, and never grant capability. Depends on the
   Panel Runtime identity question in
-  [UI Extensibility Architecture](ui-extensibility-architecture.md).
+  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md).
 - **Semantic workspaces (candidate).** Workspaces that are named or grouped by
   semantic context (project, cwd, task) rather than only an ordinal. This is a
   product direction with no contract today; it would reuse `Workspace`/`View`
@@ -126,17 +126,17 @@ authoritative for layout-algorithm ownership.
 
 ## Open questions touched
 
-- [OQ-050](../../../decisions/open-questions.md): stable scrollback-line identity for
+- [OQ-050](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md): stable scrollback-line identity for
   semantic command-block anchors and fold-state persistence (summary; detail
   stays in OQ-S1/S2).
-- [OQ-051](../../../decisions/open-questions.md): panel content beyond the terminal
+- [OQ-051](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md): panel content beyond the terminal
   character grid (SceneGraph/sub-surface path) and its ownership versus Rich
   Presentation and the Panel Runtime.
-- [OQ-052](../../../decisions/open-questions.md): native window-form scope
+- [OQ-052](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md): native window-form scope
   (niri ribbon, panel rules, semantic workspaces, unified `Mod`).
 - Existing: OQ-S1 through OQ-S7 in the
   [Semantic Terminal RFC](semantic-terminal-rfc.md), OQ-043/OQ-044/OQ-049 in
-  [UI Extensibility Architecture](ui-extensibility-architecture.md).
+  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md).
 
 ## References
 
@@ -148,9 +148,9 @@ authoritative for layout-algorithm ownership.
   `BlockAnchor`, and semantic-zone contracts.
 - [Panel Runtime and Event Bus Pre-Study](panel-runtime-pre-study.md): panel
   lifecycle and bus candidates.
-- [UI Extensibility Architecture](ui-extensibility-architecture.md):
+- [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md):
   per-View appearance, panel identity, and plugin appearance candidates.
-- [Appearance Configuration RFC](../../../decisions/rfcs/RFC-0001-appearance-configuration.md):
+- [Appearance Configuration RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md):
   accepted OQ-039/OQ-041/OQ-045 contracts cited above.
-- [Panel Animations and Effects RFC](../../../decisions/rfcs/RFC-0002-panel-animations.md):
+- [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md):
   accepted OQ-040 animations.

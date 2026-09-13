@@ -30,7 +30,7 @@ sidebar_order: 21
   baseline `de134ec`) are `Mitigated` per RS-1..RS-7, overall
   maturity remains `Pre-alpha` (not `Verified`/`Compatible`/`Release-ready`).
   Canonical snapshot:
-  [`docs/project/project-state.json`](../../../project/project-state.json)
+  [`docs/project/project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
   (synchronized `bea338d`, `2026-09-14`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
   `Open`, `R-005`/`R-006`/`R-007` `Mitigated`, experimental `c0aadd2`/`7e3104d`/`a8735d0`
   `Implemented` not `Verified`, release `v0.0.20`) validated by `bun .github/scripts/check-state.mjs`.
@@ -49,7 +49,7 @@ sidebar_order: 21
 - Authority: the ladder is a planning companion to the maturity ladder; it does
   not authorize publication or compatibility. Closing any open question still
   requires its RFC/ADR with independent review per the
-  [open-question register](../../../decisions/open-questions.md).
+  [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 - Companion evidence: `bitty/docs/product/release-ladder.md` (draft,
   `be3bdb4`) records the crate publish order and `cargo publish --dry-run`
   verification for the workspace. This document mirrors that intent for
@@ -145,16 +145,16 @@ sidebar_order: 21
 
 - Candidate spine and early-deferral: canonical in
   [Proposed Delivery Sequence](proposed-delivery-sequence.md#candidate-build-order-spine).
-- Compatibility and platform bars: [ADR 0002](../../../decisions/adrs/ADR-0002-platform-support-tiers.md),
+- Compatibility and platform bars: [ADR 0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md),
   [Compatibility Milestone RFC](../specifications/compatibility-milestone-rfc.md) (M1).
 - First real single-window slice: [Single-Window Vertical Slice Acceptance Plan](vertical-slice-acceptance.md)
   (CTX-0109, draft, depends on CTX-0107/0108; one process/window/workspace/terminal,
   cursor/scrollback/resize/selection/copy-paste/nvim+tmux smoke, PB-1..PB-7, Tier 1/2);
   `Implemented` headless does not equal `Verified` visible slice — review gates still apply.
 - Security gates for `v1.0`: normative in
-  [Security Overview](../../../security/overview.md) and
-  [Threat Model](../../../security/threat-model.md); this ladder does not weaken them.
+  [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) and
+  [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md); this ladder does not weaken them.
 - Maintain this file alongside `proposed-delivery-sequence.md`: when a version
   slice moves from `Implemented` to `Verified`, update the status column and
-  the [risk register](../../../security/risk-register.md) per the risk evidence RFC;
+  the [risk register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md) per the risk evidence RFC;
   `Verified` requires independent security-auditor and P0-AC evidence.

@@ -23,8 +23,8 @@ configurations, profiles, and community distributions—while keeping resolution
 merging, validation, plugin isolation, and reload behavior deterministic.
 
 Configuration and workspace trust requirements are normative in the
-[security overview](../../../security/overview.md) and
-[threat model](../../../security/threat-model.md). The layouts proposed here must not
+[security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) and
+[threat model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md). The layouts proposed here must not
 turn a search path or project file into implicit code execution.
 
 ## Accepted direction: use the correct XDG roots
@@ -96,7 +96,7 @@ $XDG_CONFIG_HOME/bitty/
 Here `plugins/` contains plugin behavior configuration or declarative imports,
 not installed plugin source. The manifest and lock names are candidates; their
 package semantics are documented in
-[Package management](../extensibility/package-management.md).
+[Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md).
 
 ## Lua modules without a global runtime path
 
@@ -235,7 +235,7 @@ appearance overrides are all ignored. Every field is attributed to Core
 defaults, decoration is forced to `0/0/1/0/0`, and the focused/idle outline
 pair to the opaque `#FFFFFF`/`#808080` built-ins. See the safe-mode precedence
 table in the [CLI reference](../interfaces/cli.md#safe-mode-configuration-precedence)
-and [RFC-0001](../../../decisions/rfcs/RFC-0001-appearance-configuration.md) (OQ-039).
+and [RFC-0001](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md) (OQ-039).
 
 ## Merge semantics
 
@@ -560,11 +560,11 @@ This is the lookup table for the appearance knobs `init.lua` already accepts;
 the merge/reload mechanics stay in the
 [Configuration Model RFC](../specifications/configuration-model-rfc.md). The
 accepted focus/idle outline color contract is the
-[Appearance Configuration RFC](../../../decisions/rfcs/RFC-0001-appearance-configuration.md)
+[Appearance Configuration RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md)
 (accepted; OQ-039 focused/idle outline colors closed 2026-09-12 and shipped in
 `f83b1e1`; OQ-036 label position, OQ-037 frame color, and OQ-038 opacity and
 blur remain `Open`). The accepted animation contract is the
-[Panel Animations and Effects RFC](../../../decisions/rfcs/RFC-0002-panel-animations.md)
+[Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md)
 (accepted; OQ-040 closed 2026-09-12 and shipped in `3c5878e` CTX-0341).
 
 | Key                         | Default                        | Range or values                    |
@@ -636,7 +636,7 @@ warning to stderr instead of failing the process.
   focus/idle outline width (`decoration.border_width` / `_focused` / `_idle`)
   are **accepted contracts** but **not supported yet** (OQ-041 and OQ-045
   resolved 2026-09-12, docs CTX-0163;
-  [Appearance Configuration RFC](../../../decisions/rfcs/RFC-0001-appearance-configuration.md)).
+  [Appearance Configuration RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md)).
   The accepted selector grammar is `*` < content type
   (`empty`/`terminal`/`rich`/`browser`) < `ws:<1..=16>` < `view:<ViewId>`,
   resolved per field per `View`; the accepted `views.*` field set is
@@ -648,7 +648,7 @@ warning to stderr instead of failing the process.
   key is supported; do not document one as working. `background_image_roots`
   remains global-only and cannot be widened per `View`.
 - Per-panel animation overrides are **candidate and narrowed** (OQ-043;
-  [UI Extensibility Architecture](../specifications/ui-extensibility-architecture.md)):
+  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md)):
   the accepted OQ-041 layer fixes the override mechanics, so only the animation
   field set and its reduced-motion/budget interaction remain. The global
   `appearance.animations.*` contract is unchanged.
@@ -659,7 +659,7 @@ warning to stderr instead of failing the process.
   (`decoration.background_image` / `decoration.background_fit` /
   `decoration.background_image_roots`) is **accepted as a contract** but **not
   supported yet** (OQ-042 resolved 2026-09-12;
-  [Appearance Configuration RFC](../../../decisions/rfcs/RFC-0001-appearance-configuration.md)).
+  [Appearance Configuration RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md)).
   The accepted formats are PNG/JPEG/static WebP with bounds BG-1..BG-5 reused from
   the image-store corpus (IMG-1..IMG-5; BG-6 is a design bound, BG-7 a
   present-path bound), deny-by-default approved roots, fit modes
@@ -730,9 +730,9 @@ the candidate Leader sequences and flash-style jump remain unimplemented
 candidates in the [Input and Pointer Contract](../specifications/input-pointer-rfc.md).
 Candidate configuration surfaces are not accepted and have no schema yet, so
 none of them may be documented as working: a Leader binding plus bounded modal
-timeout ([OQ-088](../../../decisions/open-questions.md)), and the Bitty Beacon label
+timeout ([OQ-088](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)), and the Bitty Beacon label
 pools, handedness preference, and script-action registrations
-([OQ-089](../../../decisions/open-questions.md),
+([OQ-089](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md),
 [Semantic Terminal RFC](../specifications/semantic-terminal-rfc.md#p7-bitty-beacon-spatial-action-engine-candidate)).
 
 ## Reload classification (shipped schema inventory)
@@ -869,7 +869,7 @@ Candidate rules: `.bitty/` wins where both exist, a conflict is reported
 rather than merged silently, and the declarative-data-only rule for project
 content is unchanged. The directory name, schema, trust mechanics, and adapter
 scope are undecided; tracked as
-[OQ-068](../../../decisions/open-questions.md).
+[OQ-068](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 
 ## Data, state, cache, and runtime layouts
 
@@ -912,7 +912,7 @@ Runtime sockets and locks belong to the login session, while sessions and
 layouts intended to survive restart belong in state.
 
 A candidate live-reload path for wallpaper-derived palettes extends
-[OQ-047](../../../decisions/open-questions.md): a generator such as Matugen writes
+[OQ-047](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md): a generator such as Matugen writes
 `~/.config/bitty/theme.lua` returning `background`, `foreground`, and
 `palette[0..15]`, then runs `bitty ctl theme reload`; Core applies the new
 palette in a single render pass with no tearing, black frame, or PTY reset.
@@ -978,7 +978,7 @@ in preference order:
    `ai.provider` authorization, with the access audited.
 
 The host reports source and presence, never the value. Rotation, revocation,
-and redaction follow [ADR 0006](../../../decisions/adrs/ADR-0006-os-env-policy.md)
+and redaction follow [ADR 0006](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0006-os-env-policy.md)
 and the security corpus, and diagnostics redact secret-shaped values.
 Precedence, keyring-unavailable fallback, and headless behavior remain open.
 
@@ -1003,33 +1003,33 @@ Precedence, keyring-unavailable fallback, and headless behavior remain open.
 - What is the `.bitty/` project-definition directory contract (layout, schema,
   Git-tracked versus runtime-state split, and trust), and how does `.agents/`
   compatibility resolve against it without becoming a competing source of
-  truth? ([OQ-068](../../../decisions/open-questions.md))
+  truth? ([OQ-068](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md))
 - Which remaining appearance knobs beyond the shipped set (workspace/tab label
   position, frame and margin-line color, per-surface background opacity, blur)
   are adopted, and under what render/compositor contract?
   (OQ-036/OQ-037/OQ-038;
-  [Appearance Configuration RFC](../../../decisions/rfcs/RFC-0001-appearance-configuration.md);
+  [Appearance Configuration RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md);
   OQ-039 focused/idle outline colors is accepted and shipped.)
 - Which panel transitions animate, with what bounded durations/easings and
-  reduced-motion behavior? ([OQ-040](../../../decisions/open-questions.md);
-  [Panel Animations and Effects RFC](../../../decisions/rfcs/RFC-0002-panel-animations.md);
+  reduced-motion behavior? ([OQ-040](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md);
+  [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md);
   accepted and shipped in `bitty` `3c5878e`; `appearance.animations.*` is a
   supported `init.lua` key.)
 - The per-View/per-panel appearance override contract (selector grammar,
   precedence, inheritance, reload, fail-closed validation, safe mode, and
   per-View contrast) and the focus/idle outline-width contract are accepted
-  ([OQ-041/OQ-045](../../../decisions/open-questions.md), resolved 2026-09-12, docs
+  ([OQ-041/OQ-045](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md), resolved 2026-09-12, docs
   CTX-0163;
-  [Appearance Configuration RFC](../../../decisions/rfcs/RFC-0001-appearance-configuration.md)).
+  [Appearance Configuration RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md)).
   What remains open is the per-panel animation override field set
-  ([OQ-043](../../../decisions/open-questions.md), narrowed) and plugin-supplied
-  appearance ([OQ-044](../../../decisions/open-questions.md)), with plugin-supplied
-  images under [OQ-049](../../../decisions/open-questions.md);
-  [UI Extensibility Architecture](../specifications/ui-extensibility-architecture.md).
+  ([OQ-043](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md), narrowed) and plugin-supplied
+  appearance ([OQ-044](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)), with plugin-supplied
+  images under [OQ-049](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md);
+  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md).
   Accepted-but-unshipped, not a supported `init.lua` key yet.
 - The per-panel background-image contract is accepted
-  ([OQ-042](../../../decisions/open-questions.md), resolved 2026-09-12); the
+  ([OQ-042](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md), resolved 2026-09-12); the
   plugin-supplied-image path remains open as
-  [OQ-049](../../../decisions/open-questions.md), and no image key is supported yet.
+  [OQ-049](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md), and no image key is supported yet.
 - What are the final manifest/lock names, and how do they coexist with Lua
   plugin specifications or distribution imports?

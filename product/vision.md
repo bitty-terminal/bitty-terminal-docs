@@ -118,7 +118,7 @@ reconciliation) is accepted in
 (OQ-010, 2026-08-27). Whether to retain a static auxiliary entry point, which
 Lua version and binding to use, and plugin VM isolation details still require
 formal decisions. See the
-[Technology and Dependency Strategy](../../../project/technology-strategy.md).
+[Technology and Dependency Strategy](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/technology-strategy.md).
 
 ### Cross-platform is a product goal
 
@@ -128,7 +128,7 @@ Windows ConPTY explicitly.
 
 Being a target platform does not imply equal maturity on day one. Support tiers,
 CI coverage, and fallback strategies are defined in
-[ADR 0002 - Platform Support Tiers](../../../decisions/adrs/ADR-0002-platform-support-tiers.md).
+[ADR 0002 - Platform Support Tiers](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md).
 
 ### Agent-friendly, not Agent-centric
 
@@ -265,7 +265,7 @@ empty.
   (Accepted, OQ-010, 2026-08-27); static auxiliary entry point and overlay
   mechanics remain follow-up work.
 - Which platforms belong in Tier 1, Tier 2, and Tier 3, and what is the explicit
-  BSD scope? (Accepted: [ADR 0002 - Platform Support Tiers](../../../decisions/adrs/ADR-0002-platform-support-tiers.md).)
+  BSD scope? (Accepted: [ADR 0002 - Platform Support Tiers](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md).)
 - Which VT, keyboard, image, and shell-integration protocols must the first
   compatibility milestone cover? (First-milestone set accepted:
   [Compatibility Milestone RFC](../specifications/compatibility-milestone-rfc.md);

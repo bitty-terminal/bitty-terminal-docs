@@ -68,20 +68,20 @@ Out of scope (owned elsewhere):
 - image, rich-block, scene, zone, and structured transport contracts (OQ-008,
   OQ-015, OQ-016, [Rich Presentation RFC](rich-presentation-rfc.md));
 - Plugin API v1, capability families, manifest, and event pipeline classes
-  (OQ-011, OQ-012, OQ-013, [Plugin Platform RFC](plugin-platform-rfc.md));
+  (OQ-011, OQ-012, OQ-013, [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - per-plugin budgets, queue ceilings, and adversarial isolation tests (OQ-014,
-  [Isolation Resource RFC](isolation-resource-rfc.md));
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md));
 - Lua runtime, standard-library subset, and module search rules (OQ-009,
-  [Lua Runtime RFC](lua-runtime-rfc.md)) and configuration layering (OQ-010,
+  [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md)) and configuration layering (OQ-010,
   [Configuration Model RFC](configuration-model-rfc.md));
 - CLI grammar and exit codes (OQ-017) and IPC wire format (OQ-018).
 
 ## Normative sources this specification must not weaken
 
-- [Security Overview](../../../security/overview.md): untrusted-by-default posture,
+- [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md): untrusted-by-default posture,
   invariants 3 (presentation never Terminal Truth), 4 (no hot-path execution),
   7 (bounded inputs), and the P0 resource and capability rows.
-- [Threat Model](../../../security/threat-model.md): untrusted PTY, plugin, and MCP
+- [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md): untrusted PTY, plugin, and MCP
   content, presentation-only plugin influence, resource exhaustion (T-01), and
   terminal-to-desktop capability gates (T-13).
 - [Core and Plugin Boundaries](../architecture/core-boundaries.md): mechanism
@@ -134,7 +134,7 @@ Runtime and an
 inter-Panel Event Bus are candidate future components, not contracts defined
 here. Their lifecycle, event taxonomy, bounds, and host/plugin boundary belong
 to that future RFC, informed by the future Panel Extensibility Vision document
-(CTX-0094, pending review) and accepted [IPC and Agent RFC](ipc-agent-rfc.md).
+(CTX-0094, pending review) and accepted [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md).
 
 Hyprland is a read-only philosophy reference for workspace tiling. Its
 compositor windows are not Bitty Panels: Bitty `Window` means the native OS
@@ -635,17 +635,17 @@ Lua and no bypass of the existing P0 gates.
   (`bitty` PR #562).
 - The focused/idle outline color contract and the panel open/close, focus, and
   workspace-switch animations are **accepted** in
-  [RFC-0001](../../../decisions/rfcs/RFC-0001-appearance-configuration.md) (OQ-039)
+  [RFC-0001](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md) (OQ-039)
   and
-  [RFC-0002](../../../decisions/rfcs/RFC-0002-panel-animations.md) (OQ-040),
+  [RFC-0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md) (OQ-040),
   closed 2026-09-12 in the
-  [open-question register](../../../decisions/open-questions.md) and shipped in
+  [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) and shipped in
   `bitty` PR #580 (CTX-0341). This accepted specification does not define their
   values and owns no animation behavior; the shipped animation keys are
   documented in [Lua and XDG](../configuration/lua-and-xdg.md) and this
   specification's decoration contract is unchanged.
 - A focus/idle outline **width** contract is **accepted** in
-  [RFC-0001](../../../decisions/rfcs/RFC-0001-appearance-configuration.md) (OQ-045,
+  [RFC-0001](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md) (OQ-045,
   docs `CTX-0163`, 2026-09-12):
   `decoration.border_width` / `_focused` / `_idle` in logical px, resolving
   per `View` and supplying the AC-2 non-color cue. It is accepted as a contract
@@ -654,7 +654,7 @@ Lua and no bypass of the existing P0 gates.
   rectangle and must not move the content grid.
 - The per-View/per-panel appearance override layer
   (`views.<selector>.*`) is **accepted** in
-  [RFC-0001](../../../decisions/rfcs/RFC-0001-appearance-configuration.md) (OQ-041,
+  [RFC-0001](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md) (OQ-041,
   docs `CTX-0163`, 2026-09-12): per-field per-`View` resolution of border color,
   outline width, and background image/fit over the Core-owned decoration
   values. It adds a presentation-resolution pass and per-`View` presentation
@@ -662,7 +662,7 @@ Lua and no bypass of the existing P0 gates.
   enters rectangle math.
 - Point-in-time decoration citations in the pre-studies still spell the
   pre-CTX-0333 defaults: [Panel Runtime pre-study](panel-runtime-pre-study.md)
-  `gaps_in 4` and [Browser and Agent pre-study](browser-agent-pre-study.md)
+  `gaps_in 4` and [Browser and Agent pre-study](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/browser-agent-pre-study.md)
   `gaps_in 4` / `--safe 0/0/1/0`. They cite committed snapshots, so they are
   recorded here as reference edges for a later reviewed sync rather than edited
   in place.
@@ -675,8 +675,8 @@ This specification is accepted as a standalone contract per CTX-0118; it
 does not close an open question on its own beyond its standalone acceptance and
 does not claim `Verified` or `Compatible` status. Remaining open items above
 require follow-up RFCs or tasks per the
-[documentation workflow](../../../development/documentation-workflow.md) and
-[open-question register](../../../decisions/open-questions.md).
+[documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md) and
+[open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 
 ## References
 
@@ -685,7 +685,7 @@ require follow-up RFCs or tasks per the
 - Waybar: highly customizable Wayland bar with composable modules and
   `modules-left`, `modules-center`, `modules-right` slot composition.
 - [Configuration Model RFC](configuration-model-rfc.md)
-- [Plugin Platform RFC](plugin-platform-rfc.md)
-- [Isolation Resource RFC](isolation-resource-rfc.md)
+- [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
+- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)
 - [Rich Presentation RFC](rich-presentation-rfc.md)
-- [Lua Runtime RFC](lua-runtime-rfc.md)
+- [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md)

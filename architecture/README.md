@@ -119,14 +119,14 @@ docs/projects/bitty/architecture/
 Nodes and edges strictly adhere to:
 
 - Crate graph and dependency DAG from
-  [ADR 0003](../../../decisions/adrs/ADR-0003-core-workspace-topology.md) and
+  [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) and
   `bitty/Cargo.toml` (16 crates `be3bdb4`, 18 members with harness at
   `7a4ee41`) — see [01-core.html](interactive/01-core.html).
 - Overall model, invariants, and data flows from [Architecture
   Overview](overview.md) — see [00-overview.html](interactive/00-overview.html).
 - Ownership and P0 gates from [Core and Plugin Boundaries](core-boundaries.md).
 - Plugin API, manifest, and DropOldest queue budgets from
-  [Plugin Platform RFC](../specifications/plugin-platform-rfc.md) — see
+  [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) — see
   [02-plugin-platform.html](interactive/02-plugin-platform.html).
 - Panel hierarchy and decoration ownership from
   [Workspace Compositor](../specifications/workspace-compositor.md) — see
@@ -135,13 +135,13 @@ Nodes and edges strictly adhere to:
   [Configuration Model RFC](../specifications/configuration-model-rfc.md) — see
   [04-config-model.html](interactive/04-config-model.html).
 - Lifecycle and integrity chain from
-  [Package Lifecycle RFC](../specifications/package-lifecycle-rfc.md) — see
+  [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md) — see
   [05-package-lifecycle.html](interactive/05-package-lifecycle.html).
 - Domains and ceilings RC-1..RC-11 from
-  [Isolation and Resource RFC](../specifications/isolation-resource-rfc.md) — see
+  [Isolation and Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) — see
   [06-isolation-resource.html](interactive/06-isolation-resource.html).
 - IPC protocol and MCP tool definitions from
-  [IPC and Agent RFC](../specifications/ipc-agent-rfc.md) — see
+  [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) — see
   [07-ipc-agent.html](interactive/07-ipc-agent.html).
 - Rich presentation overlays and Terminal Truth separation from
   [Rich Presentation RFC](../specifications/rich-presentation-rfc.md) — see

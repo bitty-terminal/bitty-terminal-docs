@@ -75,7 +75,7 @@ workspace -> extensible application shell`, with the workspace stage as the
   not promote those details by association with the slogan.
 
 - **Candidate in this vision**: cross-platform is a product goal with tiered
-  support per [ADR 0002 - Platform Support Tiers](../../../decisions/adrs/ADR-0002-platform-support-tiers.md);
+  support per [ADR 0002 - Platform Support Tiers](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md);
   agent-friendly, not agent-centric, per the [Product Vision](vision.md). Those
   statements remain authoritative only in their named source documents and are
   not additional accepted Product Vision language here.
@@ -102,9 +102,9 @@ Everything composable. Extensions own the experience.`) with the workspace
   message and service composition) without claiming an OS microkernel.
   Accepted anchors: the [Architecture Overview](../architecture/overview.md)
   one-way DAG and data-flow invariants, the accepted local IPC framing and
-  scopes in the [IPC and Agent RFC](../specifications/ipc-agent-rfc.md), and
+  scopes in the [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md), and
   the accepted Plugin API surface in the
-  [Plugin Platform RFC](../specifications/plugin-platform-rfc.md).
+  [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md).
 - **Candidate corollary**: AI is never a special citizen of Bitty Core. Core
   knows only events, commands, services, permissions, panels, processes,
   terminal sessions, and IPC; any AI experience is one composition of those
@@ -168,17 +168,17 @@ Every Hyprland-inspired behavior must be re-expressed as a typed, validated
 contract. No Hyprland source, configuration syntax, or wire format is copied
 into Bitty.
 
-| Hyprland concept  | Candidate Bitty import | Adaptation                                                                                                                                                                                           |
-| ----------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| window            | panel                  | Candidate: a Hyprland window maps to a Bitty Panel, never to a Bitty Window. Window stays as the native OS window owned by `bitty-platform`.                                                         |
-| workspace         | workspace              | Candidate: a Hyprland workspace tiling windows maps to a Bitty Workspace tiling Panels inside one Window.                                                                                            |
-| split (H and V)   | split (H and V)        | Draft predecessor material only: the [Workspace Compositor](../specifications/workspace-compositor.md) proposes `H` and `V` primitives and plugin geometry proposals; neither is accepted or stable. |
-| floating window   | floating panel         | Candidate: panels may be floating or tiled per layout policy; geometry is validated by Core.                                                                                                         |
-| fullscreen        | zoom panel             | Candidate: zoom maximizes one panel within its Workspace without recreating content.                                                                                                                 |
-| workspace rule    | panel rule             | Candidate: declarative rules match panel type to placement, floating, or size.                                                                                                                       |
-| keybind           | keybind                | Accepted direction: commands and key-binding suggestions via [Plugin Platform RFC](../specifications/plugin-platform-rfc.md); user mapping wins.                                                     |
-| window class      | panel type             | Candidate: `panel.type` selects the provider (for example `terminal`, `browser`, `git`).                                                                                                             |
-| special workspace | scratch panel          | Candidate: hidden per-Window scratchpad Workspace; content retains identity while unrendered.                                                                                                        |
+| Hyprland concept  | Candidate Bitty import | Adaptation                                                                                                                                                                                                   |
+| ----------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| window            | panel                  | Candidate: a Hyprland window maps to a Bitty Panel, never to a Bitty Window. Window stays as the native OS window owned by `bitty-platform`.                                                                 |
+| workspace         | workspace              | Candidate: a Hyprland workspace tiling windows maps to a Bitty Workspace tiling Panels inside one Window.                                                                                                    |
+| split (H and V)   | split (H and V)        | Draft predecessor material only: the [Workspace Compositor](../specifications/workspace-compositor.md) proposes `H` and `V` primitives and plugin geometry proposals; neither is accepted or stable.         |
+| floating window   | floating panel         | Candidate: panels may be floating or tiled per layout policy; geometry is validated by Core.                                                                                                                 |
+| fullscreen        | zoom panel             | Candidate: zoom maximizes one panel within its Workspace without recreating content.                                                                                                                         |
+| workspace rule    | panel rule             | Candidate: declarative rules match panel type to placement, floating, or size.                                                                                                                               |
+| keybind           | keybind                | Accepted direction: commands and key-binding suggestions via [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); user mapping wins. |
+| window class      | panel type             | Candidate: `panel.type` selects the provider (for example `terminal`, `browser`, `git`).                                                                                                                     |
+| special workspace | scratch panel          | Candidate: hidden per-Window scratchpad Workspace; content retains identity while unrendered.                                                                                                                |
 
 Illustrative candidate rule and binding shapes only; final schema belongs to
 configuration and command RFCs:
@@ -411,7 +411,7 @@ trait Panel {
 Future host-side implementations such as `TerminalPanel`, `BrowserPanel`, `GitPanel`,
 `MarkdownPanel`, `ChatPanel`, and `FilePanel` would conform to this trait.
 The accepted analogue is the generation-based lifecycle in the
-[Plugin Platform RFC](../specifications/plugin-platform-rfc.md)
+[Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
 (`Declared -> Resolved -> Registered -> Activated -> Suspended -> Disposed`).
 The Core-owned layout validation described by the
 [Workspace Compositor](../specifications/workspace-compositor.md) remains draft
@@ -471,18 +471,18 @@ predecessor material and is not accepted by this vision.
 - **Constraints that could shape a future runtime**:
   - Lua stays off performance hot paths (PTY output through terminal state,
     damage, and renderer) per the [Product Vision](vision.md) and the
-    [Plugin Platform RFC](../specifications/plugin-platform-rfc.md);
+    [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md);
     plugins observe via side-channel events, not per-byte or per-cell
     interception.
   - No hot-path events of any kind; bounded per-subscriber queues with
     coalescing, batch limits, and fail-open interception per the
-    [Plugin Platform RFC](../specifications/plugin-platform-rfc.md).
+    [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md).
   - Draft predecessor material keeps decoration and layout validation Core-owned
     per the [Workspace Compositor](../specifications/workspace-compositor.md);
     `LayoutProvider` proposals are pure, deterministic, and bounded. This is
     not an accepted Panel constraint until a Panel RFC or ADR adopts it.
   - Window, platform, and environment scoping remains per
-    [ADR 0008 - Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](../../../decisions/adrs/ADR-0008-headless.md)
+    [ADR 0008 - Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)
     until a future daemon ADR revisits it.
 
 ## Candidate panel presentation modes
@@ -558,9 +558,9 @@ predecessor material and is not accepted by this vision.
   end)
   ```
 
-- **Accepted constraint source**: the [Plugin Platform RFC](../specifications/plugin-platform-rfc.md)
+- **Accepted constraint source**: the [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
   event pipeline already defines observation versus interception, bounded
-  queues, coalescing, and fail-open timeouts; the [IPC and Agent RFC](../specifications/ipc-agent-rfc.md)
+  queues, coalescing, and fail-open timeouts; the [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)
   defines the bounded local IPC framing and scopes that a cross-process bus
   would reuse. Any future bus must not weaken those ceilings or introduce an
   ambient bypass. In particular, a future bus would require manifest-declared
@@ -630,7 +630,7 @@ as a scheduling commitment.
   concepts.
 
   Accepted illustration: the
-  [Plugin Platform RFC](../specifications/plugin-platform-rfc.md) capability
+  [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) capability
   families (`terminal.*`, `ui.*`, `clipboard.*`, `fs.*`, `process.*`,
   `network.*`, `runtime.*`, `debug.*`, `platform.*`) are closed symbols;
   plugins cannot invent families. The specialization lives in plugins and
@@ -657,9 +657,9 @@ as a scheduling commitment.
 
 - **Accepted platform constraints if a browser panel ships**: the
   `platform.image-file` and `platform.open-url` gates per
-  [Security Overview](../../../security/overview.md), plus the accepted bounded
+  [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md), plus the accepted bounded
   IPC, capability, and isolation constraints in the
-  [Plugin Platform RFC](../specifications/plugin-platform-rfc.md). The
+  [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md). The
   `Browser` View type and any `browser.embed` capability remain draft/candidate
   material; `browser.embed` is not in the accepted closed v1 capability grammar.
   Any WebView backend must reuse accepted gates and must not make the core
@@ -680,7 +680,7 @@ as a scheduling commitment.
   workspace that omits browser panels pays the dependency size or attack
   surface of a browser engine.
   A safe-startup path that loads no third-party plugins must always remain
-  available, per the [Security Overview](../../../security/overview.md) and the
+  available, per the [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) and the
   accepted no-third-party-plugin safe-startup constraint. This preserves the
   `Browser is optional` stance above.
 - **Candidate ceiling**: the same core can be driven to a personal,
@@ -770,7 +770,7 @@ extensions of this culture, as is `~/.config/bitty/` sharing (`init.lua`,
   lifecycle RFC. The accepted mechanics are the manifest `dependencies`
   plus `services.provided` declarations and the validated service call
   boundary in the
-  [Plugin Platform RFC](../specifications/plugin-platform-rfc.md).
+  [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md).
 
 Community aggregation would follow the `awesome-bitty` pattern of plugins,
 layouts, themes, and configurations built on the same primitives. Distributions
@@ -807,36 +807,36 @@ Within this list, `Panel`, `Event`, `Command`, and `Capability` are the
 candidate load-bearing four. Decisions about their versioning, compatibility,
 and deprecation policy deserve priority review. The accepted Plugin API v1
 surface, capability grammar, and event classes in the
-[Plugin Platform RFC](../specifications/plugin-platform-rfc.md) and the local
-IPC framing and scopes in the [IPC and Agent RFC](../specifications/ipc-agent-rfc.md)
+[Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) and the local
+IPC framing and scopes in the [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)
 are the closest accepted anchors for this priority.
 
 ## Status separation and related documents
 
-| Statement in this vision                                                                                   | Status    | Authoritative source                                                                                                                                                                      |
-| ---------------------------------------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Small core, stable API, everything composable, extensions own the experience                               | Accepted  | [Product Vision](vision.md)                                                                                                                                                               |
-| Rust core with Lua plugins, Tier 1/2/3 platform scope, agent-friendly not agent-centric                    | Candidate | Authoritative elsewhere: [Product Vision](vision.md), [Plugin Platform RFC](../specifications/plugin-platform-rfc.md), and [Technology Strategy](../../../project/technology-strategy.md) |
-| `Instance -> Window -> Workspace -> LayoutTree -> View` with distinct `ViewId`/`TerminalId`                | Draft     | [Workspace Compositor](../specifications/workspace-compositor.md)                                                                                                                         |
-| `H` and `V` as the only Core layout primitives, Core-owned decoration, `LayoutProvider` as plugin          | Draft     | [Workspace Compositor](../specifications/workspace-compositor.md)                                                                                                                         |
-| Manifest grammar, capability families, generation lifecycle, observation vs interception, bounded queues   | Accepted  | [Plugin Platform RFC](../specifications/plugin-platform-rfc.md)                                                                                                                           |
-| Local IPC as Unix socket or named pipe with peer credentials, scoped per request, bounded framing          | Accepted  | [IPC and Agent RFC](../specifications/ipc-agent-rfc.md)                                                                                                                                   |
-| No daemon, no remote multi-client commitment at documentation phase; headless deferred to post-v1.0        | Accepted  | [ADR 0008 - Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](../../../decisions/adrs/ADR-0008-headless.md)                                                                  |
-| Zero-cost bundled-disabled by default, five disable surfaces, `bitty --safe` precedence                    | Accepted  | [Default Distribution RFC](../specifications/default-distribution-rfc.md)                                                                                                                 |
-| Panel as first-class container generalizing View                                                           | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Unified Panel trait, Panel Runtime, inter-panel Event Bus                                                  | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Panel != Pty; `PanelSurface { Terminal, Plugin, HelperProcessBacked, WebView }` as candidate surface model | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Prior art: Zellij/kitty/WezTerm/tmux/Emacs/Warp comparison and lineages                                    | Candidate | This vision + `tmp/research/chatgpt-2026-08-30-2.md`                                                                                                                                      |
-| Three composition paths (WebView, helper-process-backed/native service, CLI adapter)                       | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Four-layer hierarchy and browser-optional `bitty-webview`                                                  | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Small by default, limitless by design; pay only for what you use; two-sided experience                     | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Distribution culture (`LazyBitty`, `AstroBitty`), sharing, and plugin-extends-plugin hierarchy             | Candidate | This vision + [Default Distribution RFC](../specifications/default-distribution-rfc.md)                                                                                                   |
-| Distributions (`minimal`, `dev`, `cloud`, `social`) and `awesome-bitty`                                    | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Primitive stability order                                                                                  | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Composable-terminal-workspace identity, five-layer plus capability-bus framing, AI-never-special-citizen   | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Declarative tiling properties, deterministic save/restore, scrolling-layout option, floating kept          | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Seven presentation modes with Mode as runtime property, preferred mode plus Panel Rules                    | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
-| Service Registry as plugin-on-plugin mechanism with graceful service disappearance                         | Candidate | This vision; requires RFC or ADR                                                                                                                                                          |
+| Statement in this vision                                                                                   | Status    | Authoritative source                                                                                                                                                                                                                                                                                     |
+| ---------------------------------------------------------------------------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Small core, stable API, everything composable, extensions own the experience                               | Accepted  | [Product Vision](vision.md)                                                                                                                                                                                                                                                                              |
+| Rust core with Lua plugins, Tier 1/2/3 platform scope, agent-friendly not agent-centric                    | Candidate | Authoritative elsewhere: [Product Vision](vision.md), [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md), and [Technology Strategy](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/technology-strategy.md) |
+| `Instance -> Window -> Workspace -> LayoutTree -> View` with distinct `ViewId`/`TerminalId`                | Draft     | [Workspace Compositor](../specifications/workspace-compositor.md)                                                                                                                                                                                                                                        |
+| `H` and `V` as the only Core layout primitives, Core-owned decoration, `LayoutProvider` as plugin          | Draft     | [Workspace Compositor](../specifications/workspace-compositor.md)                                                                                                                                                                                                                                        |
+| Manifest grammar, capability families, generation lifecycle, observation vs interception, bounded queues   | Accepted  | [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)                                                                                                                                                                              |
+| Local IPC as Unix socket or named pipe with peer credentials, scoped per request, bounded framing          | Accepted  | [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)                                                                                                                                                                                           |
+| No daemon, no remote multi-client commitment at documentation phase; headless deferred to post-v1.0        | Accepted  | [ADR 0008 - Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)                                                                                                                              |
+| Zero-cost bundled-disabled by default, five disable surfaces, `bitty --safe` precedence                    | Accepted  | [Default Distribution RFC](../specifications/default-distribution-rfc.md)                                                                                                                                                                                                                                |
+| Panel as first-class container generalizing View                                                           | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Unified Panel trait, Panel Runtime, inter-panel Event Bus                                                  | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Panel != Pty; `PanelSurface { Terminal, Plugin, HelperProcessBacked, WebView }` as candidate surface model | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Prior art: Zellij/kitty/WezTerm/tmux/Emacs/Warp comparison and lineages                                    | Candidate | This vision + `tmp/research/chatgpt-2026-08-30-2.md`                                                                                                                                                                                                                                                     |
+| Three composition paths (WebView, helper-process-backed/native service, CLI adapter)                       | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Four-layer hierarchy and browser-optional `bitty-webview`                                                  | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Small by default, limitless by design; pay only for what you use; two-sided experience                     | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Distribution culture (`LazyBitty`, `AstroBitty`), sharing, and plugin-extends-plugin hierarchy             | Candidate | This vision + [Default Distribution RFC](../specifications/default-distribution-rfc.md)                                                                                                                                                                                                                  |
+| Distributions (`minimal`, `dev`, `cloud`, `social`) and `awesome-bitty`                                    | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Primitive stability order                                                                                  | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Composable-terminal-workspace identity, five-layer plus capability-bus framing, AI-never-special-citizen   | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Declarative tiling properties, deterministic save/restore, scrolling-layout option, floating kept          | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Seven presentation modes with Mode as runtime property, preferred mode plus Panel Rules                    | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Service Registry as plugin-on-plugin mechanism with graceful service disappearance                         | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
 
 Research provenance `tmp/research/chatgpt-2026-08-30-1.md` (the first available
 snapshot; the unsuffixed path does not exist) and
@@ -869,25 +869,25 @@ on its availability; accepted documents override it where they conflict.
 These remain open until a Panel RFC, a follow-up cross-cutting decision, or
 an ADR closes them. This vision does not close an open question on its own;
 it will track to the owning question once recorded in the
-[open-question register](../../../decisions/open-questions.md) or close directly as
+[open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) or close directly as
 a standalone product document per the
-[documentation workflow](../../../development/documentation-workflow.md).
+[documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md).
 
 ## References
 
 - [Product Vision](vision.md)
 - [Workspace Compositor](../specifications/workspace-compositor.md)
-- [Plugin Platform RFC](../specifications/plugin-platform-rfc.md)
-- [IPC and Agent RFC](../specifications/ipc-agent-rfc.md)
+- [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
+- [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)
 - [Default Distribution RFC](../specifications/default-distribution-rfc.md)
-- [ADR 0008 - Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](../../../decisions/adrs/ADR-0008-headless.md)
+- [ADR 0008 - Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)
 - [Architecture Overview](../architecture/overview.md)
 - [Core and Plugin Boundaries](../architecture/core-boundaries.md)
-- [Security Overview](../../../security/overview.md)
+- [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)
 - [Proposed Delivery Sequence](proposed-delivery-sequence.md)
 - [Input and Pointer Contract](../specifications/input-pointer-rfc.md)
 - [Panel Runtime and Event Bus Pre-Study](../specifications/panel-runtime-pre-study.md)
-- [AI Architecture](../specifications/ai-architecture.md)
+- [AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ai-architecture.md)
 - External research `tmp/research/chatgpt-2026-08-30-1.md`
   and `tmp/research/chatgpt-2026-08-30-2.md`
   (workspace-local, temporary, untracked, untrusted, non-canonical inputs in

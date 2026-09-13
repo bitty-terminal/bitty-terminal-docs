@@ -34,6 +34,6 @@ reference material until its owning implementation and tests provide evidence.
 
 Current proposals remain in the [CLI design](../interfaces/cli.md),
 [configuration design](../configuration/lua-and-xdg.md),
-[plugin-system design](../extensibility/plugin-system.md), and
+[plugin-system design](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/plugin-system.md), and
 [rich-content design](../interfaces/rich-content.md). They must not be copied
 here as if they were released behavior.

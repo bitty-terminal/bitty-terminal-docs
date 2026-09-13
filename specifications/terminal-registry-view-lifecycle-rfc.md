@@ -27,9 +27,9 @@ sidebar_order: 26
 > `4`KiB relay) is `Implemented` (experimental) not `Verified` — it provides
 > reviewable evidence for the accepted spec. Accepted behavior remains the
 > existing [Terminal State RFC](terminal-state-rfc.md),
-> [ADR 0003 Core Workspace Topology](../../../decisions/adrs/ADR-0003-core-workspace-topology.md),
+> [ADR 0003 Core Workspace Topology](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md),
 > [Compatibility Milestone RFC](compatibility-milestone-rfc.md),
-> [Platform tiers ADR](../../../decisions/adrs/ADR-0002-platform-support-tiers.md),
+> [Platform tiers ADR](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md),
 > [Architecture Overview](../architecture/overview.md),
 > [Core and Plugin Boundaries](../architecture/core-boundaries.md), and
 > clipboard audit at `bitty` `7a4ee41` (CTX-0097). The lifecycle for this
@@ -76,7 +76,7 @@ not move a requirement between owners and does not create a bypass.
 
 | Area                | Accepted fact (cite)                                                                                                                                                                                                    | Accepted by this specification                                                                                                                                                  |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Topology            | 16-crate DAG, `Terminal -> Snapshot` only, MSRV 1.85 per [ADR 0003](../../../decisions/adrs/ADR-0003-core-workspace-topology.md) (OQ-005)                                                                               | Placement of `TerminalRegistry` in `bitty-runtime` versus `bitty-ui` and exact trait spelling remain illustrative (see open items)                                              |
+| Topology            | 16-crate DAG, `Terminal -> Snapshot` only, MSRV 1.85 per [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) (OQ-005)                            | Placement of `TerminalRegistry` in `bitty-runtime` versus `bitty-ui` and exact trait spelling remain illustrative (see open items)                                              |
 | Terminal invariants | `Action` is sole write into state, 8 invariants, `generation` damage, deterministic replay per [Terminal State RFC](terminal-state-rfc.md) (OQ-007)                                                                     | Registry generation pinning is accepted by this specification; which reflow algorithm is pinned remains the one chosen by the accepted text-rendering decision (see open items) |
 | View identity       | `ViewId` distinct from `TerminalId`, at most one view per `TerminalId`, move preserves `TerminalId` per [Workspace Compositor](workspace-compositor.md) (draft)                                                         | `RuntimeId` and `PersistentId` separation, per-registry generation, and reattachment versus recreation rules are accepted by this specification                                 |
 | Input               | M1 mouse modes, focus, bracketed paste per [Compatibility Milestone RFC](compatibility-milestone-rfc.md); bounded encoding, Kitty opt-in, shift override per [Input and Pointer Contract](input-pointer-rfc.md) (draft) | Which view owns focus and mouse capture when a terminal is detached, and how Kitty negotiation follows the terminal not the view, are accepted by this specification            |
@@ -90,19 +90,19 @@ text-rendering draft until that draft is accepted.
 
 ## Normative sources this specification does not weaken
 
-- [ADR 0003 Core Workspace Topology](../../../decisions/adrs/ADR-0003-core-workspace-topology.md) (OQ-005): one-way DAG; `bitty-vt`, `bitty-term-state`, `bitty-pty` never depend on UI, platform, plugin-host, config, runtime, or app; `bitty-render` reads only snapshots.
+- [ADR 0003 Core Workspace Topology](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) (OQ-005): one-way DAG; `bitty-vt`, `bitty-term-state`, `bitty-pty` never depend on UI, platform, plugin-host, config, runtime, or app; `bitty-render` reads only snapshots.
 - [Terminal State RFC](terminal-state-rfc.md) (OQ-007): parser to `Action` to state is the only write path; 8 grid and mode invariants; damage `generation`; bounded reply buffer; deterministic replay and state hash.
 - [Compatibility Milestone RFC](compatibility-milestone-rfc.md) (OQ-004): M1 required and allowed VT subset; M1 mouse, focus, and bracketed paste matrix; graceful ignore outside the subset.
-- [ADR 0002 Platform Support Tiers](../../../decisions/adrs/ADR-0002-platform-support-tiers.md) (OQ-003): Tier 1 Linux x86_64 Wayland and X11, Windows x86_64 ConPTY, macOS ARM64 13+; Tier 2 Linux ARM64, macOS x86_64, FreeBSD x86_64.
-- [ADR 0008 Headless](../../../decisions/adrs/ADR-0008-headless.md) (OQ-020): daemon and remote UI deferred post-v1.0; headless evidence does not equal accepted daemon.
+- [ADR 0002 Platform Support Tiers](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md) (OQ-003): Tier 1 Linux x86_64 Wayland and X11, Windows x86_64 ConPTY, macOS ARM64 13+; Tier 2 Linux ARM64, macOS x86_64, FreeBSD x86_64.
+- [ADR 0008 Headless](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md) (OQ-020): daemon and remote UI deferred post-v1.0; headless evidence does not equal accepted daemon.
 - [Architecture Overview](../architecture/overview.md) and [Core and Plugin Boundaries](../architecture/core-boundaries.md): mechanism versus policy split; Terminal Truth owned by `bitty-term-state`; View and Layout are Core mechanisms; plugins never enter terminal, render, or input hot paths.
 - [Rich Presentation RFC](rich-presentation-rfc.md) (OQ-008/015/016): `Image != Cell`; `ImageStore` and `ImagePlacement` are outside the cell lattice and enter snapshots only as placement metadata; scene and zone composition owns presentation.
-- [Plugin Platform RFC](plugin-platform-rfc.md) (OQ-011/012/013), [Isolation Resource RFC](isolation-resource-rfc.md) (OQ-014), [Configuration Model RFC](configuration-model-rfc.md) (OQ-010): queue budgets PerSub 64, PerPlugin 1024 events and 256 KiB, Global 8192 events and 2 MiB, DropOldest v1 default, `BoundedText`, capability-checked host APIs, `ConfigPlan` validation.
+- [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) (OQ-011/012/013), [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) (OQ-014), [Configuration Model RFC](configuration-model-rfc.md) (OQ-010): queue budgets PerSub 64, PerPlugin 1024 events and 256 KiB, Global 8192 events and 2 MiB, DropOldest v1 default, `BoundedText`, capability-checked host APIs, `ConfigPlan` validation.
 - [Input and Pointer Contract](input-pointer-rfc.md) (CTX-0107 draft, candidate): typed `InputEvent`, router `Platform -> Router -> Keymap -> Encoder -> PTY`, platform divergence at adapter edge, capture and shift override, IME preedit as presentation.
 - [Text and Rendering RFC](text-rendering-rfc.md) (CTX-0108 draft, candidate): UAX #29 and UAX #11 contracts, width function, DPI scaling, atlas and cache, IME overlay as ephemeral presentation.
 - [Single-Window Vertical Slice Acceptance Plan](../product/vertical-slice-acceptance.md) (CTX-0109 draft, candidate): one process, one window, one workspace, one terminal end-to-end path and explicit exclusions.
 - [Workspace Compositor Specification](workspace-compositor.md) (draft, candidate): `Instance -> Window -> Workspace -> LayoutTree -> View` hierarchy, `ViewId != TerminalId`, H and V primitives, Core-owned `gaps_in`, `gaps_out`, `border`, `radius`, `LayoutProvider` as plugin.
-- [Security Overview](../../../security/overview.md), [Threat Model](../../../security/threat-model.md) (T-01, T-04, T-06, T-07, T-13), [Risk Register](../../../security/risk-register.md) (R-004, R-006, R-007, R-008), [P0 Acceptance Criteria](../../../security/p0-acceptance-criteria.md) (P0-AC-001..034): bounded inputs, no hot-path plugin execution, separate terminal and plugin security domains, authenticated privileged interfaces.
+- [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md), [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md) (T-01, T-04, T-06, T-07, T-13), [Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md) (R-004, R-006, R-007, R-008), [P0 Acceptance Criteria](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md) (P0-AC-001..034): bounded inputs, no hot-path plugin execution, separate terminal and plugin security domains, authenticated privileged interfaces.
 
 Where this specification selects a threshold or mechanism it refines those
 sources; it does not move a requirement between owners and does not create a
@@ -287,7 +287,7 @@ Rules:
    tree, and open descriptors — cannot be reconstructed from serialized state;
    it requires a session host that owns PTYs while a GUI attaches and detaches,
    which remains deferred post-v1.0 (OQ-020,
-   [ADR 0008](../../../decisions/adrs/ADR-0008-headless.md)). This registry provides
+   [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)). This registry provides
    bounded UI/state restoration and scrollback rehydration only and claims no
    browser-like process continuity.
 
@@ -363,14 +363,14 @@ authorized as shipped, stable, or compatibility-guaranteed behavior by this
 accepted specification. Each requires its own RFC or ADR with independent
 architecture, security, and performance review before it can be claimed.
 
-| Excluded                                               | Why deferred                                                                                                                                                    | What this specification does instead                                                                                        |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Multi-window                                           | Window is the native OS object owned by `bitty-platform`; orchestrating many windows adds focus, DPI, and platform lifetime questions not owned by the registry | One `Instance` owns one `Window` for the vertical slice; one registry per process; one window per registry in this contract |
-| Daemon `bittyd` and session persistence across reboots | OQ-020 deferred daemon post-v1.0 per [ADR 0008](../../../decisions/adrs/ADR-0008-headless.md); daemon trust boundary and lifecycle not reviewed here            | Process-scoped registry only; persistence is scrollback rehydration via `PersistentId`, not daemon attach                   |
-| Remote UI                                              | Cross-host transport and authentication add a new trust boundary not evaluated here                                                                             | No remote wire format, no remote capability mapping, no network port                                                        |
-| Panel Runtime and inter-Panel Event Bus                | Panel as a workspace-managed application container and its runtime and bus remain future-RFC work per the workspace-compositor and panel-vision drafts          | View content stays `Terminal`, `Rich`, `Browser`, or `Empty`; no `PanelId`, no Event Bus topic, no runtime scheduler        |
-| Global menu or system tray as registry owner           | Not part of the terminal lifecycle                                                                                                                              | Owned elsewhere if proposed                                                                                                 |
-| Live migration of a PTY between processes              | Requires daemon and cross-process fd transfer                                                                                                                   | Move is between views in the same window only                                                                               |
+| Excluded                                               | Why deferred                                                                                                                                                                                            | What this specification does instead                                                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Multi-window                                           | Window is the native OS object owned by `bitty-platform`; orchestrating many windows adds focus, DPI, and platform lifetime questions not owned by the registry                                         | One `Instance` owns one `Window` for the vertical slice; one registry per process; one window per registry in this contract |
+| Daemon `bittyd` and session persistence across reboots | OQ-020 deferred daemon post-v1.0 per [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md); daemon trust boundary and lifecycle not reviewed here | Process-scoped registry only; persistence is scrollback rehydration via `PersistentId`, not daemon attach                   |
+| Remote UI                                              | Cross-host transport and authentication add a new trust boundary not evaluated here                                                                                                                     | No remote wire format, no remote capability mapping, no network port                                                        |
+| Panel Runtime and inter-Panel Event Bus                | Panel as a workspace-managed application container and its runtime and bus remain future-RFC work per the workspace-compositor and panel-vision drafts                                                  | View content stays `Terminal`, `Rich`, `Browser`, or `Empty`; no `PanelId`, no Event Bus topic, no runtime scheduler        |
+| Global menu or system tray as registry owner           | Not part of the terminal lifecycle                                                                                                                                                                      | Owned elsewhere if proposed                                                                                                 |
+| Live migration of a PTY between processes              | Requires daemon and cross-process fd transfer                                                                                                                                                           | Move is between views in the same window only                                                                               |
 
 Claiming any excluded behavior by citing this specification is a
 documentation hygiene violation. Cross-document references must preserve the
@@ -422,23 +422,23 @@ for Lua and no bypass of existing P0 gates.
 This specification refines OQ-005 and OQ-007 at the lifecycle level per
 CTX-0117; it does not open a new OQ and does not claim `Verified` or
 `Compatible` status. Remaining open items above require follow-up RFCs or
-tasks per the [documentation workflow](../../../development/documentation-workflow.md)
-and [open-question register](../../../decisions/open-questions.md).
+tasks per the [documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md)
+and [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 
 ## References
 
-- [ADR 0003 Core Workspace Topology](../../../decisions/adrs/ADR-0003-core-workspace-topology.md) — one-way DAG, MSRV 1.85, crate graph.
+- [ADR 0003 Core Workspace Topology](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) — one-way DAG, MSRV 1.85, crate graph.
 - [Terminal State RFC](terminal-state-rfc.md) — `Action` stream, 8 invariants, damage `generation`, deterministic replay, bounded replies.
 - [Compatibility Milestone RFC](compatibility-milestone-rfc.md) — M1 required and allowed VT, mouse, focus, bracketed paste matrix.
-- [ADR 0002 Platform Support Tiers](../../../decisions/adrs/ADR-0002-platform-support-tiers.md) — Tier 1 and Tier 2 promises.
-- [ADR 0008 Headless](../../../decisions/adrs/ADR-0008-headless.md) — daemon and remote UI deferred post-v1.0.
+- [ADR 0002 Platform Support Tiers](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md) — Tier 1 and Tier 2 promises.
+- [ADR 0008 Headless](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md) — daemon and remote UI deferred post-v1.0.
 - [Input and Pointer Contract](input-pointer-rfc.md) — candidate bounded keyboard, mouse, wheel, gesture, IME, selection, encoder, focus and capture ownership.
 - [Text and Rendering RFC](text-rendering-rfc.md) — candidate UAX #29, UAX #11, fallback, shaping, emoji, atlas, DPI, IME overlay.
 - [Single-Window Vertical Slice Acceptance Plan](../product/vertical-slice-acceptance.md) — candidate one process, one window, one workspace, one terminal acceptance.
 - [Workspace Compositor Specification](workspace-compositor.md) — draft `Instance -> Window -> Workspace -> LayoutTree -> View`, `ViewId != TerminalId`, H and V, Core-owned decoration, `LayoutProvider`.
 - [Architecture Overview](../architecture/overview.md) and [Core and Plugin Boundaries](../architecture/core-boundaries.md) — ownership and hot-path isolation.
 - [Configuration Model RFC](configuration-model-rfc.md) — `ConfigPlan` validation and reload.
-- [Plugin Platform RFC](plugin-platform-rfc.md) and [Isolation Resource RFC](isolation-resource-rfc.md) — capability families, queue budgets, `BoundedText`, isolation ceilings.
-- [Security Overview](../../../security/overview.md), [Threat Model](../../../security/threat-model.md), [Risk Register](../../../security/risk-register.md), [P0 Acceptance Criteria](../../../security/p0-acceptance-criteria.md) — normative security baseline.
+- [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) and [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) — capability families, queue budgets, `BoundedText`, isolation ceilings.
+- [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md), [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md), [Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md), [P0 Acceptance Criteria](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md) — normative security baseline.
 - [Performance Budget RFC](performance-budget-rfc.md) — PB-1..PB-7, input latency `<= 8 ms p50` and `<= 15 ms p99`, plugin hot-path exclusion.
 - Hyprland: dynamic tiling Wayland compositor with workspaces, `dwindle`, `master`, and decoration model `gaps_in`, `gaps_out`, `border`, `rounding`.

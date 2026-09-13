@@ -17,7 +17,7 @@ Accepted on 2026-08-27 by the project initiator. This RFC defines the accepted
 configuration model; it does not claim shipped, stable, or compatibility-guaranteed
 behavior. Experimental implementation may exist as review evidence but carries no
 compatibility promise beyond the accepted contract. It closes open question
-[OQ-010](../../../decisions/open-questions.md) at the design level.
+[OQ-010](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) at the design level.
 
 Accepted P1 pipeline for v1 (retained from Wave-C review evidence): Candidate A
 (two-stage declarative ConfigPlan pipeline
@@ -28,7 +28,7 @@ rejected baseline. This note was candidate-winner evidence before acceptance and
 is now the accepted contract.
 
 It targets OQ-010; it depends on the runtime and module-resolution contract
-accepted in the [Lua Runtime RFC](lua-runtime-rfc.md) (OQ-009), and it feeds
+accepted in the [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md) (OQ-009), and it feeds
 OQ-011/OQ-012 (plugin-facing configuration surfaces), OQ-017 (CLI grammar for
 `bitty config`/`bitty paths` commands), OQ-021/OQ-022 (package manifest and lock
 coexistence), and budgets PB-1/PB-2 in the
@@ -38,7 +38,7 @@ coexistence), and budgets PB-1/PB-2 in the
 
 OQ-010 asks: _are declarative `ConfigPlan` generation and Rust reconciliation
 adopted, and how do XDG layers, profiles, merge rules, reload, and project
-trust work?_ The accepted direction ([DIR-003](../../../decisions/index.md)) fixes
+trust work?_ The accepted direction ([DIR-003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)) fixes
 Lua as the primary configuration language; the lifecycle, layer stack, merge
 rules, profiles, and trust behavior were recorded as candidate contracts in
 [Lua and XDG configuration](../configuration/lua-and-xdg.md) and are now
@@ -46,15 +46,15 @@ adopted by this RFC, which defines failure semantics and reload classification.
 
 Normative sources this specification must not weaken:
 
-- [Security overview](../../../security/overview.md): user `init.lua` is trusted code
+- [Security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md): user `init.lua` is trusted code
   evaluated in a Config VM toward a validated plan; system/distribution
   configuration is trusted only after source verification; project
   configuration is untrusted; `bitty --safe` must always start with minimal
   built-in configuration.
-- [Threat model](../../../security/threat-model.md): T-08 (entering a cloned
+- [Threat model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md): T-08 (entering a cloned
   repository must never execute its Lua without declarative-only content or
   explicit path-and-hash consent), with risks R-009, R-010, and R-020 in the
-  [risk register](../../../security/risk-register.md).
+  [risk register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md).
 - [Core boundaries](../architecture/core-boundaries.md): security policy and
   canonical terminal state are core-owned; configuration can parametrize
   policy within bounds the schema declares, never bypass it.
@@ -168,7 +168,7 @@ document and this RFC binds its semantics:
 --source` being truthful (CLI surface owned by OQ-017).
 4. System policy entries marked non-overridable reject overriding plans at
    validation with a dedicated diagnostic class; they are distinct from system
-   defaults, per the trust table in the [security overview](../../../security/overview.md).
+   defaults, per the trust table in the [security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md).
 5. Profile composition (`extends`) resolves single-parent chains with cycle
    detection; multiple inheritance remains an open item.
 
@@ -312,7 +312,7 @@ inferred at runtime); a reload containing any restart-required change reports
 that fact up front; reload reuses the same validation/merge path as startup so
 no divergent second parser exists. Whether module caches clear between reloads
 is shared with the module-resolution rules in the
-[Lua Runtime RFC](lua-runtime-rfc.md) (OQ-009, accepted 2026-08-27; GC/budget tuning remains Open under OQ-032).
+[Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md) (OQ-009, accepted 2026-08-27; GC/budget tuning remains Open under OQ-032).
 
 ## Project trust
 

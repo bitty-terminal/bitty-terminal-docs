@@ -22,7 +22,7 @@ The `bitty` workspace is now spine-complete in crate presence (16 crates:
 signatures still draft), `bitty-lua`, `bitty-rich`, `bitty-ipc`, `bitty-agent`,
 plus `bitty-app` and the retained `bitty-core` seed; soak ~808 headless tests
 `Implemented` but not yet `Verified`) as defined in
-[ADR 0003](../../../decisions/adrs/ADR-0003-core-workspace-topology.md) and pinned
+[ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) and pinned
 in `bitty/Cargo.toml`. Component names remain architecture vocabulary: the Rust
 core, primary Lua configuration and plugins, cross-platform goal,
 plugin-oriented product direction, and the accepted package lifecycle model are
@@ -84,7 +84,7 @@ compatibility-guaranteed behavior.
 
 The following invariants come from the architecture discussion. They are
 recommended starting points for later RFCs and ADRs, not approved implementation
-designs. The [Security Overview](../../../security/overview.md) has promoted the rule
+designs. The [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) has promoted the rule
 that plugins cannot enter the terminal, render, or input hot paths into a
 normative constraint; the exact execution domains remain candidates.
 
@@ -210,7 +210,7 @@ These are logical boundaries. The final crate granularity should follow
 dependency direction, independent testing value, and compilation cost. It
 should not turn every source module into a crate. The adopted workspace
 decomposition and dependency edges are fixed in
-[ADR 0003](../../../decisions/adrs/ADR-0003-core-workspace-topology.md);
+[ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md);
 `bitty-package` lifecycle and integrity model is `Accepted` (OQ-021,
 2026-08-27), `bitty-lua` `Accepted` (OQ-009/030-032, 2026-08-29), and the tail
 crates (`bitty-rich` OQ-008/015/016, `bitty-ipc`/`bitty-agent` OQ-018) are
@@ -258,12 +258,12 @@ internal instrumentation -> versioned debug protocol
 MCP is an adapter, not an internal protocol. This allows an Agent to inspect
 structured state without making the core depend on a particular generation of
 Agent tooling. Permissions for MCP, Agents, and DevTools follow the
-[Threat Model](../../../security/threat-model.md).
+[Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md).
 
 ## Candidate long-term evolution
 
-- A headless runtime in which Terminal, PTY, and the plugin host do not depend on a GUI (accommodated early per [ADR 0008](../../../decisions/adrs/ADR-0008-headless.md); headless runtime is prerequisite to any daemon, deferred daemon does not imply remote UI).
-- `bittyd` owning multiple Terminals and allowing GUI, CLI, or remote clients to attach. Deferred to post-v1.0 with trust-boundary gate per [ADR 0008](../../../decisions/adrs/ADR-0008-headless.md), closing [OQ-020](../../../decisions/open-questions.md); see [Candidate daemon staging](../product/proposed-delivery-sequence.md).
+- A headless runtime in which Terminal, PTY, and the plugin host do not depend on a GUI (accommodated early per [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md); headless runtime is prerequisite to any daemon, deferred daemon does not imply remote UI).
+- `bittyd` owning multiple Terminals and allowing GUI, CLI, or remote clients to attach. Deferred to post-v1.0 with trust-boundary gate per [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md), closing [OQ-020](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md); see [Candidate daemon staging](../product/proposed-delivery-sequence.md).
 - A record and replay format that reproduces parser, resize, image, and rendering
   problems from deterministic input.
 - A software renderer as a fallback path for CI, snapshot tests, GPU failures,
@@ -274,5 +274,5 @@ commitments for the first version.
 
 See [Core and Plugin Boundaries](core-boundaries.md) for finer responsibility
 splits and the
-[Technology and Dependency Strategy](../../../project/technology-strategy.md) for the
+[Technology and Dependency Strategy](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/technology-strategy.md) for the
 status of technology choices.

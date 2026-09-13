@@ -19,7 +19,7 @@ sidebar_order: 32
 > `b37782090aee560b86084a35eaa7d015e1c98c2b` (2026-09-13). It does not claim
 > behavior beyond that revision, changes no accepted contract, and closes no
 > open question. It registers new open questions
-> [OQ-073 through OQ-078](../../../decisions/open-questions.md) for genuinely
+> [OQ-073 through OQ-078](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) for genuinely
 > undecided items only.
 
 ## Purpose and scope
@@ -42,7 +42,7 @@ contract; security ranking; product code.
 
 Related material, not duplicated here:
 
-- [Roadmap gap register: modern terminal feature survey](../../../roadmap/now-next-later.md#gap-register-modern-terminal-feature-survey-candidate)
+- [Roadmap gap register: modern terminal feature survey](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/roadmap/now-next-later.md#gap-register-modern-terminal-feature-survey-candidate)
   (CTX-0251, six terminals at `bitty` `3f5ed24`, 2026-09-09) remains the
   cross-vendor rank of record for its snapshot. This document re-checks the
   basic-feature subset at `b377820` and adds per-row reference citations.
@@ -221,14 +221,14 @@ session restore (ADR 0008 plus plugin roadmap), tabs/window forms
 (Workspace Compositor and OQ-052), synchronized output and OSC 10/11 (already
 M1 `Required`), and shell-integration jump UX (plugin roadmap).
 
-| ID     | Question                                                                                                                                                                                                                               | Canonical document                                                             | Next artifact                                                    | State |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------- | ----- |
-| OQ-073 | Are ligatures adopted in Bitty, and if adopted through which shaping path (font feature tags, fallback interaction, bounds), or recorded as an explicit refusal like the Sixel decision?                                               | This document; [Text and Rendering RFC](text-rendering-rfc.md)                 | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
-| OQ-074 | What is the scrollback search UX contract (Core overlay versus plugin-owned surface, keybinding namespace, case/regex scope, interaction with selection persistence), given the bounded headless search that already exists?           | This document; [Semantic Terminal RFC](semantic-terminal-rfc.md)               | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
-| OQ-075 | What is the keyboard-selection (vi/copy mode) contract: ownership, keymap namespace, word/line/block semantics over the existing `Selection` model, clipboard interaction, and mouse-mode precedence?                                  | This document; [Input and Pointer Contract](input-pointer-rfc.md)              | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
-| OQ-076 | What is the user-visible bell and desktop-notification policy (audible/visual bell, OSC 777 or Kitty notification protocol support, capability gating, and rate limits under RC-8), and how does it compose with plugin notifications? | This document; [Isolation Resource RFC](isolation-resource-rfc.md)             | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
-| OQ-077 | Which remaining Kitty-family protocol extensions enter scope (pointer shapes OSC 22, text sizing, file transfer), and are the others deferred or refused with bounds?                                                                  | This document; [Rich Presentation RFC](rich-presentation-rfc.md)               | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
-| OQ-078 | What is the accessibility contract (API/tree choice, ownership relative to the panel Scene model and platform adapters, and v1 versus post-v1.0 scope)?                                                                                | This document; [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md) | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
+| ID     | Question                                                                                                                                                                                                                               | Canonical document                                                                                                                               | Next artifact                                                    | State |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- | ----- |
+| OQ-073 | Are ligatures adopted in Bitty, and if adopted through which shaping path (font feature tags, fallback interaction, bounds), or recorded as an explicit refusal like the Sixel decision?                                               | This document; [Text and Rendering RFC](text-rendering-rfc.md)                                                                                   | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
+| OQ-074 | What is the scrollback search UX contract (Core overlay versus plugin-owned surface, keybinding namespace, case/regex scope, interaction with selection persistence), given the bounded headless search that already exists?           | This document; [Semantic Terminal RFC](semantic-terminal-rfc.md)                                                                                 | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
+| OQ-075 | What is the keyboard-selection (vi/copy mode) contract: ownership, keymap namespace, word/line/block semantics over the existing `Selection` model, clipboard interaction, and mouse-mode precedence?                                  | This document; [Input and Pointer Contract](input-pointer-rfc.md)                                                                                | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
+| OQ-076 | What is the user-visible bell and desktop-notification policy (audible/visual bell, OSC 777 or Kitty notification protocol support, capability gating, and rate limits under RC-8), and how does it compose with plugin notifications? | This document; [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
+| OQ-077 | Which remaining Kitty-family protocol extensions enter scope (pointer shapes OSC 22, text sizing, file transfer), and are the others deferred or refused with bounds?                                                                  | This document; [Rich Presentation RFC](rich-presentation-rfc.md)                                                                                 | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
+| OQ-078 | What is the accessibility contract (API/tree choice, ownership relative to the panel Scene model and platform adapters, and v1 versus post-v1.0 scope)?                                                                                | This document; [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md)                                                                   | Acceptance decision (ADR, RFC revision, or specification update) | Open  |
 
 ## Evidence limits and non-claims
 
@@ -258,4 +258,4 @@ Re-verify this page whenever a `bitty` revision changes a row verdict, and
 close OQ-073 through OQ-078 only through their accepted decision artifact with
 the register and affected canonical documents updated in the same change. The
 next natural checkpoint is the M3 usable-terminal wave named in the
-[roadmap](../../../roadmap/now-next-later.md#candidate-horizon-mapping-hints-not-commitments).
+[roadmap](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/roadmap/now-next-later.md#candidate-horizon-mapping-hints-not-commitments).

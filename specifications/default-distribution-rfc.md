@@ -12,11 +12,11 @@ sidebar_order: 20
 # Default Distribution RFC
 
 > Status: **accepted** on 2026-08-29 by the project initiator. This document defines the accepted default plugin bundle, enabled-by-default set, and disable mechanisms for
-> [OQ-002](../../../decisions/open-questions.md) at the design level; it closes [OQ-002](../../../decisions/open-questions.md). It does not describe implemented
+> [OQ-002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) at the design level; it closes [OQ-002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md). It does not describe implemented
 > behavior, does not authorize shipped, stable, normative, or
 > compatibility-guaranteed behavior, and does not weaken any normative security control. Experimental implementation may exist as review evidence but carries no
 > compatibility promise beyond the accepted contract. Acceptance was per independent category-owner, docs-curator, and security-auditor review (CTX-0075) with P0 sign-off on 2026-08-29; see [P0 Review Sign-off](#p0-review-sign-off) and the
-> [P0 review checklist](../../../reviews/p0-review-checklist.md). The lifecycle is `Draft -> experimental review evidence -> Accepted (2026-08-29) -> normative`.
+> [P0 review checklist](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/reviews/p0-review-checklist.md). The lifecycle is `Draft -> experimental review evidence -> Accepted (2026-08-29) -> normative`.
 >
 > Bundled-set revision (2026-09-13, CTX-0170): the 2026-08-29 accepted
 > composition recorded five plugins including `bitty-terminal.tabs`. The
@@ -32,7 +32,7 @@ sidebar_order: 20
 
 ## Purpose and scope
 
-[OQ-002](../../../decisions/open-questions.md) asks: _which plugins, if any,
+[OQ-002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) asks: _which plugins, if any,
 ship enabled by default, and how can users disable them?_ This RFC answers
 that question at the distribution-mechanism level without inventing product
 code.
@@ -54,21 +54,21 @@ Out of scope (owned elsewhere):
 
 - Plugin API surface, capability identifiers, grant storage, prompts, and
   the event pipeline (OQ-011/OQ-012/OQ-013, accepted in
-  [Plugin Platform RFC](plugin-platform-rfc.md));
+  [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - per-plugin instruction, memory, task, queue, and global budget enforcement
-  (OQ-014, [Isolation Resource RFC](isolation-resource-rfc.md));
+  (OQ-014, [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md));
 - configuration pipeline, layer precedence, merge classes, and reload
   classification (OQ-010, [Configuration Model RFC](configuration-model-rfc.md));
 - Lua runtime, standard-library subset, and module search rules (OQ-009,
-  [Lua Runtime RFC](lua-runtime-rfc.md));
+  [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md));
 - package sources, lockfile, resolver, signature, and registry contracts
-  (OQ-021/OQ-022, [Package Lifecycle RFC](package-lifecycle-rfc.md) and
-  [Package management](../extensibility/package-management.md));
+  (OQ-021/OQ-022, [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md) and
+  [Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md));
 - CLI grammar, output schema, and exit codes (OQ-017, [CLI](../interfaces/cli.md));
 - rich presentation, image, and structured-transport contracts (OQ-008/OQ-015/OQ-016,
   [Rich Presentation RFC](rich-presentation-rfc.md));
 - instance selection, IPC framing, and Agent transport (OQ-018,
-  [IPC and Agent RFC](ipc-agent-rfc.md)).
+  [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)).
 
 This RFC introduces no new trust boundary. Every transition into a
 privileged operation stays behind the capability, configuration-trust, and
@@ -87,12 +87,12 @@ cannot prevent Bitty from starting.
   mechanism/policy split, declarative UI, generation-based lifecycle, rule
   that first-party and community plugins use the same API, capability, and
   lifecycle with no private channel.
-- [Plugin system](../extensibility/plugin-system.md): extension levels 1-4,
+- [Plugin system](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/plugin-system.md): extension levels 1-4,
   register-versus-claim, qualified naming, key-binding precedence, lazy
   triggers, and the governing boundary that plugins may alter presentation
   but must not alter terminal truth.
-- [Package management](../extensibility/package-management.md) and
-  [Package Lifecycle RFC](package-lifecycle-rfc.md): managed manifest,
+- [Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md) and
+  [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md): managed manifest,
   lockfile, package store, staged activation, transactional switch, rollback,
   and integrity chain.
 - [Lua and XDG](../configuration/lua-and-xdg.md) and
@@ -104,19 +104,19 @@ cannot prevent Bitty from starting.
   budgets for the default configuration with no plugins enabled beyond the
   bundled minimum, and the rule that plugin cost is charged to plugin
   budgets (OQ-014) not to PB-2/PB-3.
-- [Security overview](../../../security/overview.md): default posture
+- [Security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md): default posture
   (PTY, plugins, projects, IPC/MCP, packages, and reference repos are
   untrusted until a narrow grant), invariants 2 (third-party plugins start
   without sensitive authority), 3 (presentation never Terminal Truth), 4
   (no hot-path execution), 8 (installation runs no package code, updates
   cannot silently add capabilities), 9 (secret minimization), and 10
   (`bitty --safe`).
-- [Threat model](../../../security/threat-model.md) and
-  [Security risk register](../../../security/risk-register.md): T-06/T-07/T-08/T-12
+- [Threat model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md) and
+  [Security risk register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md): T-06/T-07/T-08/T-12
   and R-006/R-007/R-009/R-015/R-016/R-022 as they touch bundled distribution
   composition, plugin escape, supply-chain integrity, and safe-mode
   recoverability.
-- [Technology strategy](../../../project/technology-strategy.md): Rust core, Lua
+- [Technology strategy](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/technology-strategy.md): Rust core, Lua
   plugins, and toolchain pins as accepted direction.
 
 Where this RFC picks concrete defaults or mechanics, it refines the
@@ -194,7 +194,7 @@ Rules:
    compatible change.
 2. Each bundled artifact is version-pinned (SemVer 2), checksum-recorded
    (SHA-256), and manifest-validated before staging, inheriting the
-   integrity posture of [Package Lifecycle RFC](package-lifecycle-rfc.md)
+   integrity posture of [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md)
    (lock, checksum, no install scripts). The staging step executes no
    plugin code.
 3. The total compressed distribution (binary plus bundled artifacts and
@@ -234,10 +234,10 @@ Revision (2026-09-13, CTX-0170): the **accepted** staged set as of
 `all_bundled_manifests()`) now records the ten canonical plugins above;
 `bitty-terminal.workspace` replaced `bitty-terminal.tabs`, which remains a
 deprecated alias during the compatibility window (removal >= v0.2.0). The
-[Plugin Roadmap](../product/plugin-roadmap.md) records the same catalog and
+[Plugin Roadmap](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/product/plugin-roadmap.md) records the same catalog and
 rename. Catalog presence is implementation evidence, not shipped plugin
 behavior: every bundled plugin passes through the identical manifest and
-capability model from [Plugin Platform RFC](plugin-platform-rfc.md); there is
+capability model from [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); there is
 no bundled bypass flag and CI may not add one.
 
 #### Superseded bundled set (2026-08-29)
@@ -306,7 +306,7 @@ following are satisfied in a reviewed follow-up change:
    measurement remains within PB-1/PB-2/PB-7 and a representative
    8-tab/4-hour session remains within PB-3, measured on the reference
    harness once it exists. Cost is charged to the plugin generation's
-   budgets (RC-1/RC-2/RC-4/RC-5 per [Isolation Resource RFC](isolation-resource-rfc.md))
+   budgets (RC-1/RC-2/RC-4/RC-5 per [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md))
    and is visible in `bitty plugin doctor`.
 2. Capability minimality. The plugin requests only the families it needs
    (for example `terminal.semantic-read` and status-component slots for a
@@ -460,7 +460,7 @@ hostile third-party plugins as noted in [Configuration Model RFC](configuration-
 - **Generation disposal.** Disabling disposes every resource owned by
   `(PluginId, generation)` before acknowledging success. A stale generation
   cannot observe or cancel its successor except through host-mediated handoff
-  of persisted state, matching [Plugin Platform RFC](plugin-platform-rfc.md).
+  of persisted state, matching [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md).
 - **Capability grants.** Grants are bound to `(PluginId, manifest hash)` and
   survive disable. Re-enable re-prompts only when the manifest hash has
   changed and new capabilities are requested; otherwise the existing grant
@@ -491,7 +491,7 @@ hostile third-party plugins as noted in [Configuration Model RFC](configuration-
 - Any proposal to move a plugin to enabled-by-default carries the budget
   proof from the criteria above; without that proof the proposal fails the
   RFC even if other criteria pass.
-- Per-plugin budgets remain owned by [Isolation Resource RFC](isolation-resource-rfc.md)
+- Per-plugin budgets remain owned by [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)
   (RC-1 10^7 instr / 50 ms / 8 ms warning, RC-2 32 MiB, RC-4 tasks 64 /
   timers 32, RC-5 three-level queues). This RFC consumes those numbers for
   disable-reclaim verification but does not retune them.
@@ -576,10 +576,10 @@ task needed; a follow-up PR must keep them synchronized):
   authoritative bundled/enabled composition and disable mechanism; the open
   question bullet for the minimal distribution bundle moves from candidate to
   accepted.
-- [Plugin system](../extensibility/plugin-system.md): the candidate fragment
+- [Plugin system](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/plugin-system.md): the candidate fragment
   for bundled capabilities and the safe-mode open point reference this RFC
   as the accepted disable, precedence, and bundled-minimum contract.
-- [Package management](../extensibility/package-management.md): the candidate
+- [Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md): the candidate
   `enabled` field and `enable`/`disable` versus `add`/`remove` semantics
   become the accepted disable mechanism alongside configuration; source model
   (bundled packages) links to the staging and checksum rules.
@@ -588,7 +588,7 @@ task needed; a follow-up PR must keep them synchronized):
   merge-class table gain the `plugins.<id>.enabled` field and the
   narrowing-only workspace rule as the accepted disable surface.
 - [Core and Plugin Boundaries](../architecture/core-boundaries.md) and
-  [Security overview](../../../security/overview.md): the distribution/bundling
+  [Security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md): the distribution/bundling
   note and the `bitty --safe` invariant gain the empty-default and five-
   surface disable mechanism as their P0 implementation path (still requiring
   evidence before closure of P0 acceptance criteria).
@@ -596,7 +596,7 @@ task needed; a follow-up PR must keep them synchronized):
   baseline is adopted as the empty enabled set for PB-1 through PB-7.
 - [CLI](../interfaces/cli.md): the runtime-control and plugin-enable
   sections become normative per this RFC's method set and precedence table.
-- [Isolation Resource RFC](isolation-resource-rfc.md) and
+- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) and
   [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md):
   the crate-presence note remains `draft` tail until evidence lands; the
   overview's draft-tail note gains the distribution composition link.
@@ -607,7 +607,7 @@ by `cargo tree --locked` alongside the existing workspace pins.
 
 ## Open points
 
-The following items were open at proposal and are now dispositioned upon acceptance on 2026-08-29. Acceptance of this RFC closes [OQ-002](../../../decisions/open-questions.md) at the design level; residual items below are tracked as follow-up work with no remaining closure blocker unless review decides otherwise:
+The following items were open at proposal and are now dispositioned upon acceptance on 2026-08-29. Acceptance of this RFC closes [OQ-002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) at the design level; residual items below are tracked as follow-up work with no remaining closure blocker unless review decides otherwise:
 
 1. Exact `distribution.toml` file name and directory layout for staged
    artifacts; candidate `plugins/store/` versus content-addressed store.
@@ -630,27 +630,27 @@ These were outside this RFC's scope at draft and remain tracked as follow-up wor
 
 ## Acceptance criteria
 
-This RFC is accepted on 2026-08-29 and closes [OQ-002](../../../decisions/open-questions.md) at the design level. The following criteria were satisfied per the [open-question register](../../../decisions/open-questions.md) close rule:
+This RFC is accepted on 2026-08-29 and closes [OQ-002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) at the design level. The following criteria were satisfied per the [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) close rule:
 
 1. Independent review by the category owner, a docs curator, and a security reviewer accepted the bundled/disabled distinction, the empty v1 enabled-by-default set, the five disable surfaces with safe-mode precedence, and the distribution pinning and budget rules.
-2. Affected registers were synchronized in the same change: [open-questions.md](../../../decisions/open-questions.md), [decision register](../../../decisions/index.md), [specifications README](README.md), and [P0 review checklist](../../../reviews/p0-review-checklist.md) moved OQ-002 from `Draft` to `Accepted` per the close rule; product vision, core boundaries, plugin system, package management, and configuration model candidates now reference the accepted contract.
+2. Affected registers were synchronized in the same change: [open-questions.md](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md), [decision register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md), [specifications README](README.md), and [P0 review checklist](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/reviews/p0-review-checklist.md) moved OQ-002 from `Draft` to `Accepted` per the close rule; product vision, core boundaries, plugin system, package management, and configuration model candidates now reference the accepted contract.
 3. No element weakens a normative P0 gate; any discovered conflict returns the conflicting clause to revision rather than downgrading the gate.
-4. Draft text in this file was updated to record acceptance date and initiator, frontmatter became `accepted`, and links from [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md) and the [decision register](../../../decisions/index.md) reflect the accepted composition without claiming implementation.
+4. Draft text in this file was updated to record acceptance date and initiator, frontmatter became `accepted`, and links from [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md) and the [decision register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md) reflect the accepted composition without claiming implementation.
 
 Closes OQ-002: this RFC closes that open question at the design level; the register rows are updated per the open-question register rules. The lifecycle is `Draft -> experimental review evidence -> Accepted (2026-08-29) -> normative`.
 
 ## P0 Review Sign-off
 
-> P0 review per CTX-0075 tracks acceptance of OQ-002 via this RFC. Frontmatter is `accepted` and [open-questions.md](../../../decisions/open-questions.md) is updated per its close rule. This section records passing sign-off and closes OQ-002.
+> P0 review per CTX-0075 tracks acceptance of OQ-002 via this RFC. Frontmatter is `accepted` and [open-questions.md](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) is updated per its close rule. This section records passing sign-off and closes OQ-002.
 
-| Role                           | Reviewer           | Verdict | Evidence / scope                                                                                                                                                                                                   | Date       |
-| ------------------------------ | ------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
-| security-auditor               | `bitty-security`   | pass    | R-006, R-007, R-009, R-016, R-022, T-06, T-07, T-12, invariants 2, 8, 10, P0-AC-006 through P0-AC-010, PB-5 40 MiB, bundled-disabled-by-default, generation disposal, safe-mode recoverability, no private channel | 2026-08-29 |
-| category-owner (product)       | `bitty-architect`  | pass    | distribution composition, artifact layout, pinning and checksums, empty enabled set, promotion criteria including lightweight budgets and capability minimality, PB-5 cap                                          | 2026-08-29 |
-| category-owner (extensibility) | `bitty-experience` | pass    | five disable surfaces precedence, managed manifest `enabled` versus `add`/`remove`, generation disposal and budget reclaim RC-1/RC-2/RC-4/RC-5, workspace-narrowing only and safe-mode precedence                  | 2026-08-29 |
-| docs-curator                   | `bitty-curator`    | pass    | Frontmatter `accepted`, taxonomy, links to [Product vision](../product/vision.md) and [Plugin system](../extensibility/plugin-system.md), English-only, decision-register sync                                     | 2026-08-29 |
+| Role                           | Reviewer           | Verdict | Evidence / scope                                                                                                                                                                                                                           | Date       |
+| ------------------------------ | ------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| security-auditor               | `bitty-security`   | pass    | R-006, R-007, R-009, R-016, R-022, T-06, T-07, T-12, invariants 2, 8, 10, P0-AC-006 through P0-AC-010, PB-5 40 MiB, bundled-disabled-by-default, generation disposal, safe-mode recoverability, no private channel                         | 2026-08-29 |
+| category-owner (product)       | `bitty-architect`  | pass    | distribution composition, artifact layout, pinning and checksums, empty enabled set, promotion criteria including lightweight budgets and capability minimality, PB-5 cap                                                                  | 2026-08-29 |
+| category-owner (extensibility) | `bitty-experience` | pass    | five disable surfaces precedence, managed manifest `enabled` versus `add`/`remove`, generation disposal and budget reclaim RC-1/RC-2/RC-4/RC-5, workspace-narrowing only and safe-mode precedence                                          | 2026-08-29 |
+| docs-curator                   | `bitty-curator`    | pass    | Frontmatter `accepted`, taxonomy, links to [Product vision](../product/vision.md) and [Plugin system](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/plugin-system.md), English-only, decision-register sync | 2026-08-29 |
 
-As of 2026-08-29, the distribution, disable, and budget contracts remain design contracts per [ADR 0003](../../../decisions/adrs/ADR-0003-core-workspace-topology.md) and the [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md); crate presence does not imply shipped behavior.
+As of 2026-08-29, the distribution, disable, and budget contracts remain design contracts per [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) and the [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md); crate presence does not imply shipped behavior.
 
 ## References
 
@@ -662,7 +662,7 @@ As of 2026-08-29, the distribution, disable, and budget contracts remain design 
   call sites this RFC reuses without retuning.
 - Distribution budgets: [Performance Budget RFC](performance-budget-rfc.md)
   PB-1 through PB-7 and PB-5 40 MiB distribution cap.
-- Related RFCs: [Plugin Platform RFC](plugin-platform-rfc.md) for OQ-011/
+- Related RFCs: [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) for OQ-011/
   OQ-012/OQ-013, [Configuration Model RFC](configuration-model-rfc.md) for
-  OQ-010, [Isolation Resource RFC](isolation-resource-rfc.md) for OQ-014
-  budgets, [Package Lifecycle RFC](package-lifecycle-rfc.md) for OQ-021.
+  OQ-010, [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) for OQ-014
+  budgets, [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md) for OQ-021.
