@@ -1,6 +1,6 @@
 ---
 title: Release Ladder
-description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (18 crates 29772a3, 32 OQs Accepted, release v0.0.19) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
+description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (19 crates bea338d, 40 OQs Accepted, release v0.0.20) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
 category: product
 audience: maintainer
 document_type: overview
@@ -13,8 +13,8 @@ sidebar_order: 21
 
 ## Status and provenance
 
-- Stage: **Pre-alpha / Engineering Milestones M1-M8** as of 2026-09-08 (`bitty` `29772a3`,
-  previous `c49ead1`, baseline `de134ec`, 18 crates, 32 OQs `Accepted`, release `v0.0.19`).
+- Stage: **Pre-alpha / Engineering Milestones M1-M8** as of 2026-09-14 (`bitty` `bea338d`,
+  previous `29772a3`, baseline `de134ec`, 19 crates, 40 OQs `Accepted`, release `v0.0.20`).
   Experimental implementations `c0aadd2` (CTX-0095 vertical slice, PR #148) +
   `7e3104d` (CTX-0096 dogfood, PR #149) + `a8735d0` (CTX-0098 PTY reply fix,
   PR #151) are `Implemented` (experimental) not `Verified`/`Compatible`. This
@@ -31,9 +31,9 @@ sidebar_order: 21
   maturity remains `Pre-alpha` (not `Verified`/`Compatible`/`Release-ready`).
   Canonical snapshot:
   [`docs/project/project-state.json`](../../../project/project-state.json)
-  (synchronized `29772a3`, `2026-09-08`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
+  (synchronized `bea338d`, `2026-09-14`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
   `Open`, `R-005`/`R-006`/`R-007` `Mitigated`, experimental `c0aadd2`/`7e3104d`/`a8735d0`
-  `Implemented` not `Verified`, release `v0.0.19`) validated by `bun .github/scripts/check-state.mjs`.
+  `Implemented` not `Verified`, release `v0.0.20`) validated by `bun .github/scripts/check-state.mjs`.
 - Lifecycle: `Draft -> Experimental Implementation -> Accepted -> Verified -> Compatible -> Release-ready`
   (spec) and `Specified -> Accepted -> Implemented -> Verified -> Compatible -> Release-ready`
   (crate) per the [Risk Evidence RFC](../specifications/risk-evidence-rfc.md).
@@ -68,14 +68,17 @@ sidebar_order: 21
   verification crates `compat-lab` (bounded harness re-exporting
   `tests/compat/harness.rs`) and `perf` (bench harness owner). Nine leaves/branch crates are `publish = true`, seven tail crates
   remain `publish = false` until `Verified`.
-- **Releases**: `v0.0.19` (`c2aabee`, 2026-09-03) ships cross-platform `bitty`
+- **Releases**: `v0.0.20` (`d9f5b49`, 2026-09-11) is the first workspace Cargo
+  version bump since `0.0.1` (aligned by `scripts/check-release-version.sh`);
+  `v0.0.19` (`c2aabee`, 2026-09-03) ships cross-platform `bitty`
   binaries (`bitty-<target>` dist assets plus `.sha256`, `SHA256SUMS`,
   `provenance.json`, `.deb`/`.rpm`/`.apk`/`.pkg.tar.zst`) with Homebrew, Scoop,
   and AUR (`bitty` plus `bitty-bin` prebuilt) distribution per `bitty`
   CHANGELOG; the binary artifact was renamed `bitty-app` -> `bitty` with the
   crate name unchanged. Release artifacts are distribution evidence, not
   `Verified`/`Compatible` claims.
-- **Accepted**: 32 OQs (OQ-001..032) via 17 RFCs and 8 ADRs as of 2026-08-29:
+- **Accepted**: 40 OQs via 17 RFCs and 8 ADRs as of 2026-09-14 (OQ-001..OQ-045
+  range):
   Performance Budget (OQ-001), Platform Support Tiers (OQ-003), Compatibility
   Milestone (OQ-004 M1), Core Workspace Topology (OQ-005), Upstream Dependencies
   (OQ-006), Terminal State (OQ-007), Lua Runtime (OQ-009), Configuration Model
@@ -84,7 +87,10 @@ sidebar_order: 21
   (OQ-018), DevTools (OQ-019), Headless Deferred (OQ-020 ADR 0008), Package
   Lifecycle (OQ-021), Package Follow-up (OQ-022/026-029), Website Delivery
   (OQ-023), Governance (OQ-024), Risk Evidence (OQ-025), Lua Pins (OQ-030),
-  os.getenv Policy (OQ-031), Async/GC Tuning (OQ-032).
+  os.getenv Policy (OQ-031), Async/GC Tuning (OQ-032), Plugin Host Runtime and
+  Store (OQ-033/034/035), Focused/Idle Outline Colors (OQ-039), Panel
+  Transitions (OQ-040), Per-View Appearance Overrides (OQ-041), Per-Panel
+  Background Image (OQ-042), and Focus Outline Width (OQ-045).
 - **Implemented but not yet Verified**: `rich` (ImageStore/scene OQ-008/015/016,
   Kitty chunked intake `1fc6294`), `ipc` (bounded framing 256 KiB, wire v1,
   peer-credential auth, scopes OQ-018, profiling/ctl surface through `1835175`),
