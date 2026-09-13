@@ -89,7 +89,7 @@ All rows `self PASS` via `cargo test -p bitty-compat-lab --test compat_matrix` (
 
 - `compat-lab.md` — Phase C scaffold (§ harness, per-category corpora, `vttest` runbook, Ghostty/Kitty/WezTerm differential). This matrix is the **release instance** of that scaffold.
 - `manual-smoke.md` — human-in-loop checklist (7 areas, 21 rows, `grim`/`hyprctl` guidance, not CI). This matrix is the **automated** leg that stays CI-green.
-- `dogfooding.md` / `soak-0.0.1.md` / `perf-baseline.md` / `perf-evidence.md` — daily-driver and soak/perf evidence (Phase G/F). Matrix reuses their corpora.
+- [`dogfooding.md`](./dogfooding.md) / [`soak-0.0.1.md`](https://github.com/bitty-terminal/bitty/blob/706fa2565c5130a5dfd58dbeb8f84f71fc9f49dd/docs/product/soak-0.0.1.md) / [`perf-baseline.md`](./perf-baseline.md) / [`perf-evidence.md`](./perf-evidence.md) — daily-driver and soak/perf evidence (Phase G/F). Matrix reuses their corpora.
 - `release-mechanics.md` — `v0.2` row links to `compat-lab.md`; this matrix satisfies that row's gate sketch (`differential tests, fuzz, TUI corpora`).
 
 ## Verification gates (must PASS before merge)

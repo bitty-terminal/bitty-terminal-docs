@@ -6,7 +6,7 @@ audience: maintainer
 document_type: research
 status: draft
 website_publish: false
-sidebar_order: 53
+sidebar_order: 54
 ---
 
 <!-- markdownlint-disable MD025 -->
@@ -400,8 +400,10 @@ Windows — nightly reuses those runners for artifact builds.
   via `gh release delete` + tag delete. Nightlies are **not** `latest` and do
   not set `isLatest` — only a real `v0.0.1` release will.
 - **Promotion to preview/stable:** a nightly that passes extended soak
-  (`perf-evidence.md` budget, `soak-0.0.1.md` scenarios, `manual-smoke.md`
-  checklist, compat matrix CTX-0114) may be promoted to
+  ([`perf-evidence.md`](./perf-evidence.md) budget,
+  [`soak-0.0.1.md`](https://github.com/bitty-terminal/bitty/blob/706fa2565c5130a5dfd58dbeb8f84f71fc9f49dd/docs/product/soak-0.0.1.md)
+  scenarios, [`manual-smoke.md`](./manual-smoke.md) checklist, compat matrix
+  CTX-0114) may be promoted to
   `v0.0.1-preview.N` or `v0.0.1` by retagging the same sha after independent
   review — no rebuild with different sources.
 - **No publish in this task:** the study leaves no tag, no release, no

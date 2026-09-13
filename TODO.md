@@ -14,7 +14,7 @@ than accumulating here.
       and plugin-ecosystem documents to the sibling repositories; retarget
       cross-repository links to absolute URLs.
 - [x] Recover bitty PR #663 documents with no docs-repository destination
-      (CTX-0002): import the 19 evidence/operations documents into `product/`,
+      (CTX-0002): import the 20 evidence/operations documents into `product/`,
       `development/`, `security/audits/`, and `specifications/`; migrate the
       crate publish ladder to `development/release-mechanics.md`; wire the new
       trees into the docs map and metadata gates.
