@@ -21,7 +21,7 @@ sidebar_order: 20
 > Bundled-set revision (2026-09-13, CTX-0170): the 2026-08-29 accepted
 > composition recorded five plugins including `bitty-terminal.tabs`. The
 > owning `bitty` catalog (`crates/bitty-plugin-host/src/bundled.rs`,
-> `all_bundled_manifests()`) now records **ten** bundled-disabled plugins,
+> `all_bundled_manifests()`) recorded **ten** bundled-disabled plugins,
 > and `bitty-terminal.tabs` is a **deprecated alias** of the canonical
 > `bitty-terminal.workspace` (removal >= v0.2.0). The composition list,
 > artifact layout, and examples below are revised to that catalog; the
@@ -29,6 +29,25 @@ sidebar_order: 20
 > [Superseded bundled set (2026-08-29)](#superseded-bundled-set-2026-08-29).
 > The empty enabled-by-default set, disable surfaces, precedence, budgets,
 > and security contracts are unchanged.
+>
+> Bundled-set amendment (2026-09-14, CTX-0424): **`bitty-terminal.palette` and
+> `bitty-terminal.statusline` left the bundled catalog** and became
+> independently versioned first-party packages, per the accepted
+> [Bundled-Plugin Split Decision (OQ-053)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/product/bundled-plugin-split-decision.md)
+> (accepted 2026-09-14). The catalog becomes **eight** bundled-disabled
+> plugins once [bitty PR #680](https://github.com/bitty-terminal/bitty/pull/680)
+> merges; it is **nine** today (the palette removal #678 merged, the statusline
+> removal is open).
+> The workspace core (including the workspaceline claim and workspace
+> lifecycle), shell integration, `project`, `browser-panel` (stays bundled as a
+> Core mechanism), and the panel candidates that split later (`file-manager`,
+> `git-panel`, `ai-panel`, `mail-panel`) remain in the catalog. The empty
+> enabled-by-default set, the five disable surfaces, precedence, budgets, and
+> security contracts are unchanged. The two superseded entries, the merge
+> evidence, and the recorded capability deltas are in
+> [Split to independent first-party packages](#split-to-independent-first-party-packages-2026-09-14);
+> OQ-053 is closed by the decision record. This amendment revises composition
+> only and does not rewrite the accepted rationale.
 
 ## Purpose and scope
 
@@ -143,7 +162,9 @@ normative text wins and this RFC must be corrected.
    activation and its capability grants are present.
 2. The v1 enabled-by-default set is **empty**: a fresh installation with
    no user configuration starts the core only. First-party plugins are
-   bundled as ready-to-enable artifacts (the ten-plugin catalog under
+   bundled as ready-to-enable artifacts (the eight-plugin catalog once
+   [bitty PR #680](https://github.com/bitty-terminal/bitty/pull/680) merges;
+   nine today — see
    [Bundled set for v1](#bundled-set-for-v1-staged-not-enabled)) but require
    an explicit enable that preserves the capability-consent and
    lightweight-budget guarantees.
@@ -169,8 +190,6 @@ distribution/
     store/
       bitty-terminal.shell-integration/0.1.0/
       bitty-terminal.workspace/0.1.0/
-      bitty-terminal.statusline/0.1.0/
-      bitty-terminal.palette/0.1.0/
       bitty-terminal.project/0.1.0/
       bitty-terminal.file-manager/0.1.0/
       bitty-terminal.git-panel/0.1.0/
@@ -184,6 +203,9 @@ distribution/
 Versions follow the catalog's bundled `0.1.0`; the pinned set is data, not a
 commitment that every artifact is already staged. `bitty-terminal.tabs` is a
 deprecated alias resolved by the host and is not a separate staged artifact.
+`bitty-terminal.palette` and `bitty-terminal.statusline` are no longer staged
+here; they are independent first-party packages
+([split amendment](#split-to-independent-first-party-packages-2026-09-14)).
 
 Rules:
 
@@ -218,8 +240,6 @@ version, checksum, plugin-api = "^1.0", compat.bitty }` and is validated
 | ---------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `bitty-terminal.shell-integration` | OSC 7/133 semantic zones, cwd/title, fail-closed fallback when absent                 | bundled, **disabled**                                       | `terminal.semantic-read` (read-only)                                                            |
 | `bitty-terminal.workspace`         | workspace commands, workspaceline presentation, ordering and closing policy           | bundled, disabled                                           | `ui.rich` or status-component slot, `workspaceline` claim                                       |
-| `bitty-terminal.statusline`        | cwd, mode, git/task presentation via declarative status components                    | bundled, disabled                                           | `terminal.semantic-read`, status-component composition                                          |
-| `bitty-terminal.palette`           | command palette and picker UI via overlay slot                                        | bundled, disabled                                           | `ui.overlay`                                                                                    |
 | `bitty-terminal.project`           | project discovery and session presentation                                            | bundled, disabled                                           | `fs.read:PROJECT_GLOB` constrained                                                              |
 | `bitty-terminal.file-manager`      | tiled Panel file manager with constrained `fs.read` and optional `fs.write`           | bundled, disabled                                           | `panel.provider`, `panel.create`, `terminal.semantic-read`, scoped `fs.read`/`fs.write`         |
 | `bitty-terminal.git-panel`         | tiled Panel git branch/status/diff/log presentation                                   | bundled, disabled                                           | `process.spawn:git` allowlisted, `panel.provider`, `panel.create`, `terminal.semantic-read`     |
@@ -231,7 +251,9 @@ version, checksum, plugin-api = "^1.0", compat.bitty }` and is validated
 Revision (2026-09-13, CTX-0170): the **accepted** staged set as of
 2026-08-29 recorded five plugins including `bitty-terminal.tabs`. The owning
 `bitty` catalog (`crates/bitty-plugin-host/src/bundled.rs`,
-`all_bundled_manifests()`) now records the ten canonical plugins above;
+`all_bundled_manifests()`) recorded the ten canonical plugins above at that
+revision (the 2026-09-14 amendment below targets eight; the catalog is nine
+today until `bitty` PR #680 merges);
 `bitty-terminal.workspace` replaced `bitty-terminal.tabs`, which remains a
 deprecated alias during the compatibility window (removal >= v0.2.0). The
 [Plugin Roadmap](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/product/plugin-roadmap.md) records the same catalog and
@@ -240,11 +262,60 @@ behavior: every bundled plugin passes through the identical manifest and
 capability model from [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); there is
 no bundled bypass flag and CI may not add one.
 
+#### Split to independent first-party packages (2026-09-14)
+
+Amendment under `bitty` `CTX-0424` per the accepted
+[Bundled-Plugin Split Decision (OQ-053)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/product/bundled-plugin-split-decision.md)
+(accepted 2026-09-14). Two of the ten catalog entries move out of the bundled
+set into independently versioned first-party packages; palette's removal is
+merged, while statusline's
+[bitty PR #680](https://github.com/bitty-terminal/bitty/pull/680) is open, so
+the catalog is **nine today** and becomes **eight once #680 merges**. Their
+plugin IDs, capability identifiers, and manifest shape are unchanged (decision
+rule 3); the move changes distribution, not identity, and enables nothing
+implicitly (decision rules 1 and 4). The table above is the resulting
+eight-plugin catalog once #680 merges.
+
+| Split plugin ID             | Independent repository                                                      | Merge evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bitty-terminal.palette`    | [`bitty-terminal/palette`](https://github.com/bitty-terminal/palette)       | package PR [#2](https://github.com/bitty-terminal/palette/pull/2) squash `3497c70ac5b22e52826304b801af302da454d262`; registry `bitty-plugins` PR [#6](https://github.com/bitty-terminal/bitty-plugins/pull/6) squash `d38e8ff3ad2a1538512fd212fba55422b6dbaf65` (`registry/official/palette.toml`, `plugins/palette` pin); bundled-entry removal `bitty` PR [#678](https://github.com/bitty-terminal/bitty/pull/678) squash `dd46c7a287fa7a8ab83783816b37877d634e5f3a`                                       |
+| `bitty-terminal.statusline` | [`bitty-terminal/statusline`](https://github.com/bitty-terminal/statusline) | package PR [#2](https://github.com/bitty-terminal/statusline/pull/2) squash `3eab0f44b9bf76fc8c01a029176a9bd885f91d07`; registry `bitty-plugins` PR [#9](https://github.com/bitty-terminal/bitty-plugins/pull/9) squash `1d203e67146b02edc8c483a61a7c82b9b6e84753` (`registry/official/statusline.toml`, `plugins/statusline` pin); bundled-entry removal `bitty` PR [#680](https://github.com/bitty-terminal/bitty/pull/680) rebased head `5591216fa7eb15f7fed59b10a6ec4f15e0e2d773` (open, awaiting merge) |
+
+The workspace core stays bundled: the **workspaceline claim** (ordering,
+exclusive claim, close policy) and workspace lifecycle remain Core behavior;
+only statusline presentation moved. Shell integration stays bundled and
+remains the upstream OSC 7/133 semantic-zone provider.
+
+**Capability and behavior deltas.** These are implementation-status facts, not
+contract changes; they are recorded so the accepted corpus reflects reality.
+The decision record's
+[Implementation status](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/product/bundled-plugin-split-decision.md#implementation-status)
+section is authoritative and is cross-referenced here. Both deltas are tracked
+as `bitty-plugins` `CTX-0005`.
+
+- **Palette.** The independent Lua package requests `ui.rich` + `ui.overlay`;
+  the bundled Rust realization declared only `ui.overlay`. The accepted
+  [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-api-v1-lua-surface-rfc.md#extension-level-split)
+  lists `ui.rich` as the L2 UI capability gate (`ui.overlay` for the overlay
+  slot) and requires `ui.rich` for rich content, so this is a
+  manifest-capability difference within the accepted API, not a new or widened
+  capability.
+- **Statusline.** Exit-code presentation differs: the Lua package selects the
+  latest semantic zone carrying any `metadata.exit_code` (scanning
+  newest-first), while the bundled Rust realization selected the last
+  `ZoneKind::OutputEnd` zone's code. The observable `exit:` component can
+  therefore differ on zone sequences where a later non-`OutputEnd` zone
+  carries a code. Recorded from the split reviews.
+
+Neither delta relaxes a capability, security, or distribution gate and neither
+creates a private channel; deny-by-default consent and `bitty --safe` are
+unchanged.
+
 #### Superseded bundled set (2026-08-29)
 
 The five-plugin composition accepted on 2026-08-29, retained for history. It
-was replaced by the ten-plugin catalog above in the 2026-09-13 revision
-rather than silently rewritten.
+was replaced by the ten-plugin catalog in the 2026-09-13 revision (eight once
+`bitty` PR #680 merges; nine today) rather than silently rewritten.
 
 | Plugin ID                          | Stage purpose                                                         | Default               | Capability sketch (illustrative)                           |
 | ---------------------------------- | --------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------- |
@@ -656,7 +727,9 @@ As of 2026-08-29, the distribution, disable, and budget contracts remain design 
 
 - Bitty crate evidence: `crates/bitty-config` (typed ConfigPlan and layer
   merge), `crates/bitty-plugin-host` (generation, registry, budget snapshot,
-  and the `bundled.rs` ten-plugin catalog with the deprecated
+  and the `bundled.rs` eight-plugin catalog once
+  [bitty PR #680](https://github.com/bitty-terminal/bitty/pull/680) merges
+  (nine today), with the deprecated
   `bitty-terminal.tabs` alias of `bitty-terminal.workspace`),
   `crates/bitty-package` (staged activation) — all accepted model crates whose
   call sites this RFC reuses without retuning.
