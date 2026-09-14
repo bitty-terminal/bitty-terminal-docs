@@ -41,11 +41,13 @@ Cross-project contracts and registers are linked, never copied.
 
 ## Composition
 
-The repository is intended to be mounted at `bitty/docs` as a Git submodule so
-platform documentation version-matches the implementation it describes. The
-submodule wiring is a later phase; the standalone repository is fully
-self-contained and passes its own gates. Platform content lives in topic trees
-at the repository root; this repository's process documents stay under `docs/`.
+The repository is mounted at `bitty/docs` as a Git submodule so platform
+documentation version-matches the implementation it describes
+(`bitty/.gitmodules`: `[submodule "docs"] path = docs`; the implementation
+pin trails `main` by design for reproducibility). The standalone repository
+remains fully self-contained and passes its own gates. Platform content lives
+in topic trees at the repository root; this repository's process documents
+stay under `docs/`.
 
 ## Structure
 

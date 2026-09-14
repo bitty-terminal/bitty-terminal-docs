@@ -12,11 +12,16 @@ sidebar_order: 10
 # Architecture Diagrams
 
 This directory hosts the interactive HTML architecture diagram suite for Bitty
-at **Pre-alpha / M1 Hardening** (2026-08-29, `bitty` `7a4ee41` baseline
-`de134ec`, 16 crates, 32 OQs Accepted). It provides rich, interactive HTML5 canvas
+at pre-alpha. It provides rich, interactive HTML5 canvas
 models that allow contributors and architects to pan, zoom, inspect component
 properties, filter layers dynamically, simulate lifecycle flows step by step, and
 export vector graphics.
+
+Time-bound implementation state — crate counts, revisions, releases, and
+milestone assessments — is not pinned here. The workspace topology is fixed in
+[ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md)
+and `bitty/Cargo.toml`; current state lives in
+[project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
 ## Architecture Diagram Hub
 
@@ -31,7 +36,7 @@ The master gallery and interactive explorer is located at:
 | ID                       | Title                                     | Level | Format             | Direct Interactive Model                                               |
 | ------------------------ | ----------------------------------------- | ----- | ------------------ | ---------------------------------------------------------------------- |
 | `00-overview`            | System Overview & Trust Boundaries        | L0    | Interactive Canvas | [00-overview.html](interactive/00-overview.html)                       |
-| `01-core`                | Core Workspace Topology & 16-Crate DAG    | L1    | Interactive Canvas | [01-core.html](interactive/01-core.html)                               |
+| `01-core`                | Core Workspace Topology & Crate DAG       | L1    | Interactive Canvas | [01-core.html](interactive/01-core.html)                               |
 | `02-plugin-platform`     | Plugin Platform, VM & Event Pipeline      | L1    | Interactive Canvas | [02-plugin-platform.html](interactive/02-plugin-platform.html)         |
 | `03-panel-system`        | Workspace Compositor & Panel Architecture | L1    | Interactive Canvas | [03-panel-system.html](interactive/03-panel-system.html)               |
 | `04-config-model`        | Config Pipeline & XDG Layer Stack         | L2    | Interactive Canvas | [04-config-model.html](interactive/04-config-model.html)               |
@@ -86,7 +91,8 @@ architecture/
 ├── README.md                 # this file — interactive architecture index
 ├── glossary.yaml             # single node and edge data dictionary
 ├── overview.md               # system context, invariants, data flows
-├── core-boundaries.md        # core vs plugin ownership and P0 gates
+├── core-boundaries.md        # accepted core vs plugin ownership and P0 gates
+├── future-boundaries.md      # draft candidate rules and pending decisions
 ├── interactive/              # interactive HTML visualization suite
 │   ├── index.html            # architecture diagram explorer hub
 │   ├── 00-overview.html      # L0 system overview
@@ -120,11 +126,13 @@ Nodes and edges strictly adhere to:
 
 - Crate graph and dependency DAG from
   [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) and
-  `bitty/Cargo.toml` (16 crates `be3bdb4`, 18 members with harness at
-  `7a4ee41`) — see [01-core.html](interactive/01-core.html).
+  `bitty/Cargo.toml` (current crate counts and revisions in
+  [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)) — see [01-core.html](interactive/01-core.html).
 - Overall model, invariants, and data flows from [Architecture
   Overview](overview.md) — see [00-overview.html](interactive/00-overview.html).
-- Ownership and P0 gates from [Core and Plugin Boundaries](core-boundaries.md).
+- Ownership and P0 gates from [Core and Plugin Boundaries](core-boundaries.md)
+  (`accepted`); candidate rules and pending decisions from [Future
+  Boundaries](future-boundaries.md) (`draft`).
 - Plugin API, manifest, and DropOldest queue budgets from
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) — see
   [02-plugin-platform.html](interactive/02-plugin-platform.html).

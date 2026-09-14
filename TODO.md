@@ -18,8 +18,10 @@ than accumulating here.
       `development/`, `security/audits/`, and `specifications/`; migrate the
       crate publish ladder to `development/release-mechanics.md`; wire the new
       trees into the docs map and metadata gates.
-- [ ] Later phase: wire this repository into `bitty` as the `docs/` submodule
-      and complete cross-repository link and CI notes.
+- [x] Wire this repository into `bitty` as the `docs/` submodule (CTX-0007):
+      `bitty/.gitmodules` carries `[submodule "docs"] path = docs`; the
+      implementation pin trails `main` by design. Remaining cross-repository
+      link and CI notes continue as ordinary documentation sync.
 
 ## Blocked / open
 
