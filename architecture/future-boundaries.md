@@ -114,6 +114,7 @@ and event-storm controls are already accepted in the
 [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); the three
 open items above still require their own RFCs.
 
+
 ## Candidate network boundary: Core never talks to the network
 
 Status: **candidate direction, non-normative** (user architecture note,
@@ -153,6 +154,83 @@ registry-via-git) are canonical in
 [Plugin package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md)
 (candidate section); this document records only the Core boundary half.
 
+## Candidate network invariant and transport rules (029 refinement)
+
+Status: **candidate direction, non-normative** (user companion note
+`recording/research/029.md`, bitty-docs CTX-0202 / bitty-docs#290,
+[DIR-017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)).
+It refines the CTX-0201 network-boundary candidate
+([DIR-016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md),
+PR #27) by reference and records only what 029 adds: the precise invariant,
+the three rules, the system-capability principle, and condensed terminal
+evidence. It duplicates no CTX-0201 mechanics. Nothing here changes any
+accepted ownership table in [Core and Plugin Boundaries](core-boundaries.md),
+nothing here weakens any normative P0 gate, and nothing here claims
+implementation.
+
+Precise invariant: `bitty-core MUST NOT initiate Internet/network
+connections.` This is explicitly not a socket ban: `AF_UNIX` IPC stays fine,
+including PTY-adjacent panel, agent, daemon, and plugin-host IPC such as
+`$XDG_RUNTIME_DIR/bitty.sock`. Local IPC never traverses the IP stack, so it
+never violates the invariant.
+
+Three architecture rules:
+
+1. `bitty-core` has no network dependency.
+2. `bitty-ai-core` has no network dependency.
+3. Network exists only behind explicit transport/provider boundaries.
+
+| Consumer       | Network posture                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Core           | No HTTP/TLS; never initiates (terminal truth, state, render, config, plugin hosting)                               |
+| AI Core        | No `reqwest`, TLS, HTTP, or endpoint knowledge (agent, context, tools, message, model abstraction, provider trait) |
+| AI Provider    | Optional HTTP behind the provider/transport boundary                                                               |
+| Lua plugin     | Optional network only through a declared capability                                                                |
+| Plugin manager | External `git` only in v1                                                                                          |
+
+Principle: Bitty prefers system capabilities over bundled implementations,
+and composition over integration. Bitty owns orchestration, capability
+abstraction, permission, UI, and integration; it does not reimplement the
+tools below.
+
+| Need           | System capability             |
+| -------------- | ----------------------------- |
+| Plugin install | `git`                         |
+| Plugin HTTP    | `curl` (V1 backend)           |
+| SSH            | `ssh`                         |
+| File sync      | `rsync`                       |
+| Opening URLs   | `xdg-open` / `open` / `start` |
+| Shell          | The user's shell              |
+
+Condensed terminal evidence (not a survey copy): minimal terminals keep the
+core network-free (Alacritty, foot, GNOME Terminal / VTE); wrapper terminals
+keep the core network-free while delegating network features to system tools
+(Ghostty wraps system `ssh`; kitty wraps system `ssh` and fetches theme data
+through kittens with cache controls, and its remote control distinguishes
+Unix-domain from TCP sockets); integrated terminals move networking in-process
+(WezTerm with SSH/TLS domains and HTTP clients; Contour with daemon mode and
+in-process SSH). Bitty Core follows the minimal/wrapper side, not the
+integrated side. Build-time network (Zig dependencies, `cargo build` from
+`crates.io`) is not a runtime dependency.
+
+Unplug property: with the cable pulled, every terminal function keeps working;
+the network exists only when the user explicitly runs `bitty plugin install`,
+uses an AI cloud provider, SSH, or a network-capable plugin.
+
+Pointers: the runtime plugin HTTP capability and secrets direction are
+canonical in
+[Plugin system](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/plugin-system.md)
+(candidate section); registry-via-git distribution and the `bitty.lock`
+(source, version, revision) reproducibility record stay canonical in
+[Plugin package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md)
+(CTX-0201 candidate section, extended by reference only); the AI
+provider/transport split is an ai-docs rollout follow-up owned by the ai-docs
+owners (DIR-017 records the direction; this repository records only the rules
+above). Enforcement stays as recorded in the CTX-0201 candidate
+(dependency-DAG test rejecting network-capable dependencies in Core crates);
+this refinement adds no new mechanism.
+
+
 ## Pending decisions
 
 - The minimum Command, Event, UI, and Service set for the first Plugin API
@@ -170,6 +248,11 @@ registry-via-git) are canonical in
 - The Core network-free boundary and adapter-layer placement above
   (candidate; refines the source-trust item without changing accepted
   ownership).
+- Whether the precise `MUST NOT initiate` invariant (DIR-017, refining the
+  CTX-0201 wording) is accepted, and how the dependency-DAG enforcement test
+  is owned.
+
+
 - The default bundled-plugin set and disabling behavior.
 - Observation-event batching, dropping, and backpressure semantics.
 - Which user actions allow interception and the default behavior after a
