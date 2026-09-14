@@ -43,7 +43,7 @@ shipped, stable, or compatibility-guaranteed behavior:
 | [Input and Pointer Contract](input-pointer-rfc.md)                                                                                                   | —                                                                             | Draft    |
 | [Text and Rendering RFC](text-rendering-rfc.md)                                                                                                      | —                                                                             | Draft    |
 | [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md)                                                              | OQ-005, OQ-007 (lifecycle refinement)                                         | Accepted |
-| [Panel Runtime and Event Bus Pre-Study](panel-runtime-pre-study.md)                                                                                  | OQ-014 (panel platform follow-up, research)                                   | Draft    |
+| [Panel Runtime RFC](panel-runtime-rfc.md)                                                                                                            | OQ-014 (panel platform follow-up)                                             | Accepted |
 | [Browser and Agent Panel Integration Pre-Study](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/browser-agent-pre-study.md) | OQ-014 (browser and agent follow-up, research)                                | Draft    |
 | [Semantic Terminal RFC](semantic-terminal-rfc.md)                                                                                                    | — (interaction proposal, research)                                            | Draft    |
 | [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md)      | OQ-043, OQ-044, OQ-049 (candidate review; OQ-041/OQ-045 accepted in RFC-0001) | Draft    |
@@ -58,7 +58,6 @@ The following drafts are under review and do not authorize shipped, stable, norm
 | [Input and Pointer Contract](input-pointer-rfc.md)                                                                                                   | keyboard/mouse/IME/selection, bounded 64/32/1024               | Draft  | `c0aadd2` + `a8735d0` at `a8735d0` (Kitty, mouse, IME overlay) `Implemented` not `Verified`                                                                                                              | P0 — slice input                        |
 | [Text and Rendering RFC](text-rendering-rfc.md)                                                                                                      | text/bidi/shaping/atlas/DPI                                    | Draft  | `c0aadd2` at `a8735d0` (`HeadlessRasterizer` + `char_cell_width`, not user-ready)                                                                                                                        | P0 — slice rendering                    |
 | [Plugin Reuse and Provider Ecology RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-reuse-and-providers.md) | provider ecology post-1.0                                      | Draft  | none (dogfood `7e3104d` is bundled-disabled, not provider)                                                                                                                                               | P1 — post-slice                         |
-| [Panel Runtime and Event Bus Pre-Study](panel-runtime-pre-study.md)                                                                                  | panel lifecycle, bus, overlay, focus, isolation                | Draft  | none (research pre-study, no implementation, CTX-0119)                                                                                                                                                   | P2 — panel platform prerequisite        |
 | [Browser and Agent Panel Integration Pre-Study](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/browser-agent-pre-study.md) | browser webview MCP agent memory isolation matrix              | Draft  | none (research pre-study, no implementation, CTX-0120)                                                                                                                                                   | P2 — browser and agent prerequisite     |
 | [AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ai-architecture.md)                                       | post-1.0, OQ-018 contracts plus OQ-057..OQ-071 directions      | Draft  | none                                                                                                                                                                                                     | P2 — deferred post-1.0, lowest priority |
 | [Semantic Terminal RFC](semantic-terminal-rfc.md)                                                                                                    | command blocks, folding, hint mode, composer                   | Draft  | P1-P5 `Implemented`-only at `7048139` (`4ccb771` #390, `064486b` #392, `ab1f7ab` #394, CTX-0131); P6 proposal only                                                                                       | P1 — post-slice interaction candidate   |
@@ -66,6 +65,11 @@ The following drafts are under review and do not authorize shipped, stable, norm
 | [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md)                                                                                      | OQ-050/OQ-051/OQ-052 (gap analysis and window-form directions) | Draft  | none (verified gap analysis against bitty `b761c03`, docs CTX-0167; records implemented-only and unwired semantic interactions honestly)                                                                 | P1 — post-slice interaction/compositor  |
 | [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md)                                                                                    | OQ-073/OQ-074/OQ-075/OQ-076/OQ-077/OQ-078 (basic-feature gaps) | Draft  | none (verified gap analysis against bitty `b377820`, docs CTX-0366; per-row citations to read-only classic-terminal snapshots)                                                                           | P1 — basic terminal feature gaps        |
 | [Workspace Panel Invariants (Candidate)](workspace-panel-invariants.md)                                                                              | OQ-058 (identity/ownership/lifecycle invariants)               | Draft  | `bitty` tests in the linked `ctx-0405` pull request (`panel_invariants.rs`, `panel_session_invariants.rs`); headless plus live pane sessions                                                             | P1 — M4 invariant hardening             |
+
+The [Panel Runtime and Event Bus Pre-Study](panel-runtime-pre-study.md) is
+retained as historical research provenance. Its frontmatter is `archived` and it
+is superseded by the accepted [Panel Runtime RFC](panel-runtime-rfc.md); it is no
+longer listed as a Draft.
 
 The Plugin API v1 Lua Surface RFC was accepted on 2026-09-11 under
 `bitty-docs/CTX-0144` through
@@ -82,6 +86,16 @@ ratified OQ-033, OQ-034, and OQ-035 and the four numeric defaults; it moved from
 the Draft table to the accepted table and authorizes derivation, not
 implementation. The 2026-09-01 review note above counts the drafts that existed
 on that date; this dated acceptance does not rewrite it.
+
+The Panel Runtime RFC was accepted on 2026-09-14 under
+`bitty-terminal-docs/CTX-0181`, promoting the
+[Panel Runtime and Event Bus Pre-Study](panel-runtime-pre-study.md) from research
+draft to an accepted contract with the same bounded `PR-1`..`PR-12`
+requirements, typed failure semantics, and explicit exclusions; it moved from the
+Draft table to the accepted table, keeps the pre-study's open questions as
+`RFC-OQ-1`..`RFC-OQ-9`, and authorizes derivation, not implementation. The
+2026-09-01 review note below counts the drafts that existed on that date; this
+dated acceptance does not rewrite it.
 
 Naming note: current entries use RFC-style filenames; renaming accepted
 specifications to `SPEC-NNNN-short-title.md` follows the policy below and is
