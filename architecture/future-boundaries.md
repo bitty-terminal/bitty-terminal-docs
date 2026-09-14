@@ -114,7 +114,6 @@ and event-storm controls are already accepted in the
 [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); the three
 open items above still require their own RFCs.
 
-
 ## Candidate network boundary: Core never talks to the network
 
 Status: **candidate direction, non-normative** (user architecture note,
@@ -230,7 +229,6 @@ above). Enforcement stays as recorded in the CTX-0201 candidate
 (dependency-DAG test rejecting network-capable dependencies in Core crates);
 this refinement adds no new mechanism.
 
-
 ## Pending decisions
 
 - The minimum Command, Event, UI, and Service set for the first Plugin API
@@ -251,7 +249,6 @@ this refinement adds no new mechanism.
 - Whether the precise `MUST NOT initiate` invariant (DIR-017, refining the
   CTX-0201 wording) is accepted, and how the dependency-DAG enforcement test
   is owned.
-
 
 - The default bundled-plugin set and disabling behavior.
 - Observation-event batching, dropping, and backpressure semantics.
