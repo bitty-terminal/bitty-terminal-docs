@@ -941,15 +941,38 @@ struct BittyDirs {
 Linux/BSD can use XDG; macOS and Windows should use a documented native mapping
 with an explicitly designed XDG-compatibility option if desired. Plugins query
 semantic host paths rather than concatenate `HOME` with `/.config/bitty`.
-
-Candidate Windows mapping: `%APPDATA%\bitty` for roaming configuration and the
-plugin lock file, `%LOCALAPPDATA%\bitty` for data, state, and cache so roaming
-profiles never sync rebuildable caches or session state, a named pipe
-`\\.\pipe\bitty-<username>-<instance-id>` for IPC, per-user NTFS ACLs scoped to
-the current user SID, and secrets through Windows Credential Manager or DPAPI.
-macOS uses its standard Application Support and Caches directories. An
-XDG-compatibility override is explicit and opt-in, never implicit; the exact
+An XDG-compatibility override is explicit and opt-in, never implicit; the exact
 mapping, precedence, and migration rules remain open.
+
+Status: **candidate contract, unimplemented.** No `BittyDirs` symbol exists in
+the `bitty` tree yet. The shipped code resolves only the configuration root
+(read-only from `bitty` `origin/main`,
+`crates/bitty-config/src/file.rs` `config_dir_with_env`:
+`$XDG_CONFIG_HOME` else `~/.config`); data, state, cache, runtime, and bin
+resolution plus every native mapping below are candidates. The table uses
+relative forms only (environment-variable roots, never absolute host paths).
+
+| Role    | Linux / BSD                 | macOS (candidate)                                              | Windows (candidate)                                                         |
+| ------- | --------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Config  | `$XDG_CONFIG_HOME/bitty`    | `~/Library/Application Support/bitty`                          | `%APPDATA%\bitty` (roaming; also the plugin lock file)                      |
+| Data    | `$XDG_DATA_HOME/bitty`      | `~/Library/Application Support/bitty`                          | `%LOCALAPPDATA%\bitty` (non-roaming; candidate `data\` split)               |
+| State   | `$XDG_STATE_HOME/bitty`     | `~/Library/Application Support/bitty` (no separate state role) | `%LOCALAPPDATA%\bitty` (candidate `state\` split; never roams)              |
+| Cache   | `$XDG_CACHE_HOME/bitty`     | `~/Library/Caches/bitty`                                       | `%LOCALAPPDATA%\bitty` (candidate `cache\` split; never roams)              |
+| Runtime | `$XDG_RUNTIME_DIR/bitty`    | `$TMPDIR/bitty-<uid>/` (per-user temp)                         | Named pipe `\\.\pipe\bitty-<username>-<instance-id>` (no filesystem socket) |
+| Bin     | `~/.local/bin` (user scope) | `/Applications/Bitty.app` or `~/Applications`                  | `%LOCALAPPDATA%\Programs\Bitty` (per-user scope)                            |
+
+Notes on the candidate mapping:
+
+- Roaming versus local on Windows: configuration roams with the user profile
+  (`%APPDATA%`); rebuildable caches, session state, and data stay machine-local
+  (`%LOCALAPPDATA%`) so roaming profiles never sync them.
+- Runtime IPC on Windows uses named pipes rather than Unix-domain sockets; the
+  pipe name carries the user and instance id so concurrent logins stay separate.
+- File modes are POSIX-only: the `0600` tiers below map to per-user NTFS DACLs
+  scoped to the current user SID on Windows (see
+  [Credential sources](#credential-sources-and-secret-storage-candidate)).
+- macOS has no separate state role: sessions, layouts, and history live under
+  Application Support alongside data; only cache splits out.
 
 Candidate discovery commands include:
 
@@ -971,16 +994,37 @@ in preference order:
 
 1. Environment bridge: configuration declares the variable name
    (`api_key_env = "ANTHROPIC_API_KEY"`); the value is read at request time and
-   never persisted by Bitty.
-2. OS keyring: an async host API requests the secret from Secret Service,
-   Keychain, or Windows Credential Manager.
-3. Dedicated store: an owner-only (`0600`) file opened only after explicit
-   `ai.provider` authorization, with the access audited.
+   never persisted by Bitty. This tier is capability-scoped per
+   [ADR 0006](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0006-os-env-policy.md):
+   `os.getenv` stays denied in every VM and the only path is the desensitized
+   `bitty.env.get(name)` / `bitty.env.has(name)` host bridge. Keys must match
+   `^[A-Z_][A-Z0-9_]*$` (1..64 bytes), values are size-bounded (4 KiB), and a
+   denied or unset key returns `nil` indistinguishably so callers cannot probe
+   allowlist membership. The allowlist is host-owned and never Lua-widenable;
+   per-plugin VMs additionally need a manifest `env:<KEY>` (or narrow
+   `env:BITTY_*`) capability plus an explicit user grant. There is no
+   enumeration API. Every result is tagged sensitive: diagnostics, traces, crash
+   reports, and `bitty config check` output redact values by default (key name
+   and presence only), denial messages never echo values, local trace files
+   carry mode `0600`, and every `get`/`has` call plus every grant/revocation
+   emits a host-side audit event (`timestamp`, `vm_class`, `key`, `granted`,
+   `caller_location` — never the value).
+2. OS keyring: an async host API requests the secret from Secret Service
+   (Linux), Keychain (macOS), or Windows Credential Manager / DPAPI (Windows).
+3. Dedicated headless store: a `credentials.toml` file under the configuration
+   root (`$XDG_CONFIG_HOME/bitty/credentials.toml`,
+   `%APPDATA%\bitty\credentials.toml`) carrying owner-only mode `0600`,
+   opened only after explicit `ai.provider` authorization, with each access
+   audited. On Windows the `0600` requirement maps to its NTFS DACL
+   equivalent: a per-user discretionary access list scoped to the current user
+   SID, with no access granted to other accounts.
 
 The host reports source and presence, never the value. Rotation, revocation,
 and redaction follow [ADR 0006](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0006-os-env-policy.md)
-and the security corpus, and diagnostics redact secret-shaped values.
-Precedence, keyring-unavailable fallback, and headless behavior remain open.
+and the security corpus, and diagnostics redact secret-shaped values
+(`*_SECRET*`, `*_TOKEN*`, `*_KEY*`, `*_PASSWORD*`, `DATABASE_URL`, and similar
+patterns). Precedence across the three tiers and keyring-unavailable fallback
+remain open.
 
 ## Open questions
 
