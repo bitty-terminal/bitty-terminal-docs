@@ -21,7 +21,7 @@ sidebar_order: 20
 > Bundled-set revision (2026-09-13, CTX-0170): the 2026-08-29 accepted
 > composition recorded five plugins including `bitty-terminal.tabs`. The
 > owning `bitty` catalog (`crates/bitty-plugin-host/src/bundled.rs`,
-> `all_bundled_manifests()`) now records **ten** bundled-disabled plugins,
+> `all_bundled_manifests()`) recorded **ten** bundled-disabled plugins,
 > and `bitty-terminal.tabs` is a **deprecated alias** of the canonical
 > `bitty-terminal.workspace` (removal >= v0.2.0). The composition list,
 > artifact layout, and examples below are revised to that catalog; the
@@ -34,7 +34,10 @@ sidebar_order: 20
 > `bitty-terminal.statusline` left the bundled catalog** and became
 > independently versioned first-party packages, per the accepted
 > [Bundled-Plugin Split Decision (OQ-053)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/product/bundled-plugin-split-decision.md)
-> (accepted 2026-09-14). The catalog is now **eight** bundled-disabled plugins.
+> (accepted 2026-09-14). The catalog becomes **eight** bundled-disabled
+> plugins once [bitty PR #680](https://github.com/bitty-terminal/bitty/pull/680)
+> merges; it is **nine** today (the palette removal #678 merged, the statusline
+> removal is open).
 > The workspace core (including the workspaceline claim and workspace
 > lifecycle), shell integration, `project`, `browser-panel` (stays bundled as a
 > Core mechanism), and the panel candidates that split later (`file-manager`,
@@ -159,7 +162,9 @@ normative text wins and this RFC must be corrected.
    activation and its capability grants are present.
 2. The v1 enabled-by-default set is **empty**: a fresh installation with
    no user configuration starts the core only. First-party plugins are
-   bundled as ready-to-enable artifacts (the eight-plugin catalog under
+   bundled as ready-to-enable artifacts (the eight-plugin catalog once
+   [bitty PR #680](https://github.com/bitty-terminal/bitty/pull/680) merges;
+   nine today — see
    [Bundled set for v1](#bundled-set-for-v1-staged-not-enabled)) but require
    an explicit enable that preserves the capability-consent and
    lightweight-budget guarantees.
@@ -246,8 +251,9 @@ version, checksum, plugin-api = "^1.0", compat.bitty }` and is validated
 Revision (2026-09-13, CTX-0170): the **accepted** staged set as of
 2026-08-29 recorded five plugins including `bitty-terminal.tabs`. The owning
 `bitty` catalog (`crates/bitty-plugin-host/src/bundled.rs`,
-`all_bundled_manifests()`) now records the ten canonical plugins above (ten
-at that revision; **eight** after the 2026-09-14 amendment below);
+`all_bundled_manifests()`) recorded the ten canonical plugins above at that
+revision (the 2026-09-14 amendment below targets eight; the catalog is nine
+today until `bitty` PR #680 merges);
 `bitty-terminal.workspace` replaced `bitty-terminal.tabs`, which remains a
 deprecated alias during the compatibility window (removal >= v0.2.0). The
 [Plugin Roadmap](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/product/plugin-roadmap.md) records the same catalog and
@@ -260,12 +266,15 @@ no bundled bypass flag and CI may not add one.
 
 Amendment under `bitty` `CTX-0424` per the accepted
 [Bundled-Plugin Split Decision (OQ-053)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/product/bundled-plugin-split-decision.md)
-(accepted 2026-09-14). Two of the ten catalog entries moved out of the bundled
-set into independently versioned first-party packages. Their plugin IDs,
-capability identifiers, and manifest shape are unchanged (decision rule 3);
-the move changes distribution, not identity, and enables nothing implicitly
-(decision rules 1 and 4). The table above is the resulting eight-plugin
-catalog.
+(accepted 2026-09-14). Two of the ten catalog entries move out of the bundled
+set into independently versioned first-party packages; palette's removal is
+merged, while statusline's
+[bitty PR #680](https://github.com/bitty-terminal/bitty/pull/680) is open, so
+the catalog is **nine today** and becomes **eight once #680 merges**. Their
+plugin IDs, capability identifiers, and manifest shape are unchanged (decision
+rule 3); the move changes distribution, not identity, and enables nothing
+implicitly (decision rules 1 and 4). The table above is the resulting
+eight-plugin catalog once #680 merges.
 
 | Split plugin ID             | Independent repository                                                      | Merge evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | --------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -286,9 +295,11 @@ as `bitty-plugins` `CTX-0005`.
 
 - **Palette.** The independent Lua package requests `ui.rich` + `ui.overlay`;
   the bundled Rust realization declared only `ui.overlay`. The accepted
-  [ADR 0009](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0009-plugin-api-v1-lua-surface.md)
-  Lua overlay path requires `ui.rich`, so this is a manifest-capability
-  difference within the accepted API, not a new or widened capability.
+  [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-api-v1-lua-surface-rfc.md#extension-level-split)
+  lists `ui.rich` as the L2 UI capability gate (`ui.overlay` for the overlay
+  slot) and requires `ui.rich` for rich content, so this is a
+  manifest-capability difference within the accepted API, not a new or widened
+  capability.
 - **Statusline.** Exit-code presentation differs: the Lua package selects the
   latest semantic zone carrying any `metadata.exit_code` (scanning
   newest-first), while the bundled Rust realization selected the last
@@ -303,8 +314,8 @@ unchanged.
 #### Superseded bundled set (2026-08-29)
 
 The five-plugin composition accepted on 2026-08-29, retained for history. It
-was replaced by the ten-plugin catalog in the 2026-09-13 revision (now eight
-after the 2026-09-14 split amendment) rather than silently rewritten.
+was replaced by the ten-plugin catalog in the 2026-09-13 revision (eight once
+`bitty` PR #680 merges; nine today) rather than silently rewritten.
 
 | Plugin ID                          | Stage purpose                                                         | Default               | Capability sketch (illustrative)                           |
 | ---------------------------------- | --------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------- |
@@ -716,7 +727,9 @@ As of 2026-08-29, the distribution, disable, and budget contracts remain design 
 
 - Bitty crate evidence: `crates/bitty-config` (typed ConfigPlan and layer
   merge), `crates/bitty-plugin-host` (generation, registry, budget snapshot,
-  and the `bundled.rs` eight-plugin catalog with the deprecated
+  and the `bundled.rs` eight-plugin catalog once
+  [bitty PR #680](https://github.com/bitty-terminal/bitty/pull/680) merges
+  (nine today), with the deprecated
   `bitty-terminal.tabs` alias of `bitty-terminal.workspace`),
   `crates/bitty-package` (staged activation) — all accepted model crates whose
   call sites this RFC reuses without retuning.
