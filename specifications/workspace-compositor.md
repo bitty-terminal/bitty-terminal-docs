@@ -451,11 +451,11 @@ What merged, exactly:
    `bitty-ui` constructor, not the `LayoutProvider` dwindle plugin promised
    above, and the app split path still chooses an explicit axis.
 
-Explicit non-claims: live present-path painting of px decoration is
-**deferred** (`bitty` CTX-0294 on the CTX-0238g stage-2 renderer lane; the
-single-window path still paints the cell-unit `layout.*` gaps), and the
-`LayoutProvider` plugin algorithms, drag/resize interactions, and scratchpad
-retention in this specification are not implemented in the slice. The
+Explicit non-claims: the `LayoutProvider` plugin algorithms, drag/resize
+interactions, and scratchpad retention in this specification are not
+implemented in the slice. Live present-path px decoration painting is no longer
+a non-claim (`bitty` PR #519 CTX-0294 and PR #533 CTX-0311 shipped it; the
+single-window path also still paints the cell-unit `layout.*` gaps). The
 `smart_split` constructor and the overlay tiers above are opt-in `bitty-ui`
 primitives recorded as evidence, not live compositor wiring.
 
