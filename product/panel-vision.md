@@ -551,10 +551,10 @@ predecessor material and is not accepted by this vision.
   ```lua
   -- Candidate shape only; not an implemented API. Topics are manifest-declared;
   -- payloads are typed, bounded, and immutable.
-  bitty.events.emit("xuepoo.files:file.open", { path = "/home/foo/main.rs" })
+  bitty.events.emit("example.files:file.open", { path = "src/main.rs" })
 
-  bitty.events.on("xuepoo.files:file.open", function(event)
-    bitty.commands.invoke("xuepoo.editor:open", event.path)
+  bitty.events.on("example.files:file.open", function(event)
+    bitty.commands.invoke("example.editor:open", event.path)
   end)
   ```
 

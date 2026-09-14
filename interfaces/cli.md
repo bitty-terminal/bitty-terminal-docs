@@ -209,7 +209,7 @@ conflicts. The exact command tokens for that route remain undecided.
 Status: **candidate grammar example.**
 
 ```sh
-bitty x xuepoo.markdown render README.md
+bitty x example.markdown render README.md
 ```
 
 Status: **candidate contract.**
@@ -283,9 +283,9 @@ bitty list commands
 bitty list plugins
 bitty list protocols
 
-bitty inspect command xuepoo.markdown:render
+bitty inspect command example.markdown:render
 bitty inspect key ctrl+shift+m
-bitty inspect plugin xuepoo.markdown
+bitty inspect plugin example.markdown
 bitty inspect config font.size
 bitty inspect protocol kitty-graphics
 ```

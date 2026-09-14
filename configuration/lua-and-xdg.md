@@ -822,7 +822,7 @@ local distro = require("bitty.distro")
 return distro.extend("bitty-terminal/starter", {
     font = { family = "Maple Mono" },
     plugins = {
-        { "xuepoo/bitty-markdown" },
+        { "example/bitty-markdown" },
     },
 })
 ```
