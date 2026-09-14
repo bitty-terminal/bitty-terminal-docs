@@ -87,7 +87,7 @@ Existing seams inspected via `ctxctl`:
 ## Implementation (public API only)
 
 All five bundled plugins are **plain `PluginManifest` values** built from the
-same public types a third-party `xuepoo.*` manifest would use:
+same public types a third-party `example.*` manifest would use:
 
 ```rust
 use bitty_plugin_host::{CapabilityId, PluginId, PluginManifest, QualifiedName};
@@ -179,7 +179,7 @@ cargo test -p bitty-plugin-host --test bundled_dogfood
   goes `declare -> resolve -> register`; `activate` fail-closed without grant,
   succeeds after `GrantRecord::granted` with exact `manifest_hash`; registry
   ends `Activated` with five entries.
-- `bundled_parity_with_third_party_same_manifest_shape` — `xuepoo.shell-mirror`
+- `bundled_parity_with_third_party_same_manifest_shape` — `example.shell-mirror`
   with identical `capabilities`/`lazy`/`compat` has identical validation and
   grant lifecycle as `bitty-terminal.shell-integration` (no private channel).
 - `bundled_plugins_are_observation_only_and_use_bounded_side_queue` —
@@ -279,7 +279,7 @@ On this worktree at `c0aadd2` + this task delta:
   checks `starts_with("bitty.")` as the candidate built-in namespace. The
   `v1` bundled set uses `bitty-terminal.*`, which is treated as non-builtin
   and thus rejected in safe mode — this gives parity with third-party
-  `xuepoo.*` and matches `bitty --safe` as zero non-core plugins by
+  `example.*` and matches `bitty --safe` as zero non-core plugins by
   construction. If a future decision promotes `bitty-terminal.*` to a
   built-in namespace, the prefix check and this doc must be revised together
   behind a reviewed change; no silent fix is applied here.

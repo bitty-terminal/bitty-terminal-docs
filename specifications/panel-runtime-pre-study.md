@@ -17,7 +17,9 @@ sidebar_order: 27
 > treat this document as current advice; the RFC is authoritative and the open
 > questions below are carried forward there as `RFC-OQ-1` through `RFC-OQ-9`.
 > The text is retained unchanged for provenance except this banner and the
-> frontmatter `status`.
+> frontmatter `status`. Example owner handles and placeholder home paths in the
+> retained body are historical and were not rewritten; the accepted RFC carries
+> the current neutralized examples.
 >
 > Archived status: this document was published as a **draft** research pre-study,
 > and it is not **Accepted**, not **Verified**, not

@@ -218,7 +218,7 @@ gh release create v0.0.1 --prerelease --title "Bitty v0.0.1 — Formal Leaves + 
 ```
 
 - Dry-run validation: `gh release create --help`, `gh release view` after create, `gh release list` shows `v0.0.1`.
-- Auth: `gh auth status` `Logged in to github.com account Xuepoo (keyring)` with `repo` + `workflow` scopes, proxy `NETWORK_PROXY`.
+- Auth: `gh auth status` `Logged in to github.com account <maintainer-account> (keyring)` with `repo` + `workflow` scopes, proxy `NETWORK_PROXY`.
 - Future nightly channel (not in this release, research in `release-pre-study.md`): `nightly-YYYYMMDD+sha` with matrix linux-x64 / macos-arm64 / windows-x64, retention 14, `SHA256SUMS` + `provenance.json`, gated on `just check` + `supply-chain` + `Windows`. Not added as workflow in this `0.0.1` formal tag; promotion path documented.
 
 ## Toolchain and version pinning matrix (no drift at 21bdf8e)

@@ -330,7 +330,7 @@ status modules, composed by the Registry as values, not as code hooks:
 ```lua
 -- Illustrative provider contribution; not an implemented API.
 return {
-  id = "xuepoo.example",
+  id = "example.example",
   status_components = {
     {
       name = "build",
@@ -342,9 +342,9 @@ return {
 }
 ```
 
-The host validates the descriptor, registers `xuepoo.example:build` as a
+The host validates the descriptor, registers `example.example:build` as a
 registry identifier, and allows slot placement like
-`right = { "cpu", "xuepoo.example:build", "clock" }`.
+`right = { "cpu", "example.example:build", "clock" }`.
 
 ## Configuration and lifecycle
 

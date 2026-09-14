@@ -272,8 +272,8 @@ Every plugin command is addressable without alias or help regeneration:
 
 ```sh
 bitty x <publisher>.<name> <command> [args]
-bitty x xuepoo.markdown render README.md
-bitty cmd xuepoo.markdown:render --file README.md
+bitty x example.markdown render README.md
+bitty cmd example.markdown:render --file README.md
 ```
 
 `bitty x` is the candidate spelling from
@@ -428,9 +428,9 @@ bitty list plugins
 bitty list protocols
 
 bitty inspect command core.terminal.text
-bitty inspect command xuepoo.markdown:render
+bitty inspect command example.markdown:render
 bitty inspect key ctrl+shift+m
-bitty inspect plugin xuepoo.markdown
+bitty inspect plugin example.markdown
 bitty inspect config font.size
 bitty inspect protocol kitty-graphics
 ```

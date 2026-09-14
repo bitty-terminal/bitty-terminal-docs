@@ -427,7 +427,7 @@ The typed configuration owns a `plugins` subtree:
 -- Candidate shape; schema lives in the core repository.
 plugins = {
   ["bitty-terminal.workspace"] = { enabled = false },
-  ["xuepoo.markdown"] = { enabled = true },
+  ["example.markdown"] = { enabled = true },
   disabled = { "bitty-terminal.statusline" } -- alternative additive list
 }
 ```
