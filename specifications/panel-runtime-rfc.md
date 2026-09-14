@@ -77,15 +77,15 @@ Out of scope and owned elsewhere:
 
 ## Relationship to accepted sources
 
-| Area                 | Accepted fact (cite)                                                                                                                                                                                                                                                               | How this RFC reconciles (accepted)                                                                                                                                                                                                                    |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Topology             | One-way DAG, `Terminal -> Snapshot` only, 16-crate workspace per [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) (OQ-005)                                                                               | Panel Runtime lives at the `bitty-runtime`/`bitty-ui` boundary without reversing DAG edges; `bitty-vt`/`bitty-term-state`/`bitty-pty` stay dependency-free                                                                                            |
-| Terminal lifecycle   | `TerminalRegistry` as single owner of PTY handles, `TerminalId != ViewId`, `RuntimeId`/`PersistentId`/`Generation`, bounded `64`/`32`/`16`, single view per terminal per [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md)                   | Panel uses `PanelId` as a fourth incompatible newtype, at most one panel host per panel, no panel holds a PTY fd, panel generation mirrors registry generation, and reuse of resize routing `cols = floor(rect.width / cell_width)` via `LogicalRect` |
-| Workspace compositor | `Instance -> Window -> Workspace -> LayoutTree -> View` with `H`/`V` `ratio [0.1,0.9]`, Core-owned `gaps_in 4`/`gaps_out 6`/`border 2`/`radius 6`, `LayoutProvider` pure deterministic `propose` per [Workspace Compositor Specification](workspace-compositor.md)                 | Panel extends `View` content (`Empty`, `Terminal(TerminalId)`, `Rich`, `Browser`, `Panel(PanelId)`) without adding a new tiling primitive; `LayoutTree` and decoration stay Core-owned; `LayoutProvider` never mutates panel state                    |
-| Input                | Hot path `Platform -> Router -> focused View -> keymap -> encoder -> PTY` with no Lua per [Input and Pointer Contract](input-pointer-rfc.md) (draft)                                                                                                                               | Focus routing for panels reuses the same router with `focused Panel` as an alternative routing target; overlay capture is presentation-only; no `input.pre-encode` plugin hook                                                                        |
-| Plugin platform      | One VM per `(PluginId, generation)`, deny-by-default capabilities, observation versus interception, four interception points, `DropOldest` default per [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) | Panel lifecycle follows the same generation rule; panel-contributed UI is declarative; the Event Bus reuses observation queues, not interception                                                                                                      |
-| Isolation            | Per-subscription `64`, per-plugin `1024`/`256 KiB`, global `8192`/`2 MiB` with `DropOldest`, RC-1 `10^7`/`50 ms`/`8 ms`, RC-2 `32 MiB` per [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)       | Panel and bus budgets are sized to fit inside the same three-level envelope without borrowing                                                                                                                                                         |
-| IPC                  | Bounded `256 KiB` frame, `512 KiB` in-flight, `64` pending, scopes per request per [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)                                                                                  | Cross-process bus, if ever needed, reuses the same framing and scope model, not a new TCP surface                                                                                                                                                     |
+| Area                 | Accepted fact (cite)                                                                                                                                                                                                                                                                 | How this RFC reconciles (accepted)                                                                                                                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Topology             | One-way DAG, `Terminal -> Snapshot` only, 16-crate workspace per [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) (OQ-005)                                                                                 | Panel Runtime lives at the `bitty-runtime`/`bitty-ui` boundary without reversing DAG edges; `bitty-vt`/`bitty-term-state`/`bitty-pty` stay dependency-free                                                                                            |
+| Terminal lifecycle   | `TerminalRegistry` as single owner of PTY handles, `TerminalId != ViewId`, `RuntimeId`/`PersistentId`/`Generation`, bounded `64`/`32`/`16`, single view per terminal per [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md)                     | Panel uses `PanelId` as a fourth incompatible newtype, at most one panel host per panel, no panel holds a PTY fd, panel generation mirrors registry generation, and reuse of resize routing `cols = floor(rect.width / cell_width)` via `LogicalRect` |
+| Workspace compositor | `Instance -> Window -> Workspace -> LayoutTree -> View` with `H`/`V` `ratio [0.1,0.9]`, Core-owned `gaps_in 6`/`gaps_out 6`/`border 2`/`radius 6`/`content_inset 6`, `LayoutProvider` pure deterministic `propose` per [Workspace Compositor Specification](workspace-compositor.md) | Panel extends `View` content (`Empty`, `Terminal(TerminalId)`, `Rich`, `Browser`, `Panel(PanelId)`) without adding a new tiling primitive; `LayoutTree` and decoration stay Core-owned; `LayoutProvider` never mutates panel state                    |
+| Input                | Hot path `Platform -> Router -> focused View -> keymap -> encoder -> PTY` with no Lua per [Input and Pointer Contract](input-pointer-rfc.md) (draft)                                                                                                                                 | Focus routing for panels reuses the same router with `focused Panel` as an alternative routing target; overlay capture is presentation-only; no `input.pre-encode` plugin hook                                                                        |
+| Plugin platform      | One VM per `(PluginId, generation)`, deny-by-default capabilities, observation versus interception, four interception points, `DropOldest` default per [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)   | Panel lifecycle follows the same generation rule; panel-contributed UI is declarative; the Event Bus reuses observation queues, not interception                                                                                                      |
+| Isolation            | Per-subscription `64`, per-plugin `1024`/`256 KiB`, global `8192`/`2 MiB` with `DropOldest`, RC-1 `10^7`/`50 ms`/`8 ms`, RC-2 `32 MiB` per [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)         | Panel and bus budgets are sized to fit inside the same three-level envelope without borrowing                                                                                                                                                         |
+| IPC                  | Bounded `256 KiB` frame, `512 KiB` in-flight, `64` pending, scopes per request per [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)                                                                                    | Cross-process bus, if ever needed, reuses the same framing and scope model, not a new TCP surface                                                                                                                                                     |
 
 Where this RFC selects a threshold it refines those sources; it does not move a
 requirement between owners and does not create a bypass.
@@ -108,7 +108,7 @@ requirement between owners and does not create a bypass.
 | `PanelType`     | Closed v1 set contributed by a `PanelProvider` (for example `terminal`, `rich`, `browser`, `helper`, `canvas`), validated via manifest      |
 | `PanelRuntime`  | Core-owned host that creates, mounts, suspends, resumes, and disposes panels, validates `PanelId` plus generation, and mediates bus traffic |
 | `PanelProvider` | Plugin-supplied factory that declares one or more `PanelType` values; requires the `panel.provider` capability                              |
-| `EventTopic`    | Qualified `owner.name:topic` identifier for inter-panel messages, for example `xuepoo.git:branch-changed`                                   |
+| `EventTopic`    | Qualified `owner.name:topic` identifier for inter-panel messages, for example `example.git:branch-changed`                                  |
 | `Overlay`       | Ephemeral presentation surface (palette, modal, tooltip, candidate picker) owned by the compositor, not a tiling leaf                       |
 | `Focus`         | Which `View` or `Panel` inside the active `Workspace` of the active `Window` owns keyboard, IME preedit, and wheel routing                  |
 
@@ -229,7 +229,7 @@ The command registry remains Core-owned and generation-aware per the accepted
 and [CLI Contract RFC](cli-contract-rfc.md) direction:
 
 1. Panels contribute commands as qualified names `owner.name:command`, for
-   example `xuepoo.git:open`. Registration is manifest-declared and validated
+   example `example.git:open`. Registration is manifest-declared and validated
    at graph construction; duplicates across providers are rejected, not shadowed.
 2. Command dispatch is the only way a panel exposes invocable behavior; there
    is no direct hook into the compositor or terminal hot path.
@@ -373,10 +373,10 @@ Illustrative shape only:
 ```lua
 -- Candidate shape only; not an implemented API.
 -- Manifest-declared topics; payloads are typed, bounded, immutable.
-bitty.bus.emit("xuepoo.files:file.open", { path = "src/main.rs" })
+bitty.bus.emit("example.files:file.open", { path = "src/main.rs" })
 
-bitty.bus.on("xuepoo.files:file.open", function(event)
-  bitty.commands.invoke("xuepoo.editor:open", event.path)
+bitty.bus.on("example.files:file.open", function(event)
+  bitty.commands.invoke("example.editor:open", event.path)
 end)
 ```
 
@@ -438,7 +438,7 @@ Rules:
 3. Official and bundled panels pass through the identical capability model; no
    private channel and no first-party bypass.
 4. Bus topics reuse the topic-declared capability rule above: subscribing to
-   `xuepoo.git:branch-changed` needs at least a workspace-observation scope,
+   `example.git:branch-changed` needs at least a workspace-observation scope,
    while subscribing to a topic that carries clipboard or raw-terminal bytes
    needs that specific family; capability checks are synchronous and
    transactional (leave no partial state on denial).
