@@ -63,8 +63,9 @@ verification process.
   source of truth for every frame; frame-to-frame consistency matters more than
   per-frame detail.
 - **Runtime assets are sprite sheets with frame/fps metadata** (for example
-  idle, walk, sleep, typing, and reaction sets, typically 4–8 FPS). GIF is
-  reserved for README, website, and badge surfaces, not for the runtime format.
+  idle, walk, sleep, typing, and reaction sets, typically 4–8 FPS). GIF is a
+  presentation format for README, website, badge, and social surfaces, not the
+  runtime format.
 - **Badges follow the 88×31 retro web-button convention** (pixel font, optional
   1-bit/dithering treatment, optional animated GIF) rather than modern flat
   badge styling.
@@ -78,9 +79,10 @@ verification process.
   Protocol as the primary path, Sixel for compatibility**, with placement
   separated from the image payload. Implementing these protocol paths is future
   work, gated by its own tasks.
-- A floating pet renders at a logical pixel size that is independent of terminal
-  font zoom and panel zoom, and it belongs on a floating panel surface rather
-  than the terminal image protocol.
+- A floating pet renders at a logical pixel size: terminal font zoom does not
+  resize it, and any panel zoom action is interpreted by the panel (for example
+  as a deliberate sprite-scale step) rather than by the terminal grid. It
+  belongs on a floating panel surface rather than the terminal image protocol.
 
 ## Provenance
 
