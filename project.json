@@ -1,10 +1,10 @@
 {
   "created_at": "2026-09-13T17:44:39.130202425+00:00",
-  "git_common_dir": "/tmp/opencode/bitty-terminal-docs-recovery/.git",
+  "git_common_dir": "***REDACTED-PATH***",
   "id": "01M2DX0M89VSBG7TB7H5WNKNA4",
   "main_branch": "main",
   "name": "bitty-terminal-docs",
-  "repository_root": "/tmp/opencode/bitty-terminal-docs-recovery",
+  "repository_root": "***REDACTED-PATH***",
   "schema_version": 4,
   "task_prefix": "CTX",
   "updated_at": "2026-09-13T17:44:39.130202425+00:00"
