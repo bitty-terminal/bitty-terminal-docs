@@ -114,6 +114,45 @@ and event-storm controls are already accepted in the
 [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); the three
 open items above still require their own RFCs.
 
+## Candidate network boundary: Core never talks to the network
+
+Status: **candidate direction, non-normative** (user architecture note,
+bitty-docs CTX-0201 / bitty-docs#288,
+[DIR-016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)).
+Nothing here changes any accepted ownership table in
+[Core and Plugin Boundaries](core-boundaries.md) and nothing here weakens any
+normative P0 gate. No implementation claim.
+
+Principle: Core never talks to the network; network is a boundary capability,
+not a base capability. This extends the CarryCtx local-first philosophy to the
+terminal: `bitty` runs without git, curl, or network access.
+
+- **Core (never network).** The crates that own terminal truth, state,
+  rendering, configuration, and plugin hosting must never depend on the
+  network. The user note names `bitty-core`, `bitty-terminal`, `bitty-render`,
+  `bitty-panel`, `bitty-plugin-host`, and `bitty-config` (and by extension
+  `bitty-ai-core` / `bitty-agent`). The current crate topology is fixed in
+  [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md);
+  the direction applies to whichever crates own those mechanisms. No `reqwest`,
+  no `curl`, no `git2` / libgit2 in Core.
+- **Adapter layer (only network touchpoints).** `bitty plugin
+install` / `update` / `search`, future self-update, AI provider HTTP APIs,
+  and OAuth / remote / cloud live in an isolated adapter layer:
+  `bitty-package` / `bitty-plugin-manager` owns package management and
+  providers own their HTTP.
+- **Later native HTTP.** When Git cannot serve a need, native HTTP uses
+  `reqwest + rustls` (`default-features = false`), isolated in `bitty-net` /
+  provider crates and feature-gated so `cargo build --no-default-features`
+  stays network-free.
+- **Enforcement (candidate).** A dependency-DAG architecture test rejects
+  network-capable dependencies in Core crates, alongside the existing layering
+  tests recorded in [Core and Plugin Boundaries](core-boundaries.md).
+
+Plugin-source mechanics (`PluginSource` trait, system-`git` v1 sources,
+registry-via-git) are canonical in
+[Plugin package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md)
+(candidate section); this document records only the Core boundary half.
+
 ## Pending decisions
 
 - The minimum Command, Event, UI, and Service set for the first Plugin API
@@ -128,6 +167,9 @@ open items above still require their own RFCs.
   [ADR 0010](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0010-plugin-host-runtime-acceptance.md));
   implementation evidence remains per-crate.
 - Plugin signing, source trust, installation, and update models.
+- The Core network-free boundary and adapter-layer placement above
+  (candidate; refines the source-trust item without changing accepted
+  ownership).
 - The default bundled-plugin set and disabling behavior.
 - Observation-event batching, dropping, and backpressure semantics.
 - Which user actions allow interception and the default behavior after a
