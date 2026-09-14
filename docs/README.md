@@ -33,14 +33,16 @@ documents live under `docs/`.
   [bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs)
   (plugin ecosystem). Documents migrated to those repositories are referenced
   from surviving pages by absolute cross-repository URL.
-- The repository is designed to be mounted at `bitty/docs` as a Git submodule in
-  a later wiring phase.
+- The repository is mounted at `bitty/docs` as a Git submodule
+  (`bitty/.gitmodules`: `[submodule "docs"] path = docs`). The implementation
+  pin trails `main` by design, and `bitty-docs` holds a separate
+  governance-reviewed pin.
 
 ## Content trees
 
 | Tree                                           | Entry points                                                                                                                                                                                                                                              |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `architecture/`                                | [Architecture diagrams](../architecture/README.md), [overview](../architecture/overview.md), [core boundaries](../architecture/core-boundaries.md).                                                                                                       |
+| `architecture/`                                | [Architecture diagrams](../architecture/README.md), [overview](../architecture/overview.md), [core boundaries](../architecture/core-boundaries.md), [future boundaries](../architecture/future-boundaries.md).                                            |
 | `specifications/`                              | [Specification register](../specifications/README.md) and the versioned technical contracts.                                                                                                                                                              |
 | `configuration/`                               | [Lua configuration and XDG layout](../configuration/lua-and-xdg.md), [theme presets](../configuration/themes.md).                                                                                                                                         |
 | `interfaces/`                                  | [Command-line interface](../interfaces/cli.md), [rich content](../interfaces/rich-content.md).                                                                                                                                                            |

@@ -1,10 +1,10 @@
 ---
 title: Core and Plugin Boundaries
-description: Specifies the ownership boundary between the Bitty core and plugins at Pre-alpha / M1 Hardening (16 crates be3bdb4, 32 OQs Accepted), including normative P0 security gates.
+description: Specifies the ownership boundary between the Bitty core and plugins, including normative P0 security gates.
 category: architecture
 audience: plugin-author
 document_type: specification
-status: draft
+status: accepted
 website_publish: true
 sidebar_order: 21
 ---
@@ -13,46 +13,33 @@ sidebar_order: 21
 
 ## Document status
 
-The project initiator has confirmed the small-core and plugin-extension
-direction, the placement of most AI and Agent experiences in plugins, and one
-independent repository per plugin. Boundaries on this page were candidate at
-draft and are now **Pre-alpha / M1 Hardening** (2026-08-29, `bitty` `be3bdb4`,
-16 crates, 32 OQs `Accepted`): most ownership tables are `Accepted` via
-Plugin Platform RFC (OQ-011/012/013), Isolation Resource RFC (OQ-014), Rich
-Presentation RFC (OQ-008/015/016), CLI Contract RFC (OQ-017), IPC and Agent RFC
-(OQ-018), and Lua ADRs (OQ-030/031/032); tail crates (`bitty-rich`,
-`bitty-ipc`, `bitty-agent`, `bitty-lua`) are `Implemented` (headless tests
-soak ~808) but not yet `Verified`. “Core” and “Plugin” in the tables now
-indicate accepted ownership with lifecycle
+This document is `Accepted`. The project initiator has confirmed the
+small-core and plugin-extension direction, the placement of most AI and Agent
+experiences in plugins, and one independent repository per plugin. The
+ownership tables and P0 gates below are `Accepted` via the Plugin Platform RFC
+(OQ-011/012/013), Isolation Resource RFC (OQ-014), Rich Presentation RFC
+(OQ-008/015/016), CLI Contract RFC (OQ-017), IPC and Agent RFC (OQ-018), and
+Lua ADRs (OQ-030/031/032); tail crates (`bitty-rich`, `bitty-ipc`,
+`bitty-agent`, `bitty-lua`) are `Implemented` but not yet `Verified`.
+“Core” and “Plugin” in the tables indicate accepted ownership with lifecycle
 `Specified -> Accepted -> Implemented -> Verified -> Compatible -> Release-ready`
 per the [risk evidence RFC](../specifications/risk-evidence-rfc.md); risk
-evidence matrix remains `pending`. The `bitty` workspace is spine-complete
-(`bitty-vt`, `bitty-term-state`, `bitty-pty`, `bitty-platform`, `bitty-config`,
-`bitty-render`, `bitty-ui`, `bitty-plugin-host`, `bitty-runtime`,
-`bitty-package` (lifecycle and integrity model accepted, OQ-021, 2026-08-27;
-signatures still draft), `bitty-lua`, `bitty-rich`, `bitty-ipc`, `bitty-agent`,
-plus `bitty-app` and the retained `bitty-core` seed) per
-[ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md); tail crates
-are `Implemented` but not yet `Verified` and do not imply shipped or
+evidence matrix remains `pending`. The adopted workspace decomposition is fixed
+in
+[ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md)
+and `bitty/Cargo.toml`; current crate counts, revisions, and milestone
+evidence live in
+[project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json),
+which this document links to instead of duplicating. Tail crates are
+`Implemented` but not yet `Verified` and do not imply shipped or
 compatibility-guaranteed behavior.
 
-## Candidate decision rule
-
-To decide whether a capability belongs in Core, first ask:
-
-> Without it, can Bitty still be a correct, secure, compatible, and presentable
-> terminal emulator?
-
-If the answer is no, the capability belongs in Core or in a Core primitive.
-Then ask:
-
-> Does it primarily define a user workflow, layout policy, or optional
-> experience?
-
-If the answer is yes, it should preferentially be a plugin.
-
-If adopted, this rule will matter more than a permanently frozen feature list.
-New requirements should pass through these two questions first.
+Candidate decision rules, cross-cutting evolution rules, and the pending
+decision list live in [Future Boundaries](future-boundaries.md) (`draft`) and
+are not part of this accepted contract. A few bounded mechanism gaps inside
+the extension-API composition below are labeled inline as requiring an RFC;
+they do not change any ownership table and do not weaken any normative P0
+gate.
 
 ## Accepted directions
 
@@ -62,7 +49,7 @@ New requirements should pass through these two questions first.
   fixed Core product paths.
 - Give every plugin its own independent repository.
 
-## Accepted boundary principles (M1 Hardening)
+## Accepted boundary principles
 
 - Core manages resources, state, invariants, and mechanisms. Plugins manage
   behavior, policy, and user experience (accepted via Plugin Platform RFC
@@ -97,25 +84,24 @@ their effect on Core and Plugin ownership:
   capabilities, and third-party plugin failure must preserve a safe startup
   path.
 
-These are pre-implementation contracts that are now `Accepted` and
-`Implemented` at `be3bdb4` (`Implemented` for IPC/rich/resolver headless tests,
-but not yet `Verified`). A `Verified` claim requires independent
-security-auditor and P0-AC acceptance evidence per the
+These are `Accepted` contracts, `Implemented` but not yet `Verified`
+(`Implemented` for IPC/rich/resolver headless tests). A `Verified` claim
+requires independent security-auditor and P0-AC acceptance evidence per the
 [risk evidence RFC](../specifications/risk-evidence-rfc.md)
 (`Specified -> Accepted -> Implemented -> Verified -> Compatible -> Release-ready`).
 
-## Accepted Core ownership (M1 Hardening)
+## Accepted Core ownership
 
 The table describes architecture ownership. It does not claim that every
-capability or protocol belongs in the first milestone. Crate presence is
-spine-complete (16 crates `be3bdb4`) per
-[ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) and is
-`Implemented` (soak ~808 headless tests) but not yet `Verified`; `bitty-package`
-lifecycle and integrity model is `Accepted` (OQ-021, 2026-08-27) with signatures
+capability or protocol belongs in the first milestone. Crate presence follows
+[ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md)
+and is `Implemented` but not yet `Verified`; `bitty-package`
+lifecycle and integrity model is `Accepted` (OQ-021) with signatures
 still draft, `bitty-lua` `Accepted` (OQ-009/030-032), and the tail crates
 (`bitty-rich` OQ-008/015/016, `bitty-ipc`/`bitty-agent` OQ-018) are
 `Implemented` (proposed contracts headless) and do not expand the accepted
-topology until `Verified`.
+topology until `Verified`. Current revision and milestone evidence lives in
+[project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
 | Domain               | Core mechanisms and invariants                                                                       |
 | -------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -136,7 +122,7 @@ Kitty Graphics, Sixel, iTerm2 images, Kitty keyboard, and OSC 7/8/52/133 belong
 to the “if supported, Core must implement it correctly” category. The protocol
 roadmap still determines their priorities.
 
-## Accepted Plugin ownership (M1 Hardening)
+## Accepted Plugin ownership
 
 | Optional experience   | Policy owned by the plugin                                                                             |
 | --------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -230,13 +216,13 @@ UI, then loads a new generation. On failure, it should restore the previous
 state or isolate the failure explicitly.
 
 A separate Lua VM for every plugin, a restricted standard library, and
-attributable resource budgets are normative P0 gates. They are now
-`Implemented` at `be3bdb4` (`piccolo` 0.3.3 RC-1/RC-2, `bitty-lua`/`bitty-plugin-host`
-headless tests, queue budgets PerSub 64 / PerPlugin 1024 / Global 8192) but
-remain `Implemented` not yet `Verified` until independent P0-AC audit per
-[risk evidence RFC](../specifications/risk-evidence-rfc.md). VM creation cost,
-generation reload, cross-plugin services, state migration, and
-budget-enforcement mechanisms are measured headless but pending `Verified`.
+attributable resource budgets are normative P0 gates. They are `Implemented`
+but not yet `Verified` until independent P0-AC audit per
+[risk evidence RFC](../specifications/risk-evidence-rfc.md); queue budgets
+follow the accepted Plugin Platform contract. VM creation cost, generation
+reload, cross-plugin services, state migration, and budget-enforcement
+mechanisms remain pending `Verified`. Current implementation evidence lives in
+[project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
 ## Two security domains
 
@@ -274,9 +260,9 @@ above.
 ## Boundary acceptance (lifecycle `Specified -> Accepted -> Implemented -> Verified`)
 
 - Architecture tests inspect the crate dependency DAG and prevent lower layers
-  from depending on higher layers (`Implemented` at `be3bdb4`, pending `Verified`).
+  from depending on higher layers (`Implemented`, pending `Verified`).
 - The parser, Terminal state, and image decoder receive fuzzing as
-  untrusted-input surfaces (headless + soak ~808 tests `Implemented`, `Verified` pending).
+  untrusted-input surfaces (headless soak `Implemented`, `Verified` pending).
 - Recorded corpora and reference implementations support differential and replay
   tests (`Implemented`).
 - The renderer consumes only a public snapshot or model and does not read
@@ -286,96 +272,9 @@ above.
 - Debug consumers read state only through a versioned protocol and do not link
   application-private types (`Accepted` DevTools RFC OQ-019; `Implemented` but not yet `Verified`).
 
-## Candidate 009 cross-cutting rules
+## Candidate evolution
 
-The following rules are candidates from the platform-architecture research
-direction. They refine the candidate decision rule above; they do not change
-any accepted ownership table and do not weaken any normative P0 gate.
-
-### Primitive-or-composable test
-
-For every new capability ask:
-
-> Is it a Platform Primitive, or is it composable from existing primitives?
-
-`Workspace`, `Panel`, `Focus`, `Event`, `Command`, `Service`, `Capability`,
-`IPC`, and `Terminal Session` are candidate Platform Primitives. `AI`,
-`Git`, file management, and similar experiences are candidate composables
-that belong in plugins. A capability that fails this test as a primitive
-but is proposed for Core anyway requires an explicit ADR justifying why
-composition is insufficient.
-
-### Semantic API stability rule
-
-The Lua API exposes system semantics, never Rust implementation structure,
-so that Rust may refactor freely while the Lua surface stays stable:
-
-```lua
--- Accepted v1 semantic API spellings (ADR 0009; Plugin API v1 Lua Surface RFC).
-bitty.terminal.snapshot({ scope = "semantic" })
-bitty.ui.mount("statusline", component)
-bitty.services.get("ai.chat", { version = ">=2.0" })
-```
-
-```lua
--- Deliberately unsupported direction: Rust internals must never be public.
-terminal.grid.rows[3].cells[5].glyph
-bitty.ipc.send_raw_frame(...)
-bitty.renderer.draw(...)
-```
-
-Concretely: Rust owns mechanism (PTY, VT, GPU, IPC framing, concurrency,
-streaming, HTTP/SSE, resource bounds, capability enforcement, terminal
-state, provider protocols, lifecycle) while Lua owns policy (keymaps,
-workflows, commands, panel composition, automation, plugin behavior,
-prompt logic, provider preference, UX). In short: Rust makes things
-possible and safe; Lua decides how they are used.
-
-### Health signals beyond lines of code
-
-Total lines of code must never be compared directly against minimal
-terminals: Bitty carries a config runtime, Lua VM, plugin host, package
-manager, workspace model, UI extension, rich content, IPC, agent
-infrastructure, and security model that a bare emulator omits. Healthier
-candidate signals:
-
-- **Dependency direction**: the crate graph stays close to a DAG with no
-  reverse edges from lower layers to higher ones.
-- **Stable API surface growth**: the public Rust API, Lua API, IPC
-  protocol, plugin manifest, and service API grow slowly; surface growth
-  is more dangerous than line growth.
-- **Core hot path isolation**: nothing from Lua, plugins, IPC, or AI
-  enters the PTY read, VT, state, snapshot, and render path.
-- **Failure containment**: each subsystem failure degrades only its owner
-  (AI crash removes AI, plugin crash disables that plugin, IPC crash
-  removes control) while the terminal keeps working.
-- **Core-to-total ratio**: core complexity grows slowly while ecosystem
-  lines grow through composition; irreducible complexity and its placement
-  matter more than totals.
-
-Related extensibility challenges that remain open as follow-up work:
-dependency-conflict resolution, service disappearance semantics, and UI
-composition conflicts (multiple plugins claiming panels, status areas, or
-input). Dependency cycles are already rejected and lifecycle, capability,
-and event-storm controls are already accepted in the
-[Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); the three
-open items above still require their own RFCs.
-
-## Pending decisions
-
-- The minimum Command, Event, UI, and Service set for the first Plugin API
-  version.
-- The manifest format and dependency resolution; the current candidate is
-  `bitty-plugin.toml`.
-- The implementation mechanism for per-plugin VMs, asynchronous callbacks, and
-  resource-budget thresholds and enforcement. The VM bridge, lifecycle, source
-  staging, and host-service wiring are defined by the accepted
-  [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-host-runtime-rfc.md)
-  (OQ-033/OQ-034/OQ-035, ratified through
-  [ADR 0010](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0010-plugin-host-runtime-acceptance.md));
-  implementation evidence remains per-crate.
-- Plugin signing, source trust, installation, and update models.
-- The default bundled-plugin set and disabling behavior.
-- Observation-event batching, dropping, and backpressure semantics.
-- Which user actions allow interception and the default behavior after a
-  timeout.
+Candidate decision rules, cross-cutting evolution rules, health signals, and
+the pending decision list are tracked in [Future Boundaries](future-boundaries.md)
+(`draft`). They refine this accepted contract without changing any ownership
+table and without weakening any normative P0 gate.
