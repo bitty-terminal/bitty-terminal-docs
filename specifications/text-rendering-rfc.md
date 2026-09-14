@@ -97,6 +97,11 @@ evidence**; they are headless test seams, not user-facing typography.
   [Core and Plugin Boundaries](../architecture/core-boundaries.md): one-way
   crate DAG; `Terminal -> Snapshot` only, renderer never reads Terminal
   private structures; Text and Presentation are Core-owned mechanisms.
+  Bidi reordering, shaping, and text layout are Core-owned because they
+  change Terminal Truth invariants (grapheme -> cell mapping, cursor,
+  selection, snapshot/damage); plugins may only add presentation above this
+  seam and never reorder or re-shape Terminal Truth
+  ([DIR-014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md#accepted-working-directions)).
 - [ADR 0004](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0004-upstream-dependencies.md): the
   rendering rows wrap `vte@0.15`, `winit@0.30`, `wgpu@25.0`, `crossfont@0.9`;
   shaping/fallback decisions must revise the ADR, not silently add a new

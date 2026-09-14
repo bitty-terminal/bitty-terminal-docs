@@ -121,7 +121,7 @@ topology until `Verified`.
 | -------------------- | ---------------------------------------------------------------------------------------------------- |
 | Process and terminal | PTY/ConPTY, process lifecycle, resize, signals, and I/O backpressure                                 |
 | VT and state         | Parser, semantic actions, grid, cursor, modes, scrollback, damage, and replies                       |
-| Text                 | UTF-8, graphemes, cell width, combining marks, fallback, shaping, and emoji                          |
+| Text                 | UTF-8, graphemes, cell width, combining marks, fallback, bidi, shaping, and emoji                    |
 | Protocols            | CSI/OSC/DCS/APC parsing, security limits, and compatible semantics for selected protocols            |
 | Images               | Protocol adapters, `ImageStore`, `ImagePlacement`, resource limits, and scrolling/stacking semantics |
 | Input                | Keyboard/mouse encoding, IME, focus, paste, and the keymap registry                                  |
