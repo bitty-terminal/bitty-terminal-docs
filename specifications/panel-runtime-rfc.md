@@ -1,61 +1,57 @@
 ---
-title: Panel Runtime and Event Bus Pre-Study
-description: Research draft surveying Generic Panel Runtime and Event Bus as Panel Platform prerequisite reconciled with TerminalRegistry View and Workspace Compositor
+title: Panel Runtime RFC
+description: Accepted contract for the generic Panel container and host-mediated Event Bus reconciled with TerminalRegistry View and the Workspace Compositor
 category: specifications
-audience: contributor
+audience: maintainer
 document_type: specification
-status: archived
-website_publish: false
-sidebar_order: 27
+status: accepted
+website_publish: true
+sidebar_order: 28
 ---
 
-# Panel Runtime and Event Bus Pre-Study
+# Panel Runtime RFC
 
-> Superseded: this research pre-study is **archived** historical provenance and
-> is superseded by the accepted [Panel Runtime RFC](panel-runtime-rfc.md)
-> (docs `CTX-0181`, 2026-09-14), which promotes its contract content. Do not
-> treat this document as current advice; the RFC is authoritative and the open
-> questions below are carried forward there as `RFC-OQ-1` through `RFC-OQ-9`.
-> The text is retained unchanged for provenance except this banner and the
-> frontmatter `status`.
->
-> Archived status: this document was published as a **draft** research pre-study,
-> and it is not **Accepted**, not **Verified**, not
-> **normative**, and not **Compatible**. This document surveys a candidate Generic
-> Panel Runtime and Event Bus contract as a prerequisite for a future Panel
-> Platform, reconciled with the accepted
-> [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md)
-> (CTX-0117, `6f30c2f`, Accepted plus Experimental Implementation `c0aadd2`/`a8735d0`)
-> and the accepted
-> [Workspace Compositor Specification](workspace-compositor.md)
-> (CTX-0118, `c3a2928`, Accepted, no experimental implementation). It proposes no
-> implementation, authorizes no shipped, stable, or compatibility-guaranteed
-> behavior, and does not weaken any normative control in the
-> [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md), [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md),
-> [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md), or [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md).
-> The lifecycle is `Draft -> experimental review evidence -> Accepted -> Verified -> Compatible`
-> (spec) and `Draft -> experimental review evidence -> Accepted -> normative` (document);
-> only `Accepted` or `normative` documents authorize shipped behavior. All thresholds
-> below are candidate research values that require a reviewed acceptance decision
-> before implementation may claim them.
+> Status: **accepted** on 2026-09-14 under docs `CTX-0181`
+> (`bitty-terminal/bitty-terminal-docs` issue #14), promoting the
+> [Panel Runtime and Event Bus Pre-Study](panel-runtime-pre-study.md)
+> (CTX-0119, OQ-014 panel-platform follow-up) from research draft to an accepted
+> contract. Acceptance records a reviewed contract; it does not describe
+> implemented behavior, does not promote anything to **Verified** or
+> **Compatible**, and does not resolve the pre-study's open questions, which
+> remain tracked as [`RFC-OQ-1`](#open-questions) through
+> [`RFC-OQ-9`](#open-questions). This RFC does not weaken any normative control
+> in the [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md),
+> [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md),
+> [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md),
+> or [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md).
+> The lifecycle is `Draft -> experimental review evidence -> Accepted ->
+Verified -> Compatible` (spec) and `Draft -> experimental review evidence ->
+Accepted -> normative` (document); only `Accepted` or `normative` documents
+> authorize shipped behavior. The pre-study is retained as historical research
+> provenance and is superseded by this RFC.
 
 ## Purpose and scope
 
 Bitty has an accepted single-owner lifecycle for terminals and views
-(`TerminalRegistry` plus `Workspace -> LayoutTree -> View` with `ViewId != TerminalId`)
-and an accepted tiling compositor with `H`/`V` primitives, Core-owned decoration,
-and `LayoutProvider` plugins. The next platform step is whether a generic
-application container called **Panel** can be hosted by that compositor without
-conflating identities, leaking PTY descriptors, breaking focus routing, or
-weakening capability isolation. This pre-study surveys that question so a future
-Panel RFC can be scoped without re-opening accepted contracts.
+(`TerminalRegistry` plus `Workspace -> LayoutTree -> View` with
+`ViewId != TerminalId`) and an accepted tiling compositor with `H`/`V`
+primitives, Core-owned decoration, and `LayoutProvider` plugins. This RFC is
+the accepted contract for a generic application container called **Panel** that
+the compositor can host without conflating identities, leaking PTY descriptors,
+breaking focus routing, or weakening capability isolation, together with the
+host-mediated inter-Panel **Event Bus**.
 
-In scope for this research (candidate, not normative):
+This document is a promotion, not a redesign: it re-states the pre-study's
+candidate contract as an accepted one, keeps the same bounded values and
+exclusions, and leaves every item the pre-study did not decide explicitly open
+(see [Open questions](#open-questions)).
 
-- panel lifecycle (`PanelId`, creation, mount, suspend, resume, unmount, disposal,
-  generation, reattachment versus recreation);
+In scope:
+
+- panel lifecycle (`PanelId`, creation, mount, suspend, resume, unmount,
+  disposal, generation, reattachment versus recreation);
 - command registry reuse for panel actions;
-- overlay as presentation-only modal/palette/tooltip surface;
+- overlay as a presentation-only modal, palette, or tooltip surface;
 - focus routing among panels, views, terminals, and overlays;
 - inter-panel Event Bus topic, payload, subscription, ordering, and isolation;
 - capability isolation and budget attribution for panels and bus traffic.
@@ -66,8 +62,9 @@ Out of scope and owned elsewhere:
   [Terminal State RFC](terminal-state-rfc.md));
 - text segmentation, width, bidi, shaping, atlas, and DPI contracts
   ([Text and Rendering RFC](text-rendering-rfc.md), draft);
-- image, scene, zone, and structured transport ([Rich Presentation RFC](rich-presentation-rfc.md));
-- Platform adapter ownership, `winit`/`winit` key and pointer normalization
+- image, scene, zone, and structured transport
+  ([Rich Presentation RFC](rich-presentation-rfc.md));
+- Platform adapter ownership and `winit` key and pointer normalization
   ([Input and Pointer Contract](input-pointer-rfc.md), draft);
 - Plugin API v1, capability grammar, manifest, and three-level queue budgets
   (OQ-011/012/013, [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
@@ -78,25 +75,22 @@ Out of scope and owned elsewhere:
 - daemon, session persistence, and remote UI trust boundaries
   ([ADR 0008 - Headless](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md), post-v1.0).
 
-This document is the research deposit for CTX-0119 (`Priority: P2 | Area: product | Labels: docs,area:product,P2 | Milestone: v0.1.0 | RFC: OQ-014 | Task: CTX-0119`)
-and does not close an open question on its own.
-
 ## Relationship to accepted sources
 
-| Area                 | Accepted fact (cite)                                                                                                                                                                                                                                                               | How this research reconciles (candidate)                                                                                                                                                                                                             |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Topology             | One-way DAG, `Terminal -> Snapshot` only, 16-crate workspace per [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) (OQ-005)                                                                               | Panel Runtime would live in `bitty-runtime`/`bitty-ui` boundary without reversing DAG edges; `bitty-vt`/`bitty-term-state`/`bitty-pty` stay dependency-free                                                                                          |
-| Terminal lifecycle   | `TerminalRegistry` as single owner of PTY handles, `TerminalId != ViewId`, `RuntimeId`/`PersistentId`/`Generation`, bounded `64`/`32`/`16`, single view per terminal per [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md)                   | Panel proposes `PanelId` as a fourth incompatible newtype, at most one panel host per panel, no panel holds PTY fd, panel generation mirrors registry generation, reuse of resize routing `cols = floor(rect.width / cell_width)` via `LogicalRect`  |
-| Workspace compositor | `Instance -> Window -> Workspace -> LayoutTree -> View` with `H`/`V` `ratio [0.1,0.9]`, Core-owned `gaps_in 4`/`gaps_out 6`/`border 2`/`radius 6`, `LayoutProvider` pure deterministic `propose` per [Workspace Compositor Specification](workspace-compositor.md)                 | Panel as candidate extension of `View` content (`Empty`, `Terminal(TerminalId)`, `Rich`, `Browser`, `Panel(PanelId)`) without adding a new tiling primitive; `LayoutTree` and decoration stay Core-owned; `LayoutProvider` never mutates panel state |
-| Input                | Hot path `Platform -> Router -> focused View -> keymap -> encoder -> PTY` with no Lua per [Input and Pointer Contract](input-pointer-rfc.md) (draft)                                                                                                                               | Focus routing for panels reuses the same router with `focused Panel` as an alternative routing target; overlay capture is presentation-only; no `input.pre-encode` plugin hook                                                                       |
-| Plugin platform      | One VM per `(PluginId, generation)`, deny-by-default capabilities, observation versus interception, four interception points, `DropOldest` default per [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) | Panel lifecycle follows the same generation rule; panel-contributed UI is declarative; Event Bus reuses observation queues, not interception                                                                                                         |
-| Isolation            | Per-subscription `64`, per-plugin `1024`/`256 KiB`, global `8192`/`2 MiB` with `DropOldest`, RC-1 `10^7`/`50 ms`/`8 ms`, RC-2 `32 MiB` per [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)       | Panel and bus budgets are sized to fit inside the same three-level envelope without borrowing                                                                                                                                                        |
-| IPC                  | Bounded `256 KiB` frame, `512 KiB` in-flight, `64` pending, scopes per request per [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)                                                                                  | Cross-process bus, if ever needed, would reuse the same framing and scope model, not a new TCP surface                                                                                                                                               |
+| Area                 | Accepted fact (cite)                                                                                                                                                                                                                                                               | How this RFC reconciles (accepted)                                                                                                                                                                                                                    |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Topology             | One-way DAG, `Terminal -> Snapshot` only, 16-crate workspace per [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) (OQ-005)                                                                               | Panel Runtime lives at the `bitty-runtime`/`bitty-ui` boundary without reversing DAG edges; `bitty-vt`/`bitty-term-state`/`bitty-pty` stay dependency-free                                                                                            |
+| Terminal lifecycle   | `TerminalRegistry` as single owner of PTY handles, `TerminalId != ViewId`, `RuntimeId`/`PersistentId`/`Generation`, bounded `64`/`32`/`16`, single view per terminal per [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md)                   | Panel uses `PanelId` as a fourth incompatible newtype, at most one panel host per panel, no panel holds a PTY fd, panel generation mirrors registry generation, and reuse of resize routing `cols = floor(rect.width / cell_width)` via `LogicalRect` |
+| Workspace compositor | `Instance -> Window -> Workspace -> LayoutTree -> View` with `H`/`V` `ratio [0.1,0.9]`, Core-owned `gaps_in 4`/`gaps_out 6`/`border 2`/`radius 6`, `LayoutProvider` pure deterministic `propose` per [Workspace Compositor Specification](workspace-compositor.md)                 | Panel extends `View` content (`Empty`, `Terminal(TerminalId)`, `Rich`, `Browser`, `Panel(PanelId)`) without adding a new tiling primitive; `LayoutTree` and decoration stay Core-owned; `LayoutProvider` never mutates panel state                    |
+| Input                | Hot path `Platform -> Router -> focused View -> keymap -> encoder -> PTY` with no Lua per [Input and Pointer Contract](input-pointer-rfc.md) (draft)                                                                                                                               | Focus routing for panels reuses the same router with `focused Panel` as an alternative routing target; overlay capture is presentation-only; no `input.pre-encode` plugin hook                                                                        |
+| Plugin platform      | One VM per `(PluginId, generation)`, deny-by-default capabilities, observation versus interception, four interception points, `DropOldest` default per [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) | Panel lifecycle follows the same generation rule; panel-contributed UI is declarative; the Event Bus reuses observation queues, not interception                                                                                                      |
+| Isolation            | Per-subscription `64`, per-plugin `1024`/`256 KiB`, global `8192`/`2 MiB` with `DropOldest`, RC-1 `10^7`/`50 ms`/`8 ms`, RC-2 `32 MiB` per [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)       | Panel and bus budgets are sized to fit inside the same three-level envelope without borrowing                                                                                                                                                         |
+| IPC                  | Bounded `256 KiB` frame, `512 KiB` in-flight, `64` pending, scopes per request per [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)                                                                                  | Cross-process bus, if ever needed, reuses the same framing and scope model, not a new TCP surface                                                                                                                                                     |
 
-Where this research selects a threshold it refines those sources; it does not move
-a requirement between owners and does not create a bypass.
+Where this RFC selects a threshold it refines those sources; it does not move a
+requirement between owners and does not create a bypass.
 
-## Normative sources this pre-study does not weaken
+## Normative sources this RFC does not weaken
 
 - [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) (invariants 1-10, especially 3 presentation never Terminal Truth, 4 no hot-path Lua, 7 bounded inputs).
 - [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md) (T-01 parser wedge, T-06 plugin escape, T-07 starvation, T-09 IPC takeover, T-13 Terminal Truth).
@@ -107,18 +101,18 @@ a requirement between owners and does not create a bypass.
 
 ## Terminology
 
-| Term            | Candidate meaning                                                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Panel`         | Generic workspace-managed application container hosted inside a `Window` via the compositor; not an OS window, not a PTY                         |
-| `PanelId`       | Stable handle for a panel instance; distinct newtype from `ViewId` and `TerminalId`, never compared or transmuted                                |
-| `PanelType`     | Closed v1 candidate set contributed by a `PanelProvider` (for example `terminal`, `rich`, `browser`, `helper`, `canvas`), validated via manifest |
-| `PanelRuntime`  | Core-owned host that creates, mounts, suspends, resumes, and disposes panels, validates `PanelId` plus generation, and mediates bus traffic      |
-| `PanelProvider` | Plugin-supplied factory that declares one or more `PanelType` values; requires `panel.provider` capability                                       |
-| `EventTopic`    | Qualified `owner.name:topic` identifier for inter-panel messages, for example `xuepoo.git:branch-changed`                                        |
-| `Overlay`       | Ephemeral presentation surface (palette, modal, tooltip, candidate picker) owned by the compositor, not a tiling leaf                            |
-| `Focus`         | Which `View` or `Panel` inside the active `Workspace` of the active `Window` owns keyboard, IME preedit, and wheel routing                       |
+| Term            | Accepted meaning                                                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Panel`         | Generic workspace-managed application container hosted inside a `Window` via the compositor; not an OS window, not a PTY                    |
+| `PanelId`       | Stable handle for a panel instance; distinct newtype from `ViewId` and `TerminalId`, never compared or transmuted                           |
+| `PanelType`     | Closed v1 set contributed by a `PanelProvider` (for example `terminal`, `rich`, `browser`, `helper`, `canvas`), validated via manifest      |
+| `PanelRuntime`  | Core-owned host that creates, mounts, suspends, resumes, and disposes panels, validates `PanelId` plus generation, and mediates bus traffic |
+| `PanelProvider` | Plugin-supplied factory that declares one or more `PanelType` values; requires the `panel.provider` capability                              |
+| `EventTopic`    | Qualified `owner.name:topic` identifier for inter-panel messages, for example `xuepoo.git:branch-changed`                                   |
+| `Overlay`       | Ephemeral presentation surface (palette, modal, tooltip, candidate picker) owned by the compositor, not a tiling leaf                       |
+| `Focus`         | Which `View` or `Panel` inside the active `Workspace` of the active `Window` owns keyboard, IME preedit, and wheel routing                  |
 
-## Principles (candidate)
+## Principles
 
 1. `PanelId`, `ViewId`, `TerminalId`, `RuntimeId`, and `PersistentId` are pairwise
    incompatible newtypes; no integer alias and no cross-type comparison.
@@ -144,13 +138,11 @@ a requirement between owners and does not create a bypass.
    subscription leaves the previous valid state intact and increments a bounded
    diagnostic counter.
 
-## Survey scope
+## Panel lifecycle
 
-### Panel lifecycle (candidate research)
+### Lifecycle model
 
-#### Lifecycle model
-
-Candidate state machine for one `PanelId` (Core-owned, host-mediated, not a
+Accepted state machine for one `PanelId` (Core-owned, host-mediated, not a
 plugin-implemented `render` trait):
 
 ```text
@@ -162,7 +154,7 @@ scratchpad hidden, zero-area, overlay occluded) without destroying attachment.
 A panel never renders from inside the VT damage path.
 ```
 
-Rules under research:
+Rules:
 
 1. `PanelRuntime::create(type, options)` validates `PanelType` against the
    provider manifest, validates `max_panels_per_workspace`, allocates a fresh
@@ -183,9 +175,10 @@ Rules under research:
    the next panel allocation fail with `GenerationExhausted` and requires a
    process restart; wrapping is forbidden.
 
-#### Ownership and surface model (candidate)
+### Ownership and surface model
 
-Illustrative shape only; final spelling belongs to `bitty-runtime` and `bitty-ui`:
+Illustrative shape only; final spelling belongs to `bitty-runtime` and
+`bitty-ui`:
 
 ```rust
 // Illustrative shapes only; not an implemented API.
@@ -203,13 +196,15 @@ enum PanelContent {
 }
 ```
 
-Candidate `Panel != Pty` invariant: `Panel` is a surface identity; `TerminalPanel`
-wraps a `TerminalId` and PTY, but `CanvasPanel`, `FilePanel`, `GraphPanel`, and
-`HelperProcessPanel` do not require a PTY. The compositor and focus layers
-operate on `PanelId`/`ViewId`, never on `is_terminal` branching.
+Accepted `Panel != Pty` invariant: `Panel` is a surface identity;
+`TerminalPanel` wraps a `TerminalId` and PTY, but `CanvasPanel`, `FilePanel`,
+`GraphPanel`, and `HelperProcessPanel` do not require a PTY. The compositor and
+focus layers operate on `PanelId`/`ViewId`, never on `is_terminal` branching.
 
-Candidate placement under research (all preserve the accepted hierarchy
-`Instance -> Window -> Workspace -> LayoutTree -> View`):
+### Placement
+
+All placement options preserve the accepted hierarchy
+`Instance -> Window -> Workspace -> LayoutTree -> View`:
 
 - Option A — Panel as typed `View` content: `ViewContent::Panel(PanelId)` as a
   fifth variant beside `Empty | Terminal | Rich | Browser`. Smallest change;
@@ -221,16 +216,17 @@ Candidate placement under research (all preserve the accepted hierarchy
   attaches to a `View` side-car (`ViewId -> PanelId` map outside `ViewContent`).
   Preserves `View` while allowing panel metadata without widening `ViewContent`.
 
-Current research preference is Option A (typed `View` content) because it reuses
-the accepted `ViewId` generation, focus MRU, visibility, and scratchpad
-semantics with the least ownership churn; a future Panel RFC must decide and
-must state the migration of `ViewId` versus `PanelId` naming explicitly.
+This RFC does **not** decide placement. Option A is the implementation shape
+observed today and the research preference of the
+[Workspace Compositor Specification](workspace-compositor.md) candidate Panel
+model, but that model stays candidate until placement is accepted; the choice
+and any `ViewId` versus `PanelId` migration is [`RFC-OQ-3`](#open-questions).
 
-### Command registry (candidate research)
+## Command registry
 
 The command registry remains Core-owned and generation-aware per the accepted
-[Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) and
-[CLI Contract RFC](cli-contract-rfc.md) direction:
+[Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
+and [CLI Contract RFC](cli-contract-rfc.md) direction:
 
 1. Panels contribute commands as qualified names `owner.name:command`, for
    example `xuepoo.git:open`. Registration is manifest-declared and validated
@@ -247,7 +243,7 @@ The command registry remains Core-owned and generation-aware per the accepted
    `network.connect:DESTINATION` with destination policy; a panel command that
    needs them must hold the same capability as any other plugin command.
 
-### Presentation modes (candidate research)
+## Presentation modes
 
 Mode is a runtime property of a panel, not a static panel kind. One `PanelId`
 may move between modes (tiled to floating to fullscreen and back) without
@@ -270,12 +266,12 @@ and visibility handling while differing in layout strategy:
 6. `pinned` fixes a panel to a workspace edge across layout changes.
 7. `popover` attaches a small panel to one UI element.
 
-Rules under research:
+Rules:
 
 1. A provider suggests a mode (`preferred_mode`) at creation, but user panel
    rules decide: match on plugin, role, or panel id to set mode, size,
    anchor, and focusability, in the spirit of window-manager window rules.
-   Rule precedence and schema belong to a future Panel RFC.
+   Rule precedence and schema remain [`RFC-OQ-9`](#open-questions).
 2. Mode transitions route through the command registry as validated
    `LayoutTree` or compositor updates; no transition mutates terminal state
    or bypasses capability checks.
@@ -283,7 +279,7 @@ Rules under research:
    never receives keyboard, IME, or wheel events under the focus routing
    below, but may still subscribe to observation bus topics.
 
-### Layout options and workspace persistence (candidate research)
+## Layout options and workspace persistence
 
 1. A scrolling layout option (in the spirit of niri) keeps each surface at
    a preferred width with `min_width`/`max_width` bounds and navigates by
@@ -295,14 +291,14 @@ Rules under research:
    workspace serializes its `LayoutTree`, `ViewId` set, panel attachments,
    and modes, and restores them through the same validated commit path as
    live layout. Persistence format, versioning, and PTY reattachment rules
-   belong to a future RFC; no persistence is claimed here.
+   remain [`RFC-OQ-9`](#open-questions); no persistence is claimed here.
 
-### Overlay (candidate research)
+## Overlay (4+1)
 
 Overlay is a presentation-only ephemeral surface owned by the compositor:
 
-1. Types under research: command palette, modal dialog, tooltip, IME candidate
-   picker, notification toast, and panel-owned `ui.overlay` surfaces.
+1. Types under this contract: command palette, modal dialog, tooltip, IME
+   candidate picker, notification toast, and panel-owned `ui.overlay` surfaces.
 2. An overlay never mutates `Terminal` grid, scrollback, or `View` attachment;
    it is a declarative value with bounded text and bounds, composed after
    `LayoutTree` rectangle math.
@@ -316,7 +312,7 @@ Overlay is a presentation-only ephemeral surface owned by the compositor:
    panel rect; it never re-enters the `LogicalRect -> PTY` resize path and
    therefore never resizes a PTY via overlay bounds.
 
-### Focus routing (candidate research)
+## Focus routing
 
 Focus routing reuses the accepted TerminalRegistry focus model and the input
 router contract:
@@ -345,13 +341,13 @@ router contract:
    consulted per keystroke. Plugins observe focus changes only via the
    cold-path `focus.changed` observation event with its existing queue budgets.
 
-### Event Bus (candidate research)
+## Event Bus
 
 The bus is a host-mediated, typed, bounded decoupling surface between panels,
 workspaces, and plugins. It is not a direct panel reference, not a renderer
 channel, and not an IPC TCP surface.
 
-#### Topic and payload model (candidate)
+### Topic and payload model
 
 1. Topics are qualified `owner.name:topic` strings matching
    `^[a-z][a-z0-9_-]*\.[a-z][a-z0-9_-]*:[a-z][a-z0-9_.-]*$`, bounded to `<= 64`
@@ -377,24 +373,24 @@ Illustrative shape only:
 ```lua
 -- Candidate shape only; not an implemented API.
 -- Manifest-declared topics; payloads are typed, bounded, immutable.
-bitty.bus.emit("xuepoo.files:file.open", { path = "/home/user/main.rs" })
+bitty.bus.emit("xuepoo.files:file.open", { path = "src/main.rs" })
 
 bitty.bus.on("xuepoo.files:file.open", function(event)
   bitty.commands.invoke("xuepoo.editor:open", event.path)
 end)
 ```
 
-#### Queue, batching, ordering, and drop (candidate)
+### Queue, batching, ordering, and drop
 
 Reuses the accepted three-level envelope from OQ-014:
 
-| Level                | Candidate default for bus traffic                                                                                                                                                   | Enforcement point                    |
+| Level                | Accepted default for bus traffic                                                                                                                                                    | Enforcement point                    |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
 | PerSubscription      | `64` events per `(PanelId, topic)` or `(PluginId, topic)` queue, strict FIFO at `EventQueue::push`                                                                                  | Bus subscription queue               |
 | PerPanel / PerPlugin | `1024` events / `256 KiB` aggregate per panel or plugin, enforced at bus publish with `DropOldest` (v1 default)                                                                     | PanelRuntime / EventPipeline publish |
 | Global               | `8192` events / `2 MiB` aggregate across all bus traffic, hard-gated at host admission via `would_exceed_global_limits` + `evict_oldest_globally`, strict `invariant_global_bounds` | Host admission                       |
 
-Rules under research:
+Rules:
 
 1. Coalescing: topics declared coalescable (`file.open` latest-wins, `cwd-changed`,
    focus, selection) collapse to the latest value when the queue holds undelivered
@@ -411,7 +407,7 @@ Rules under research:
    render events are not expressible as bus topics, preserving T-07 callback-storm
    exclusion at the type level.
 
-#### Capability isolation for the bus (candidate)
+### Capability isolation for the bus
 
 1. Emitting on a topic requires the emitter's manifest to have declared that
    topic as produced, and the subscriber's manifest to have declared it as
@@ -425,17 +421,17 @@ Rules under research:
    `(PanelId, generation)` has its own ledger; a scope granted to an Agent does
    not augment a plugin's bus subscription and vice versa.
 4. A bus topic never escapes a Window without an explicit cross-window or
-   cross-process transport RFC; the v1 research scope is single-process,
-   single-window only. Bridging to IPC framing reuses the accepted `256 KiB`
-   frame, `512 KiB` in-flight, depth `32`, RC-9/RC-10 quotas, and per-request
-   scope evaluation without creating a new TCP surface.
+   cross-process transport RFC; the v1 scope is single-process, single-window
+   only. Bridging to IPC framing reuses the accepted `256 KiB` frame, `512 KiB`
+   in-flight, depth `32`, RC-9/RC-10 quotas, and per-request scope evaluation
+   without creating a new TCP surface.
 
-### Capability isolation (candidate research)
+## Capability isolation
 
-1. Closed families: panel capabilities would close under a dedicated
-   `panel.*` family proposed as `panel.provider`, `panel.create`,
-   `panel.focus`, `panel.overlay`. Plugins cannot invent families; a `PanelType`
-   contributed without the matching `panel.*` grant fails at registration.
+1. Closed families: panel capabilities close under a dedicated `panel.*` family
+   `panel.provider`, `panel.create`, `panel.focus`, `panel.overlay`. Plugins
+   cannot invent families; a `PanelType` contributed without the matching
+   `panel.*` grant fails at registration.
 2. `LayoutProvider` retains `layout.provider`, `Browser` retains `browser.embed`,
    `Rich` retains `ui.rich`, and `ui.overlay` gates palette/modal surfaces;
    `panel.*` does not subsume those gates and does not grant them implicitly.
@@ -450,7 +446,7 @@ Rules under research:
    attribution and observable accounting; per-plugin dimensions remain
    `(PluginId, generation)` per OQ-014.
 
-## Architectural placement (candidate)
+## Architectural placement
 
 ```text
 Instance (InstanceId)
@@ -466,7 +462,7 @@ Instance (InstanceId)
               +-- Command contributions: qualified names, manifest-declared
 ```
 
-Rules under research:
+Rules:
 
 1. `PanelRuntime` owns panel creation, mount, suspend, resume, and disposal and
    holds no PTY fd, GPU object, or OS handle; those remain with `bitty-pty`,
@@ -477,11 +473,17 @@ Rules under research:
 3. `LayoutProvider::propose` remains a pure function of `WorkspaceSnapshot`,
    `ViewId` set, and `LogicalRect`; a panel proposal that carries decoration
    or mutates layout outside the tree is rejected.
-4. The bus is in-process first; cross-process routing, if ever adopted, would
-   go through the accepted IPC transport with peer-credential auth and per-request
+4. The bus is in-process first; cross-process routing, if ever adopted, goes
+   through the accepted IPC transport with peer-credential auth and per-request
    scope evaluation, not through a new ambient channel.
 
-## Identity: PanelId distinct (candidate)
+The `Panel(PanelId)` content variant shown above is the current implementation
+shape (see [Implementation status](#implementation-status)); placing it in the
+accepted hierarchy is still [`RFC-OQ-3`](#open-questions). The accepted
+`ViewId` generation, focus, visibility, and scratchpad semantics apply to a
+panel host unchanged.
+
+## Identity: PanelId distinct
 
 ```rust
 // Illustrative shapes only; not an implemented API.
@@ -492,7 +494,7 @@ struct Generation(u64);
 struct EventTopic(BoundedString<64>);
 ```
 
-Rules under research:
+Rules:
 
 1. `PanelId`, `ViewId`, `TerminalId`, `RuntimeId`, `PersistentId`, and
    `Generation` are distinct types; no function accepts one where another is
@@ -504,9 +506,9 @@ Rules under research:
    call with a stale generation is rejected with `StaleHandle` before any
    state access, mirroring the registry and view rule.
 
-## Bounded resources (candidate research defaults)
+## Bounded resources
 
-All ceilings are candidate defaults parameterized for harness coverage. Changing
+All ceilings are accepted defaults parameterized for harness coverage. Changing
 a value requires a reviewed RFC revision, never silent drift. Floors are
 enforced; unknown or out-of-range budget keys fail validation closed per the
 isolation `ceiling-is-upward-only` and attribution rules. Values are chosen to
@@ -514,7 +516,7 @@ fit inside the accepted three-level envelope (PerSub `64`, PerPlugin `1024`/`256
 Global `8192`/`2 MiB`, `BoundedText` `8 KiB`, `drain_batch` `32`/`8 KiB`, RC-1/RC-2)
 without introducing a new global budget family.
 
-| ID    | Dimension                         | Candidate default                                    | Applies to             | Validation point                      | Failure                                                     |
+| ID    | Dimension                         | Accepted default                                     | Applies to             | Validation point                      | Failure                                                     |
 | ----- | --------------------------------- | ---------------------------------------------------- | ---------------------- | ------------------------------------- | ----------------------------------------------------------- |
 | PR-1  | Panels per workspace              | `[1, 32]`, default `16`                              | per workspace          | `PanelRuntime::create` + `ConfigPlan` | `TooManyPanels`                                             |
 | PR-2  | Panels per window                 | `[1, 64]`, default `32` aggregate                    | per window             | admission before mount                | `TooManyPanels`                                             |
@@ -532,16 +534,16 @@ without introducing a new global budget family.
 Notes:
 
 - PR-7/PR-8/PR-9 intentionally mirror the accepted `PerSubscription`/`PerPlugin`/`Global`
-  ceilings so a future implementation tests bus traffic with the same harness as
+  ceilings so an implementation tests bus traffic with the same harness as
   plugin events; no new budget family is introduced.
 - Aggregate plugin plus panel bus traffic shares the same global `8192`/`2 MiB`
   envelope; a panel burst that would exceed it is the same global-limit event
   as a plugin burst, not a second independent ceiling.
 - Panel surface memory beyond queues (helper handles, canvas bitmaps) is
   accounted under RC-2 `32 MiB` per backing VM or helper budget and RC-3 `512 MiB`
-  aggregate; this research does not introduce a new heap ceiling.
+  aggregate; this RFC does not introduce a new heap ceiling.
 
-## Failure semantics (candidate)
+## Failure semantics
 
 All operations return a typed panel or bus error and leave the previous valid
 state intact. No operation panics and no operation partially commits.
@@ -568,7 +570,7 @@ Every error increments a bounded diagnostic counter `panel.errors.<variant>` or
 `bus.errors.<variant>` and is available via the debug protocol. Error strings
 and counters are bounded and never echo unbounded panel or bus payloads.
 
-Containment and attribution rules under research:
+Containment and attribution rules:
 
 - FS-P1 Transactional denial: a refused capability, budget, or scope leaves no
   partial state — no allocation charged, no queue entry, no registration.
@@ -586,28 +588,28 @@ Containment and attribution rules under research:
 
 ## Explicit exclusions (not authorized)
 
-The following remain explicitly out of scope for this research and are not
-authorized as shipped, stable, or compatibility-guaranteed behavior by this
-draft. Each requires its own RFC or ADR with independent architecture, security,
-and performance review before it can be claimed.
+The following remain explicitly out of scope and are not authorized as shipped,
+stable, or compatibility-guaranteed behavior by this RFC. Each requires its own
+RFC or ADR with independent architecture, security, and performance review
+before it can be claimed.
 
-| Excluded                                                                                       | Why deferred                                                                                                                                                                             | What this research does instead                                                                                                     |
+| Excluded                                                                                       | Why deferred                                                                                                                                                                             | What this RFC does instead                                                                                                          |
 | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | Daemon `bittyd` and session persistence across reboots                                         | Post-v1.0 per [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md); trust boundary not reviewed here                              | Process-scoped runtime only; persistence is at most `PersistentId` scrollback rehydration per terminal rules                        |
 | Remote UI and cross-host transport                                                             | New trust boundary with cross-machine auth (`mTLS` or SSH tunnel) not evaluated                                                                                                          | No remote wire format, no network port, no remote capability mapping                                                                |
 | Multi-window as global server                                                                  | Window stays native OS object per [Workspace Compositor](workspace-compositor.md); orchestrating many windows adds focus, DPI, and lifetime questions                                    | One `Instance` owns `Window`s; panel work is single-window first; cross-window topics deferred                                      |
 | WASM or helper-process strong isolation for panels                                             | Native in-process plugins remain rejected per [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md); WASM/helper design needs its own RFC | In-process Lua VM isolation per OQ-014 remains the only in-process boundary; helper-process reuse is candidate only via IPC framing |
 | Browser embed per-window process budget beyond isolation ceilings                              | `browser.embed` is high-risk capability plus `Browser` view type already requires dedicated isolation                                                                                    | Panels that need a browser surface reuse `browser.embed` gate and existing RC-3 aggregate; no new process-budget ceiling here       |
-| Panel distribution preset or marketplace ownership (`bitty-dev`, `LazyBitty`, `awesome-bitty`) | Owned by [Default Distribution RFC](default-distribution-rfc.md) and future panel distribution RFC                                                                                       | Research notes presets as configuration composition, not as a new bundled-enabled set                                               |
+| Panel distribution preset or marketplace ownership (`bitty-dev`, `LazyBitty`, `awesome-bitty`) | Owned by [Default Distribution RFC](default-distribution-rfc.md) and future panel distribution RFC                                                                                       | Presets are configuration composition, not a new bundled-enabled set                                                                |
 | New global file, network, or process ambient for Lua                                           | Violates [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) invariant 2                                                               | Panels obtain those only via explicit `fs.*`/`network.*`/`process.spawn:CONSTRAINT` capabilities                                    |
 | New hot-path `input.pre-encode` interception point                                             | Would put Lua on the hot path per [Input and Pointer Contract](input-pointer-rfc.md)                                                                                                     | Panels observe via commands and `focus.changed` observation only                                                                    |
 
-Claiming any excluded behavior by citing this pre-study is a documentation
-hygiene violation. Cross-document references must preserve the deferred status.
+Claiming any excluded behavior by citing this RFC is a documentation hygiene
+violation. Cross-document references must preserve the deferred status.
 
-## Security review (candidate research)
+## Security review
 
-This research creates no ambient authority and does not weaken any P0 gate:
+This RFC creates no ambient authority and does not weaken any P0 gate:
 
 1. PTY file descriptors, GPU objects, and OS window handles remain with
    `bitty-pty`, `bitty-render`, and `bitty-platform`; no view, panel,
@@ -623,77 +625,105 @@ This research creates no ambient authority and does not weaken any P0 gate:
    subscriber action, not per message receipt.
 5. The existing IPC framing bounds, current-user transport, peer-credential
    checks, per-request scope evaluation, and RC-9/RC-10 quotas remain the
-   security baseline for any future cross-process bus; this research does not
+   security baseline for any future cross-process bus; this RFC does not
    introduce a TCP listener or an ambient bearer token.
 6. Host responsiveness during panel or bus bursts is bounded by the same invariant
    used for isolation: input-to-render p99 within the PB-4 tail budget while
    under burst.
 
-All controls above are candidate until the implementing tasks deliver focused
-tests, fuzz corpora, and independent security-auditor review per
+All controls above are accepted contract but remain unverified until the
+implementing tasks deliver focused tests, fuzz corpora, and independent
+security-auditor review per
 [P0 Acceptance Criteria](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md) and the
 [Risk Evidence RFC](risk-evidence-rfc.md).
 
-## Reconciliation with TerminalRegistry/View and Workspace Compositor
+## Reconciliation with TerminalRegistry View and Workspace Compositor
 
-Accepted contracts remain authoritative; this research proposes how a future
-Panel RFC would sit on them without revising them:
+Accepted contracts remain authoritative; this RFC sits on them without
+revising them:
 
 - **Hierarchy**: `Instance -> Window -> Workspace -> LayoutTree -> View` stays
   authoritative per [Workspace Compositor](workspace-compositor.md). Panel is a
-  candidate `ViewContent` variant, not a second tiling primitive. Without an
-  accepted Panel RFC, `ViewContent` stays closed to `Empty | Terminal | Rich | Browser`
-  and no `PanelId` exists in the hierarchy.
+  candidate `ViewContent` variant, not a second tiling primitive. The
+  compositor's candidate Panel model and the `ViewContent` spelling remain
+  candidate until placement is accepted ([`RFC-OQ-3`](#open-questions)); this
+  RFC does not rewrite the compositor.
 - **Identity**: `ViewId != TerminalId` is authoritative per both accepted
-  contracts. The research adds `PanelId != ViewId != TerminalId` and reuses the
+  contracts. This RFC adds `PanelId != ViewId != TerminalId` and reuses the
   same generation and `StaleHandle` rules; no migration of `ViewId` naming is
-  performed by this pre-study.
+  performed here.
 - **Focus**: focus MRU per workspace, `View focused: bool`, and the rule
   `Platform -> Router -> focused View -> keymap -> encoder -> PTY` are
   authoritative per [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md).
-  The research proposes that the router read `focused Panel` as an alternative
-  target with identical MRU and `no_focus` counter semantics; no focus behavior
-  is changed before its own RFC.
+  This RFC routes `focused Panel` as an alternative target with identical MRU
+  and `no_focus` counter semantics.
 - **Resize**: `LogicalRect` per attached view validated by Core, then
   `cols = floor(rect.width / cell_width)`, `rows = floor(rect.height / cell_height)`
   clamped to `[1,1024]`, debounce `64`, full-grid damage plus generation are
-  authoritative. The research proposes that terminal-backed panels reuse that
-  exact rect plus cell-metric path and debounce with `resize_coalesced` counting;
-  non-terminal panels produce no PTY resize at all.
+  authoritative. Terminal-backed panels reuse that exact rect plus cell-metric
+  path and debounce with `resize_coalesced` counting; non-terminal panels
+  produce no PTY resize at all.
 - **Visibility**: inactive workspace, scratchpad hidden, zero-area, and overlay
-  occluded semantics per the registry and compositor stay authoritative. The
-  research proposes that a panel whose view is invisible retains its `PanelId`
-  and attachment but incurs no render cost and cannot hold window focus, identical
-  to the terminal view rule.
+  occluded semantics per the registry and compositor stay authoritative. A panel
+  whose view is invisible retains its `PanelId` and attachment but incurs no
+  render cost and cannot hold window focus, identical to the terminal view rule.
 - **Layout and decoration**: `H`/`V` `ratio [0.1,0.9]`, `gaps_in`/`gaps_out`/`border`/`radius`
-  Core-owned with safe-mode `0`/`0`/`1`/`0` are authoritative. The research
-  proposes that `PanelProvider::propose` stays pure, deterministic, and bounded
-  and that any proposal carrying decoration is rejected.
+  Core-owned with safe-mode `0`/`0`/`1`/`0` are authoritative.
+  `PanelProvider::propose` stays pure, deterministic, and bounded, and any
+  proposal carrying decoration is rejected.
 - **Bounded resources**: `max_terminals 64`/`max_views 32`/`max_workspaces 16`
-  with `ConfigPlan` validation are authoritative. The research proposes
+  with `ConfigPlan` validation are authoritative. This RFC adds
   `max_panels_per_workspace 32` and `max_panels_per_window 64` as sibling ceilings
   that fit inside the same validation and do not silently clamp.
 - **Exclusions**: daemon, remote UI, and live PTY migration remain deferred per
   [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md) and per the explicit
-  exclusion tables of both accepted contracts; this research preserves those
+  exclusion tables of both accepted contracts; this RFC preserves those
   deferrals and introduces no cross-process or cross-window panel transfer.
+
+The candidate [Workspace Panel Invariants](workspace-panel-invariants.md) (OQ-058)
+remain candidate at their recorded per-invariant statuses. This RFC accepts the
+panel-runtime contract they depend on; it does not by itself upgrade those
+invariant statuses and does not answer OQ-058, whose workspace/session lifecycle
+coupling is still open.
 
 No accepted requirement is moved between owners and no bypass is introduced.
 
+## Implementation status
+
+Acceptance of this RFC does not describe implemented behavior. The following is
+the current point-in-time implementation status, recorded here so the accepted
+contract is not confused with shipped, verified, or compatibility-guaranteed
+behavior. None of it promotes any claim to **Verified** or **Compatible**.
+
+| Surface                          | Status at this RFC's acceptance date                                                                                                                                                                                                                                                                                                                                                                  |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Registry-layer panel identities  | Experimental `bitty-runtime::registry` `PanelRegistry` with `PanelId` (a `bitty-ui` type), monotonic generation, stale-handle rejection, generation exhaustion, and the `Declared -> Created -> Mounted -> Focused -> Suspended -> Disposed` lifecycle, tested headlessly in `bitty` at revision `01ffdda` (2026-09-14) per the candidate [Workspace Panel Invariants](workspace-panel-invariants.md) |
+| Live app path panel content      | `ViewContent::Panel(PanelId)` and per-panel registries exist in `crates/bitty-ui/src/panel.rs` and `crates/bitty-runtime` at `b761c03` per the [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md); placement is not accepted ([`RFC-OQ-3`](#open-questions))                                                                                                                             |
+| Bundled-disabled Panel consumers | Five Panel Runtime consumers (`shell-integration`, `workspace`, `palette`, `statusline`, `project`) are bundled-disabled via the public `PanelRegistry` and `PluginHost` paths at `5c885f2`, exercising the three-level queue `64`/`1024`/`8192`, `8 KiB` payload, `32`/`8 KiB` batch, and `DropOldest`, per the draft [Plugin Matrix](../product/plugin-matrix.md)                                   |
+| Presentation modes and overlays  | `PresentationMode` on `View` carries only `Tiled` as live; `Floating`, `Fullscreen`, and `Scratchpad` parse but transitions are gated. `OverlayTier` ordering exists as an opt-in `bitty-ui` primitive, and multi-tier stacking is not consumed by the app present path, per the [Workspace Compositor](workspace-compositor.md) shipped slice at `1f31435`                                           |
+| Event Bus                        | Bounded in-process `PanelEventBus` queues exist inside the bundled-disabled `workspace`/`statusline` consumers at `5c885f2`; cross-process routing, the v1 topic taxonomy, and the capability ledger are not implemented and remain [`RFC-OQ-4`/`RFC-OQ-5`](#open-questions)                                                                                                                          |
+| Workspace save and restore       | No workspace-snapshot serialization of layout, attachment map, focus MRU, or scrollback rehydration exists; only the experimental registry implements the identities involved, per the candidate [Workspace Panel Invariants](workspace-panel-invariants.md) follow-ups F-2                                                                                                                           |
+| Excluded surfaces                | No daemon, remote UI, multi-window global server, WASM/helper panel isolation, or hot-path `input.pre-encode` interception is implemented or authorized                                                                                                                                                                                                                                               |
+
+The Point-in-time revisions above are cited from draft or candidate documents;
+they are evidence of what exists, not a conformance claim against this RFC.
+Where this RFC and a draft implementation-status document disagree, this RFC's
+accepted contract governs and the status document is stale.
+
 ## Alternatives considered
 
-| Alternative                                                              | Trade-off                                                                       | Research disposition                                                                                 |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Panel as `LayoutTree` leaf replacing `View`                              | Strongly typed panel tiling but breaks `ViewId` history and forces `View` churn | Rejected for this research; Option A (typed `View` content) preserves generation history             |
-| Panel implements `render`/`handle_event` hot trait directly              | Maximal panel control but puts Lua on hot path and breaks invariant 4           | Rejected; panels are declarative values composed by Core                                             |
-| Event Bus as direct panel references (`panel_a -> panel_b` object share) | Lowest latency but creates ambient authority and confused deputies              | Rejected; bus is host-mediated with qualified topics and scopes                                      |
-| Global unbounded bus (one queue, no backpressure)                        | Simplest but allows one burst to starve the host                                | Rejected; three-level envelopes with `DropOldest` default are required                               |
-| WASM/helper-process per panel in v1                                      | Stronger isolation but large toolchain and transport cost                       | Deferred; OQ-014 per-VM isolation remains the v1 boundary, helper reuse is candidate via IPC framing |
+| Alternative                                                              | Trade-off                                                                       | Disposition                                                                                                                   |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Panel as `LayoutTree` leaf replacing `View`                              | Strongly typed panel tiling but breaks `ViewId` history and forces `View` churn | Rejected; Option A (typed `View` content) preserves generation history unless [`RFC-OQ-3`](#open-questions) decides otherwise |
+| Panel implements `render`/`handle_event` hot trait directly              | Maximal panel control but puts Lua on hot path and breaks invariant 4           | Rejected; panels are declarative values composed by Core                                                                      |
+| Event Bus as direct panel references (`panel_a -> panel_b` object share) | Lowest latency but creates ambient authority and confused deputies              | Rejected; bus is host-mediated with qualified topics and scopes                                                               |
+| Global unbounded bus (one queue, no backpressure)                        | Simplest but allows one burst to starve the host                                | Rejected; three-level envelopes with `DropOldest` default are required                                                        |
+| WASM/helper-process per panel in v1                                      | Stronger isolation but large toolchain and transport cost                       | Deferred; OQ-014 per-VM isolation remains the v1 boundary, helper reuse is candidate via IPC framing                          |
 
-## Verification plan (candidate research gates)
+## Verification plan
 
-Acceptance of a future implemented Panel Runtime and Event Bus contract would
-require, at minimum (none is satisfied by this pre-study alone):
+An implementation may claim conformance only when the following evidence
+exists; none is satisfied by this RFC alone:
 
 1. Metadata and link gates: `just check` with zero markdownlint, link, metadata,
    language, agents, and hygiene issues plus `act -n -W .github/workflows/ci.yml`
@@ -724,51 +754,34 @@ require, at minimum (none is satisfied by this pre-study alone):
 9. Security review of capability denial, bus topic isolation, no PTY or GPU
    handle reachability, and `bitty --safe` with all third-party panels skipped.
 
-## Open questions (research follow-ups)
+## Open questions
 
-These require an RFC or ADR before any implementation may claim them:
+This RFC does not resolve the pre-study's open questions; they remain open and
+are renumbered away from the pre-study as `RFC-OQ-1` through `RFC-OQ-9`
+(pre-study open questions 1 through 9). Pending any of these, no implementation
+may claim the affected contract; none is a global open-question register entry
+until it is admitted there.
 
-1. Which panel types belong in a first RFC: `terminal` only, or `terminal` plus
-   `rich` and one additional type such as `helper` or `canvas`?
-2. Exact `PanelProvider` trait spelling and error taxonomy beyond the
-   illustrative sketch.
-3. Whether Panel becomes typed `View` content (research preference Option A),
-   replaces `View` as leaf, or composes as a side-car.
-4. Exact bus topic taxonomy for v1 (panel lifecycle, focus, file, git, AI,
-   helper-process) and whether cross-window topics route through IPC or an
-   in-process bus first.
-5. Capability mapping for each panel type, especially `panel.overlay` and any
-   new `panel.*` family versus reuse of `ui.*`.
-6. Distribution ownership: which first-party panels, if any, ship enabled and
-   how they relate to the [Default Distribution RFC](default-distribution-rfc.md).
-7. Whether primitive priority (`Panel`, `Workspace`, `Layout`, `Command`,
-   `Keybinding`, `Event`, `Capability`, `Service`, `Widget`, `Plugin`) becomes
-   a formal versioning policy.
-8. Whether `Browser` panels require an extra per-window process budget beyond
-   the existing `RC-3` aggregate.
-9. Whether the seven presentation modes, `preferred_mode` plus Panel Rules
-   precedence, the scrolling-layout option, and workspace save/restore enter
-   a Panel RFC together or as separate follow-ups.
-
-## Synchronization notes
-
-This pre-study does not close an open question on its own, does not track to a
-new OQ until recorded in the [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md),
-and does not change the machine-readable
-[`project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json) or any `Verified`/`Compatible`
-claim. Future acceptance would update the
-[Specifications index](README.md) accepted versus draft tables, the
-[Documentation map](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/README.md) product table, the root
-[TODO.md](https://github.com/bitty-terminal/bitty-docs/blob/main/TODO.md), the decision register, and the snapshot under the same
-change. The document remains **Draft** (not `Accepted`/`Verified`) with no
-experimental implementation; code at `c0aadd2`/`7e3104d`/`a8735d0` remains
-`Implemented` (experimental, not `Verified`) and does not imply bus or panel
-support.
+| ID         | Open question                                                                                                                                                                                          | Pre-study item |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| `RFC-OQ-1` | Which panel types belong in the first implemented slice: `terminal` only, or `terminal` plus `rich` and one additional type such as `helper` or `canvas`?                                              | 1              |
+| `RFC-OQ-2` | Exact `PanelProvider` trait spelling and error taxonomy beyond the illustrative sketch.                                                                                                                | 2              |
+| `RFC-OQ-3` | Whether Panel becomes typed `View` content (Option A, the current implementation shape), replaces `View` as leaf, or composes as a side-car, and the `ViewId` versus `PanelId` migration this implies. | 3              |
+| `RFC-OQ-4` | Exact bus topic taxonomy for v1 (panel lifecycle, focus, file, git, AI, helper-process) and whether cross-window topics route through IPC or an in-process bus first.                                  | 4              |
+| `RFC-OQ-5` | Capability mapping for each panel type, especially `panel.overlay` and any new `panel.*` family versus reuse of `ui.*`.                                                                                | 5              |
+| `RFC-OQ-6` | Distribution ownership: which first-party panels, if any, ship enabled and how they relate to the [Default Distribution RFC](default-distribution-rfc.md).                                             | 6              |
+| `RFC-OQ-7` | Whether primitive priority (`Panel`, `Workspace`, `Layout`, `Command`, `Keybinding`, `Event`, `Capability`, `Service`, `Widget`, `Plugin`) becomes a formal versioning policy.                         | 7              |
+| `RFC-OQ-8` | Whether `Browser` panels require an extra per-window process budget beyond the existing `RC-3` aggregate.                                                                                              | 8              |
+| `RFC-OQ-9` | Whether the seven presentation modes, `preferred_mode` plus Panel Rules precedence, the scrolling-layout option, and workspace save/restore enter a Panel RFC together or as separate follow-ups.      | 9              |
 
 ## References
 
+- [Panel Runtime and Event Bus Pre-Study](panel-runtime-pre-study.md) (CTX-0119, research provenance; superseded by this RFC)
 - [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md) (CTX-0117, Accepted, `6f30c2f`)
 - [Workspace Compositor Specification](workspace-compositor.md) (CTX-0118, Accepted, `c3a2928`)
+- [Workspace Panel Invariants (Candidate)](workspace-panel-invariants.md) (OQ-058, candidate)
+- [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md) (draft)
+- [Plugin Matrix](../product/plugin-matrix.md) (draft, point-in-time implementation status)
 - [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) (OQ-011/012/013)
 - [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) (OQ-014, RC-1..RC-10, FS-1..FS-9)
 - [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) (OQ-018, RC-9/RC-10, scopes, framing)
