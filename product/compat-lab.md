@@ -20,6 +20,7 @@ sidebar_order: 42
   - Priority: P0 | Area: vt | Labels: chore,area:vt,P0 | Milestone: v0.1.0 | RFC: OQ-004 | Task: CTX-0074
 - Scope: scaffold `tests/compat/{vt,osc,keyboard,mouse,resize,unicode,shell,tui}/` with placeholder corpora and headless bounded harness referencing `vttest`, Ghostty/kitty/WezTerm differential, and existing `bitty-vt` tests. Keep headless, bounded, `forbid(unsafe)`, no window/GPU leak. Add `docs/product/compat-lab.md` (this file) and update `release-ladder.md` v0.2 gate.
 - Authority: OQ-004 (compatibility milestone) remains `Proposed` until `compatibility-milestone-rfc.md` is accepted. This lab does not close OQ-004, does not accept the `v0.2` slice, and does not weaken normative security controls in `bitty-docs/docs/security/`.
+- Maintained M1/M2 matrix: [`reference/compatibility-matrix.md`](../reference/compatibility-matrix.md) (CTX-0003/CTX-0404) records per-scenario status (`ci`/`local`/`partial`/`gap`) over this lab's corpora and the env-gated live probes.
 
 ## Goals
 
