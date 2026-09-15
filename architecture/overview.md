@@ -122,7 +122,9 @@ snapshot.
 The architecture must preserve `Image != Cell`. Image identity, placement,
 anchors, clipping, stacking, and scrolling semantics must not be prematurely
 compressed into ordinary cells. Which image protocols enter the initial set
-remains a roadmap decision.
+remains a roadmap decision. The candidate
+[Graphics and Appearance Model](graphics-appearance.md) extends this boundary
+to backdrop, opacity, blur, background, theme, and crate guidance.
 
 ### Lower layers know nothing about higher layers
 
