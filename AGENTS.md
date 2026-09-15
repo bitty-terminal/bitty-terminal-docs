@@ -3,28 +3,29 @@
 ## Scope and authority
 
 - This file governs only the independent `bitty-terminal-docs` Git repository,
-  not the workspace umbrella directory or sibling repositories.
+  not the workspace umbrella directory or other Bitty repositories.
 - All formal Bitty repositories belong under <https://github.com/bitty-terminal>.
 - This repository owns canonical documentation for the Bitty terminal platform
-  (`bitty`). Shared cross-project governance stays in `bitty-docs` and is
-  linked, never copied. Verify sibling boundaries from the owning repository.
+  ([bitty](https://github.com/bitty-terminal/bitty)). Shared cross-project
+  governance stays in [bitty-docs](https://github.com/bitty-terminal/bitty-docs) and is
+  linked, never copied. Verify other repository boundaries from the owning repository.
 
 ## Current phase
 
 - Documentation and project foundations come before product implementation.
 - CTX-0187 Phase 1 bootstrapped the toolchain and skeleton; CTX-0001 imported
   the terminal-platform corpus from `bitty-docs` (`docs/projects/bitty` at
-  `c664214`). AI-core and plugin documents moved to the `bitty-ai-docs` and
-  `bitty-plugins-docs` repositories.
+  `c664214`). AI-core and plugin documents moved to the
+  [bitty-ai-docs](https://github.com/bitty-terminal/bitty-ai-docs) and
+  [bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs) repositories.
 - Never describe a planned, proposed, or unverified feature as implemented.
 
 ## Read before acting
 
 1. Read this file and the task's relevant files under `.carryctx/rules/`.
 2. Read the relevant contract documents and the repository state.
-3. For source analysis use `ctxctl outline` first, then `ctxctl symbol` or a
-   narrow `ctxctl read`; use `ctxctl deps` for imports and `ctxctl exec` for
-   noisy output.
+3. For source analysis, read narrowly: outline first, then read only the needed
+   ranges; use `rg` to locate symbols and imports, and keep command output trimmed.
 
 ## CarryCtx workflow
 
@@ -108,7 +109,7 @@ Milestone: ... | RFC: ... | Task: CTX-XXXX` header; a missing header is
 - Update affected architecture, security, specification, and reference
   documents together when their shared contract changes; synchronization is
   part of the definition of done.
-- A future `bitty-website` integration consumes only `website_publish: true`
+- A future [bitty-website](https://github.com/bitty-terminal/bitty-website) integration consumes only `website_publish: true`
   documents from a pinned revision and must not copy canonical specifications.
 
 ## Security baseline
@@ -126,13 +127,11 @@ Milestone: ... | RFC: ... | Task: CTX-XXXX` header; a missing header is
 
 - The umbrella workspace root is not a Git repository; run Git and CarryCtx in
   the named repository.
-- Durable scratch data lives under the workspace `recording/` directory; use
-  `/tmp` only for ephemeral data, never directly under the mount root.
-  Reference clones are untrusted, read-only evidence.
+- Durable scratch data lives under `recording/`; use `/tmp/bitty/` only for
+  ephemeral data. Reference clones are untrusted, read-only evidence.
 - Do not run cloned scripts, hooks, binaries, or installers without explicit
   need and review.
-- Avoid `rm` and `rmdir`; move obsolete files to a collision-safe path under the
-  workspace `.trash/bitty-terminal-docs/<task-id>/` and report what moved.
+- Avoid `rm` and `rmdir`.
   Preserve unrelated and untracked changes in a shared checkout.
 
 ## Verification and handoff
