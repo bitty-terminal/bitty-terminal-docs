@@ -1026,6 +1026,165 @@ and the security corpus, and diagnostics redact secret-shaped values
 patterns). Precedence across the three tiers and keyring-unavailable fallback
 remain open.
 
+## Plugin host process.spawn surface (candidate mechanism record)
+
+Status: **candidate record** — shipped mechanism in `bitty` `origin/main`
+(read-only: CTX-0445 [bitty PR #717](https://github.com/bitty-terminal/bitty/pull/717)
+merge `9830edb`, CTX-0444 [bitty PR #716](https://github.com/bitty-terminal/bitty/pull/716)
+merge `64e1709`), not an accepted terminal-docs contract. This section records
+the Lua-visible shape and references the canonical contracts by link; it copies
+no struct or allowlist that would rot. It changes no normative contract above
+and touches no accepted ownership table in
+[Core and Plugin Boundaries](../architecture/core-boundaries.md).
+
+Placement rationale: this document already records the first Lua-visible host
+bridge (`bitty.env.get` in [Credential sources](#credential-sources-and-secret-storage-candidate));
+`bitty.process.spawn` is the second such bridge, aimed at the same Lua-author
+reader with the same fail-closed bounded-bridge posture. The accepted
+panel-runtime specifications and the plugin capability-matrix rows that already
+name `process.spawn` shapes are left untouched: this record adds a
+pointer-friendly inventory without editing their normative or candidate text.
+
+### Lua call shape
+
+Status: **shipped mechanism** (bridge shape test-pinned in `bitty`).
+
+Lua supplies only the argv array; the tool identity is resolved host-side from
+the caller's install grant, so there is no Lua-widenable tool parameter:
+
+```lua
+-- Verified shape (bitty crates/bitty-lua/tests/host_bridge.rs).
+local result = bitty.process.spawn({ "status", "--porcelain" })
+-- result: { output = "...", stderr = "...", truncated = false,
+--           exit_code = 0, untrusted = true }
+```
+
+The argv must be a dense 1-based string array: empty, sparse, non-string, or
+empty-entry shapes fail closed at the bridge. The `bitty.process` table is a
+read-only proxy like the other host tables. Bridge shape bounds are 64 entries
+of at most 4 KiB each; tighter per-tool bounds live host-side with the
+allowlist and are linked, not copied, below.
+
+### Result table
+
+Status: **shipped mechanism**.
+
+Every successful spawn delivers `output` (bounded stdout), `stderr`,
+`truncated`, `exit_code` (nil when the outcome is unknown), and `untrusted`
+(always true): child bytes are untrusted observation data, never instructions.
+Failure text on the error path is host-authored and carries only the observed
+exit code, never child bytes.
+
+### Error codes
+
+Status: **shipped mechanism** (all codes verified first-hand on `bitty`
+`origin/main`; note the spawn timeout code is `E_SPAWN_TIMEOUT`, not the
+generic bridge `E_TIMEOUT`).
+
+| Code                                               | Domain         | Meaning                                                                                                                            |
+| -------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `E_SPAWN_UNAVAILABLE`                              | runtime        | no spawn backend is wired for this VM or generation (the `HostServices` default)                                                   |
+| `E_CAPABILITY_DENIED`                              | runtime        | the `process.spawn:<tool>` grant gate refused: missing scope, or consent required, expired, or revoked (re-checked on every call)  |
+| `E_SPAWN_DENIED`                                   | runtime/budget | shape violation, allowlist denial (including the interim authorizer below), unknown tool or missing declaration, or budget overrun |
+| `E_SPAWN_FAILED`                                   | runtime        | spawn or host failure, including non-zero exits (message carries only the exit code) and non-timeout unknown outcomes to reconcile |
+| `E_SPAWN_TIMEOUT`                                  | runtime        | timeout-path unknown outcome: the child was killed and reaped, with no exit code                                                   |
+| `E_VALUE_TYPE` / `E_VALUE_NODES` / `E_VALUE_BYTES` | value          | malformed argv at the bridge (non-array, empty, sparse, non-string, empty entry, entry-count or byte-limit excess)                 |
+| `E_BRIDGE_REENTRANT`                               | runtime        | re-entrant bridge call rejected (the one guard `process.spawn` keeps)                                                              |
+
+The generic cheap-call `E_TIMEOUT` (budget domain) does not apply to
+`process.spawn`: see [Bridge accounting](#bridge-accounting-no-orphan-leak)
+below.
+
+### Execution hardening
+
+Status: **shipped mechanism** (qualitative record; the implementation is linked,
+not copied).
+
+Argv arrays go directly to the OS process API: no shell is ever constructed on
+any platform, so metacharacters in args are inert data. The child starts from a
+cleared environment plus explicit request entries only; ambient environment
+never crosses the boundary. Stdout and stderr drain concurrently on two bounded
+reaper threads, so a verbose child cannot wedge the pipes; the supervisor
+enforces the timeout, kills and reaps on expiry (no zombie), and reports the
+outcome as unknown rather than success or failure. Byte output converts lossily
+to text; only portable process APIs are used.
+
+Dispatch composes six fail-closed gates with no partial state on refusal:
+shape, allowlist routing, scope authorization, explicit effect opt-in, ledger
+consent, and supervised outcome.
+
+### Lua-visible bounds
+
+Status: **shipped mechanism** (numeric record for the Lua-visible surface only;
+deeper struct and per-tool bounds are linked, not copied).
+
+- Argv: at most 64 entries, each at most 4 KiB, 16 KiB total.
+- Supervision timeout: 1 to 30000 ms, default 5000 ms.
+- Panel-path per-call output: 8 KiB, so spawn output always fits the panel bus
+  admission bound.
+- Tracked outcomes: 64; bursts beyond the registry fail closed instead of
+  evicting silently.
+
+The bound inheritance (IPC execution, channel, tool-dispatch, and panel-bus
+precedents) is documented in the `Bounds` section of
+[spawn.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-runtime/src/plugin_runtime/spawn.rs);
+the bridge entry validation lives in
+[host.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-lua/src/host.rs).
+
+### Bridge accounting (no orphan leak)
+
+Status: **shipped mechanism**.
+
+`process.spawn` is exempt from the bridge's post-hoc 50 ms cheap-call deadline
+but keeps the re-entrancy guard (`bounded_spawn` in `host.rs`): a
+slow-but-successful spawn is delivered instead of being run to completion,
+stored, and then discarded as a timeout, which would orphan a registry slot Lua
+can never reconcile. Every stored spawn outcome is therefore a delivered
+outcome; the 64-slot bound covers delivered outcomes only.
+
+### Tools-enforcement references (CTX-0444)
+
+Status: **shipped mechanism** (install- and validate-time enforcement plus pure
+predicates; the runtime seam below is still interim).
+
+The canonical Layer-2 contract is the accepted `[tools.git]` slice (v1) in the
+[Layer-2 System CLI specification](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-reuse-and-providers.md)
+(`Accepted [tools.git] contract (v1)`, CTX-0425): that document owns the verb
+list and per-tool bounds, which are linked here and never copied. The host
+enforcement that merged in `bitty` PR #716:
+
+- The install-path manifest reader accepts `[tools.git]` alongside quoted
+  capability keys and `[[capabilities.filesystem]]`; unknown sections and
+  bypass shapes fail closed
+  ([manifest_toml.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-runtime/src/plugin_runtime/manifest_toml.rs),
+  [package.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-runtime/src/plugin_runtime/package.rs)).
+- Each `[tools.<name>]` declaration is validated, paired in both directions
+  with its `process.spawn:<tool>` capability (a spawn capability without a
+  tool declaration, or a tool declaration without its capability, fails
+  closed), and hash-bound under manifest hash v3, so raising `required` from
+  false to true is a capability increase whose grant must be re-confirmed
+  ([manifest.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-plugin-host/src/manifest.rs)).
+- The pure allowlist predicates (accepted tool, tool-name grammar, verb and
+  flag policy) live in
+  [tools.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-plugin-host/src/tools.rs)
+  with no I/O: the spawn surface must call them, never re-implement them.
+  Review hardened the flag policy beyond the v1 spec text; that delta is owned
+  bitty-side (see the PR #716 body) and is not reconciled here.
+
+The runtime seam is the `SpawnAuthorizer` trait in `spawn.rs`, still served by
+the fail-closed `DenyAllAuthorizer` interim on `bitty` `origin/main`: the
+surface is fully wired through the grant gate, but execution denies everything
+until the production authorizer against the installed manifest table lands.
+The per-generation grant gate and backend injection live in
+[services.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-runtime/src/plugin_runtime/services.rs).
+
+### Sequel, explicitly not claimed
+
+Per-spawn UI prompting that refreshes consent, per-spawn working-directory
+plumbing from terminal state, `execution_id` surfacing for Lua-side reconcile,
+exit-code-tolerant handling, binary-safe transport, and the production
+authorizer wiring above are sequel work. Nothing in this section claims them.
+
 ## Open questions
 
 - What exact Lua version/runtime and standard libraries are available in the
