@@ -261,6 +261,38 @@ structured state without making the core depend on a particular generation of
 Agent tooling. Permissions for MCP, Agents, and DevTools follow the
 [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md).
 
+## Host gateway surface (Phase-A mechanism)
+
+Status: `Implemented` mechanism record, not an accepted contract change.
+The five services below are shipped mechanism in `bitty-ipc` on `bitty`
+main; the reconciliation note is a draft design record in `bitty`.
+Wire and bridge publication plus live Runtime wiring are sequel work and
+are not claimed here. Accepted ownership tables in
+[Core and Plugin Boundaries](core-boundaries.md) are unchanged.
+
+Direction:
+[DIR-018](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)
+develops `bitty-ai` and the Bitty Host Capability Gateway in parallel and
+converges at the Bridge. Phase A delivers host primitives in dependency
+order; the parenthetical task numbers inside DIR-018 are working-direction
+placeholders and the delivered task numbers below are what merged.
+
+| Phase-A item                                          | `bitty` mechanism (link, not copy)                                                                                                                                                         | Delivery                                                                    |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| Bounded `terminal.snapshot` read service              | [snapshot.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-ipc/src/snapshot.rs) host read service behind the scope registry                                              | CTX-0420, [bitty PR #703](https://github.com/bitty-terminal/bitty/pull/703) |
+| Host tool dispatch with consent                       | [tool_dispatch.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-ipc/src/tool_dispatch.rs) routing plus authorization, consent, target, budget, attribution, and outcome  | CTX-0421, [bitty PR #705](https://github.com/bitty-terminal/bitty/pull/705) |
+| Generic execution backend with Unknown reconciliation | [execution.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-ipc/src/execution.rs) supervised execution with reconcile-before-re-execution semantics                      | CTX-0442, [bitty PR #707](https://github.com/bitty-terminal/bitty/pull/707) |
+| Publishable bridge client boundary                    | [bridge.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-ipc/src/bridge.rs) out-of-process client composing registry, scope, consent, budget, and envelope               | CTX-0419, [bitty PR #709](https://github.com/bitty-terminal/bitty/pull/709) |
+| Rich fragment transport, text-first                   | [rich_fragment.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-ipc/src/rich_fragment.rs) bounded fragment ingestion queue                                               | CTX-0422, [bitty PR #711](https://github.com/bitty-terminal/bitty/pull/711) |
+| AI-surface reconciliation design                      | [ai-surface-reconciliation.md](https://github.com/bitty-terminal/bitty/blob/main/specifications/ai-surface-reconciliation.md) draft mapping of AI-named Core items to generic counterparts | CTX-0423, [bitty PR #702](https://github.com/bitty-terminal/bitty/pull/702) |
+
+Sequel, explicitly not claimed: wire-method publication, bridge crate
+publication beyond the mechanism boundary, live Runtime wiring of the five
+services, fragment-to-`RichBlock` projection in `bitty-rich`, and any new
+scope or capability acceptance. The accepted
+[IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)
+(OQ-018) is unchanged by this record; OQ-066 stays open.
+
 ## Candidate long-term evolution
 
 - A headless runtime in which Terminal, PTY, and the plugin host do not depend on a GUI (accommodated early per [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md); headless runtime is prerequisite to any daemon, deferred daemon does not imply remote UI).
