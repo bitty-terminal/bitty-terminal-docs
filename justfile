@@ -5,6 +5,7 @@ markdownlint_version := "0.23.1"
 actionlint_version := "1.7.12"
 commitlint_version := "21.2.2"
 lefthook_version := "2.1.10"
+gitleaks_version := "8.30.1"
 
 # Format every file type supported by Prettier inside this repository.
 fmt:
@@ -49,6 +50,28 @@ svg:
 actionlint:
     @installed="$(actionlint --version | head -n 1)"; test "$installed" = "{{actionlint_version}}" || { echo "actionlint {{actionlint_version}} required; found $installed" >&2; exit 1; }
     actionlint -color -shellcheck=
+
+# Scan committed Git history for secrets (gitleaks pinned via `gitleaks_version`
+# above). Uncommitted or untracked working-tree content is only covered once it
+# is staged and committed; `secrets` is deliberately not part of `check` so
+# contributors without gitleaks still pass the default gate. `secrets` runs
+# whatever `gitleaks` is on PATH; CI installs the pinned release and
+# checksum-verifies it in the `Secret scan` job.
+secrets:
+    gitleaks detect --source . --no-banner
+
+# Report the pinned gitleaks version and the version the local binary reports.
+# A binary built without ldflags version metadata prints "version is set by
+# build process"; that is reported, not treated as an error.
+gitleaks-version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    printf 'pinned: %s\n' "{{gitleaks_version}}"
+    if command -v gitleaks >/dev/null 2>&1; then
+        printf 'local:  %s\n' "$(gitleaks version 2>&1 || true)"
+    else
+        printf 'local:  (gitleaks not on PATH)\n'
+    fi
 
 # Validate a commit message file against commitlint.config.ts (Conventional Commits).
 commit-check message_file:
