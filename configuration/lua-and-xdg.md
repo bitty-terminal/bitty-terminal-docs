@@ -308,8 +308,9 @@ and only multi-parent `extends` stays open.
 ## Shipped CLI overrides, setup wizard, and logging defaults
 
 Status: **shipped defaults** (read-only from `bitty` `origin/main`,
-`crates/bitty-app/src/main.rs`, CTX-0149/CTX-0180/CTX-0190). These are
-reported here as shipped status; they change no normative contract above.
+`crates/bitty-app/src/main.rs`, CTX-0149/CTX-0180/CTX-0190/CTX-0480/CTX-0481).
+These are reported here as shipped status; they change no normative contract
+above.
 
 - CLI appearance overrides (CTX-0180): `--theme NAME`, `--font-family NAME`,
   `--font-size PTS`, and `--opacity FLOAT` apply to one launch. They form a
@@ -319,6 +320,19 @@ reported here as shipped status; they change no normative contract above.
   warn-ignored. Since CTX-0290, `--opacity` below `1.0` scales pixel alpha
   through the shipped premultiplied renderer path; when the surface cannot
   composite premultiplied the window stays opaque (fail-closed).
+- Startup layout and focus values (CTX-0480, `bitty` #779): malformed
+  `--split`, `--split-ratio`, `--layout`, `--log-level`, and `--focus` input
+  fails closed with usage and exit `2` instead of warning and silently running
+  defaults; finite out-of-range split ratios and layout stack counts clamp
+  loudly. A syntactically valid but unresolvable `--focus` id still warns and
+  continues with the existing layout.
+- Fail-loud startup (CTX-0481, `bitty` #788): `--fail-loud` (also
+  `BITTY_FAIL_LOUD=1` or `true`) turns a failed primary shell, a failed startup
+  pane shell, or an attempted-but-rejected IPC servo into a startup abort with
+  exit `1` instead of the default fail-soft warning path. A
+  platform-unsupported startup step is deliberately never fatal, and
+  mid-session respawn failures keep their existing keymap/ctl warning
+  semantics.
 - Explicit config path: `--config PATH` wins verbatim; else `BITTY_CONFIG`;
   else the XDG default is probed (`$XDG_CONFIG_HOME/bitty/init.lua`,
   fallback `~/.config/bitty/init.lua`, then the `config.lua` alias).
@@ -946,11 +960,12 @@ mapping, precedence, and migration rules remain open.
 
 Status: **candidate contract, unimplemented.** No `BittyDirs` symbol exists in
 the `bitty` tree yet. The shipped code resolves only the configuration root
-(read-only from `bitty` `origin/main`,
-`crates/bitty-config/src/file.rs` `config_dir_with_env`:
-`$XDG_CONFIG_HOME` else `~/.config`); data, state, cache, runtime, and bin
-resolution plus every native mapping below are candidates. The table uses
-relative forms only (environment-variable roots, never absolute host paths).
+(read-only from `bitty` `origin/main`, `crates/bitty-config/src/file.rs`):
+`$XDG_CONFIG_HOME` > `%APPDATA%` > `$HOME/.config` > `%LOCALAPPDATA%`, with
+the Windows variables participating through the platform-aware probe
+(CTX-0479, `bitty` #774); data, state, cache, runtime, and bin resolution plus
+every native mapping below are candidates. The table uses relative forms only
+(environment-variable roots, never absolute host paths).
 
 | Role    | Linux / BSD                 | macOS (candidate)                                              | Windows (candidate)                                                         |
 | ------- | --------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------- |

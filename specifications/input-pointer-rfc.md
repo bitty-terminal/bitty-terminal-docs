@@ -307,17 +307,56 @@ registry-driven plugin discovery remain unimplemented candidates.
 4. **Registry-generated help overlay** (`bitty` #461 `c8faa52`, CTX-0265):
    `toggle_help` (backtick chord plus the `alt+?` shifted-symbol spellings)
    paints a floating overlay listing every bound shortcut, regenerated from
-   the live keymap registry on every show; `Esc` dismisses and consumes. The
-   overlay is informational, not modal — other bound chords still dispatch
-   and unbound keys still reach the shell. This is the shipped which-key-style
-   help surface; it is **not** the candidate Leader-prefix namespace.
+   the live keymap registry on every show. `Esc` dismisses the overlay without
+   consuming the press: a visible help popup alone no longer swallows the key,
+   so the encode path still delivers the `Esc` to the focused PTY (`bitty`
+   #784, CTX-0475, superseding the original #461 "dismisses and consumes"
+   behavior). The overlay is informational, not modal — other bound chords
+   still dispatch and unbound keys still reach the shell. This is the shipped
+   which-key-style help surface; it is **not** the candidate Leader-prefix
+   namespace.
+
+   `Esc` consumption is scoped to real confirmation gates only: the
+   suspicious-paste gate (CTX-0186), the workspace kill-confirm (CTX-0257),
+   and the view/window close-confirm (CTX-0370) still consume the press and
+   never leak bytes to the PTY (P0-AC-008 paste safety); when a gate and the
+   help popup coincide, both drop together and the gate keeps the consume.
 
 Evidence: `crates/bitty-config/src/keymap.rs`, `crates/bitty-app/src/chrome_keys.rs`,
 and `crates/bitty-runtime/src/runtime/help.rs` on `bitty` `origin/main`
-read-only at `1f31435`; the shipped defaults are also recorded in the
+read-only at `1f31435`, plus `crates/bitty-runtime/tests/esc_routing.rs` for
+the #784 Esc-routing matrix; the shipped defaults are also recorded in the
 [Configuration Model RFC](configuration-model-rfc.md) snapshot and the
 [Lua and XDG configuration](../configuration/lua-and-xdg.md) reference. All
 status remains `Implemented` (experimental), not `Verified`/`Compatible`.
+
+### Platform clipboard over-limit semantics (implementation evidence)
+
+Status: **experimental review evidence only.** `bitty` #786 (CTX-0478,
+`crates/bitty-platform/src/clipboard.rs`) tightens the platform clipboard
+primitive used by paste and the OSC 52 read reply:
+
+- Writes above `CLIPBOARD_MAX_BYTES` fail closed with the typed
+  `ClipboardPayloadTooLarge { len, max }` error from `set_text`/`set_primary`,
+  and the direct `get_text`/`get_primary` reads reject the same way, instead
+  of silently truncating; a rejected write leaves both selections unchanged.
+  This is a behavior change from the truncating write stated in the candidate
+  [Copy](#copy) section above, which remains a proposal.
+- The bounded accessors `get_text_bounded`/`get_primary_bounded` clip an
+  over-limit system value at a UTF-8 char boundary (the same bound as the
+  paste gate's `truncate_paste_text`) and are the ones used by
+  `paste_from_clipboard`/`paste_from_primary` and the OSC 52 read reply, so an
+  oversized system clipboard pastes its bounded prefix instead of becoming a
+  silent no-op.
+- `get_text_lossy`/`get_primary_lossy` answer an empty string when the system
+  read fails (no stale in-memory replay) and clip when the value is
+  over-limit.
+- All reads share one funnel (`read_text_raw`/`read_primary_raw`); a
+  test-only `simulate_system_text_for_test` seam exercises the over-limit read
+  path without a display server.
+
+The candidate bounds and gate semantics above are unchanged; this note records
+the shipped platform edge and claims no `Verified`/`Compatible` status.
 
 ## Application cursor and keypad modes (candidate)
 

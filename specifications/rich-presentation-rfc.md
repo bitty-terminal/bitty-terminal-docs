@@ -251,7 +251,13 @@ also fails closed on a `VP8X` chunk crossing the declared RIFF container and
 on PNG sample depths outside `{1, 2, 4, 8}`. `bitty` PR #656 (merge `af913ee`,
 CTX-0395, `crates/bitty-rich/src/background.rs`) implements the charge, with
 the peak per accepted subformat pinned in
-`crates/bitty-rich/tests/background_peak_memory.rs`.
+`crates/bitty-rich/tests/background_peak_memory.rs`. `bitty` #771 (CTX-0467)
+pins the load identity to the bytes that were actually decoded: acquisition
+uses one opened descriptor, a post-read `fstat` on the same descriptor
+re-verifies length and mtime, and the cache key is derived from the decoded
+bytes (exact length, post-read mtime, and an FNV-1a/64 content hash), failing
+closed on any identity change; the raster cache carries the same key so stale
+blits cannot be reused.
 
 ### Kitty chunked-intake implementation evidence (bitty #376)
 
@@ -298,6 +304,19 @@ bytes; it is not the IMG-4 256 MiB aggregate decoded-store budget and does not
 redefine it. The decoding pipeline, animation lifecycle, and renderer contract
 sections of this RFC continue to describe the accepted target, not shipped
 behavior.
+
+Update (`bitty` #771, CTX-0467): the per-transmission policy is now uniform.
+`KITTY_MAX_CHUNKED_BYTES` aliases the single-shot `KITTY_MAX_PAYLOAD_BYTES`
+(4096 bytes), and an assembled chunked total past that cap fails `Oversize`,
+checked before further allocation with the in-flight stream dropped. A chunked
+stream that fits the cap but cannot be admitted without displacing a resident
+entry, or whose completion arrives while the count cap is full, fails the
+new `LedgerFull` outcome: nothing is stored and nothing is evicted. Only
+single-shot ingest still performs bounded FIFO evict-to-fit, so item 2's
+320,000,000-byte ledger cap remains as a Ghostty-parity backstop that the
+4 KiB per-transmission cap makes unreachable. This update supersedes item 2's
+chunked admission/eviction and item 3's cap split; the `bitty` #376 record
+above stays as merged.
 
 ### Kitty decode, placement, and present-path implementation evidence
 
