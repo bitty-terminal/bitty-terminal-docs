@@ -52,6 +52,19 @@ sidebar_order: 19
 > weakens no normative control (P0-AC-026 unchanged), and records the
 > implementation half of `bitty` CTX-0244 (frameHash digest, PR #421) and
 > CTX-0242 (V1-V3 harness gates, PR #423) without moving acceptance.
+>
+> Amendment A3 (Implemented-only, `bitty` CTX-0506): this RFC additionally
+> documents the `bitty --test-mode` E2E test surface (`bitty.debug/testInfo`
+> plus `bitty.debug/testExit`). Both methods are registered only while the
+> test-mode servo serves; without the flag a normal instance answers them as
+> unknown methods (fail-closed default-deny, never `ScopeDenied`), and
+> `testExit` requires the accepted elevated `debug.control` scope through the
+> explicit `BITTY_CTL_ELEVATE` allowlist with no bearer path. Everything under
+> [Test-mode E2E surface](#test-mode-e2e-surface-implemented-only-amendment-a3)
+> is Implemented-only evidence, not accepted contract: it authorizes no
+> additional implementation beyond the merged `bitty` CTX-0506 (PR #831,
+> commit `92cd709`), weakens no normative control, and records the
+> implementation half without moving acceptance.
 
 ## Purpose and scope
 
@@ -694,6 +707,52 @@ frame-digest specifics: the 120 s TTL and 2/s ceiling stay adequate under
 harness load, the digest audit stays byte-accurate under contention, and
 no pixel channel ships without its own reviewed amendment.
 
+## Test-mode E2E surface (Implemented-only, Amendment A3)
+
+> Status: Implemented-only. This section documents `bitty` CTX-0506 (PR #831,
+> commit `92cd709`, `bitty --test-mode` headless E2E servo) as merged
+> implementation evidence and carries no acceptance, no compatibility promise,
+> and no Verified claim. It must not weaken any normative control listed under
+> [Normative sources this specification must not weaken](#normative-sources-this-specification-must-not-weaken);
+> where it conflicts with one, the normative text wins.
+
+`bitty --test-mode` runs the real runtime plus the existing `BITTY_SOCKET`
+servo without a display, GPU, winit event loop, or VM so native tests can drive
+panels and assert state; it reuses the accepted framing, dispatcher, scope
+authorization, and control-queue architecture and adds no authority of its own.
+The flag is argv-only; the [CLI reference](../interfaces/cli.md#test-mode)
+documents the loop and its exit codes.
+
+| Method                 | Registration and required scope                                                                                                  | Implemented content                                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `bitty.debug/testInfo` | Registered only by the test-mode dispatcher (`Dispatcher::with_test_mode`); no debug scope beyond the accepted connection checks | `{"test_mode":true,"surface":"e2e","protocol":"1.0","instance":"..."}`; surface identity only, no terminal content |
+| `bitty.debug/testExit` | Registered only in test mode; requires the elevated `debug.control` scope granted through `BITTY_CTL_ELEVATE`                    | Deterministic teardown through the existing control queue; replies `{"exiting":true}` and the servo exits `0`      |
+
+1. Default-deny is registration-based. Without `--test-mode` neither method is
+   in the dispatcher table, so a call fails closed as an unknown method —
+   `NotFound` in registration terms, carried as the `usage`/`UnknownMethod`
+   wire error — and never `ScopeDenied`. No other flag, environment variable,
+   or configuration key registers the surface.
+2. `testExit` grants no new authority: it maps to the existing accepted
+   `debug.control` scope (`Scope::DebugControl`, excluded from the CLI default
+   set) and is granted only by the explicit `BITTY_CTL_ELEVATE` allowlist;
+   authorization runs before enqueue and again at drain (defense in depth). The
+   per-session automation bearer path of
+   [`synthesizeInput`/`captureFrame`](#test-automation-scope-implemented-only-amendment-a1)
+   neither issues nor satisfies it.
+3. Transport is unchanged: the same current-user `0600` Unix socket with the
+   accepted directory, ownership, and peer checks (Unix-only; no TCP listener).
+   Test mode opens no transport and no listener of its own.
+4. Bounds: the servo loop runs at a fixed 16 ms tick; the bounded control queue
+   and reply-wait limits stay in force, and rate, payload, redaction, and
+   connection limits are unchanged. The process exits `0` only on `testExit`
+   and exits `1` fail-closed when the socket cannot serve.
+
+Explicit non-goals in this slice (recorded by the merged PR): no `view resize`
+verb, no per-pane cursor or render-digest assertion (the reused `getGridText`
+covers the primary grid and cursor only), no E2E event stream, and no CLI verb
+wraps `testExit` — a harness sends the raw wire method.
+
 ## Transport, authentication, and session lifecycle (accepted)
 
 1. DevTools connections use the existing IPC transport: current-user
@@ -872,6 +931,10 @@ require a follow-up decision:
     stay adequate under harness load, and whether a raw pixel channel is
     ever admitted (deferred; needs its own reviewed amendment, never an
     extension of A2).
+14. (Amendment A3, Implemented-only, acceptance open) Admission criteria for
+    the `--test-mode` E2E surface: whether registration-gated test methods and
+    the argv-only flag ever become accepted contract, and whether the deferred
+    `view resize` verb and an E2E event stream join it.
 
 ## Acceptance criteria
 
