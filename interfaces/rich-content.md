@@ -252,13 +252,16 @@ feature.
 
 Status: **experimental review evidence.** `bitty` `1fc6294` (CTX-0214,
 PR #376, `crates/bitty-rich/src/kitty.rs`) merged an intake-only Kitty
-graphics milestone: chunked `m=` transmissions assemble their exact bytes,
-admission evicts the oldest entries first under a 320,000,000-byte
-(`320 * 1000 * 1000`, decimal) stored-plus-in-flight ledger with fail-closed
-rejections, the single-shot path keeps its historical truncation unchanged,
-and no decode, placement, animation, or renderer coupling is included. The
-full intake semantics, bounds, and deferred-rendering boundary are recorded in
-the [Rich Presentation RFC](../specifications/rich-presentation-rfc.md).
+graphics milestone: chunked `m=` transmissions assemble their exact bytes
+under fail-closed admission (update: `bitty` #771, CTX-0467, unifies the
+chunked per-transmission cap with the 4 KiB single-shot cap and replaces
+chunked eviction with `Oversize`/`LedgerFull` failure), the single-shot path
+keeps its historical truncation and is the only path that evicts by bounded
+FIFO under a 320,000,000-byte (`320 * 1000 * 1000`, decimal)
+stored-plus-in-flight ledger, and no decode, placement, animation, or
+renderer coupling is included. The full intake semantics, bounds, and
+deferred-rendering boundary are recorded in the
+[Rich Presentation RFC](../specifications/rich-presentation-rfc.md).
 
 Further merged milestones now extend that path beyond intake: bounded payload
 decode for PNG/RGB/RGBA with fail-closed limits (`CTX-0247`), `APC G` parser

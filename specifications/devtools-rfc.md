@@ -718,6 +718,19 @@ no pixel channel ships without its own reviewed amendment.
 > commit `8af138e`, registry-dir scan plus live pipe-namespace enumeration
 > with Unix exit-code parity). The accepted transport contract above is
 > unchanged; this note claims no Verified status.
+>
+> Implementation note (Implemented-only, CTX-0463): the per-connection checks
+> behind the accepted transport contract are implemented in `bitty` #773
+> (CTX-0463, `crates/bitty-ipc/src/devtools/serve.rs`, `auth.rs`). The bound
+> endpoint is re-verified per connection (directory mode `0700`, socket mode
+> `0600`, both owned by the runtime uid, symlinks rejected); the client
+> verifies the endpoint before connecting
+> (`verify_socket_endpoint_for_connect`); and child-token failures return
+> static token-free reasons. True per-connection `SO_PEERCRED` descriptor
+> checks still need an `unsafe`/nightly seam and stay deferred to CTX-0159, so
+> endpoint re-verification narrows but does not close same-UID fd-passing
+> spoofing. The accepted contract above is unchanged; this note claims no
+> Verified status.
 
 ## Record/replay and MCP adapter (accepted staging)
 
