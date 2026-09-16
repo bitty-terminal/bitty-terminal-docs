@@ -1118,7 +1118,16 @@ not copied).
 Argv arrays go directly to the OS process API: no shell is ever constructed on
 any platform, so metacharacters in args are inert data. The child starts from a
 cleared environment plus explicit request entries only; ambient environment
-never crosses the boundary. Stdout and stderr drain concurrently on two bounded
+never crosses the boundary. Explicit entries are validated against a
+host-side denylist before routing, scope, or consent, closing the env-encoded
+forms of vectors the argv gate already rejects: `GIT_CONFIG_*` (including the
+numbered key/value pair families), the external-process helpers
+`GIT_EXTERNAL_DIFF`/`GIT_DIFF_OPTS` plus the editor/ssh/askpass variables, and
+the repo-identity escapes `GIT_DIR`/`GIT_WORK_TREE` fail closed, with ASCII
+case-insensitive and numbered-family prefix matching so a case-folded Windows
+env lookup cannot bypass (`bitty` #806, CTX-0488; predicate in
+[tools.rs](https://github.com/bitty-terminal/bitty/blob/main/crates/bitty-plugin-host/src/tools.rs)).
+Stdout and stderr drain concurrently on two bounded
 reaper threads, so a verbose child cannot wedge the pipes; the supervisor
 enforces the timeout, kills and reaps on expiry (no zombie), and reports the
 outcome as unknown rather than success or failure. Byte output converts lossily

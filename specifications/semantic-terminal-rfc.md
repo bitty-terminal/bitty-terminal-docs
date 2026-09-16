@@ -204,6 +204,23 @@ to the composer. A later Panel-native variant could host the editor in a
 transient floating panel instead of covering the terminal; that variant is
 deferred until the Panel Runtime contract is accepted.
 
+Update (`bitty` #801, CTX-0485): `$VISUAL`/`$EDITOR` are treated as
+attacker-influenced environment input rather than a program name to trust.
+`resolve_editor()` now returns `Result<String, EditorError>` and admits only
+the exact bare names in `EDITOR_ALLOWLIST` (`nvim`, `vim`, `vi`): the first
+non-empty variable wins, a hostile value fails `EditorError::NotAllowed`
+before any temp file is written or child is spawned, and it never falls
+through to the other variable. Paths, flags, whitespace, case variants, and
+metacharacters fail the exact match. The temp file is extensionless (the old
+`.sh` suffix invited editor plugins, file managers, and OS handlers to treat
+terminal content as executable) and owner-only: on Unix the create call itself
+applies mode `0o600`, the mode is re-asserted after the write, and any
+permission failure deletes the file and fails closed with
+`EditorError::WriteFailed`. Non-Unix inherits the per-user temp-directory ACL
+as a documented residual (no safe-std ACL API in this `forbid(unsafe_code)`
+crate). Probe: `crates/bitty-rich/tests/ctx0485_editor_probe.rs`. The proposal
+text above is unchanged; this update claims no `Verified`/`Compatible` status.
+
 ### P6: Cross-panel Hint API (proposal-only)
 
 > Proposal-only as of `bitty` origin `main` `7048139` (CTX-0131): no merged

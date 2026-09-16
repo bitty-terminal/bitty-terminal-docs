@@ -358,6 +358,19 @@ primitive used by paste and the OSC 52 read reply:
 The candidate bounds and gate semantics above are unchanged; this note records
 the shipped platform edge and claims no `Verified`/`Compatible` status.
 
+Update (`bitty` #805, CTX-0486, `crates/bitty-rich/src/clipboard.rs`): the
+other clipboard half — the OSC 52 write-capture state — now carries an
+explicit `ClipboardPolicy` with a `Gated` default. A default (`Gated`) or
+`Denied` state rejects every OSC 52 write with the new
+`ClipboardOutcome::WriteDenied`, stores nothing, and counts `denied_writes`;
+only an explicit `ClipboardPolicy::Allow` captures, so the bounded
+captured-write history can only ever hold explicitly allowed payloads. A
+granted read over a default state returns empty data. The candidate "OSC 52
+read remains deny-by-default; write is gated" line in
+[Paste and reconciliation with R-004](#paste-and-reconciliation-with-r-004)
+is therefore the shipped posture in both directions, and R-004 stays
+**Open**. Probe: `crates/bitty-rich/tests/ctx0486_policy_probe.rs`.
+
 ## Application cursor and keypad modes (candidate)
 
 - `DECCKM` (cursor keys) and `DECKPAM`/`DECKPNM` (keypad) are terminal modes
