@@ -620,6 +620,39 @@ capability that would let an embedder mint grants remain outside this headless
 seam; OSC 52 read requests stay denied without a live, in-scope token; and no
 `Verified`/`Compatible` claim is made by this evidence.
 
+Update (`bitty` #805, CTX-0486): `ClipboardState` now carries an explicit
+`ClipboardPolicy` with a `Gated` default, so the captured-write history in
+item 4 only ever holds payloads that were explicitly allowed. Under the
+`Gated` (default) and `Denied` policies every OSC 52 write is rejected with
+the new `ClipboardOutcome::WriteDenied`, stores nothing, and increments
+`denied_writes`; only an explicit `ClipboardPolicy::Allow` (via
+`with_policy`) captures. A granted read over a default state therefore
+returns empty data instead of the last hostile write. The grant mechanics in
+items 1-5 (token minting, scope binding, default-deny token path, `Debug`
+redaction) are unchanged, and the accepted `copy` contract in the table above
+is unaffected. Probe: `crates/bitty-rich/tests/ctx0486_policy_probe.rs`.
+
+### OSC 8 hyperlink URI policy (implementation evidence)
+
+Status: **experimental review evidence only.** `bitty` #805 (CTX-0486,
+`crates/bitty-rich/src/hyperlink.rs`) tightens the presentation-layer URI
+policy for OSC 8 hyperlinks:
+
+- Only `http`/`https`/`mailto` URIs (per `validate_url`) are ever presented as
+  clickable spans. The `file:` scheme — every case variant and encoded
+  spelling — is rejected outright, so untrusted remote output cannot surface a
+  clickable local-file span whose activation path leads to an OS handler; the
+  span disappears entirely rather than degrading to a partial affordance.
+- Local file opening stays the runtime's separate, explicit
+  `FileUrlActivation` capability path (runtime-issued mouse gesture, plugin
+  intercept, `validate_file_url`), which this presentation layer neither
+  grants nor bypasses.
+
+The scheme-policy, user-gesture, and no-shell-interpolation requirements in
+the security-alignment table are unchanged; this note records the shipped
+presentation edge for R-005 and claims no `Verified`/`Compatible` status.
+Probe: `crates/bitty-rich/tests/ctx0486_policy_probe.rs`.
+
 ## Structured transport and alternate-screen policy (OQ-016)
 
 ### The three semantic sources

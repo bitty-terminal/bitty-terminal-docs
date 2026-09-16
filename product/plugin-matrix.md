@@ -422,6 +422,16 @@ On this worktree at `5c885f2` + `05e8803` + this task delta:
   The shipped `project` shape shows the narrowing pattern: `fs.read:~/projects/**`
   (`4096` bound) with pure `is_within_projects` + host real-path/symlink/device
   rejection, no `fs.write`. Every new `fs.*` candidate needs the same pattern.
+  Manifest-time pattern validation is deny-by-default against overbroad roots:
+  a `~`-rooted pattern must name a literal first child (bare `~`, `~/**`,
+  `~/.*`, and foreign `~user` homes fail closed), segments naming sensitive
+  credential locations (`.ssh`, `.gnupg`, `.aws`, `.azure`, `.kube`, `.docker`,
+  and the `~/.config/gh`/`gcloud` prefixes) are rejected case-insensitively on
+  either separator, and dot/empty segments are normalized away first so
+  spelling variants cannot bypass (`bitty` #800, CTX-0489). The canonical
+  capability-pattern grammar stays with the plugin corpus in
+  [plugin-platform-rfc.md](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md);
+  this bullet records the shipped hardening only.
 
 - **Queue budgets remain candidate values**: `PerSub 64`, `PerPlugin 1024`/`256 KiB`,
   `Global 8192`/`2 MiB`, batch `32`/`8 KiB`, Panel `PR-1..PR-12` and Browser/Agent
