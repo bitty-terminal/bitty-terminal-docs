@@ -51,8 +51,12 @@ at `7048139`; none of them is changed by the remaining proposal (P6):
 - Overlay capacity is bounded at `MAX_OVERLAYS_PER_WINDOW = 4` plus one modal
   (`crates/bitty-ui/src/panel.rs`).
 - Focus routing is deterministic over `ViewId` (`crates/bitty-ui/src/focus.rs`).
-- Panels mount as `ViewContent::Panel(PanelId)` through `PanelRuntime::mount`
-  with `PanelId`/`ViewId`/`TerminalId` kept pairwise incompatible.
+- Panels mount as `ViewContent::Panel(PanelId)` through the experimental
+  `PanelRegistry` in `crates/bitty-runtime/src/registry/panel.rs` with
+  `PanelId`/`ViewId`/`TerminalId` kept pairwise incompatible. The accepted
+  [Panel Runtime RFC](panel-runtime-rfc.md) names the host `PanelRuntime`, a
+  type that does not exist in `bitty` yet (see its
+  [Implementation status](panel-runtime-rfc.md#implementation-status)).
 - The workspace compositor contract is accepted
   ([Workspace Compositor](workspace-compositor.md)); the Panel Runtime contract
   is still a draft pre-study ([Panel Runtime Pre-Study](panel-runtime-pre-study.md)).
@@ -188,6 +192,18 @@ travel to the shell line editor as one bracketed paste followed by a final
 Enter, which keeps Unicode, multiline content, and paste safety intact without
 simulating individual keystrokes.
 
+Update (current-state note, 2026-09-16, `bitty` `origin/main` `e8dc9e5`): the
+app path is inert. The `A::OpenComposer` arm in
+`crates/bitty-app/src/chrome_keys.rs` logs a warning to stderr, consumes an
+explicitly bound chord, and changes nothing else; no modal opens, no editor is
+launched, and input routing stays as it was. `open_composer` parses in
+`crates/bitty-config/src/keymap.rs` but is never in the shipped defaults, so
+`Alt+E` remains shell input unless a user binds it. The composer engine
+(`CommandBuffer`, `ComposerSession`, keys/chords, and submit framing) is
+headless in `crates/bitty-rich/src/composer.rs`. This note records current
+behavior only; it changes no proposal above and claims no
+`Verified`/`Compatible` status.
+
 ### P5: External editor (Implemented-only)
 
 > Implemented-only in `bitty` CTX-0227 (PR #394, commit
@@ -220,6 +236,12 @@ permission failure deletes the file and fails closed with
 as a documented residual (no safe-std ACL API in this `forbid(unsafe_code)`
 crate). Probe: `crates/bitty-rich/tests/ctx0485_editor_probe.rs`. The proposal
 text above is unchanged; this update claims no `Verified`/`Compatible` status.
+Like the P4 composer engine, the composer editor path is unwired: no app call
+site invokes `bitty-rich`'s `resolve_editor()`, its temp-file round trip, or
+its editor spawn (current-state note, 2026-09-16). The app does spawn an
+editor on a separate, wired path: `bitty config edit` uses `bitty-app`'s own
+`resolve_editor()` (`crates/bitty-app/src/config_cli.rs`; `$VISUAL`, then
+`$EDITOR`, then `vi`) to run an editor on the config file.
 
 ### P6: Cross-panel Hint API (proposal-only)
 

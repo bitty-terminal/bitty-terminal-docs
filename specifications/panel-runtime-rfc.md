@@ -695,20 +695,51 @@ the current point-in-time implementation status, recorded here so the accepted
 contract is not confused with shipped, verified, or compatibility-guaranteed
 behavior. None of it promotes any claim to **Verified** or **Compatible**.
 
-| Surface                          | Status at this RFC's acceptance date                                                                                                                                                                                                                                                                                                                                                                  |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Registry-layer panel identities  | Experimental `bitty-runtime::registry` `PanelRegistry` with `PanelId` (a `bitty-ui` type), monotonic generation, stale-handle rejection, generation exhaustion, and the `Declared -> Created -> Mounted -> Focused -> Suspended -> Disposed` lifecycle, tested headlessly in `bitty` at revision `01ffdda` (2026-09-14) per the candidate [Workspace Panel Invariants](workspace-panel-invariants.md) |
-| Live app path panel content      | `ViewContent::Panel(PanelId)` and per-panel registries exist in `crates/bitty-ui/src/panel.rs` and `crates/bitty-runtime` at `b761c03` per the [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md); placement is not accepted ([`RFC-OQ-3`](#open-questions))                                                                                                                             |
-| Bundled-disabled Panel consumers | Five Panel Runtime consumers (`shell-integration`, `workspace`, `palette`, `statusline`, `project`) are bundled-disabled via the public `PanelRegistry` and `PluginHost` paths at `5c885f2`, exercising the three-level queue `64`/`1024`/`8192`, `8 KiB` payload, `32`/`8 KiB` batch, and `DropOldest`, per the draft [Plugin Matrix](../product/plugin-matrix.md)                                   |
-| Presentation modes and overlays  | `PresentationMode` on `View` carries only `Tiled` as live; `Floating`, `Fullscreen`, and `Scratchpad` parse but transitions are gated. `OverlayTier` ordering exists as an opt-in `bitty-ui` primitive, and multi-tier stacking is not consumed by the app present path, per the [Workspace Compositor](workspace-compositor.md) shipped slice at `1f31435`                                           |
-| Event Bus                        | Bounded in-process `PanelEventBus` queues exist inside the bundled-disabled `workspace`/`statusline` consumers at `5c885f2`; cross-process routing, the v1 topic taxonomy, and the capability ledger are not implemented and remain [`RFC-OQ-4`/`RFC-OQ-5`](#open-questions)                                                                                                                          |
-| Workspace save and restore       | No workspace-snapshot serialization of layout, attachment map, focus MRU, or scrollback rehydration exists; only the experimental registry implements the identities involved, per the candidate [Workspace Panel Invariants](workspace-panel-invariants.md) follow-ups F-2                                                                                                                           |
-| Excluded surfaces                | No daemon, remote UI, multi-window global server, WASM/helper panel isolation, or hot-path `input.pre-encode` interception is implemented or authorized                                                                                                                                                                                                                                               |
+| Surface                          | Status (revision cited per row)                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Registry-layer panel identities  | Experimental `bitty-runtime::registry` `PanelRegistry` with `PanelId` (a `bitty-ui` type), monotonic generation, stale-handle rejection, generation exhaustion, and the `Declared -> Created -> Mounted -> Focused -> Suspended -> Disposed` lifecycle, tested headlessly in `bitty` at revision `01ffdda` (2026-09-14) per the candidate [Workspace Panel Invariants](workspace-panel-invariants.md)                                                                                            |
+| Named host type                  | No struct, trait, enum, or module named `PanelRuntime` exists in `bitty` `origin/main` at `e8dc9e5` (2026-09-16); the name is this RFC's host abstraction, and spellings such as `PanelRuntime::create` describe the accepted contract, not current code. Current orchestration is `PanelRegistry` in `crates/bitty-runtime/src/registry/panel.rs` (`create_panel`, `mount_panel`, `focus_panel`, `suspend_panel`, `resume_panel`, `dispose_panel`), which re-exports the `bitty-ui` panel types |
+| Live app path panel content      | `ViewContent::Panel(PanelId)` and per-panel registries exist in `crates/bitty-ui/src/panel.rs` and `crates/bitty-runtime` at `b761c03` per the [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md); placement is not accepted ([`RFC-OQ-3`](#open-questions))                                                                                                                                                                                                                        |
+| Bundled-disabled Panel consumers | Five Panel Runtime consumers (`shell-integration`, `workspace`, `palette`, `statusline`, `project`) are bundled-disabled via the public `PanelRegistry` and `PluginHost` paths at `5c885f2`, exercising the three-level queue `64`/`1024`/`8192`, `8 KiB` payload, `32`/`8 KiB` batch, and `DropOldest`, per the draft [Plugin Matrix](../product/plugin-matrix.md)                                                                                                                              |
+| Presentation modes and overlays  | `PresentationMode` on `View` carries only `Tiled` as live; `Floating`, `Fullscreen`, and `Scratchpad` parse but transitions are gated. `OverlayTier` ordering exists as an opt-in `bitty-ui` primitive, and multi-tier stacking is not consumed by the app present path, per the [Workspace Compositor](workspace-compositor.md) shipped slice at `1f31435`                                                                                                                                      |
+| Event Bus                        | Bounded in-process `PanelEventBus` queues exist inside the bundled-disabled `workspace`/`statusline` consumers at `5c885f2`; cross-process routing, the v1 topic taxonomy, and the capability ledger are not implemented and remain [`RFC-OQ-4`/`RFC-OQ-5`](#open-questions)                                                                                                                                                                                                                     |
+| Workspace save and restore       | No workspace-snapshot serialization of layout, attachment map, focus MRU, or scrollback rehydration exists; only the experimental registry implements the identities involved, per the candidate [Workspace Panel Invariants](workspace-panel-invariants.md) follow-ups F-2                                                                                                                                                                                                                      |
+| Excluded surfaces                | No daemon, remote UI, multi-window global server, WASM/helper panel isolation, or hot-path `input.pre-encode` interception is implemented or authorized                                                                                                                                                                                                                                                                                                                                          |
 
 The Point-in-time revisions above are cited from draft or candidate documents;
 they are evidence of what exists, not a conformance claim against this RFC.
 Where this RFC and a draft implementation-status document disagree, this RFC's
 accepted contract governs and the status document is stale.
+
+### Recorded research conclusion — Panel, Activity, and the ActivityStack (record 039)
+
+Recorded for traceability from research record 039 (Panel, Activity, and the
+Native UI Boundary, 2026-09-16). This is a captured design conclusion, not an
+accepted amendment to this RFC: none of it is implemented in `bitty`, none of
+the [open questions](#open-questions) is resolved, and no `Implemented`,
+`Verified`, or `Compatible` status is claimed.
+
+- **`Panel is not Activity`.** An activity stack (push/pop) keeps a host's
+  session alive across presented-content changes while `TerminalRegistry`
+  remains the sole owner of terminal (PTY) lifecycle; `Document`, `View`, and
+  `Panel` stay distinct concepts.
+- **Presentation modes are runtime properties**, not panel types: one
+  `PanelId` can move between the modes this RFC defines (for example `tiled`,
+  `floating`, `fullscreen`, `scratchpad`) without changing identity or
+  lifecycle.
+- **Activities generalize panel content**: `Terminal`, `Rich`, `Browser`,
+  `Helper`, and `Canvas` become activities hosted by a panel, and the host
+  (`PanelRuntime` in contract terms; `PanelRegistry` today) keeps the
+  create/mount/suspend/resume/dispose lifecycle.
+- **Object-model direction**: `Window > Workspace > Panel > Presentation/Activity`,
+  backed by UI Runtime, Application Runtime, and Lua Runtime layers, with Rust
+  owning primitives and Lua holding state and policy.
+- **Destination note**: the plugin-side direction of record 039 is captured in
+  `plugin-ecosystem-model.md` in `bitty-plugins-docs`; this subsection records
+  the terminal-core direction. Adopting the activity stack requires a future
+  RFC amendment or successor document; the panel-provider contract remains
+  open, and the candidate [Panel Extensibility Vision](../product/panel-vision.md)
+  is the related draft direction.
 
 ## Alternatives considered
 

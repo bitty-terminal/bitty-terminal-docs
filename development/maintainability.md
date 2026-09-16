@@ -26,7 +26,7 @@ sidebar_order: 40
 - **No dead code leakage.** The only `allow(dead_code)` sites are platform-gated seams (`crates/bitty-pty/src/platform/windows.rs:28,33`, `crates/bitty-pty/src/error.rs:54`, `crates/bitty-pty/src/builder.rs:49` for `windows`), a headless/GPU dual-target guard (`crates/bitty-render/src/gpu.rs:453` keeping `SurfaceTarget` alive), and test-only helpers (`crates/bitty-plugin-host/src/host.rs:362`, `crates/bitty-app/src/main.rs:1204`, `crates/bitty-term-state/tests/common/mod.rs:293`). All compile clean on both `x86_64-unknown-linux-gnu` and `x86_64-pc-windows-gnu`.
 - **Docs links: valid.** `just check` markdownlint reports `0 issues in 0 files` across 27 files. Internal `./release-ladder.md` and `./g1-publish-checklist.md` siblings resolve. Cross-repo `../../../bitty-docs/...` links are correct when resolved from the repository root (GitHub view); a naive filesystem check from inside `.worktrees/ctx-0051-chore-maintainability/docs/product/` appears broken only because the worktree nests one level deeper (`.worktrees/`), not a real link defect. External `https://` links are limited to canonical `bitty-docs`, `keepachangelog.com`, `semver.org`, and the GitHub security advisory.
 - **Workspace hygiene: clean.** `git status --porcelain` is empty (aside from this untracked draft). `.gitignore` correctly ignores `.carryctx/config.local.toml`, `.worktrees/`, and `/target/`. `/target` is 5.1 GiB but ignored — no artifact is tracked.
-- **One semantic staleness fix shipped in this worktree:** `README.md` (and `CONTRIBUTING.md` first paragraph) still described the CTX-0002 scaffold (“exactly two packages, dependency-free, no edges”). The workspace has grown to **16 crates** with a pinned DAG (see below). This report fixes `README.md` (and notes `CONTRIBUTING.md`) to stop mis-describing implemented topology.
+- **One semantic staleness fix shipped in this worktree:** `README.md` (and `CONTRIBUTING.md` first paragraph) still described the CTX-0002 scaffold (“exactly two packages, dependency-free, no edges”). The workspace has grown to **16 crates** with a pinned DAG (see below). This report fixes `README.md` (and notes `CONTRIBUTING.md`) to stop mis-describing implemented topology. **Current state (2026-09-16): 19 crates** — `bitty-compat-lab` (CTX-0078), `bitty-perf` (CTX-0100), and `bitty-test-support` (CTX-0267) joined after this report; the current roster is maintained in [Release Ladder v0.1-v1.0](release-mechanics.md#crate-inventory-nineteen-members-as-of-2026-09-16).
 
 ## Workspace inventory (as of `253997a`)
 
@@ -52,6 +52,14 @@ Sixteen members in `Cargo.toml:2-19`:
 | `bitty-core`        | false   | bootstrap seed to be retired                           |
 
 Nine `publish = true` at `0.0.1`; seven remain `publish = false` until RFC acceptance (see `docs/product/release-ladder.md` Groups 1–4).
+
+This inventory and its counts are the CTX-0051 (`253997a`) snapshot. The
+current nineteen-member roster, publish flags, and dependency edges are
+maintained in
+[Release Ladder v0.1-v1.0](release-mechanics.md#crate-inventory-nineteen-members-as-of-2026-09-16);
+the `bitty-ipc` row above ("bounded IPC/MCP stub") is a CTX-0051 descriptor
+that predates the Phase-A protocol surface and the CTX-0419 publishable
+bridge boundary.
 
 ## Hygiene checks — detailed
 
