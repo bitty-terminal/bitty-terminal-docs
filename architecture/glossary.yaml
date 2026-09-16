@@ -7,7 +7,7 @@ updated: "2026-08-31"
 synchronized_revision: "7a4ee41"
 synchronized_short: "7a4ee41"
 baseline_revision: "de134ec"
-maturity: "Pre-alpha / M1 Hardening (2026-08-29, 16 crates, 32 OQs Accepted)"
+maturity: "Pre-alpha / M1 Hardening (19 crates, 32 OQs Accepted)"
 description: Canonical node and edge inventory for Bitty architecture diagrams
 provenance: CTX-0115
 
@@ -138,6 +138,27 @@ nodes:
     level: L1
     description: Bootstrap seed to be retired — migration target bitty-vt, term-state, pty
     crate_path: crates/bitty-core
+  - id: bitty-compat-lab
+    label: bitty-compat-lab
+    kind: crate
+    shape: rect
+    level: L1
+    description: Headless bounded vttest and terminal state differential test harness
+    crate_path: crates/bitty-compat-lab
+  - id: bitty-perf
+    label: bitty-perf
+    kind: crate
+    shape: rect
+    level: L1
+    description: Performance baseline harness for throughput, latency, and reflow benches
+    crate_path: crates/bitty-perf
+  - id: bitty-test-support
+    label: bitty-test-support
+    kind: crate
+    shape: rect
+    level: L1
+    description: Shared test harness helpers and live-PTY gating macros
+    crate_path: crates/bitty-test-support
 
   # --- Logical components (overview) ---
   - id: terminal-truth
