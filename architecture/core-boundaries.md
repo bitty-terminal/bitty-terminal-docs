@@ -122,6 +122,14 @@ Kitty Graphics, Sixel, iTerm2 images, Kitty keyboard, and OSC 7/8/52/133 belong
 to the “if supported, Core must implement it correctly” category. The protocol
 roadmap still determines their priorities.
 
+Current implementation status (2026-09-16, `bitty` `origin/main` `e8dc9e5`):
+the Kitty Graphics path is the only image protocol implemented end to end (APC
+`G` intake, bounded PNG/RGB/RGBA decode, placement, and GPU blit in
+`bitty-rich`); Sixel and iTerm2 inline images have no parser or decode path,
+and `ImageSource::Sixel`/`ImageSource::Iterm2` are data-model variants only.
+See the [Rich Presentation RFC](../specifications/rich-presentation-rfc.md)
+decode/placement evidence and its recorded deviations.
+
 ## Accepted Plugin ownership
 
 | Optional experience   | Policy owned by the plugin                                                                             |

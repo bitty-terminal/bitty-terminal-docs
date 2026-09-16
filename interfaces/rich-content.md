@@ -275,6 +275,14 @@ pre-implementation contract: nothing here becomes an implemented API by virtue
 of those milestones, and Sixel, iTerm2 inline images, animation, and the
 structured transports below remain unimplemented.
 
+Current model boundary (2026-09-16, `bitty` `origin/main` `e8dc9e5`):
+`RichBlock`, `SceneNode`, and the `RichSurface` projection exist only as
+headless in-memory models in `bitty-rich`. No scene graph reaches the grid or
+the GPU present path; `bitty-render` consumes cell snapshots from
+`bitty-term-state` plus Kitty texture uploads and has no `bitty-rich`
+dependency edge. The composition described in this document therefore remains
+a design target rather than wired behavior.
+
 ## Open questions
 
 - What is the first stable `RichBlock` and `SceneNode` contract?
