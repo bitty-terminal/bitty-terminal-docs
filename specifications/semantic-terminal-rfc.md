@@ -210,8 +210,8 @@ attacker-influenced environment input rather than a program name to trust.
 the exact bare names in `EDITOR_ALLOWLIST` (`nvim`, `vim`, `vi`): the first
 non-empty variable wins, a hostile value fails `EditorError::NotAllowed`
 before any temp file is written or child is spawned, and it never falls
-through to the other variable. Paths, flags, whitespace, case variants, and
-metacharacters fail the exact match. The temp file is extensionless (the old
+through to the other variable. Paths, flags, interior whitespace, case
+variants, and metacharacters fail the exact match. The temp file is extensionless (the old
 `.sh` suffix invited editor plugins, file managers, and OS handlers to treat
 terminal content as executable) and owner-only: on Unix the create call itself
 applies mode `0o600`, the mode is re-asserted after the write, and any
