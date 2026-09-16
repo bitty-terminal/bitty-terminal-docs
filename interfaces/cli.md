@@ -365,6 +365,36 @@ the layer model is owned by the
 [Configuration Model RFC](../specifications/configuration-model-rfc.md) and the
 [Lua and XDG configuration](../configuration/lua-and-xdg.md) reference.
 
+## Test mode
+
+Status: **implementation reference (experimental).** Documented from the merged
+`bitty` behavior at `92cd709` (CTX-0506, PR #831); the flag is `Implemented`
+(experimental), not `Verified`.
+
+`bitty --test-mode` runs a deterministic headless E2E servo: the real runtime
+plus the `BITTY_SOCKET` IPC surface without a display, GPU, winit event loop, or
+VM, so native tests can drive panels and assert state over the `bitty.debug/*`
+protocol. The flag is argv-only — it has no environment-variable, configuration,
+or profile equivalent — and it takes precedence over `--headless`. The test
+surface itself is documented as the test-mode E2E amendment in the
+[DevTools RFC](../specifications/devtools-rfc.md#test-mode-e2e-surface-implemented-only-amendment-a3).
+
+Loop and exit behavior:
+
+- the loop runs at a fixed 16 ms tick (~60 Hz): it pumps the PTY, drains the
+  control queue, ticks the runtime, and publishes the inspect snapshot;
+- it exits `0` only after the elevated `bitty.debug/testExit` wire verb applies;
+  there is no CLI verb for `testExit`, so a harness sends the raw method and
+  needs `BITTY_CTL_ELEVATE=debug.control`;
+- it is fail-closed: when the IPC socket cannot serve, the process reports the
+  failure on stderr and exits `1` instead of running a harness against no
+  surface. Normal startup keeps its documented fail-soft IPC behavior.
+
+Bounds: test mode grants no new scope, issues no automation bearer, changes no
+rate, redaction, or payload bound, and opens no transport beyond the
+current-user `0600` Unix socket with its accepted endpoint and peer checks
+(Unix-only; no TCP listener). The control queue and reply bounds stay in force.
+
 ## Output contract
 
 Status: **candidate contract.**
