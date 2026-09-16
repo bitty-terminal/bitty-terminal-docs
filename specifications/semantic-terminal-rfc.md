@@ -236,9 +236,12 @@ permission failure deletes the file and fails closed with
 as a documented residual (no safe-std ACL API in this `forbid(unsafe_code)`
 crate). Probe: `crates/bitty-rich/tests/ctx0485_editor_probe.rs`. The proposal
 text above is unchanged; this update claims no `Verified`/`Compatible` status.
-Like the P4 composer engine, the editor path is headless: no app call site
-invokes `resolve_editor()`, the temp-file round trip, or an editor spawn
-(current-state note, 2026-09-16).
+Like the P4 composer engine, the composer editor path is unwired: no app call
+site invokes `bitty-rich`'s `resolve_editor()`, its temp-file round trip, or
+its editor spawn (current-state note, 2026-09-16). The app does spawn an
+editor on a separate, wired path: `bitty config edit` uses `bitty-app`'s own
+`resolve_editor()` (`crates/bitty-app/src/config_cli.rs`; `$VISUAL`, then
+`$EDITOR`, then `vi`) to run an editor on the config file.
 
 ### P6: Cross-panel Hint API (proposal-only)
 

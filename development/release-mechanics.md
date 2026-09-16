@@ -115,7 +115,7 @@ accept the `v0.2` slice; it provides the reviewable layout for follow-up real
 Sixteen members at CTX-0043 (`bitty/Cargo.toml`, head `7b215a2` / `3bfe386`
 base); nineteen members on `bitty` `origin/main` at `e8dc9e5` (2026-09-16).
 The three later additions are `bitty-compat-lab` (CTX-0078), `bitty-perf`
-(CTX-0100), and `bitty-test-support` (CTX-0267), all workspace harnesses with
+(CTX-0076), and `bitty-test-support` (CTX-0267), all workspace harnesses with
 `publish = false`. Rows below record the current roster and direct normal
 workspace dependencies; dev-only edges are named in the role text. Two rows
 differ from the CTX-0043 record: `bitty-ipc` was promoted to `publish = true`
@@ -143,7 +143,7 @@ by
 | `bitty-app`          | false   | `config`, `ipc`, `perf`, `platform`, `plugin-host`, `runtime`, `render`, `term-state`                          | Thin binary composition root                                                                                                                                                                                              |
 | `bitty-core`         | false   | none                                                                                                           | Bootstrap seed to be retired                                                                                                                                                                                              |
 | `bitty-compat-lab`   | false   | `bitty-vt`, `bitty-term-state` (dev: `bitty-pty`)                                                              | Headless bounded `vttest`/differential compat harness (CTX-0078; added after CTX-0043)                                                                                                                                    |
-| `bitty-perf`         | false   | `vt`, `term-state`, `render`, `platform`, `pty`, `runtime`, `config`, `ui`                                     | Performance baseline bench harness (CTX-0100; added after CTX-0043)                                                                                                                                                       |
+| `bitty-perf`         | false   | `vt`, `term-state`, `render`, `platform`, `pty`, `runtime`, `config`, `ui`                                     | Performance baseline bench harness (CTX-0076; added after CTX-0043)                                                                                                                                                       |
 | `bitty-test-support` | false   | none                                                                                                           | Shared test-harness helpers, live-PTY gating (CTX-0267; added after CTX-0043)                                                                                                                                             |
 
 Ten members set `publish = true` (the nine CTX-0043 publishable crates plus
@@ -187,7 +187,7 @@ between groups.
 
 ### Group 2 — Terminal truth and Lua-dependent config
 
-- `bitty-term-state` — depends only on `bitty-vt = "0.0.1"`. Publish after
+- `bitty-term-state` — depends only on `bitty-vt = "0.0.20"`. Publish after
   `vt` is on crates.io. CTX-0043 dry-run correctly reported missing index
   for this ordering reason (metadata valid, `version` pin present).
 - `bitty-config` — depends on `bitty-lua` (CTX-0148 path edge without a
@@ -196,10 +196,11 @@ between groups.
 
 ### Group 3 — Presentation branch (parallel after Group 2)
 
-- `bitty-ui` — depends on `bitty-term-state = "0.0.1"` — publish after Group 2.
-- `bitty-render` — depends on `bitty-term-state = "0.0.1"`,
-  `bitty-platform = "0.0.1"`, and `bitty-config` (CTX-0147 theme-preset edge;
-  no `version` pin) — publish after Groups 1+2. Dev-edge `bitty-vt` is
+- `bitty-ui` — depends on `bitty-term-state = "0.0.20"` — publish after Group 2.
+- `bitty-render` — depends on `bitty-term-state = "0.0.20"`,
+  `bitty-platform = "0.0.20"`, and `bitty-config = "0.0.20"` (CTX-0147
+  theme-preset edge; pinned since the edge was added, bumped with the
+  workspace at CTX-0331) — publish after Groups 1+2. Dev-edge `bitty-vt` is
   `dev-dependencies` only and does not impose publish ordering beyond
   `term-state`/`platform`/`config`.
 
@@ -239,9 +240,9 @@ Workspace harnesses (added after CTX-0043; all `publish = false` and never
 - `bitty-compat-lab` (CTX-0078) — headless bounded `vttest`/differential
   compat harness; depends on `bitty-vt` and `bitty-term-state`, with
   `bitty-pty` as a dev-only edge.
-- `bitty-perf` (CTX-0100) — performance baseline bench owner; depends on
-  `vt`, `term-state`, `render`, `platform`, `pty`, `runtime`, `config`, and
-  `ui`.
+- `bitty-perf` (CTX-0076; real-window measurement upgrade in CTX-0100) —
+  performance baseline bench owner; depends on `vt`, `term-state`, `render`,
+  `platform`, `pty`, `runtime`, `config`, and `ui`.
 - `bitty-test-support` (CTX-0267) — shared test-harness helpers for live-PTY
   gating; no workspace dependency; consumed as a dev edge by `pty`, `rich`,
   `runtime`, and `app`.
@@ -367,6 +368,6 @@ differential / `crates/bitty-vt/tests/replay.rs` and adding
 `docs/product/compat-lab.md`; updated 2026-09-16 via CTX-0022
 (`ctx-0022/docs-crate-inventory-status`) extending the inventory to the
 nineteen-member workspace (`bitty` `origin/main` `e8dc9e5`), adding the
-CTX-0078/CTX-0100/CTX-0267 harness crates to Group 4, moving `bitty-config`
+CTX-0076/CTX-0078/CTX-0267 harness crates to Group 4, moving `bitty-config`
 behind `bitty-lua` (CTX-0148), promoting `bitty-ipc` to the Group 1 leaves
 (CTX-0419), and refreshing dependency edges — still `status: draft`.
