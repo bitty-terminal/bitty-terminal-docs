@@ -134,7 +134,7 @@ cargo test -p bitty-compat-lab --test compare --locked -- --nocapture
 ```
 
 `collect_dumps` replays every `tests/compat/*/corpus/*.bin` headlessly and
-writes bounded snapshots under `recording/references/bitty/`. `compare`
+writes bounded snapshots under the evidence-area per-category dump directory. `compare`
 re-checks them self-consistently and diffs the four reference backends
 (`ghostty`, `kitty`, `wezterm`, `alacritty`) when per-corpus dumps exist; when
 they do not, the reference column is a graceful `SKIP`, not a pass.

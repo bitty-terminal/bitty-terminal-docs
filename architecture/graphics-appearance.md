@@ -15,7 +15,7 @@ sidebar_order: 23
 > implementation. This document distills the user rendering/appearance
 > direction recorded as
 > [DIR-021](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)
-> (CTX-0207, companion note `recording/research/035.md`). Every layer order,
+> (CTX-0207, closed companion research note 035). Every layer order,
 > type name, and crate sketch below is a **model to plan against**, not an
 > implementation claim. It changes nothing accepted: not the
 > [Rich Presentation RFC](https://github.com/bitty-terminal/bitty-terminal-docs/blob/main/specifications/rich-presentation-rfc.md)
@@ -378,7 +378,7 @@ the test suite.
 > `src/graphics/`), and targeted looks at `ghostty@5252b193c`
 > (`src/terminal/kitty/`, `src/font/sprite.zig`, background-image shader)
 > and `alacritty@d692748` (`alacritty/src/display/content.rs`,
-> renderer text backends). Revisions match `recording/references/README.md`.
+> renderer text backends). Revisions are summarized inline above.
 > Reference clones are untrusted design evidence, never dependencies.
 > Everything below is a **candidate consideration** for the model above; it
 > changes nothing accepted and admits no new open question.

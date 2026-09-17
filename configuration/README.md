@@ -1,0 +1,27 @@
+---
+title: Configuration
+description: Index of terminal-platform configuration contracts for Lua setup XDG layout and themes
+category: configuration
+audience: mixed
+document_type: index
+status: accepted
+website_publish: true
+sidebar_order: 10
+---
+
+# Configuration
+
+Index of the terminal-platform configuration contracts. Normative detail
+lives in the linked pages; this index carries no duplicate normative prose.
+
+| Document                                                  | Status | Purpose                                                                     |
+| --------------------------------------------------------- | ------ | --------------------------------------------------------------------------- |
+| [Lua configuration and filesystem layout](lua-and-xdg.md) | Draft  | Lua configuration, XDG roots, layering, and cross-platform paths.           |
+| [Theme presets](themes.md)                                | Stable | Built-in theme preset catalog with selection keys, aliases, and provenance. |
+
+## Authority and status
+
+Configuration contracts here are pre-implementation unless the linked page
+states otherwise with evidence. Shared cross-project governance stays in
+[bitty-docs](https://github.com/bitty-terminal/bitty-docs) and is linked,
+never copied.

@@ -21,29 +21,29 @@ sidebar_order: 53
   - Priority: P0 | Area: ui | Labels: docs,area:ui,P0 | Milestone: v0.1.0 | RFC: workspace-compositor | Task: CTX-0084
   - Issue: [#120](https://github.com/bitty-terminal/bitty/issues/120) — `docs,area:ui,P0` — milestone `v0.1.0`
 - Worktree: `.worktrees/ctx-0084-reference-clone` — branch `ctx-0084/reference-clone` — base `1ab5fb9`.
-- Scope: clone Hyprland/Waybar at depth 1 to **global** `recording/references/` (umbrella, outside `bitty` worktree per isolation), record revision + license in `recording/references/README.md`, summarize exa patterns in `recording/references/panel-tabs-research-2026-08-30.md`, and record this docs artifact. No `recording/references/` commit inside `bitty`; this file is the in-repo artifact.
+- Scope: clone Hyprland/Waybar at depth 1 to the git-ignored workspace evidence area (outside the `bitty` worktree per isolation; summarized inline below), record revision + license in the evidence-area revision table, summarize exa patterns in a dated research note, and record this docs artifact. No evidence-area checkout is committed inside `bitty`; this file is the in-repo artifact.
 
 ## Global snapshots — verification
 
-Read-only clones under umbrella `recording/references/` (never executed, never imported as dependencies, not referenced in `Cargo.toml`):
+Read-only clones in the workspace evidence area (never executed, never imported as dependencies, not referenced in `Cargo.toml`; revisions and licenses summarized inline):
 
 | Snapshot   | Upstream                             | Revision (short) | Full HEAD                                                                                                                              | License                                                   | Cloned                           |
 | ---------- | ------------------------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------- |
 | `hyprland` | <https://github.com/hyprwm/Hyprland> | `c91fa5a`        | `c91fa5ab4d566206888c708dba66fca3646c382e` — `fullscreen: fix missing early return (#16063)`                                           | BSD-3-Clause — `LICENSE` Copyright (c) 2022-2026 vaxerski | 2026-08-30 `git clone --depth 1` |
 | `waybar`   | <https://github.com/Alexays/Waybar>  | `6d60c8e`        | `6d60c8e02be67bb85bb9b1ea803f2fbcf0722002` — `Merge pull request #5222 from IlyasKhallouki/fix/5220-taskbar-dedup-only-with-max-icons` | MIT — `LICENSE` Copyright (c) 2025 Alex                   | 2026-08-30 `git clone --depth 1` |
 
-Retained for VT/grid differential (unchanged): `ghostty@8867c37` MIT, `kitty@087b8c3` GPL-3.0, `neovim@a1de074` Apache-2.0/Vim, `wezterm@f93d903` MIT, synthetic `vttest` corpora (< 8 KiB) — see `recording/references/README.md` table.
+Retained for VT/grid differential (unchanged): `ghostty@8867c37` MIT, `kitty@087b8c3` GPL-3.0, `neovim@a1de074` Apache-2.0/Vim, `wezterm@f93d903` MIT, synthetic `vttest` corpora (< 8 KiB) — see the evidence-area revision table.
 
-Verification (read-only, no build):
+Verification (read-only, no build; commands address the evidence-area checkouts, not repository paths):
 
 ```bash
-git -C recording/references/hyprland rev-parse HEAD  # c91fa5ab4d566206888c708dba66fca3646c382e
-git -C recording/references/waybar rev-parse HEAD    # 6d60c8e02be67bb85bb9b1ea803f2fbcf0722002
-head -5 recording/references/hyprland/LICENSE        # BSD 3-Clause
-head -5 recording/references/waybar/LICENSE          # MIT
+git -C <evidence-area>/hyprland rev-parse HEAD  # c91fa5ab4d566206888c708dba66fca3646c382e
+git -C <evidence-area>/waybar rev-parse HEAD    # 6d60c8e02be67bb85bb9b1ea803f2fbcf0722002
+head -5 <evidence-area>/hyprland/LICENSE        # BSD 3-Clause
+head -5 <evidence-area>/waybar/LICENSE          # MIT
 ```
 
-`recording/references/README.md` and `recording/references/panel-tabs-research-2026-08-30.md` (73 lines) in the umbrella workspace hold the canonical revision table and distilled research; this file does not duplicate the clones.
+The evidence-area revision table and the dated distilled-research note (73 lines) hold the canonical revision table and distilled research; this file does not duplicate the clones.
 
 ## Exa research — distilled patterns (not TODO)
 
@@ -68,12 +68,12 @@ Three `exa_web_search_exa` queries on 2026-08-30, distilled as patterns Bitty co
 - An out-of-window status panel is a separate SCTK `Layer::Top` bar (Waybar provider pattern) with `exclusive_zone` strut; main window stays `winit`. On GNOME, fall back to X11 override-redirect — do not block on `winit` layer-shell.
 - No dependencies added; snapshots remain untrusted, excluded by umbrella `recording/` routing and not referenced in `Cargo.toml`. Future work starts with pure `bitty-ui::layout` unit tests mirroring `hyprgate` cases, then a feature-gated `bitty-panel` crate behind `backend-wlr` following `fono` fallback.
 
-## Evidence — file:line pointers (no defects)
+## Evidence — pointers (no defects)
 
-- Umbrella research: `recording/references/panel-tabs-research-2026-08-30.md:1`, `recording/references/README.md:11`
-- Clones: `recording/references/hyprland` @ `c91fa5a`, `recording/references/waybar` @ `6d60c8e`
+- Umbrella research: dated distilled-research note `:1`, evidence-area revision table `:11`
+- Clones: `hyprland` @ `c91fa5a`, `waybar` @ `6d60c8e` (evidence-area checkouts, summarized inline above)
 - Issue: `gh issue view 120 --repo bitty-terminal/bitty` — `docs,area:ui,P0`, milestone `v0.1.0`
-- This artifact: `docs/product/reference-notes.md:1` — research `status: draft`, not a TODO implementation claim
+- This artifact: `product/reference-notes.md:1` — research `status: draft`, not a TODO implementation claim
 
 ## Next (not in this task)
 

@@ -87,10 +87,9 @@ verification process.
 ## Provenance
 
 The direction and constraints above are recorded from the project initiator's
-local research note `recording/research/020.md` (to be retired as
-`020.md.completed` once this document lands), which covers 88×31 web badges,
-pixel-art mascot systems, terminal cell geometry versus image pixels, and
-image-protocol and zoom semantics. The research note is workspace scratch
+closed local research note 020 on pixel-art mascot systems, which covers
+88×31 web badges, terminal cell geometry versus image pixels, and
+image-protocol and zoom semantics (findings summarized inline above). The research note is workspace scratch
 material; this document is the canonical record. The direction is registered as
 DIR-013 in the
 [bitty-docs decision register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md).

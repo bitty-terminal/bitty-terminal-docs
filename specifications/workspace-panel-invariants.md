@@ -14,10 +14,9 @@ sidebar_order: 33
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document freezes a first invariant
 > batch for `WorkspaceId` / `ViewId` / `PanelId` / `TerminalId` / session
-> identity / focus, following research recommendation 3 of the workspace
-> research note 017 on M4 Workspace/Panel invariant hardening (archived as
-> `017.md.completed` in the workspace `recording/research/` directory; the
-> `.completed` suffix marks a closed note). It is
+> identity / focus, following research recommendation 3 of workspace research
+> note 017 on M4 Workspace/Panel invariant hardening (closed research note;
+> the findings are summarized inline in [Purpose and scope](#purpose-and-scope)). It is
 > checked read-only against `bitty` `origin/main` revision
 > `01ffdda` (2026-09-14), the merge of the linked `ctx-0405` pull request, plus
 > the linked `ctx-0414` pull request (#671) that adds the inactive-close
@@ -213,4 +212,4 @@ platforms.
 - [Panel Runtime and Event Bus Pre-Study](https://github.com/bitty-terminal/bitty-terminal-docs/blob/main/specifications/panel-runtime-pre-study.md) — candidate panel lifecycle and `PanelId` contract.
 - [UI and Compositor Gap Analysis](https://github.com/bitty-terminal/bitty-terminal-docs/blob/main/specifications/ui-compositor-gap-analysis.md) — candidate point-in-time implementation status.
 - [Architecture Overview](../architecture/overview.md) and [Core and Plugin Boundaries](../architecture/core-boundaries.md) — ownership and boundary sources.
-- Research note 017 — M4 Workspace/Panel invariant-hardening research (workspace `recording/research/017.md.completed`; the `.completed` suffix marks the closed note) that produced this document.
+- Research note 017 — M4 Workspace/Panel invariant-hardening research (closed note; findings summarized inline in Purpose and scope) that produced this document.
