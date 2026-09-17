@@ -13,8 +13,9 @@ sidebar_order: 34
 
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document is a design record distilled
-> from workspace research note `038.md` (Panel History, 1470 lines; the note
-> file stays unrenamed until the commander merges). It authorizes no shipped,
+> from workspace research note 038 on Panel History (closed research note;
+> the direction is summarized inline in [Purpose and scope](#purpose-and-scope)).
+> It authorizes no shipped,
 > stable, or compatibility-guaranteed behavior, weakens no accepted source it
 > cites, and makes no implementation claim. Rust and Lua sketches are
 > illustrative only: names, bounds, paths, and defaults are direction, not
@@ -338,8 +339,7 @@ amendment settles them:
 
 ## Provenance
 
-- Workspace `recording/research/038.md` (Panel History; Atuin integration in
-  the second half). The note's Atuin documentation links are evidence pointers
+- Workspace research note 038 on Panel History (closed note; Atuin integration covered in the second half, direction summarized inline in Purpose and scope). The note's Atuin documentation links are evidence pointers
   and are not copied here.
 - `bitty` `CTX-0383` (scrollback search UI wiring) and `CTX-0384` (keyboard
   copy mode) as adjacent completed implementation lanes.

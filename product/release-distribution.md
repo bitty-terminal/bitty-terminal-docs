@@ -24,9 +24,9 @@ sidebar_order: 22
   `ctx-0012/docs-release-distribution`. Parent direction: bitty-docs
   **CTX-0206** (issue `bitty-terminal/bitty-docs#300`,
   [DIR-020](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)),
-  distilled from user research note `recording/research/034.md` (646 lines,
-  Chinese-language analysis of the `bitty` `release.yml` / `nfpm.yaml` /
-  `PKGBUILD` / `packaging/` state). Compression was explicitly required; this
+  distilled from user research note 034 on the `bitty` `release.yml` / `nfpm.yaml` /
+  `PKGBUILD` / `packaging/` state (646 lines of Chinese-language analysis;
+  findings summarized inline in the matrix below). Compression was explicitly required; this
   is not a copy of the note.
 - Authority note: the direction (matrix, order, timing gate, non-goals) is an
   accepted working direction via DIR-020. Every hardening item below is a
@@ -101,7 +101,7 @@ First-hand verification against the `bitty` checkout at the time of writing
   dependency declarations**). All four Linux package formats are built from
   the same `x86_64-unknown-linux-gnu` binary, so the `.apk` currently ships
   a glibc binary on a musl distribution.
-- Validation builds `--target /tmp/bitty.pkg.tar.zst` correctly, but the
+- Validation builds to an ephemeral scratch archive correctly, but the
   release step emits `--target "dist/bitty-${target}.${pkg}"`, producing
   `bitty-x86_64-unknown-linux-gnu.archlinux` instead of a pacman-installable
   name such as `bitty-0.0.21-1-x86_64.pkg.tar.zst`.

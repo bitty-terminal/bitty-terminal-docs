@@ -70,8 +70,7 @@ Related material, not duplicated here:
   lazygit, dialog, and git-pager, with nested `tmux` the single failure; that
   failure is fixed by CTX-0375 (`3f18a5c`, primary grid follows the decorated
   content frame, guarded by `crates/bitty-runtime/tests/nested_tmux_present.rs`).
-- References: read-only, untrusted snapshots under `recording/references/` as
-  recorded in `recording/references/README.md`. They were inspected only; no
+- References: read-only, untrusted evidence-area snapshots (revisions summarized inline). They were inspected only; no
   vendor code was executed, imported, or copied into this repository.
 
 | Reference | Snapshot HEAD                              | License                | Used for                                               |
