@@ -174,6 +174,7 @@ Headless companion rows are green when `cargo test -p bitty-compat-lab` + `cargo
 ## Screenshot & capture guidance — `hyprctl` + `grim` (manual, not CI-blocking)
 
 - **Not CI.** These commands are human-run on a headed Hyprland session; they are never called from `just check`, `cargo test`, or any workflow. No `winit`/`wgpu`/`Window`/`Surface` is constructed in `tests/` or `crates/bitty-compat-lab` for this reason.
+- **Evidence-area term.** In the snippets below, `$EVIDENCE_DIR` is the git-ignored workspace evidence area (outside the repo; summarized inline, never committed). Substitute your local path for the `<evidence-dir>` placeholder once before running; every path below then resolves to a single argument.
 - **Workspace isolation:**
 
   ```bash
@@ -186,24 +187,25 @@ Headless companion rows are green when `cargo test -p bitty-compat-lab` + `cargo
 - **Window capture (preferred — avoids slurp in CI logs):**
 
   ```bash
-  mkdir -p evidence-area manual-smoke/$(date +%F)
+  EVIDENCE_DIR="<evidence-dir>"  # git-ignored workspace evidence area, set once per run
+  mkdir -p "$EVIDENCE_DIR/manual-smoke/$(date +%F)"
   # list windows on workspace 9, then capture one by address
   hyprctl clients -j | jq -r '.[] | select(.workspace.id==9) | "\(.address) \(.class) \(.title)"'
-  grim -g "$(hyprctl clients -j | jq -r '.[] | select(.class=="bitty") | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" evidence-area manual-smoke/$(date +%F)/01-bitty.png
-  grim -g "$(hyprctl clients -j | jq -r '.[] | select(.class=="kitty")  | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" evidence-area manual-smoke/$(date +%F)/01-kitty.png
+  grim -g "$(hyprctl clients -j | jq -r '.[] | select(.class=="bitty") | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" "$EVIDENCE_DIR/manual-smoke/$(date +%F)/01-bitty.png"
+  grim -g "$(hyprctl clients -j | jq -r '.[] | select(.class=="kitty")  | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" "$EVIDENCE_DIR/manual-smoke/$(date +%F)/01-kitty.png"
   # or interactive (human only)
-  grim -g "$(slurp)" evidence-area manual-smoke/$(date +%F)/manual-$(date +%H%M%S).png
+  grim -g "$(slurp)" "$EVIDENCE_DIR/manual-smoke/$(date +%F)/manual-$(date +%H%M%S).png"
   ```
 
-- **Full-workspace fallback (when addresses drift):** `grim evidence-area manual-smoke/$(date +%F)/workspace-9-$(date +%H%M%S).png`.
+- **Full-workspace fallback (when addresses drift):** `grim "$EVIDENCE_DIR/manual-smoke/$(date +%F)/workspace-9-$(date +%H%M%S).png"`.
 - **Grid dump (text) alongside PNGs** — prefer text diffs for the comparator (CTX-0085) and keep PNGs as visual sanity:
 
   ```bash
   # kitty / ghostty / wezterm dumps of the same PTY bytes
-  kitty --dump-commands > evidence-area manual-smoke/$(date +%F)/kitty-dump.json
-  wezterm record --cwd . > evidence-area manual-smoke/$(date +%F)/wezterm-record.json
+  kitty --dump-commands > "$EVIDENCE_DIR/manual-smoke/$(date +%F)/kitty-dump.json"
+  wezterm record --cwd . > "$EVIDENCE_DIR/manual-smoke/$(date +%F)/wezterm-record.json"
   # bitty headless snapshot for the same bytes
-  cargo test -p bitty-compat-lab -- --nocapture > evidence-area manual-smoke/$(date +%F)/bitty-snapshot.txt
+  cargo test -p bitty-compat-lab -- --nocapture > "$EVIDENCE_DIR/manual-smoke/$(date +%F)/bitty-snapshot.txt"
   ```
 
 - **Storage:** the evidence-area dated run directory is git-ignored and stays out of the PR — it is not the revision-pinned reference-dump area. Commit only the filled comparison matrix, not the PNGs.

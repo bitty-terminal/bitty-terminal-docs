@@ -57,5 +57,5 @@ Accepted pages record reviewed direction or maintained fact; draft pages are
 candidate work that authorizes no release and weakens no accepted source.
 Implementation claims require evidence from the owning code repository.
 Evidence snapshots cited by these pages live in the git-ignored workspace
-`recording/` area and are summarized inline; they are never linked as
+evidence area and are summarized inline; they are never linked as
 repository paths.

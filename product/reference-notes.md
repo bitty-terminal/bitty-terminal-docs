@@ -34,13 +34,13 @@ Read-only clones in the workspace evidence area (never executed, never imported 
 
 Retained for VT/grid differential (unchanged): `ghostty@8867c37` MIT, `kitty@087b8c3` GPL-3.0, `neovim@a1de074` Apache-2.0/Vim, `wezterm@f93d903` MIT, synthetic `vttest` corpora (< 8 KiB) — see the evidence-area revision table.
 
-Verification (read-only, no build; commands address the evidence-area checkouts, not repository paths):
+Verification (read-only, no build; commands address the evidence-area checkouts, not repository paths; `<evidence-dir>` is the git-ignored workspace evidence area, set once per run):
 
 ```bash
-git -C <evidence-area>/hyprland rev-parse HEAD  # c91fa5ab4d566206888c708dba66fca3646c382e
-git -C <evidence-area>/waybar rev-parse HEAD    # 6d60c8e02be67bb85bb9b1ea803f2fbcf0722002
-head -5 <evidence-area>/hyprland/LICENSE        # BSD 3-Clause
-head -5 <evidence-area>/waybar/LICENSE          # MIT
+git -C <evidence-dir>/hyprland rev-parse HEAD  # c91fa5ab4d566206888c708dba66fca3646c382e
+git -C <evidence-dir>/waybar rev-parse HEAD    # 6d60c8e02be67bb85bb9b1ea803f2fbcf0722002
+head -5 <evidence-dir>/hyprland/LICENSE        # BSD 3-Clause
+head -5 <evidence-dir>/waybar/LICENSE          # MIT
 ```
 
 The evidence-area revision table and the dated distilled-research note (73 lines) hold the canonical revision table and distilled research; this file does not duplicate the clones.
