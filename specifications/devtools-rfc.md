@@ -506,6 +506,26 @@ owning session lifetime):
    calls, `bitty plugin revoke` parity, and host-side detachment with an
    auditable receipt.
 
+**Campaign client helper (Implemented-only, `bitty-devtools` CTX-0059/#105):**
+`runCampaign` defaults to read-only probes. Mutating probes require explicit
+`mutationConsent` with `disposable: true`, a successful socket preflight before
+any dispatch, and the same host-correct absolute endpoint in the consent,
+preflight, and effective dispatcher configuration. Relative paths are refused;
+`ProcessCtlDispatcher` passes its configured absolute endpoint unchanged even
+when the child working directory differs. Custom dispatchers must explicitly
+return `true` from `attestSocketTarget`; absent, false, or throwing attestation
+fails admission. This attests configured endpoint binding, **not peer
+authentication**, and replaces neither authenticated scopes nor automation
+bearer consent above. Admission or preflight failure is reported with zero
+dispatch. Without mutation consent, mutating or unknown matrix probes are
+skipped. Workspace cleanup, when separately enabled by `closeWorkspaces`, closes
+only identifiers created and owned by this run, never pre-existing workspace
+IDs (including aliases); cleanup failures remain report entries. Keystroke
+probes still require separate `keystrokeTarget` opt-in for a non-default scratch
+terminal in addition to mutation admission; disposable-instance consent alone
+does not authorize keystrokes. These client-helper changes claim no wire/core
+scope change, live-campaign verification, or acceptance of this amendment.
+
 ### Redaction defaults
 
 Typed redaction (P0-AC-026 parity) applies before any frame or marker enters
@@ -780,6 +800,32 @@ wraps `testExit` — a harness sends the raw wire method.
    `bitty plugin revoke` and the plugin-manager action remove debug
    grants, and the host detaches affected handlers at the next dispatch
    boundary with an auditable receipt.
+
+**Client limiter helper (Implemented-only, `bitty-devtools` CTX-0055/#102):**
+The TypeScript and Rust `RateLimiter` helpers retain the default 100 req/s
+sustained rate and 200-request burst. They start with burst-sized credit, refill
+at the configured sustained rate with fractional credit retained, and cap idle
+refill at burst capacity. Admission spends one request of credit and also
+requires fewer than `burst` admissions in the rolling 1000 ms window; entries
+expire at age 1000 ms. Rejection spends no credit and records no admission, but
+a valid observation still advances time, refills credit, and evicts old entries.
+`countInWindow` / `count_in_window` performs the same refill and eviction without
+spending credit. Count and check share one nondecreasing millisecond high-water
+clock: the first observation, including a count, establishes it, and later
+observations use the maximum of the current and all prior valid timestamps.
+
+TypeScript rate and burst accept only finite integers in `[0, 4294967295]`;
+timestamps accept only nonnegative safe-integer milliseconds in
+`[0, 9007199254740991]`. Negative zero is treated as zero. Invalid configuration
+or timestamps throw `RangeError`; invalid time changes no credit, retained
+admissions, or high-water state. Rust retains `u32` configuration and the full
+`u64` millisecond domain `[0, 18446744073709551615]`, with exact behavior parity
+on the shared timestamp domain; larger Rust times are a native API extension,
+not wire input. Zero rate permits only the initial burst, with no refill; zero
+burst admits nothing. A rate greater than burst is valid but does not bypass
+the rolling burst ceiling. This client-helper clarification changes neither
+wire/version contracts nor server enforcement, does not resolve the separate
+reconnect-counter issue #106, and claims no Verified status.
 
 > Implementation note (Implemented-only, CTX-0127): Windows instance
 > discovery over named pipes is implemented in `bitty` CTX-0196 (PR #330,
