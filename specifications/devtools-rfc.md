@@ -349,7 +349,16 @@ JSON records over a bounded framing.
   removing or narrowing an existing method requires a major version and
   a reviewed migration note in this RFC.
 - Payload limits: inbound method frames at most 1 MiB; outbound streams
-  are chunked at 256 KiB with explicit continuation frames.
+  are chunked at 256 KiB with explicit continuation frames. For valid Unicode
+  scalar text, the text-chunk helpers split only at scalar boundaries, and
+  concatenating successfully returned chunks reproduces the original text
+  exactly, including U+FEFF as data. The configured chunk limit must be a
+  positive integer no greater than 256 KiB; each chunk stays within that
+  UTF-8 byte limit. If the limit cannot fit the next scalar, the helper
+  fails explicitly rather than returning partial chunks as a success.
+  These helper guarantees do not change wire framing, protocol version, or
+  scopes, and do not guarantee grapheme boundaries or malformed UTF-16
+  preservation.
 
 ### Scopes
 
