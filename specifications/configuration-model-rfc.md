@@ -28,7 +28,7 @@ rejected baseline. This note was candidate-winner evidence before acceptance and
 is now the accepted contract.
 
 It targets OQ-010; it depends on the runtime and module-resolution contract
-accepted in the [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md) (OQ-009), and it feeds
+accepted in the [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md) (OQ-009), and it feeds
 OQ-011/OQ-012 (plugin-facing configuration surfaces), OQ-017 (CLI grammar for
 `bitty config`/`bitty paths` commands), OQ-021/OQ-022 (package manifest and lock
 coexistence), and budgets PB-1/PB-2 in the
@@ -317,7 +317,7 @@ inferred at runtime); a reload containing any restart-required change reports
 that fact up front; reload reuses the same validation/merge path as startup so
 no divergent second parser exists. Whether module caches clear between reloads
 is shared with the module-resolution rules in the
-[Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md) (OQ-009, accepted 2026-08-27; GC/budget tuning remains Open under OQ-032).
+[Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md) (OQ-009, accepted 2026-08-27; GC/budget tuning remains Open under OQ-032).
 
 ## Project trust
 

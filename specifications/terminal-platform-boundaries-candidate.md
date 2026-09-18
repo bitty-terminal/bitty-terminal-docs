@@ -47,9 +47,9 @@ Out of scope and owned elsewhere (pointers, not content):
 - plugin manifest, permission-model, registry, and SDK-contract detail
   (accepted,
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md),
-  [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-host-runtime-rfc.md),
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md),
-  [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md);
+  [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/plugin-host-runtime-rfc.md),
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md),
+  [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md);
   direction, `bitty-plugins-docs` owner);
 - shared governance, decision, and security corpora (linked, never copied,
   [bitty-docs](https://github.com/bitty-terminal/bitty-docs));
@@ -341,7 +341,7 @@ dependency layer at development and packaging time, producing self-contained
 installable plugin artifacts.
 
 Terminal-side conclusions, composed with the accepted
-[Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md)
+[Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md)
 (OQ-021):
 
 - Keep two graphs behind one CLI: the Bitty plugin graph (managed by Bitty)

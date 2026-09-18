@@ -819,7 +819,7 @@ vs `Accepted` vs `Verified` remain distinct per `project-state.json`.
 - Specifications: [Terminal State RFC](terminal-state-rfc.md),
   [Compatibility Milestone RFC](compatibility-milestone-rfc.md),
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md),
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md),
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md),
   [Performance Budget RFC](performance-budget-rfc.md).
 - Security: [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md),
   [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md),

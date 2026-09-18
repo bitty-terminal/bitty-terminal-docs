@@ -94,7 +94,7 @@ authoritative for layout-algorithm ownership.
   `panel:bitty-terminal.git-panel`). Rules must resolve against stable panel
   identity, stay presentation-only, and never grant capability. Depends on the
   Panel Runtime identity question in
-  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md).
+  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/architecture/ui-extensibility-architecture.md).
 - **Semantic workspaces (candidate).** Workspaces that are named or grouped by
   semantic context (project, cwd, task) rather than only an ordinal. This is a
   product direction with no contract today; it would reuse `Workspace`/`View`
@@ -136,7 +136,7 @@ authoritative for layout-algorithm ownership.
   (niri ribbon, panel rules, semantic workspaces, unified `Mod`).
 - Existing: OQ-S1 through OQ-S7 in the
   [Semantic Terminal RFC](semantic-terminal-rfc.md), OQ-043/OQ-044/OQ-049 in
-  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md).
+  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/architecture/ui-extensibility-architecture.md).
 
 ## References
 
@@ -148,7 +148,7 @@ authoritative for layout-algorithm ownership.
   `BlockAnchor`, and semantic-zone contracts.
 - [Panel Runtime and Event Bus Pre-Study](panel-runtime-pre-study.md): panel
   lifecycle and bus candidates.
-- [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md):
+- [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/architecture/ui-extensibility-architecture.md):
   per-View appearance, panel identity, and plugin appearance candidates.
 - [Appearance Configuration RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md):
   accepted OQ-039/OQ-041/OQ-045 contracts cited above.

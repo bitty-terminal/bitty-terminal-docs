@@ -776,6 +776,6 @@ Closes OQ-024: this RFC closes that open question at the design level; the regis
   (Keep a Changelog, Semantic Versioning), `SECURITY.md` (GitHub Security
   Advisory), and `.github/workflows/ci.yml` (`Docs quality`).
 - Related RFCs: [Default Distribution RFC](default-distribution-rfc.md)
-  for OQ-002, [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md) for
-  OQ-021, [Package Follow-up RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-followup-rfc.md) for
+  for OQ-002, [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md) for
+  OQ-021, [Package Follow-up RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-followup-rfc.md) for
   OQ-022/OQ-026 through OQ-029.

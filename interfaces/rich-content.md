@@ -1,6 +1,6 @@
 ---
 title: Rich content and presentation interfaces
-description: Pre-implementation contract for terminal truth, rich blocks, semantic sources, and presentation composition
+description: Candidate contract for terminal truth, rich blocks, semantic sources, and presentation composition
 category: extensibility
 audience: plugin-author
 document_type: specification
@@ -11,9 +11,10 @@ sidebar_order: 30
 
 # Rich content and presentation interfaces
 
-> Status: pre-implementation architecture. This document defines an accepted
-> boundary and candidate interfaces; it does not describe implemented APIs or
-> protocols.
+> Status: candidate architecture. This document defines an accepted boundary
+> and candidate interfaces; experimental code exists for parts of the image
+> intake path, but no stable or supported API or protocol is claimed, and
+> nothing here is `Verified` or `Compatible`.
 
 Bitty should support streaming Markdown and other structured output without
 rewriting PTY bytes or changing the VT grid that terminal applications depend
@@ -271,9 +272,9 @@ real-GPU texture upload and blit (`CTX-0291`), with live `chafa` kitty-format
 pixel evidence. The exact pipeline, bounds, deviations, and deferred pieces
 are recorded in the [Rich Presentation RFC](../specifications/rich-presentation-rfc.md)
 decode/placement evidence subsections. This document otherwise remains a
-pre-implementation contract: nothing here becomes an implemented API by virtue
-of those milestones, and Sixel, iTerm2 inline images, animation, and the
-structured transports below remain unimplemented.
+candidate contract: nothing here becomes a stable or supported API by virtue
+of those experimental milestones, and Sixel, iTerm2 inline images, animation,
+and the structured transports below remain unimplemented.
 
 Current model boundary (2026-09-16, `bitty` `origin/main` `e8dc9e5`):
 `RichBlock` and `SceneNode` (`crates/bitty-rich/src/scene.rs`), plus the

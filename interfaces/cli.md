@@ -1,6 +1,6 @@
 ---
 title: Command-line interface
-description: Pre-implementation reference for the extensible CLI, runtime control, output, and introspection contracts
+description: Candidate reference for the extensible CLI, runtime control, output, and introspection contracts
 category: reference
 audience: user
 document_type: reference
@@ -11,10 +11,12 @@ sidebar_order: 10
 
 # Command-line interface
 
-> Status: pre-implementation architecture. An extensible, first-class CLI is an
-> accepted working direction. The shared executable registry, command tree,
+> Status: candidate architecture. An extensible, first-class CLI is an
+> accepted working direction, and experimental parser/registry code exists in
+> the `bitty` workspace. The shared executable registry, command tree,
 > identifiers, environment variables, output schemas, and exit codes are
-> candidate contracts until separately specified.
+> candidate contracts until separately specified, implemented, and verified;
+> no stable or supported CLI contract is claimed.
 
 The Bitty CLI is a formal frontend to the same capabilities used by GUI
 actions, key bindings, Lua, IPC, developer tools, and agent adapters. It must
@@ -100,8 +102,8 @@ bitty
 └── version
 ```
 
-This tree is a candidate namespace, not shipped CLI. Its intent is to keep the
-top level small and stable:
+This tree is a candidate namespace, not a stable or supported CLI. Its intent
+is to keep the top level small and stable:
 
 - `bitty` opens the terminal with the default shell.
 - `bitty run [OPTIONS] -- COMMAND...` starts a child program.

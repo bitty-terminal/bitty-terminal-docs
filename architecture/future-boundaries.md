@@ -237,7 +237,7 @@ this refinement adds no new mechanism.
 - The implementation mechanism for per-plugin VMs, asynchronous callbacks, and
   resource-budget thresholds and enforcement. The VM bridge, lifecycle, source
   staging, and host-service wiring are defined by the accepted
-  [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-host-runtime-rfc.md)
+  [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/plugin-host-runtime-rfc.md)
   (OQ-033/OQ-034/OQ-035, ratified through
   [ADR 0010](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0010-plugin-host-runtime-acceptance.md));
   implementation evidence remains per-crate.

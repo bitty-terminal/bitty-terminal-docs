@@ -21,7 +21,9 @@ lives in the linked pages; this index carries no duplicate normative prose.
 
 ## Authority and status
 
-Configuration contracts here are pre-implementation unless the linked page
-states otherwise with evidence. Shared cross-project governance stays in
+Configuration contracts here are candidate design contracts unless the linked
+page states otherwise with evidence; experimental implementation may exist,
+but no stable or supported public contract is claimed. Shared cross-project
+governance stays in
 [bitty-docs](https://github.com/bitty-terminal/bitty-docs) and is linked,
 never copied.

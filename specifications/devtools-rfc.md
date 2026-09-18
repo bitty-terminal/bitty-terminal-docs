@@ -97,9 +97,9 @@ Out of scope (owned elsewhere):
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - event phases, drop policy, and three-level queue budgets (OQ-013, accepted
   in [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md); values tuned in
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md));
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md));
 - Lua runtime, standard-library subset, module resolution, and diagnostics
-  (OQ-009, accepted in [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md); follow-ups
+  (OQ-009, accepted in [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md); follow-ups
   OQ-030, OQ-031, OQ-032);
 - IPC wire format and per-action scopes for `bitty ctl` (OQ-018);
 - image, rich-block, and structured-transport contracts (OQ-008, OQ-015, OQ-016);
@@ -141,8 +141,8 @@ in the security corpus.
   model, lifecycle generations, and the authoritative event-pipeline section
   for delivery, ordering, and drop policy that this RFC references but does
   not duplicate.
-- [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md) and
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md): VM construction,
+- [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md) and
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md): VM construction,
   diagnostics classes, and the budget dimensions (RC-1, RC-2, RC-4, RC-5)
   whose counters this RFC exposes as observable state.
 
@@ -205,7 +205,7 @@ this RFC must be corrected.
 5. Fail-closed. If the instrumentation subsystem cannot start or detects
    that enforcement machinery is disabled, the runtime refuses to load
    plugins that require that machinery rather than running unbounded
-   (FS-7 parity with [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)).
+   (FS-7 parity with [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)).
 
 ### Instrumentation points
 
@@ -277,7 +277,7 @@ plugin doctor` and `bitty dev doctor`.
 5. Batching is bounded: at most 32 records or 8 KiB per wakeup,
    whichever is smaller, so one burst cannot turn into a single
    oversized callback. Tuning belongs with the budget owners in
-   [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md).
+   [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md).
 
 ### Publisher and drain
 
