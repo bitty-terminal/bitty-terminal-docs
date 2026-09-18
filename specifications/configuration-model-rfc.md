@@ -325,7 +325,7 @@ Status: **accepted mechanics**, implementing the normative T-08 defense, not
 reopening it.
 
 1. Project configuration is declarative-data-only; project-scope Lua execution
-   is not a configuration-model feature. If a `.bitty.lua`-style file is ever
+   is not a configuration-model feature. If a `.wheel.lua`-style file is ever
    honored, its content is data validated against a restricted project schema.
 2. Consent is bound to canonical path plus content hash; any content change
    invalidates prior approval (normative already — this RFC inherits it).

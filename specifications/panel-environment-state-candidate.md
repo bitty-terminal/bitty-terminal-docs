@@ -29,7 +29,7 @@ sidebar_order: 34
 | C-1 | Four-layer model and inheritance chain                                                | Candidate direction from note 036; no accepted env-layer contract exists today                                                                                            |
 | C-2 | Prompt-time `bitty __shell-sync` acquisition; no input parsing; no `/proc`            | Candidate direction; grouped with the existing shell-integration family (cwd, command boundary, exit code), which stays owned by its accepted sources                     |
 | C-3 | Snapshot-first `PanelEnvSnapshot`, revision per prompt sync, no diff in v1            | Candidate direction; sizes (few KiB to tens of KiB) are note-036 observations, not budgets                                                                                |
-| C-4 | No separate `EnvManager`; Panel-owned `ShellState` (`launch_context` + `shell_state`) | Candidate direction; rationale only — future agent / headless / `.bitty` / venv / execution composition is a goal, not a contract                                         |
+| C-4 | No separate `EnvManager`; Panel-owned `ShellState` (`launch_context` + `shell_state`) | Candidate direction; rationale only — future agent / headless / `.wheel` / venv / execution composition is a goal, not a contract                                         |
 | C-5 | Execution View versus sanitized Agent View; Use ≠ Read; env-snapshot handles          | Candidate direction with normative conformance (see [Security conformance](#security-conformance)); agent-side adoption is an ai-docs rollout follow-up, not decided here |
 | C-6 | `new` / `clean` / `spawn --env` semantics; Lua shapes illustrative-only               | Candidate direction; Lua spellings are sketches, never an API commitment                                                                                                  |
 | C-7 | No disk persistence by default; restart re-derives; `persist_env` future opt-in       | Candidate direction that conforms to the normative no-record-by-default rule; the allowlist itself is a deferred follow-up, not specified here                            |
@@ -53,7 +53,7 @@ New Panel LaunchEnv
 | Layer        | Meaning                                                   | Lifetime        |
 | ------------ | --------------------------------------------------------- | --------------- |
 | `ProcessEnv` | Bitty process environment (`HOME`, `PATH`, `LANG`, …)     | Bitty process   |
-| `ConfigEnv`  | Bitty config / `.bitty` configuration (Session / Project) | Session/Project |
+| `ConfigEnv`  | Bitty config / `.wheel` configuration (Session / Project) | Session/Project |
 | `LaunchEnv`  | Environment a Panel is created with                       | Panel           |
 | `RuntimeEnv` | Live shell edits (`export`, `set -x`, venv activation, …) | Shell runtime   |
 
@@ -150,7 +150,7 @@ struct Panel {
 Concretely: the Panel keeps a `launch_context` (what the Panel was
 created with) and a `shell_state` (live cwd, environment, command, and
 prompt). The rationale is compositional: Panel, agent, headless Panel,
-project `.bitty` context, virtualenv handling, and command execution all
+project `.wheel` context, virtualenv handling, and command execution all
 go through the same `ShellState` / `ExecutionContext` instead of growing a
 parallel environment subsystem that bitty-ai would later have to
 retrofit.
@@ -246,7 +246,7 @@ log writes               NO by default
 ```
 
 Rationale: snapshots may contain secrets, so Bitty restart re-derives the
-environment from the OS environment plus bitty config plus `.bitty`
+environment from the OS environment plus bitty config plus `.wheel`
 configuration plus shell rc files — never from a dumped whole-environment
 file. A future explicit allowlist is the only permitted exception shape
 (also illustrative-only, not specified here):

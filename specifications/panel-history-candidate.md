@@ -256,7 +256,7 @@ panel-<id>/
 └── output.txt
 ```
 
-or a single `panel.bitty` bundle. Session and context export belong to the
+or a single `panel.wheel` bundle. Session and context export belong to the
 research 037 lane; the two exports must compose (a panel export feeding a
 session archive) without either side redefining the other.
 
