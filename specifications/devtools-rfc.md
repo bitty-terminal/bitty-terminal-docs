@@ -407,6 +407,27 @@ lifecycle generations. Methods that touch terminal state (for example
 debug scope so that DevTools cannot expand its authority through a debug
 method.
 
+**Client trace helper (Implemented-only, `bitty-devtools` CTX-0053/#117 and
+CTX-0054/#119):** The TypeScript and Rust trace helpers account retained,
+redacted, logical UTF-8 export bytes: admission bills the record that would be
+retained after typed redaction (serialized JSON for structured events;
+per-record UTF-8 normalization for raw records), never heap or filesystem
+occupancy. Each raw record is normalized independently when appended, so a
+leading U+FEFF stays data and a fragment that cannot decode on its own is
+replaced within that fragment rather than joined with a neighbor. The
+effective byte budget is `min(trace maxBytes, retention maxBytes)`; a record
+that would exceed it is rejected with one counted drop while retained bytes,
+chunks, events, and previews stay unchanged. Opaque raw append is distinct
+from typed stream coalescing: raw records append one by one without
+coalescing, while the typed observability stream keeps the accepted coalescing
+rule. Pagination follows the accepted `fetchTraceChunk` shape over retained
+chunk byte offsets: offsets must be nonnegative byte integers on UTF-8 scalar
+boundaries, a page returns the remaining bytes of the addressed stored chunk,
+and continuation is computed from actual retained byte lengths with
+preview-equals-export per page. These clarifications change no wire, version,
+or interoperability contract, add no eviction or persistence policy, and claim
+no Verified status.
+
 ### Relation to `bitty dev` CLI
 
 The [CLI](../interfaces/cli.md) candidate namespace maps onto the same
