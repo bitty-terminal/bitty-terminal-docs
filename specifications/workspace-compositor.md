@@ -670,6 +670,17 @@ Lua and no bypass of the existing P0 gates.
   (docs `CTX-0167`, `bitty` `b761c03`) records shipped-versus-missing panel
   chrome, semantic-block projection, hint/composer wiring, and rich panel
   content. It cites this accepted contract and proposes no change to it.
+- The recorded Panel/Workspace interaction direction — `Mod`+left-drag
+  repositioning, free validated resizing, `Mod`+V floating, Bar-edge
+  configurability, stable-identity display ordinals, the never-empty Workspace
+  invariant, cross-Workspace drag, drag-to-Bar semantics, and the
+  capability-gated Lua surface — is a **candidate** design record in the
+  [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md).
+  It refines this specification's interactions, identity, and no-window-leak
+  rules by reference only, defines no contract, and changes nothing here; its
+  open items (including the unified `Mod` per
+  [OQ-052](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md))
+  remain open.
 
 This specification is accepted as a standalone contract per CTX-0118; it
 does not close an open question on its own beyond its standalone acceptance and
