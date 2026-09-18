@@ -272,8 +272,8 @@ proposal-only.
 
 > Candidate-only as of 2026-09-13: no merged implementation exists, and this
 > subsection claims nothing beyond the P1-P5 Implemented-only slices above.
-> Bitty Beacon is a working name recorded from the local research note
-> `016.md`; the note is provenance, not evidence. Tracked as
+> Bitty Beacon is a working name recorded from the local design direction;
+> the direction is provenance, not evidence. Tracked as
 > [OQ-089](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 
 P3 labels addressable targets inside the visible grid; P6 generalizes target

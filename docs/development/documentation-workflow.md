@@ -95,6 +95,33 @@ Canonical categories are `architecture`, `configuration`, `decisions`,
 `roadmap`, `security`, `specifications`, `troubleshooting`, `tutorials`, and
 `user-guide`.
 
+## Docs self-containment (normative)
+
+Canonical documents in this repository must be self-contained: a reader must be
+able to use every document with any external research repository absent.
+
+- No research-repository references of any kind: no `research` links or
+  checkout paths, no record numbers or record filenames, no `summary/`,
+  `origin/`, or `.completed` citations, no coverage or provenance ledgers, and
+  no "distilled from record NNN" framing.
+- Research material is summarized into standalone, appropriately named
+  canonical documents in the owning topic tree. The document's own status and
+  candidate qualifiers carry the trust level; the document never cites the
+  research process that produced it.
+- A canonical document may link another canonical document in this corpus, a
+  sibling documentation repository by absolute URL, or a shared governance
+  document in `bitty-docs`. Pointers to owner repositories are allowed;
+  pointers to a research checkout, a research index, or a record-to-document
+  coverage mapping are not.
+- Record-to-document coverage mappings live only in the research repository's
+  own index, never in this corpus.
+- This rule applies to every canonical document, including drafts and
+  candidates. Every future research capture writes the self-contained canonical
+  document first and updates the external archive separately.
+
+Enforced at review: a documentation review that finds a research reference,
+record number, or coverage ledger in a canonical document returns `NEEDS-FIX`.
+
 ## Status meanings
 
 - `draft` is actively shaped and may change without compatibility promises.

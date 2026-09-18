@@ -155,7 +155,7 @@ registry-via-git) are canonical in
 
 ## Candidate network invariant and transport rules (029 refinement)
 
-Status: **candidate direction, non-normative** (closed user companion note 029 on the network-capability model, bitty-docs CTX-0202 / bitty-docs#290,
+Status: **candidate direction, non-normative** (network-capability model, bitty-docs CTX-0202 / bitty-docs#290,
 [DIR-017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)).
 It refines the CTX-0201 network-boundary candidate
 ([DIR-016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md),

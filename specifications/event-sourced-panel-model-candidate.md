@@ -1,6 +1,6 @@
 ---
-title: Terminal-Side Research Distillation 055 (Candidate)
-description: Draft candidate record distilling the terminal-side conclusions of research note 055 with agent graph mailbox and context machinery kept as owner pointers
+title: Event-Sourced Panel Model (Candidate)
+description: Draft candidate direction for headless panel separation an immutable event log structured storage decoupled folding and context GC retention on the terminal surface
 category: specifications
 audience: contributor
 document_type: specification
@@ -9,36 +9,33 @@ website_publish: false
 sidebar_order: 36
 ---
 
-# Terminal-Side Research Distillation 055 (Candidate)
+# Event-Sourced Panel Model (Candidate)
 
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
-> **Compatible**, and not normative. This document is a design record distilled
-> only from workspace research summary `055.md` on the Wheel Event-Sourced
-> Agent Workspace (Open record, received on the research main line as
-> `e7a18d3` under CTX-0032; the research records themselves stay with their
-> owners and this repository links to no research checkout path). It authorizes
-> no shipped, stable, or compatibility-guaranteed behavior, weakens no accepted
-> source it cites, and makes no implementation claim. Names, bounds, event
-> spellings, and defaults repeated here are direction carried from the note,
-> not contract.
+> **Compatible**, and not normative. This document is a design record for the
+> terminal-side slice of an event-sourced agent workspace: the part the Bitty
+> terminal platform would own if the direction were ever accepted. It
+> authorizes no shipped, stable, or compatibility-guaranteed behavior, weakens
+> no accepted source it cites, and makes no implementation claim. Names, bounds,
+> event spellings, and defaults repeated here are direction, not contract.
 
 ## Purpose and scope
 
-Research note 055 defines Wheel as an Event-Sourced Agent Workspace: agents act
-only in headless panels, an immutable event log records facts, context
-compiles from facts into a programmable versioned graph, and agents
-collaborate over a communication graph with Git-like operations. This record
-freezes only the **terminal-side** slice — the part the Bitty terminal platform
-would own if the directions were ever accepted — so future design work starts
-from a stable, traceable input instead of re-reading the raw note.
+The event-sourced workspace direction treats agents as actors that work only in
+headless panels, an immutable event log as the record of facts, context
+compiled from facts into a programmable versioned graph, and agent
+collaboration over a communication graph with Git-like operations. This
+document freezes only the **terminal-side** slice — the part the Bitty terminal
+platform would own if the direction were ever accepted — so future design work
+starts from a stable input.
 
-The note's six-object split (Agent, Panel, Event, Context, Task, Artifact) and
-its founding inequalities (Agent is not Panel, Panel is not Context, Context is
-not History, Task is not Agent) frame everything below: panels may sit
-agentless, panel history is not model context, and an agent is mobile across
-panels rather than bound to one. The guiding principle is carried verbatim as
-direction: history is immutable, context is programmable, panels are
-workspaces, and agents are actors.
+The six-object split (Agent, Panel, Event, Context, Task, Artifact) and its
+founding inequalities (Agent is not Panel, Panel is not Context, Context is not
+History, Task is not Agent) frame everything below: panels may sit agentless,
+panel history is not model context, and an agent is mobile across panels rather
+than bound to one. The guiding principle is carried as direction: history is
+immutable, context is programmable, panels are workspaces, and agents are
+actors.
 
 In scope (all **Candidate** unless cited otherwise):
 
@@ -85,7 +82,7 @@ Out of scope and owned elsewhere (pointers, not content):
 | Status            | Meaning in this document                                                             |
 | ----------------- | ------------------------------------------------------------------------------------ |
 | Accepted          | An accepted specification already requires the rule; this document only restates it. |
-| Candidate         | Proposed by the cited research note only; no review has accepted it.                 |
+| Candidate         | Proposed by the cited design direction only; no review has accepted it.              |
 | Owner-pending     | Belongs to another repository owner; recorded here as a pointer, never as content.   |
 | Illustrative-only | A sketch whose spelling, bounds, or defaults are explicitly undecided.               |
 
@@ -98,7 +95,7 @@ detached panels keep history only. Touching user work means forking an
 execution snapshot — working directory, worktree, environment, recent commands,
 outputs, context references — never typing into the user's panel.
 
-Terminal-side conclusions carried from the note:
+Terminal-side conclusions:
 
 - Agent is not Panel: an agent is a thinking actor that moves across panels,
   and a panel is an execution environment that may sit agentless. Panel
@@ -127,9 +124,9 @@ Terminal-side conclusions carried from the note:
   undecided.
 - Lease and capability gating for shared headless panels composes with the
   panel write-lease direction recorded in
-  [Terminal-Side Research Distillation 044-047 and 053-054 (Candidate)](research-distillation-044-047-053-054-terminal-candidate.md),
+  [Terminal Platform Boundaries (Candidate)](terminal-platform-boundaries-candidate.md),
   which stays the authoritative terminal-side wording for lease semantics; this
-  record adds no second lease definition.
+  document adds no second lease definition.
 
 ## T-2 Panel history as immutable Event Log (Candidate)
 
@@ -139,7 +136,7 @@ is `task.created`, `agent.attached`, `tool.started`, `tool.progress`,
 `tool.finished`, `artifact.created`, `decision.recorded`, `context.shared`,
 `agent.message`, and `checkpoint.created`.
 
-Terminal-side conclusions carried from the note:
+Terminal-side conclusions:
 
 - Each tool run records input, reason, status, duration, and a structured
   summary plus blob references, so raw output stays out of normal model
@@ -154,8 +151,8 @@ Terminal-side conclusions carried from the note:
   its history store.
 - This direction aligns with the
   [Panel History (Candidate)](panel-history-candidate.md) append-only segmented
-  log (PH-4): the past is appended, never mutated. The 055 event vocabulary is
-  a new candidate input to a future History RFC, not a replacement of PH-1
+  log (PH-4): the past is appended, never mutated. This event vocabulary is a
+  new candidate input to a future History RFC, not a replacement of PH-1
   through PH-12, and the reconciliation of the two vocabularies (panel events
   versus workspace events) is an open item below.
 
@@ -167,7 +164,7 @@ content-addressed object store (hash-addressed, compressed) for outputs,
 patches, and snapshots, with JSON and JSONL reserved for export, debug, and
 interchange.
 
-Terminal-side conclusions carried from the note:
+Terminal-side conclusions:
 
 - The division of labor is index versus bytes: structured queries run against
   the index; outputs, patches, and snapshots live as addressed objects; export
@@ -180,14 +177,14 @@ Terminal-side conclusions carried from the note:
   LLM stages, and therefore cache-planning policy, are owner-pending
   (`bitty-ai-docs`); the terminal side contributes stable references and
   summaries, not compiler decisions.
-- Open reconciliation, decided nowhere in this record: the
+- Open reconciliation, decided nowhere in this document: the
   [Panel History (Candidate)](panel-history-candidate.md) freezes a narrower
   direction (no SQLite dependency in Core for history, PH-3; SQLite at most as
   a rebuildable index under the cache home, PH-5; canonical store as compressed
-  segments, PH-4), while note 055 assigns SQLite a wider index role covering
-  tasks and messages. Both directions cannot be true of the same store without
-  an owning RFC reconciling them; this record chooses neither and parks the
-  conflict in the open items.
+  segments, PH-4), while this direction assigns SQLite a wider index role
+  covering tasks and messages. Both directions cannot be true of the same
+  store without an owning RFC reconciling them; this document chooses neither
+  and parks the conflict in the open items.
 
 ## T-4 Output folding: UI collapse versus context materialization (Candidate)
 
@@ -196,7 +193,7 @@ progress; full logs load on demand via inspect (tail, errors-only, ranges). UI
 collapse (whether the user expands logs) and context materialization (whether
 logs enter LLM context) are separate concepts that must never be coupled.
 
-Terminal-side conclusions carried from the note:
+Terminal-side conclusions:
 
 - The running-task display contract is minimal by default: status, elapsed
   time, parsed progress. Everything else is on-demand inspect with bounded
@@ -210,8 +207,8 @@ Terminal-side conclusions carried from the note:
   [Semantic Terminal RFC](semantic-terminal-rfc.md): `CommandBlock` anchors
   (P1) gate folding (P2), fold state stays per-view presentation, expanding a
   fold loses no data, and copy, search, and agent reads operate on the unfolded
-  truth. The 055 inspect direction is a future consumer of those anchors, not
-  a second folding mechanism.
+  truth. The inspect direction is a future consumer of those anchors, not a
+  second folding mechanism.
 - Multi-tool Batch plus DAG invocation (sequential, parallel, dependency,
   conditional, retry, timeout, cancel, each node carrying status, duration,
   reason, result, resources, dependencies) is owner-pending orchestration
@@ -226,7 +223,7 @@ context and persistent history diverge by design. The GC policy and its
 operations are owner-pending (`bitty-ai-docs`); this section records only what
 that divergence requires of the terminal surface.
 
-Terminal-side implications carried from the note:
+Terminal-side implications:
 
 - The event log is immutable until GC: expiry removes, it never rewrites.
   Retention handling on the terminal side must therefore be tombstone or
@@ -240,11 +237,11 @@ Terminal-side implications carried from the note:
   undecided. The retention sketches in the
   [Panel History (Candidate)](panel-history-candidate.md) (illustrative-only
   age, size, and pinning bounds) are not adopted here and must not be read as
-  055 defaults.
+  defaults for this direction.
 
 ## Owner-pending pointers (bitty-ai-docs)
 
-The following 055 conclusions belong to the AI documentation owner and appear
+The following conclusions belong to the AI documentation owner and appear
 here only so readers know exactly what was set aside:
 
 - the agent team as a cyclic communication graph of uniform agents with dynamic
@@ -282,12 +279,12 @@ direction-level context and orchestration design stays with the AI owner.
 | [Panel History (Candidate)](panel-history-candidate.md) (Draft)                                                                               | PH-4 append-only direction aligns with T-2; PH-3 and PH-5 storage bounds conflict with the T-3 SQLite index role and await owner reconciliation; vocabulary merge is an open item. |
 | [Panel Environment State (Candidate)](panel-environment-state-candidate.md) (Draft)                                                           | Live environment ownership stays with `ShellState`; the T-1 fork snapshot references it and decides no new environment contract.                                                   |
 | [Workspace Panel Invariants (Candidate)](workspace-panel-invariants.md) (Draft)                                                               | `PanelId` and ownership wording the T-1 snapshot discipline reuses by reference.                                                                                                   |
-| [Terminal-Side Research Distillation 044-047 and 053-054 (Candidate)](research-distillation-044-047-053-054-terminal-candidate.md) (Draft)    | Panel write-lease semantics stay defined there; execution-supervisor, host-ceiling, and UI-boundary slices are siblings, not inputs.                                               |
+| [Terminal Platform Boundaries (Candidate)](terminal-platform-boundaries-candidate.md) (Draft)                                                 | Panel write-lease semantics stay defined there; execution-supervisor, host-ceiling, and UI-boundary slices are siblings, not inputs.                                               |
 | [AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ai-architecture.md) (Draft, `bitty-ai-docs` owner) | Owner-pending destination for the agent-graph, mailbox, context-compiler, and orchestration pointers above.                                                                        |
 
 ## Open items (not global open questions)
 
-None of these is a global `OQ`: this record proposes no new contract boundary
+None of these is a global `OQ`: this document proposes no new contract boundary
 and blocks no current-milestone gate, so under the
 [open-question admission rule](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md#open-question-admission)
 they stay parked here until one qualifies. A future History RFC, storage RFC,
@@ -311,17 +308,3 @@ or RFC amendment settles them:
   that compose with them without adopting model-context policy;
 - the fork-snapshot field list and its composition with Panel Environment
   State inheritance and ShellState ownership.
-
-## Provenance
-
-- Workspace research summary 055 on the Wheel Event-Sourced Agent Workspace
-  (Open record; received on the research main line as `e7a18d3` under
-  CTX-0032). This document builds only from that summary; the six-object
-  split, the headless-only agent rule, the event vocabulary, the Git-operation
-  mapping, and the storage-layer division are carried as candidate direction
-  from it.
-- No canonical page had captured this record before this distillation, and no
-  destination link or capture claim beyond this candidate page is asserted
-  here. Agent Graph, mailbox, context-share, and context-compiler conclusions
-  go to `bitty-ai-docs` as owner-pending pointers; split-owner capture stays
-  Partial until all owned conclusions are accounted for.

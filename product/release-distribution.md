@@ -1,6 +1,6 @@
 ---
 title: Release Distribution Matrix and Hardening Plan
-description: Canonical OS distribution support matrix and ordered packaging hardening plan distilled from research note 034 under DIR-020 with the 0.0.21 timing gate
+description: Canonical OS distribution support matrix and ordered packaging hardening plan under DIR-020 with the 0.0.21 timing gate
 category: product
 audience: maintainer
 document_type: overview
@@ -23,11 +23,11 @@ sidebar_order: 22
 - Ownership: bitty-terminal-docs **CTX-0012** — branch
   `ctx-0012/docs-release-distribution`. Parent direction: bitty-docs
   **CTX-0206** (issue `bitty-terminal/bitty-docs#300`,
-  [DIR-020](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)),
-  distilled from user research note 034 on the `bitty` `release.yml` / `nfpm.yaml` /
-  `PKGBUILD` / `packaging/` state (646 lines of Chinese-language analysis;
-  findings summarized inline in the matrix below). Compression was explicitly required; this
-  is not a copy of the note.
+  [DIR-020](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)).
+  The matrix is derived from the `bitty` `release.yml` / `nfpm.yaml` /
+  `PKGBUILD` / `packaging/` state;
+  findings are summarized inline in the matrix below. This
+  is not a copy of any external analysis.
 - Authority note: the direction (matrix, order, timing gate, non-goals) is an
   accepted working direction via DIR-020. Every hardening item below is a
   **candidate implementation plan** whose execution lives in twelve `bitty`

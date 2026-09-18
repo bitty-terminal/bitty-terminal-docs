@@ -1,6 +1,6 @@
 ---
 title: Panel History (Candidate)
-description: Candidate design record for the Panel History Core plugin split append-only storage Atuin boundary and agent consumption distilled from research note 038
+description: Candidate design record for the Panel History Core plugin split append-only storage Atuin boundary and agent consumption
 category: specifications
 audience: contributor
 document_type: specification
@@ -12,9 +12,9 @@ sidebar_order: 34
 # Panel History (Candidate)
 
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
-> **Compatible**, and not normative. This document is a design record distilled
-> from workspace research note 038 on Panel History (closed research note;
-> the direction is summarized inline in [Purpose and scope](#purpose-and-scope)).
+> **Compatible**, and not normative. This document is a design record for
+> Panel History (the direction is summarized inline in
+> [Purpose and scope](#purpose-and-scope)).
 > It authorizes no shipped,
 > stable, or compatibility-guaranteed behavior, weakens no accepted source it
 > cites, and makes no implementation claim. Rust and Lua sketches are
@@ -25,8 +25,8 @@ sidebar_order: 34
 
 Panel History answers "what happened in this panel" after the fact: yesterday's
 commands, a full panel export, or an agent reading a three-hour-old build log.
-This record freezes the note 038 direction so future design work starts from a
-stable, traceable input instead of re-reading the raw note.
+This record freezes the Panel History direction so future design work starts from a
+stable input.
 
 In scope (all **Candidate** unless cited otherwise):
 
@@ -53,8 +53,8 @@ Out of scope and owned elsewhere:
   [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md));
 - plugin sandbox, capability grammar, and resource budgets (accepted, plugin and
   isolation RFCs in `bitty-plugins-docs`);
-- session, context, and memory export plus the SQLite lifecycle split (research
-  note 037 lane, `bitty-ai-docs` side); panel export here must compose with it,
+- session, context, and memory export plus the SQLite lifecycle split
+  (`bitty-ai-docs` side); panel export here must compose with it,
   not duplicate it.
 
 ## Status vocabulary
@@ -62,7 +62,7 @@ Out of scope and owned elsewhere:
 | Status            | Meaning in this document                                                             |
 | ----------------- | ------------------------------------------------------------------------------------ |
 | Accepted          | An accepted specification already requires the rule; this document only restates it. |
-| Candidate         | Proposed by note 038 only; no review has accepted it.                                |
+| Candidate         | Proposed by this document only; no review has accepted it.                           |
 | Illustrative-only | A sketch whose spelling, bounds, or defaults are explicitly undecided.               |
 
 ## Candidate directions
@@ -71,7 +71,7 @@ Out of scope and owned elsewhere:
 
 **Candidate.** Core owns Panel lifecycle, structured `PanelEvent` generation,
 volatile scrollback, and the Event Bus. Persistent history ships as an official
-Lua plugin (`bitty-history`). Rationale, carried from the note: Core already
+Lua plugin (`bitty-history`). Rationale: Core already
 observes PTY output, input, cwd, process lifecycle, exit codes, Panel and
 Workspace identity, timestamps, and scrollback, so it can emit events cheaply;
 a Lua plugin must never hook the PTY itself, parse shell integration, or guess
@@ -219,9 +219,9 @@ struct CommandRecord {
 ```
 
 Every field, including the `actor` taxonomy and the `external` linkage of
-[PH-11](#ph-11-atuin-is-a-boundary-not-a-competitor), is undecided. The note
-cites Atuin's `command/cwd/time/duration/exit/host/session/author` tuple and
-its `preexec/precmd` lifecycle purely as evidence that the
+[PH-11](#ph-11-atuin-is-a-boundary-not-a-competitor), is undecided. Atuin's
+`command/cwd/time/duration/exit/host/session/author` tuple and its
+`preexec/precmd` lifecycle are cited purely as evidence that the
 `CommandStarted`/`CommandFinished` split is practical.
 
 ### PH-9 bitty-ai consumes history, never owns it
@@ -257,12 +257,13 @@ panel-<id>/
 ```
 
 or a single `panel.wheel` bundle. Session and context export belong to the
-research 037 lane; the two exports must compose (a panel export feeding a
-session archive) without either side redefining the other.
+session-export direction (`bitty-ai-docs` side); the two exports must compose
+(a panel export feeding a session archive) without either side redefining the
+other.
 
 ### PH-11 Atuin is a boundary, not a competitor
 
-**Candidate.** Bitty does not rebuild Atuin. The division the note freezes is:
+**Candidate.** Bitty does not rebuild Atuin. The division is:
 Atuin keeps cross-terminal, cross-machine shell command history; Bitty keeps
 panel, agent, and session terminal execution history. An official `bitty-atuin`
 adapter relates them in three modes:
@@ -313,7 +314,7 @@ contract to copy.
 | Plugin and isolation RFCs in `bitty-plugins-docs` (Accepted)                                                              | Sandbox, capability grammar, and queue/budget ceilings for the [PH-6](#ph-6-lua-never-touches-sqlite-directly) storage surface.                                                                                                 |
 | [Workspace Panel Invariants (Candidate)](workspace-panel-invariants.md) (Draft)                                           | `PanelId`/`WorkspaceId` identity and ownership wording the [PH-8](#ph-8-commandrecord-sketch-with-an-actor-model) record reuses by reference.                                                                                   |
 | [Panel Environment State (Candidate)](panel-environment-state-candidate.md) (Draft)                                       | Live environment ownership stays with `ShellState`; history records the past (`CommandRecord` cwd plus snapshots reference it). No direction here changes the no-disk-persistence default.                                      |
-| Research 037 lane (`bitty-ai-docs` side)                                                                                  | Session/context/memory export and the SQLite lifecycle split; panel export of [PH-10](#ph-10-export-panel-is-a-plugin-on-the-host-history-api) must compose.                                                                    |
+| Session/context export (`bitty-ai-docs` side)                                                                             | Session/context/memory export and the SQLite lifecycle split; panel export of [PH-10](#ph-10-export-panel-is-a-plugin-on-the-host-history-api) must compose.                                                                    |
 
 ## Open items (not global open questions)
 
@@ -332,14 +333,15 @@ amendment settles them:
   API surface later) and the federated-query merge semantics;
 - the history UI provider and scope model (the `Mod+H` sketch is
   illustrative-only);
-- secret handling in persisted history: note 038 records no direction, so any
+- secret handling in persisted history: no direction is recorded here, so any
   design must compose with ADR-0006 and the security overview (typed redaction,
   user-only files, export preview) from the start rather than inheriting shell
   history's plaintext habits.
 
 ## Provenance
 
-- Workspace research note 038 on Panel History (closed note; Atuin integration covered in the second half, direction summarized inline in Purpose and scope). The note's Atuin documentation links are evidence pointers
-  and are not copied here.
+- Panel History direction (Atuin integration covered in the second half,
+  summarized inline in Purpose and scope). The Atuin documentation links cited
+  here are evidence pointers and are not copied.
 - `bitty` `CTX-0383` (scrollback search UI wiring) and `CTX-0384` (keyboard
   copy mode) as adjacent completed implementation lanes.

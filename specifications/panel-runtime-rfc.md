@@ -711,10 +711,10 @@ they are evidence of what exists, not a conformance claim against this RFC.
 Where this RFC and a draft implementation-status document disagree, this RFC's
 accepted contract governs and the status document is stale.
 
-### Recorded research conclusion — Panel, Activity, and the ActivityStack (record 039)
+### Recorded direction — Panel, Activity, and the ActivityStack
 
-Recorded for traceability from research record 039 (Panel, Activity, and the
-Native UI Boundary, 2026-09-16). This is a captured design conclusion, not an
+Recorded for traceability as a Panel, Activity, and the Native UI Boundary
+direction (2026-09-16). This is a captured design conclusion, not an
 accepted amendment to this RFC: none of it is implemented in `bitty`, none of
 the [open questions](#open-questions) is resolved, and no `Implemented`,
 `Verified`, or `Compatible` status is claimed.
@@ -734,7 +734,7 @@ the [open questions](#open-questions) is resolved, and no `Implemented`,
 - **Object-model direction**: `Window > Workspace > Panel > Presentation/Activity`,
   backed by UI Runtime, Application Runtime, and Lua Runtime layers, with Rust
   owning primitives and Lua holding state and policy.
-- **Destination note**: the plugin-side direction of record 039 is captured in
+- **Destination note**: the plugin-side direction is captured in
   `plugin-ecosystem-model.md` in `bitty-plugins-docs`; this subsection records
   the terminal-core direction. Adopting the activity stack requires a future
   RFC amendment or successor document; the panel-provider contract remains
