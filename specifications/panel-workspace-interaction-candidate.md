@@ -62,7 +62,7 @@ Out of scope and owned elsewhere (pointers, not content):
   records only the placement and chrome direction);
 - plugin manifest, capability grammar, and resource budgets (accepted,
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md),
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md));
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md));
 - the deprecated `bitty-terminal.tabs` plugin identity and its legacy `tabline`
   claim (accepted disposition,
   [Default Distribution RFC](default-distribution-rfc.md); PW-10 supersedes
@@ -571,8 +571,8 @@ amendment, an RFC-0002 revision, or a persistence RFC settles them:
   chord consumption, and dispatch priority.
 - [Lua and XDG configuration](../configuration/lua-and-xdg.md) — shipped
   keymap, appearance, and animation reference.
-- [Panel Extensibility Vision](../product/panel-vision.md) — candidate panel
-  interaction directions recorded earlier.
+- [Panel Extensibility Vision](../product/panel-vision.md#candidate-panel-interaction-directions-ctx-0009) —
+  candidate panel interaction directions recorded earlier.
 - [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md) —
   accepted animation transition set and bounds.
 - [Appearance Configuration RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md) —
@@ -583,7 +583,7 @@ amendment, an RFC-0002 revision, or a persistence RFC settles them:
   and [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md) —
   untrusted-by-default posture and hot-path invariants.
 - [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
-  and [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) —
+  and [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md) —
   capability grammar and resource ceilings.
 - [Open questions register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) —
   OQ-052 and OQ-056 owner-pending decisions.
