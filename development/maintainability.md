@@ -61,6 +61,11 @@ the `bitty-ipc` row above ("bounded IPC/MCP stub") is a CTX-0051 descriptor
 that predates the Phase-A protocol surface and the CTX-0419 publishable
 bridge boundary.
 
+> `bitty-core` scaffold note: `crates/bitty-core/src/lib.rs` is a one-line
+> scaffold (`Compilation target for the pre-implementation Bitty workspace`).
+> Do not mistake the member-list row above for a functional crate; it is a
+> bootstrap seed to be retired, never published.
+
 ## Hygiene checks — detailed
 
 ### 1. Formatting

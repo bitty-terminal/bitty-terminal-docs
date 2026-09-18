@@ -154,6 +154,11 @@ crates.io publish (CTX-0116) covered the original nine-crate Groups 1-3 set
 `render`); `bitty-config`'s later `bitty-lua` edge (no `version` pin yet) must
 be resolved before that crate can publish again.
 
+> `bitty-core` scaffold note: `crates/bitty-core/src/lib.rs` is a one-line
+> scaffold (`Compilation target for the pre-implementation Bitty workspace`,
+> verified at `bitty` `06bc1f4`). Do not mistake the member-list row above for
+> a functional crate; it is a bootstrap seed to be retired, never published.
+
 ## Concrete publish order (leaf -> core -> branch -> tail)
 
 The order is forced by the DAG in

@@ -2,8 +2,12 @@
 
 Thank you for contributing to `bitty-terminal-docs`, the canonical
 documentation repository for the Bitty terminal platform. The project is in a
-documentation-first, pre-implementation phase: documents are the contract
-source, and nothing here should be described as implemented product behavior.
+documentation-first phase: documents are the contract source. Normative
+requirements are `Accepted` contract; nothing here is `Verified` shipped
+product behavior, and experimental `bitty` workspace code is at most
+`Implemented-only` per the [Panel Runtime
+RFC](specifications/panel-runtime-rfc.md#implementation-status) implementation-status
+table.
 
 ## Prerequisites
 
