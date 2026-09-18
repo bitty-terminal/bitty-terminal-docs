@@ -1618,7 +1618,7 @@
         },
         {
           id: "override_layer",
-          label: "5. Local Project Override\n.bitty/config.json",
+          label: "5. Local Project Override\n.wheel/config.json",
           kind: "Layer",
           layer: "layers",
           shape: "rounded",
