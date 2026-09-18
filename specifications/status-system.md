@@ -55,9 +55,9 @@ Out of scope (owned elsewhere):
 - Plugin API v1, capability families, manifest, and event pipeline classes
   (OQ-011/OQ-012/OQ-013, [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - per-plugin budgets, queue ceilings, and adversarial isolation tests (OQ-014,
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md));
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md));
 - Lua runtime, standard-library subset, and module search rules (OQ-009,
-  [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md)) and configuration layering (OQ-010,
+  [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md)) and configuration layering (OQ-010,
   [Configuration Model RFC](configuration-model-rfc.md));
 - CLI grammar and exit codes (OQ-017) and IPC wire format (OQ-018).
 
@@ -320,7 +320,7 @@ status modules, composed by the Registry as values, not as code hooks:
    diagnostic that names the provider and component.
 3. **Isolation**: a panicking or budget-exceeded provider cannot crash the
    bar; its segment renders as `—` or is hidden per priority, and the
-   isolation budgets in the [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)
+   isolation budgets in the [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)
    remain the enforcement mechanism.
 4. **No direct mutation**: providers never receive a mutable `StatusBar`
    handle; they emit new declarative values and the bar recomposes.
@@ -418,5 +418,5 @@ a standalone specification per the [documentation workflow](https://github.com/b
   `modules-left`/`modules-center`/`modules-right` slot composition.
 - [Configuration Model RFC](configuration-model-rfc.md)
 - [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
-- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)
-- [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md)
+- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)
+- [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md)

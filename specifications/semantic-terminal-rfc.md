@@ -298,7 +298,7 @@ typing a label performs the associated action.
      registering plugin's existing capabilities and consent, and a dispatch
      that maps to a process or terminal operation still passes the accepted
      scopes and the candidate command audit
-     ([AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ai-architecture.md), OQ-087).
+     ([AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/architecture/ai-architecture.md), OQ-087).
 - **Label allocation (candidate).** Single-key labels are the default while
   the target count is small; beyond a threshold the allocator extends to
   two-character labels. Labels are drawn from a handedness-scoped pool (left
@@ -338,7 +338,7 @@ owners.
 - The composer must never intercept input outside its explicit mode, must fail
   open to raw PTY behavior, and must not weaken paste inspection or clipboard
   policy ([Terminal State RFC](terminal-state-rfc.md),
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)).
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)).
 - The hint annotation layer is ephemeral presentation with fixed bounds; it
   grants no capability and bypasses no allowlist ([Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)).
 - Composer submission via bracketed paste preserves existing paste-safety

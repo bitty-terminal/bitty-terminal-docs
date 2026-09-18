@@ -60,7 +60,7 @@ and owned elsewhere: the VT parser and `Action` stream (OQ-007,
 `ImagePlacement` limits and placement (OQ-008, [Rich Presentation RFC](rich-presentation-rfc.md));
 semantic zones and `RichBlock`/`Scene` composition (OQ-015/016, Rich RFC);
 CLI and IPC framing and scopes (OQ-017/018); per-plugin isolation ceilings
-(OQ-014, [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)) except where
+(OQ-014, [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)) except where
 this RFC adds text-specific sub-budgets.
 
 ### Candidate vs accepted status
@@ -119,7 +119,7 @@ evidence**; they are headless test seams, not user-facing typography.
   PB-6 throughput floor (`>=40 MB/s` parse-and-render), PB-7 idle
   (`<=1% CPU`, zero wakeups when idle). See
   [Reconciliation with performance budgets](#reconciliation-with-performance-budgets).
-- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md):
+- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md):
   global and per-plugin budgets are the parent envelope; text features must
   not borrow from them without attribution.
 
@@ -1006,7 +1006,7 @@ the same PR that promotes its frontmatter to `accepted`:
 - [Rich Presentation RFC](rich-presentation-rfc.md) (OQ-008/015/016) — `ImageStore`/`ImagePlacement` bounded budgets IMG-1..IMG-9 and SCN-1..SCN-5, `Image != Cell`, scene composition, authenticated structured transport.
 - [Compatibility Milestone RFC](compatibility-milestone-rfc.md) (OQ-004) — M1-required VT subset, UTF-8 foundation.
 - [Performance Budget RFC](performance-budget-rfc.md) (OQ-001) — PB-1..PB-7 budgets and cross-cutting rules.
-- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) (OQ-014) — RC-1..RC-10 ceilings and failure semantics.
+- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md) (OQ-014) — RC-1..RC-10 ceilings and failure semantics.
 - [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) — crate DAG, MSRV, headless rendering seam.
 - [ADR 0004](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0004-upstream-dependencies.md) — adopt/wrap/reject choices and maintenance policy.
 - [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) and [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md) — invariants, trust boundaries, T-01..T-14.

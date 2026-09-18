@@ -37,7 +37,7 @@ sidebar_order: 52
   security controls in `bitty-docs/docs/security/`.
 
 - Relationship: this is the bitty-side companion to the docs-side
-  [Browser and Agent Panel Integration Pre-Study](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/browser-agent-pre-study.md)
+  [Browser and Agent Panel Integration Pre-Study](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/interfaces/browser-agent-pre-study.md)
   (CTX-0120, candidate BA-1..BA-12) and the
   [Panel Runtime and Event Bus Pre-Study](../specifications/panel-runtime-pre-study.md)
   (CTX-0119 / requested `05e8803`, candidate PR-1..PR-12). The matrix here reconciles
@@ -459,9 +459,9 @@ On this worktree at `5c885f2` + `05e8803` + this task delta:
 - [Plugin Roadmap](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/product/plugin-roadmap.md) — first-party wave and featured second wave (source for pet/activity/peek/mirror/lock/scratchpad sequencing).
 - [Panel Extensibility Vision](panel-vision.md) — programmable terminal workspace positioning, four-layer hierarchy, browser-optional distribution culture.
 - [Panel Runtime and Event Bus Pre-Study](../specifications/panel-runtime-pre-study.md) — PR-1..PR-12, typed errors, placement reconciliation with `6f30c2f`/`c3a2928`.
-- [Browser and Agent Panel Integration Pre-Study](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/browser-agent-pre-study.md) — BA-1..BA-12, Browser/WebView lifecycle, MCP dispatch, Agent memory and capability isolation.
+- [Browser and Agent Panel Integration Pre-Study](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/interfaces/browser-agent-pre-study.md) — BA-1..BA-12, Browser/WebView lifecycle, MCP dispatch, Agent memory and capability isolation.
 - [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) — accepted `v1` API, capability grammar, event pipeline, four interception points.
-- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) — RC-1..RC-10 ceilings, FS-1..FS-9 failure semantics.
+- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md) — RC-1..RC-10 ceilings, FS-1..FS-9 failure semantics.
 - [Default Distribution RFC](../specifications/default-distribution-rfc.md) — bundled-disabled, five disable surfaces, `generation` disposal, `PB-5` `<= 40 MiB`.
 - [Terminal State RFC](../specifications/terminal-state-rfc.md) — `Action::Print` as sole `State` write path, damage model.
 - [Core and Plugin Boundaries](../architecture/core-boundaries.md) — mechanism/policy split, declarative UI, generation lifecycle.

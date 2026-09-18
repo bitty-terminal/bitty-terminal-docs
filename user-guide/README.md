@@ -11,19 +11,20 @@ sidebar_order: 10
 
 # User guide
 
-There is no supported installation, released executable, stable command set,
-or verified daily-use workflow yet. This section is a maintained plan for
-future user documentation, not a preview of commands that users can run
-today.
+There is no supported installation, stable command set, or verified daily-use
+workflow yet. Experimental code and pre-alpha releases exist (latest
+`v0.0.20`), but no Stable, `Compatible`, or `Release-ready` interface is
+claimed. This section is a maintained plan for future user documentation, not
+a preview of commands that users can run today.
 
 ## Planned sections
 
-| Section         | What it will cover                                                                                   | Publication gate                                                      |
-| --------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Installation    | Supported packages, platforms, integrity checks, upgrades, and removal.                              | A released artifact and verified platform instructions exist.         |
-| Getting started | First launch, shell setup, basic navigation, configuration location, and safe defaults.              | The referenced commands and behavior are covered by acceptance tests. |
-| Daily use       | Sessions, windows, panes, selection, search, links, clipboard, profiles, plugins, and accessibility. | The user-facing contract is stable for the documented release.        |
-| Troubleshooting | Diagnostics, logs, safe startup, recovery, compatibility issues, and support information.            | Diagnostic behavior and recovery paths have reproducible evidence.    |
+| Section         | What it will cover                                                                                   | Publication gate                                                       |
+| --------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Installation    | Supported packages, platforms, integrity checks, upgrades, and removal.                              | A supported release artifact and verified platform instructions exist. |
+| Getting started | First launch, shell setup, basic navigation, configuration location, and safe defaults.              | The referenced commands and behavior are covered by acceptance tests.  |
+| Daily use       | Sessions, windows, panes, selection, search, links, clipboard, profiles, plugins, and accessibility. | The user-facing contract is stable for the documented release.         |
+| Troubleshooting | Diagnostics, logs, safe startup, recovery, compatibility issues, and support information.            | Diagnostic behavior and recovery paths have reproducible evidence.     |
 
 No placeholder page should invent command names, package identifiers, default
 key bindings, filesystem paths, or support guarantees. Add a section only when

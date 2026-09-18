@@ -57,7 +57,7 @@ gate.
 - First-party and community plugins use the same API, capabilities, and
   lifecycle, with no private channel (Governance RFC OQ-024).
 - The authoritative Plugin API v1 contract text lives in the `bitty-docs`
-  corpus ([Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-api-v1-lua-surface-rfc.md),
+  corpus ([Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md),
   [ADR 0009](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0009-plugin-api-v1-lua-surface.md)). The
   `bitty` repository owns the implementation and parity evidence; the SDK is
   generated output and development support (Plugin Platform RFC).

@@ -70,9 +70,9 @@ Out of scope (owned elsewhere):
 - Plugin API v1, capability families, manifest, and event pipeline classes
   (OQ-011, OQ-012, OQ-013, [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - per-plugin budgets, queue ceilings, and adversarial isolation tests (OQ-014,
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md));
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md));
 - Lua runtime, standard-library subset, and module search rules (OQ-009,
-  [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md)) and configuration layering (OQ-010,
+  [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md)) and configuration layering (OQ-010,
   [Configuration Model RFC](configuration-model-rfc.md));
 - CLI grammar and exit codes (OQ-017) and IPC wire format (OQ-018).
 
@@ -662,7 +662,7 @@ Lua and no bypass of the existing P0 gates.
   enters rectangle math.
 - Point-in-time decoration citations in the pre-studies still spell the
   pre-CTX-0333 defaults: [Panel Runtime pre-study](panel-runtime-pre-study.md)
-  `gaps_in 4` and [Browser and Agent pre-study](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/browser-agent-pre-study.md)
+  `gaps_in 4` and [Browser and Agent pre-study](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/interfaces/browser-agent-pre-study.md)
   `gaps_in 4` / `--safe 0/0/1/0`. They cite committed snapshots, so they are
   recorded here as reference edges for a later reviewed sync rather than edited
   in place.
@@ -697,6 +697,6 @@ require follow-up RFCs or tasks per the
   `modules-left`, `modules-center`, `modules-right` slot composition.
 - [Configuration Model RFC](configuration-model-rfc.md)
 - [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
-- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)
+- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)
 - [Rich Presentation RFC](rich-presentation-rfc.md)
-- [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md)
+- [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md)

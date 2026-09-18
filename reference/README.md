@@ -12,9 +12,11 @@ sidebar_order: 10
 # Reference
 
 Reference documentation will describe verified, versioned product contracts in
-a factual and lookup-oriented form. Bitty is pre-implementation, so no stable
-CLI, configuration keys, Lua API, plugin API, or protocol reference exists yet.
-The [terminal compatibility matrix](compatibility-matrix.md) is the first draft
+a factual and lookup-oriented form. An experimental implementation exists and
+pre-alpha releases exist (latest `v0.0.20`), but no stable or supported public
+contract is claimed yet: no CLI, configuration key, Lua API, plugin API, or
+protocol reference is verified, `Compatible`, or `Release-ready`. The
+[terminal compatibility matrix](compatibility-matrix.md) is the first draft
 reference page: it records per-scenario evidence status rather than promising
 stable behavior.
 

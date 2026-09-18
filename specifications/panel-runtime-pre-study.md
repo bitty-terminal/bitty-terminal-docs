@@ -34,7 +34,7 @@ sidebar_order: 27
 > implementation, authorizes no shipped, stable, or compatibility-guaranteed
 > behavior, and does not weaken any normative control in the
 > [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md), [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md),
-> [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md), or [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md).
+> [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md), or [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md).
 > The lifecycle is `Draft -> experimental review evidence -> Accepted -> Verified -> Compatible`
 > (spec) and `Draft -> experimental review evidence -> Accepted -> normative` (document);
 > only `Accepted` or `normative` documents authorize shipped behavior. All thresholds
@@ -74,7 +74,7 @@ Out of scope and owned elsewhere:
 - Plugin API v1, capability grammar, manifest, and three-level queue budgets
   (OQ-011/012/013, [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - per-plugin VM, instruction, memory, task, and queue enforcement (OQ-014,
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md));
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md));
 - IPC wire framing, discovery, auth, and per-connection rate limits RC-9/RC-10
   ([IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md));
 - daemon, session persistence, and remote UI trust boundaries
@@ -92,7 +92,7 @@ and does not close an open question on its own.
 | Workspace compositor | `Instance -> Window -> Workspace -> LayoutTree -> View` with `H`/`V` `ratio [0.1,0.9]`, Core-owned `gaps_in 4`/`gaps_out 6`/`border 2`/`radius 6`, `LayoutProvider` pure deterministic `propose` per [Workspace Compositor Specification](workspace-compositor.md)                 | Panel as candidate extension of `View` content (`Empty`, `Terminal(TerminalId)`, `Rich`, `Browser`, `Panel(PanelId)`) without adding a new tiling primitive; `LayoutTree` and decoration stay Core-owned; `LayoutProvider` never mutates panel state |
 | Input                | Hot path `Platform -> Router -> focused View -> keymap -> encoder -> PTY` with no Lua per [Input and Pointer Contract](input-pointer-rfc.md) (draft)                                                                                                                               | Focus routing for panels reuses the same router with `focused Panel` as an alternative routing target; overlay capture is presentation-only; no `input.pre-encode` plugin hook                                                                       |
 | Plugin platform      | One VM per `(PluginId, generation)`, deny-by-default capabilities, observation versus interception, four interception points, `DropOldest` default per [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) | Panel lifecycle follows the same generation rule; panel-contributed UI is declarative; Event Bus reuses observation queues, not interception                                                                                                         |
-| Isolation            | Per-subscription `64`, per-plugin `1024`/`256 KiB`, global `8192`/`2 MiB` with `DropOldest`, RC-1 `10^7`/`50 ms`/`8 ms`, RC-2 `32 MiB` per [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)       | Panel and bus budgets are sized to fit inside the same three-level envelope without borrowing                                                                                                                                                        |
+| Isolation            | Per-subscription `64`, per-plugin `1024`/`256 KiB`, global `8192`/`2 MiB` with `DropOldest`, RC-1 `10^7`/`50 ms`/`8 ms`, RC-2 `32 MiB` per [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)              | Panel and bus budgets are sized to fit inside the same three-level envelope without borrowing                                                                                                                                                        |
 | IPC                  | Bounded `256 KiB` frame, `512 KiB` in-flight, `64` pending, scopes per request per [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)                                                                                  | Cross-process bus, if ever needed, would reuse the same framing and scope model, not a new TCP surface                                                                                                                                               |
 
 Where this research selects a threshold it refines those sources; it does not move
@@ -104,7 +104,7 @@ a requirement between owners and does not create a bypass.
 - [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md) (T-01 parser wedge, T-06 plugin escape, T-07 starvation, T-09 IPC takeover, T-13 Terminal Truth).
 - [Core and Plugin Boundaries](../architecture/core-boundaries.md) and [Architecture Overview](../architecture/overview.md).
 - [Terminal State RFC](terminal-state-rfc.md), [Rich Presentation RFC](rich-presentation-rfc.md), [Configuration Model RFC](configuration-model-rfc.md).
-- [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) (OQ-011/012/013) and [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) (OQ-014).
+- [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) (OQ-011/012/013) and [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md) (OQ-014).
 - [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) (OQ-018) and [ADR 0008 Headless](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md).
 
 ## Terminology
@@ -772,10 +772,10 @@ support.
 - [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md) (CTX-0117, Accepted, `6f30c2f`)
 - [Workspace Compositor Specification](workspace-compositor.md) (CTX-0118, Accepted, `c3a2928`)
 - [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) (OQ-011/012/013)
-- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) (OQ-014, RC-1..RC-10, FS-1..FS-9)
+- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md) (OQ-014, RC-1..RC-10, FS-1..FS-9)
 - [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) (OQ-018, RC-9/RC-10, scopes, framing)
 - [Configuration Model RFC](configuration-model-rfc.md) (OQ-010)
-- [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md) (OQ-009) plus ADR 0005/0006/0007 (OQ-030/031/032)
+- [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md) (OQ-009) plus ADR 0005/0006/0007 (OQ-030/031/032)
 - [Panel Extensibility Vision](../product/panel-vision.md) (draft precedents only)
 - [Architecture Overview](../architecture/overview.md), [Core and Plugin Boundaries](../architecture/core-boundaries.md)
 - [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md), [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md), [Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md)

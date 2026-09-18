@@ -968,6 +968,6 @@ a standalone product document per the
 - [Panel Runtime RFC](../specifications/panel-runtime-rfc.md)
 - [UI and Compositor Gap Analysis](../specifications/ui-compositor-gap-analysis.md)
 - [Panel Runtime and Event Bus Pre-Study](../specifications/panel-runtime-pre-study.md)
-- [AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ai-architecture.md)
+- [AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/architecture/ai-architecture.md)
 - Workspace-local, temporary, untracked, untrusted, non-canonical design
   inputs; not canonical repository evidence and not required for delivery.

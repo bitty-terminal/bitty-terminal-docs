@@ -21,7 +21,9 @@ in the linked pages; this index carries no duplicate normative prose.
 
 ## Authority and status
 
-Both pages are pre-implementation contracts. Accepted detail is recorded in
-the [CLI Contract RFC](../specifications/cli-contract-rfc.md)
+Both pages are candidate contracts; experimental implementation exists, but
+no stable or supported public contract is claimed. Accepted detail is recorded
+in the [CLI Contract RFC](../specifications/cli-contract-rfc.md)
 and the [Rich Presentation RFC](../specifications/rich-presentation-rfc.md);
-these interface pages must not be read as released behavior.
+these interface pages must not be read as stable, `Compatible`, or released
+behavior.

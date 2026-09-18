@@ -57,7 +57,7 @@ Out of scope (owned elsewhere):
 - plugin capability identifiers, event phases, and package manifest, lockfile,
   or signature verification (owned by
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) and
-  [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md) under OQ-011 through OQ-013
+  [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md) under OQ-011 through OQ-013
   and OQ-021);
 - rich-block, scene, semantic-zone, and structured-transport contracts (owned by
   [Rich Presentation RFC](rich-presentation-rfc.md) under OQ-008, OQ-015, OQ-016);
@@ -339,7 +339,7 @@ loading the plugin VM. `bitty --help`, `bitty list commands`, and
 `bitty completion <shell>` reflect the installed manifest set, not the set of
 loaded Lua VMs. Starting the CLI never loads every plugin runtime; this matches
 the completion contract in [Command-line interface](../interfaces/cli.md) and
-the lazy-load principle in [Isolation and Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md).
+the lazy-load principle in [Isolation and Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md).
 
 ### Help generation rules for the dynamic namespace
 
@@ -740,7 +740,7 @@ presentational purposes: there is no implicit default change without an RFC;
   `bitty doctor` explicitly reports that it ran in safe mode when that path was
   taken.
 - **Supply chain.** `bitty plugin install` follows the transactional activation
-  and lockfile rules in [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md); the
+  and lockfile rules in [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md); the
   CLI never executes package code at install time.
 
 ## Verification
@@ -815,7 +815,7 @@ a design contract until separately implemented and evidenced.
 - [Command-line interface](../interfaces/cli.md) — candidate gateway and per-subtree context this RFC concretizes.
 - [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) — bounded framing, wire, auth, scopes (including RC-9 and RC-10), and Agent bounded-message contracts that `bitty ctl` rides.
 - [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) — executable and capability families, manifest and lifecycle generations that the dynamic namespace consumes.
-- [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md) — package install, lockfile, transactional activation, and rollback that `bitty plugin` drives.
+- [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md) — package install, lockfile, transactional activation, and rollback that `bitty plugin` drives.
 - [DevTools RFC](devtools-rfc.md) — instrumentation and debug scopes that `bitty dev` will surface once accepted.
 - [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md), [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md), [Security Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md), and [P0 Security Acceptance Criteria](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md) — normative gates for every boundary, parser, and trace in this document.
 - [Documentation Workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md) — lifecycle rule that draft text does not authorize shipped behavior and that acceptance requires independent review.

@@ -75,13 +75,13 @@ Out of scope (owned elsewhere):
   the event pipeline (OQ-011/OQ-012/OQ-013, accepted in
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - per-plugin instruction, memory, task, queue, and global budget enforcement
-  (OQ-014, [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md));
+  (OQ-014, [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md));
 - configuration pipeline, layer precedence, merge classes, and reload
   classification (OQ-010, [Configuration Model RFC](configuration-model-rfc.md));
 - Lua runtime, standard-library subset, and module search rules (OQ-009,
-  [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md));
+  [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md));
 - package sources, lockfile, resolver, signature, and registry contracts
-  (OQ-021/OQ-022, [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md) and
+  (OQ-021/OQ-022, [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md) and
   [Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md));
 - CLI grammar, output schema, and exit codes (OQ-017, [CLI](../interfaces/cli.md));
 - rich presentation, image, and structured-transport contracts (OQ-008/OQ-015/OQ-016,
@@ -111,7 +111,7 @@ cannot prevent Bitty from starting.
   triggers, and the governing boundary that plugins may alter presentation
   but must not alter terminal truth.
 - [Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md) and
-  [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md): managed manifest,
+  [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md): managed manifest,
   lockfile, package store, staged activation, transactional switch, rollback,
   and integrity chain.
 - [Lua and XDG](../configuration/lua-and-xdg.md) and
@@ -216,7 +216,7 @@ Rules:
    compatible change.
 2. Each bundled artifact is version-pinned (SemVer 2), checksum-recorded
    (SHA-256), and manifest-validated before staging, inheriting the
-   integrity posture of [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md)
+   integrity posture of [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md)
    (lock, checksum, no install scripts). The staging step executes no
    plugin code.
 3. The total compressed distribution (binary plus bundled artifacts and
@@ -295,7 +295,7 @@ as `bitty-plugins` `CTX-0005`.
 
 - **Palette.** The independent Lua package requests `ui.rich` + `ui.overlay`;
   the bundled Rust realization declared only `ui.overlay`. The accepted
-  [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-api-v1-lua-surface-rfc.md#extension-level-split)
+  [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md#extension-level-split)
   lists `ui.rich` as the L2 UI capability gate (`ui.overlay` for the overlay
   slot) and requires `ui.rich` for rich content, so this is a
   manifest-capability difference within the accepted API, not a new or widened
@@ -377,7 +377,7 @@ following are satisfied in a reviewed follow-up change:
    measurement remains within PB-1/PB-2/PB-7 and a representative
    8-tab/4-hour session remains within PB-3, measured on the reference
    harness once it exists. Cost is charged to the plugin generation's
-   budgets (RC-1/RC-2/RC-4/RC-5 per [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md))
+   budgets (RC-1/RC-2/RC-4/RC-5 per [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md))
    and is visible in `bitty plugin doctor`.
 2. Capability minimality. The plugin requests only the families it needs
    (for example `terminal.semantic-read` and status-component slots for a
@@ -562,7 +562,7 @@ hostile third-party plugins as noted in [Configuration Model RFC](configuration-
 - Any proposal to move a plugin to enabled-by-default carries the budget
   proof from the criteria above; without that proof the proposal fails the
   RFC even if other criteria pass.
-- Per-plugin budgets remain owned by [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md)
+- Per-plugin budgets remain owned by [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)
   (RC-1 10^7 instr / 50 ms / 8 ms warning, RC-2 32 MiB, RC-4 tasks 64 /
   timers 32, RC-5 three-level queues). This RFC consumes those numbers for
   disable-reclaim verification but does not retune them.
@@ -667,7 +667,7 @@ task needed; a follow-up PR must keep them synchronized):
   baseline is adopted as the empty enabled set for PB-1 through PB-7.
 - [CLI](../interfaces/cli.md): the runtime-control and plugin-enable
   sections become normative per this RFC's method set and precedence table.
-- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) and
+- [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md) and
   [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md):
   the crate-presence note remains `draft` tail until evidence lands; the
   overview's draft-tail note gains the distribution composition link.
@@ -737,5 +737,5 @@ As of 2026-08-29, the distribution, disable, and budget contracts remain design 
   PB-1 through PB-7 and PB-5 40 MiB distribution cap.
 - Related RFCs: [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) for OQ-011/
   OQ-012/OQ-013, [Configuration Model RFC](configuration-model-rfc.md) for
-  OQ-010, [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) for OQ-014
-  budgets, [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md) for OQ-021.
+  OQ-010, [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md) for OQ-014
+  budgets, [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md) for OQ-021.

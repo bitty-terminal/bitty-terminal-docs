@@ -53,9 +53,9 @@ Out of scope (owned elsewhere):
   classes (OQ-011/OQ-012/OQ-013,
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md));
 - per-plugin instruction, CPU, memory, and queue ceilings (OQ-014,
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md));
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md));
 - Lua runtime, standard-library subset, and module search rules (OQ-009,
-  [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/lua-runtime-rfc.md));
+  [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md));
 - CLI grammar and exit-code contract (OQ-017) and IPC wire format, peer
   authentication, and scopes (OQ-018).
 
@@ -221,7 +221,7 @@ Notes:
   declares huge dimensions.
 - IMG-4 is an aggregate budget across all protocols and all terminals of one
   window; it follows the isolation budget floor and maximum policy in the
-  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md).
+  [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md).
 
 IMG-3 is a **peak-memory ceiling**, not a resident-bytes count: the
 pre-decode charge is the overflow-checked formula

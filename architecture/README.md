@@ -26,6 +26,18 @@ resolves to 21 crates at `eb321f7` with staged `bitty-panels` and harness
 note) and `bitty/Cargo.toml`; current state lives in
 [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
+## Document Inventory
+
+Directly routed architecture documents. Each declares its own status; accepted
+boundaries remain authoritative over candidate material.
+
+| Document                                                | Status   | Purpose                                                                           |
+| ------------------------------------------------------- | -------- | --------------------------------------------------------------------------------- |
+| [Architecture Overview](overview.md)                    | Draft    | System context, invariants, logical components, data flows, and evolution.        |
+| [Core and Plugin Boundaries](core-boundaries.md)        | Accepted | Core versus plugin ownership and the normative P0 security gates.                 |
+| [Future Boundaries](future-boundaries.md)               | Draft    | Candidate boundary decision rules and pending decisions.                          |
+| [Graphics and Appearance Model](graphics-appearance.md) | Draft    | Candidate graphics, composition, opacity/blur ownership, and small-core guidance. |
+
 ## Architecture Diagram Hub
 
 The master gallery and interactive explorer is located at:
@@ -96,6 +108,7 @@ architecture/
 ├── overview.md               # system context, invariants, data flows
 ├── core-boundaries.md        # accepted core vs plugin ownership and P0 gates
 ├── future-boundaries.md      # draft candidate rules and pending decisions
+├── graphics-appearance.md    # draft graphics, composition, and appearance model
 ├── interactive/              # interactive HTML visualization suite
 │   ├── index.html            # architecture diagram explorer hub
 │   ├── 00-overview.html      # L0 system overview
@@ -146,10 +159,10 @@ Nodes and edges strictly adhere to:
   [Configuration Model RFC](../specifications/configuration-model-rfc.md) — see
   [04-config-model.html](interactive/04-config-model.html).
 - Lifecycle and integrity chain from
-  [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md) — see
+  [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md) — see
   [05-package-lifecycle.html](interactive/05-package-lifecycle.html).
 - Domains and ceilings RC-1..RC-11 from
-  [Isolation and Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/isolation-resource-rfc.md) — see
+  [Isolation and Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md) — see
   [06-isolation-resource.html](interactive/06-isolation-resource.html).
 - IPC protocol and MCP tool definitions from
   [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) — see

@@ -2,21 +2,22 @@
 
 ## Supported Versions
 
-No version of Bitty has been released yet. There are no supported releases.
-Normative requirements in this policy are `Accepted` contract, not shipped
-product behavior.
+Pre-alpha releases exist (latest `v0.0.20`), but no release is stable,
+`Verified`, `Compatible`, or supported. Normative requirements in this policy
+are `Accepted` contract, not shipped product behavior.
 
-| Version           | Supported |
-| ----------------- | --------- |
-| (no releases yet) | No        |
+| Version   | Supported |
+| --------- | --------- |
+| Pre-alpha | No        |
 
-Once releases exist, this table will list each supported version range and its
-support status.
+Once a supported release exists, this table will list each supported version
+range and its support status.
 
 ## Implementation status
 
-Normative requirements here are `Accepted` contract. No shipped release is
-claimed. Where experimental code exists in the `bitty` workspace, it is at most
+Normative requirements here are `Accepted` contract. No stable, supported, or
+`Verified` release is claimed. Where experimental code exists in the `bitty`
+workspace, it is at most
 `Implemented-only`, never `Verified`, per the [Panel Runtime
 RFC](specifications/panel-runtime-rfc.md#implementation-status)
 implementation-status table and the [Risk Evidence

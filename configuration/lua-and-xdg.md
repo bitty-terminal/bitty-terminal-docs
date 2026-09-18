@@ -1,6 +1,6 @@
 ---
 title: Lua configuration and filesystem layout
-description: Pre-implementation contract for Lua configuration, XDG roots, layering, and cross-platform paths
+description: Candidate contract for Lua configuration, XDG roots, layering, and cross-platform paths
 category: configuration
 audience: mixed
 document_type: specification
@@ -11,12 +11,14 @@ sidebar_order: 10
 
 # Lua configuration and filesystem layout
 
-> Status: pre-implementation architecture. Lua is the accepted working
-> direction for user configuration. The two-stage configuration plan, layer
-> stack, merge rules, reload classification, and project-trust mechanics are
-> accepted in [Configuration Model RFC](../specifications/configuration-model-rfc.md)
+> Status: candidate architecture. Lua is the accepted working direction for
+> user configuration, and experimental `bitty-config` code exists. The
+> two-stage configuration plan, layer stack, merge rules, reload
+> classification, and project-trust mechanics are accepted in
+> [Configuration Model RFC](../specifications/configuration-model-rfc.md)
 > (OQ-010, 2026-08-27). Platform path separation, directory contents,
-> filenames, and CLI examples remain candidate contracts pending ADRs.
+> filenames, and CLI examples remain candidate contracts pending ADRs; no
+> stable or supported configuration contract is claimed.
 
 Bitty should offer Neovim-like flexibility—`init.lua`, modules, starter
 configurations, profiles, and community distributions—while keeping resolution,
@@ -662,7 +664,7 @@ warning to stderr instead of failing the process.
   key is supported; do not document one as working. `background_image_roots`
   remains global-only and cannot be widened per `View`.
 - Per-panel animation overrides are **candidate and narrowed** (OQ-043;
-  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md)):
+  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/architecture/ui-extensibility-architecture.md)):
   the accepted OQ-041 layer fixes the override mechanics, so only the animation
   field set and its reduced-motion/budget interaction remain. The global
   `appearance.animations.*` contract is unchanged.
@@ -1172,7 +1174,7 @@ Status: **shipped mechanism** (install- and validate-time enforcement plus pure
 predicates; the runtime seam below is still interim).
 
 The canonical Layer-2 contract is the accepted `[tools.git]` slice (v1) in the
-[Layer-2 System CLI specification](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-reuse-and-providers.md)
+[Layer-2 System CLI specification](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/plugin-reuse-and-providers.md)
 (`Accepted [tools.git] contract (v1)`, CTX-0425): that document owns the verb
 list and per-tool bounds, which are linked here and never copied. The host
 enforcement that merged in `bitty` PR #716:
@@ -1252,7 +1254,7 @@ authorizer wiring above are sequel work. Nothing in this section claims them.
   ([OQ-043](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md), narrowed) and plugin-supplied
   appearance ([OQ-044](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)), with plugin-supplied
   images under [OQ-049](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md);
-  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/ui-extensibility-architecture.md).
+  [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/architecture/ui-extensibility-architecture.md).
   Accepted-but-unshipped, not a supported `init.lua` key yet.
 - The per-panel background-image contract is accepted
   ([OQ-042](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md), resolved 2026-09-12); the
