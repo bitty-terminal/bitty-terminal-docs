@@ -1,6 +1,6 @@
 ---
 title: User guide
-description: Planned user documentation for Bitty before supported product behavior exists
+description: Planned user documentation for Bitty before a supported release exists
 category: user-guide
 audience: user
 document_type: index
@@ -11,10 +11,10 @@ sidebar_order: 10
 
 # User guide
 
-Bitty is in a pre-implementation phase. There is no supported installation,
-released executable, stable command set, or verified daily-use workflow yet.
-This section is a maintained plan for future user documentation, not a preview
-of commands that users can run today.
+There is no supported installation, released executable, stable command set,
+or verified daily-use workflow yet. This section is a maintained plan for
+future user documentation, not a preview of commands that users can run
+today.
 
 ## Planned sections
 
@@ -33,7 +33,15 @@ the owning product repository provides current evidence.
 
 Until user behavior exists, readers can consult the [product vision](../product/vision.md)
 for intent and the [security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) for normative
-pre-implementation constraints. These are design documents, not usage guides.
+constraints. These are design documents, not usage guides.
+
+## Implementation status
+
+This guide is `Accepted` plan, not a usage record. No page claims `Verified`
+user workflows. Where experimental code exists in the `bitty` workspace, it is
+at most `Implemented-only`, never `Verified`, per the [Panel Runtime
+RFC](../specifications/panel-runtime-rfc.md#implementation-status) implementation-status
+table.
 
 Reference-style facts will live in the [reference section](../reference/README.md).
 The distinction prevents user tasks from becoming mixed with API inventories or

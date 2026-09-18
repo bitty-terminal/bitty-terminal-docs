@@ -2,8 +2,9 @@
 
 ## Supported Versions
 
-No version of Bitty has been released yet. There are no supported releases;
-all documented behavior is pre-implementation design material.
+No version of Bitty has been released yet. There are no supported releases.
+Normative requirements in this policy are `Accepted` contract, not shipped
+product behavior.
 
 | Version           | Supported |
 | ----------------- | --------- |
@@ -11,6 +12,15 @@ all documented behavior is pre-implementation design material.
 
 Once releases exist, this table will list each supported version range and its
 support status.
+
+## Implementation status
+
+Normative requirements here are `Accepted` contract. No shipped release is
+claimed. Where experimental code exists in the `bitty` workspace, it is at most
+`Implemented-only`, never `Verified`, per the [Panel Runtime
+RFC](specifications/panel-runtime-rfc.md#implementation-status)
+implementation-status table and the [Risk Evidence
+RFC](specifications/risk-evidence-rfc.md) evidence lifecycle.
 
 ## Reporting a Vulnerability
 

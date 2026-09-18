@@ -12,7 +12,10 @@
 
 ## Current phase
 
-- Documentation and project foundations come before product implementation.
+- Documentation and project foundations come before any claim of verified
+  product behavior. Normative text here is `Accepted` contract; experimental
+  `bitty` workspace code is at most `Implemented-only`, never `Verified` (see
+  the panel-runtime RFC implementation-status table).
 - CTX-0187 Phase 1 bootstrapped the toolchain and skeleton; CTX-0001 imported
   the terminal-platform corpus from `bitty-docs` (`docs/projects/bitty` at
   `c664214`). AI-core and plugin documents moved to the

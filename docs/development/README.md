@@ -12,9 +12,16 @@ sidebar_order: 10
 # Development
 
 This repository holds canonical documentation only; it ships no product code.
-The project is documentation-first and pre-implementation, so this page
-describes how to contribute documentation and run the repository gates, not a
-product build workflow.
+This page describes how to contribute documentation and run the repository
+gates, not a product build workflow.
+
+## Implementation status
+
+Repository process pages are `Accepted` policy. They do not claim `Verified`
+product behavior. Where experimental code exists in the `bitty` workspace, it
+is at most `Implemented-only`, never `Verified`, per the [Panel Runtime
+RFC](../../specifications/panel-runtime-rfc.md#implementation-status) implementation-status
+table.
 
 ## Start here
 
