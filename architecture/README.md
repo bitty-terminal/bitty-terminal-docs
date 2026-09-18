@@ -20,7 +20,10 @@ export vector graphics.
 Time-bound implementation state — crate counts, revisions, releases, and
 milestone assessments — is not pinned here. The workspace topology is fixed in
 [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md)
-and `bitty/Cargo.toml`; current state lives in
+(amended 2026-09-16 to nineteen member crates; the live `bitty` workspace
+resolves to 21 crates at `eb321f7` with staged `bitty-panels` and harness
+`bitty-test-vm`, see [glossary.yaml](glossary.yaml) for the pinned revision
+note) and `bitty/Cargo.toml`; current state lives in
 [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
 ## Architecture Diagram Hub
