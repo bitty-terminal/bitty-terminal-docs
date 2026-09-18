@@ -14,9 +14,9 @@ sidebar_order: 33
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document freezes a first invariant
 > batch for `WorkspaceId` / `ViewId` / `PanelId` / `TerminalId` / session
-> identity / focus, following research recommendation 3 of workspace research
-> note 017 on M4 Workspace/Panel invariant hardening (closed research note;
-> the findings are summarized inline in [Purpose and scope](#purpose-and-scope)). It is
+> identity / focus, following the M4 Workspace/Panel invariant-hardening
+> recommendation summarized inline in
+> [Purpose and scope](#purpose-and-scope). It is
 > checked read-only against `bitty` `origin/main` revision
 > `01ffdda` (2026-09-14), the merge of the linked `ctx-0405` pull request, plus
 > the linked `ctx-0414` pull request (#671) that adds the inactive-close
@@ -29,7 +29,7 @@ sidebar_order: 33
 
 ## Purpose and scope
 
-The M4 Workspace/Panel bug classes recorded in research note 017 — `ViewId`
+The M4 Workspace/Panel bug classes summarized here — `ViewId`
 collisions, wrong session ownership, split without a shell, grid/content-frame
 mismatch, focus transitions, and workspace lifecycle — are all
 ownership/identity/lifecycle invariant failures rather than missing features.
@@ -212,4 +212,4 @@ platforms.
 - [Panel Runtime and Event Bus Pre-Study](https://github.com/bitty-terminal/bitty-terminal-docs/blob/main/specifications/panel-runtime-pre-study.md) — candidate panel lifecycle and `PanelId` contract.
 - [UI and Compositor Gap Analysis](https://github.com/bitty-terminal/bitty-terminal-docs/blob/main/specifications/ui-compositor-gap-analysis.md) — candidate point-in-time implementation status.
 - [Architecture Overview](../architecture/overview.md) and [Core and Plugin Boundaries](../architecture/core-boundaries.md) — ownership and boundary sources.
-- Research note 017 — M4 Workspace/Panel invariant-hardening research (closed note; findings summarized inline in Purpose and scope) that produced this document.
+- M4 Workspace/Panel invariant-hardening findings (summarized inline in Purpose and scope) that produced this document.

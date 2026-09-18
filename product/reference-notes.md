@@ -21,7 +21,7 @@ sidebar_order: 53
   - Priority: P0 | Area: ui | Labels: docs,area:ui,P0 | Milestone: v0.1.0 | RFC: workspace-compositor | Task: CTX-0084
   - Issue: [#120](https://github.com/bitty-terminal/bitty/issues/120) — `docs,area:ui,P0` — milestone `v0.1.0`
 - Worktree: `.worktrees/ctx-0084-reference-clone` — branch `ctx-0084/reference-clone` — base `1ab5fb9`.
-- Scope: clone Hyprland/Waybar at depth 1 to the git-ignored workspace evidence area (outside the `bitty` worktree per isolation; summarized inline below), record revision + license in the evidence-area revision table, summarize exa patterns in a dated research note, and record this docs artifact. No evidence-area checkout is committed inside `bitty`; this file is the in-repo artifact.
+- Scope: clone Hyprland/Waybar at depth 1 to the git-ignored workspace evidence area (outside the `bitty` worktree per isolation; summarized inline below), record revision + license, summarize exa patterns in this artifact, and record this docs artifact. No evidence-area checkout is committed inside `bitty`; this file is the in-repo artifact.
 
 ## Global snapshots — verification
 
@@ -43,7 +43,7 @@ head -5 <evidence-dir>/hyprland/LICENSE        # BSD 3-Clause
 head -5 <evidence-dir>/waybar/LICENSE          # MIT
 ```
 
-The evidence-area revision table and the dated distilled-research note (73 lines) hold the canonical revision table and distilled research; this file does not duplicate the clones.
+The revision and license table above and the distilled patterns below are the canonical record; this file does not duplicate the clones.
 
 ## Exa research — distilled patterns (not TODO)
 
@@ -70,7 +70,7 @@ Three `exa_web_search_exa` queries on 2026-08-30, distilled as patterns Bitty co
 
 ## Evidence — pointers (no defects)
 
-- Umbrella research: dated distilled-research note `:1`, evidence-area revision table `:11`
+- Snapshot verification and distilled patterns: summarized inline above
 - Clones: `hyprland` @ `c91fa5a`, `waybar` @ `6d60c8e` (evidence-area checkouts, summarized inline above)
 - Issue: `gh issue view 120 --repo bitty-terminal/bitty` — `docs,area:ui,P0`, milestone `v0.1.0`
 - This artifact: `product/reference-notes.md:1` — research `status: draft`, not a TODO implementation claim

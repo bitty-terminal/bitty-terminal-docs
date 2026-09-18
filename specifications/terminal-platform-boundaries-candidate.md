@@ -1,6 +1,6 @@
 ---
-title: Terminal-Side Research Distillation 044-047 and 053-054 (Candidate)
-description: Draft candidate record distilling the terminal-side conclusions of research notes 044 045 046 047 053 and 054 with AI plugin and governance slices kept as owner pointers
+title: Terminal Platform Boundaries (Candidate)
+description: Draft candidate direction for terminal-side platform boundaries across the execution host security packaging and composition layers with owner-pending halves noted
 category: specifications
 audience: contributor
 document_type: specification
@@ -9,39 +9,32 @@ website_publish: false
 sidebar_order: 35
 ---
 
-# Terminal-Side Research Distillation 044-047 and 053-054 (Candidate)
+# Terminal Platform Boundaries (Candidate)
 
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
-> **Compatible**, and not normative. This document is a design record
-> distilled from workspace research summaries `044.md`, `045.md`, `046.md`,
-> `047.md`, `053.md`, and `054.md` (summarized inline below; the research
-> records themselves stay with their owners and this repository links to no
-> research checkout path). It authorizes no shipped, stable, or
-> compatibility-guaranteed behavior, weakens no accepted source it cites, and
-> makes no implementation claim. Names, bounds, call spellings, and defaults
-> repeated here are direction carried from the notes, not contract.
+> **Compatible**, and not normative. This document is a design record for the
+> terminal-side slice of several cross-repository directions: the part the Bitty
+> terminal platform would own if the directions were ever accepted. It
+> authorizes no shipped, stable, or compatibility-guaranteed behavior, weakens
+> no accepted source it cites, and makes no implementation claim. Names, bounds,
+> call spellings, and defaults repeated here are direction, not contract.
 
 ## Purpose and scope
 
-Each of the six research notes spans several owning repositories. This record
-freezes only the **terminal-side** slice — the part the Bitty terminal
-platform would own if the directions were ever accepted — so future design
-work starts from a stable, traceable input instead of re-reading the raw
-notes.
+Each direction below spans several owning repositories. This document freezes
+only the **terminal-side** slice — the part the Bitty terminal platform would
+own if the directions were ever accepted — so future design work starts from a
+stable input instead of reconstructing the whole cross-repository discussion.
 
 In scope (all **Candidate** unless cited otherwise):
 
-- T-1: Execution Host mechanisms Bitty owns (from 044).
-- T-2: host security ceiling Bitty enforces (from 045).
-- T-3: terminal-projection consequences of the Wheel coding-domain scope
-  (from 046).
-- T-4: outward-request caller-identity principle as it touches the terminal
-  (from 047).
-- T-5: UI mechanism-versus-composition boundary (from 053).
-- T-6: packaging and distribution note composed with the accepted package
-  lifecycle (from 054).
-- an explicit **Unverified** annex for notes 048–052, which assert capture
-  without verified destinations and are therefore read-only here.
+- T-1: Execution Host mechanisms Bitty owns.
+- T-2: host security ceiling Bitty enforces.
+- T-3: terminal-projection consequences of the Wheel coding-domain scope.
+- T-4: outward-request caller-identity principle as it touches the terminal.
+- T-5: UI mechanism-versus-composition boundary.
+- T-6: packaging and distribution direction composed with the accepted package
+  lifecycle.
 
 Out of scope and owned elsewhere (pointers, not content):
 
@@ -69,15 +62,14 @@ Out of scope and owned elsewhere (pointers, not content):
 
 ## Status vocabulary
 
-| Status            | Meaning in this document                                                              |
-| ----------------- | ------------------------------------------------------------------------------------- |
-| Accepted          | An accepted specification already requires the rule; this document only restates it.  |
-| Candidate         | Proposed by the cited research note only; no review has accepted it.                  |
-| Owner-pending     | Belongs to another repository owner; recorded here as a pointer, never as content.    |
-| Unverified        | Asserted captured elsewhere without a verified destination; read-only, not relied on. |
-| Illustrative-only | A sketch whose spelling, bounds, or defaults are explicitly undecided.                |
+| Status            | Meaning in this document                                                             |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| Accepted          | An accepted specification already requires the rule; this document only restates it. |
+| Candidate         | Proposed by the cited design direction only; no review has accepted it.              |
+| Owner-pending     | Belongs to another repository owner; recorded here as a pointer, never as content.   |
+| Illustrative-only | A sketch whose spelling, bounds, or defaults are explicitly undecided.               |
 
-## T-1 Execution Host mechanisms (from 044, Candidate)
+## T-1 Execution Host mechanisms (Candidate)
 
 **Candidate.** Do not build a stronger process-spawning helper; make
 Job/Execution a first-class object under an Execution Supervisor that is
@@ -85,7 +77,7 @@ independent of Agent, Panel, and Conversation. Bitty owns process mechanisms
 and enforcement; task semantics stay with the `bitty-ai` owner
 (owner-pending, `bitty-ai-docs`).
 
-Terminal-side conclusions carried from the note:
+Terminal-side conclusions:
 
 - Fix the four-object ontology — Task (semantic work), Execution/Job (a real
   OS process tree), Agent (decision maker), Panel (human projection) — with
@@ -150,10 +142,9 @@ Terminal-side conclusions carried from the note:
   interactions, and a control console are illustrative only. Needs-input
   surfacing and output folding compose with the terminal presentation
   contracts ([Terminal State RFC](terminal-state-rfc.md),
-  [Panel Runtime RFC](panel-runtime-rfc.md)) rather than redefining them. The
-  note proposes a dedicated execution-supervisor RFC/spec and a canonical
-  boundary table instead of scattering the design; that RFC does not exist
-  yet.
+  [Panel Runtime RFC](panel-runtime-rfc.md)) rather than redefining them. A
+  dedicated execution-supervisor RFC/spec and a canonical boundary table are
+  proposed instead of scattering the design; that RFC does not exist yet.
 - Open items carried forward: the v0.1 boundary versus the Phase 2 trigger;
   out-of-memory determination without control groups plus Windows/macOS
   process-tree backends; output and artifact retention defaults; execution
@@ -162,13 +153,12 @@ Terminal-side conclusions carried from the note:
   needs-input contracts. Contract owners stay open:
   [OQ-061, OQ-057, OQ-059, and OQ-065](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 
-Provenance pointer: sibling governance corpus holds a draft capture of the
-Bitty-owned mechanisms under review (not merged); the `bitty-ai`-owned
-semantics (task model, binding, claims, mailbox, semantic result, retry
-policy, orchestration) are owner-pending in `bitty-ai-docs`. Neither capture
-is absorbed here.
+Owner split: the `bitty-ai`-owned semantics (task model, binding, claims,
+mailbox, semantic result, retry policy, orchestration) are owner-pending in
+`bitty-ai-docs`; the terminal-owned mechanism halves stay with the Bitty
+platform owner.
 
-## T-2 Host security ceiling (from 045, Candidate)
+## T-2 Host security ceiling (Candidate)
 
 **Candidate.** The agent's Lua layer decides how to do something, but never
 whether it is allowed to: the impassable boundaries — capability
@@ -177,7 +167,7 @@ privilege/path authorization — live in Core. The AI-semantics hard
 constraints (agent, task, delegation, budget, capability) are owner-pending
 (`bitty-ai-docs`).
 
-Terminal-side conclusions carried from the note:
+Terminal-side conclusions:
 
 - Four-layer policy stack (Host Security Ceiling / User Policy / Project
   Policy / Lua Harness Policy) with intersection semantics: the effective
@@ -223,16 +213,15 @@ Terminal-side conclusions carried from the note:
   only warns, redacts, avoids persisting, and avoids logging.
 - Contract owners stay open:
   [OQ-057, OQ-061, OQ-083, and OQ-058](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md);
-  this record opens no new question. Whether the four-layer stack becomes a
+  this document opens no new question. Whether the four-layer stack becomes a
   configuration schema or stays a runtime evaluation is undecided, as is the
   v0.1 boundary for the hard-safety set.
 
-Provenance pointer: sibling governance corpus holds a draft capture of the
-Bitty-side mechanisms under review (not merged) with implementation tasks
-queued in the `bitty` repository; both stay with the Bitty owner and are not
-absorbed here.
+Owner split: the Bitty-side mechanisms stay with the Bitty platform owner; the
+AI-semantics hard constraints (agent, task, delegation, budget, capability)
+are owner-pending (`bitty-ai-docs`).
 
-## T-3 Wheel coding-domain scope, terminal projection only (from 046, Candidate)
+## T-3 Wheel coding-domain scope, terminal projection only (Candidate)
 
 **Candidate.** Wheel is the official agent-harness surface scoped to software
 engineering: the task domain stays fixed on coding while roles vary inside it
@@ -260,11 +249,10 @@ Terminal-side relevance only:
   generalize-only-from-two-real-implementations rule are Wheel-owner
   direction, recorded here as pointers.
 
-This record creates no agent or question identifier and reconciles nothing
-against the `bitty-ai-docs` agent-architecture directions; that reconciliation
-belongs to the AI owner.
+This document creates no agent or question identifier; reconciliation against
+the `bitty-ai-docs` agent-architecture directions belongs to the AI owner.
 
-## T-4 Outward-request caller identity principle (from 047, Candidate)
+## T-4 Outward-request caller identity principle (Candidate)
 
 **Candidate.** Gateway-side usage attribution is caller-declared (request
 headers aggregated per model and application), not gateway scanning — so any
@@ -279,7 +267,7 @@ Terminal-side relevance only:
   contract defines must be carried at the request layer, and unattributed
   calls must stay possible for local/private use. No terminal-side mechanism
   is decided here.
-- Everything else in the note is owner-pending and recorded as pointers: the
+- Everything else is owner-pending and recorded as pointers: the
   request-field shape, adapter wiring, cache-key and routing exclusion, the
   Wheel-versus-model-infrastructure plugin split, authentication strategies,
   model catalog and discovery, model normalization and profiles, usage
@@ -287,9 +275,9 @@ Terminal-side relevance only:
   `bitty-plugins-docs` owners). No terminal panel identity string is chosen
   here.
 
-This record creates no agent or question identifier.
+This document creates no agent or question identifier.
 
-## T-5 UI mechanism-versus-composition boundary (from 053, Candidate)
+## T-5 UI mechanism-versus-composition boundary (Candidate)
 
 **Candidate.** Four layers: Rust enforcement and mechanisms, then a narrow
 public Lua SDK, then replaceable optional framework plugins, then
@@ -299,7 +287,7 @@ shaping, input/IME, scheduling, and resource lifecycles. Lua composes
 widgets, layouts, themes, dashboards, workflows, and user-facing policy
 within enforced authority boundaries.
 
-Terminal-side conclusions carried from the note, composed with the accepted
+Terminal-side conclusions, composed with the accepted
 [Core and Plugin Boundaries](../architecture/core-boundaries.md):
 
 - Ordinary `require()` is appropriate for private modules inside one plugin.
@@ -321,8 +309,8 @@ Terminal-side conclusions carried from the note, composed with the accepted
   calls, but local shortcuts must not bypass enforcement or pretend remote
   calls are ordinary synchronous calls that can block the UI/event loop.
   Async-first calls with explicit cancellation and lifecycle behavior are the
-  direction; the note's await/promise/coroutine/callback/stream-iteration
-  spellings are alternatives in discussion, never accepted SDK methods.
+  direction; the await/promise/coroutine/callback/stream-iteration spellings
+  are alternatives in discussion, never accepted SDK methods.
 - Keep the SDK small: only justified, stable public abstractions; no heavy
   second Lua Core; no binding of ordinary plugins to raw internal APIs.
   Frameworks evolve separately while public contracts insulate consumers from
@@ -331,10 +319,10 @@ Terminal-side conclusions carried from the note, composed with the accepted
 - UI components and higher-level composition live in independently versioned,
   optional, competing framework plugins rather than a mandatory official UI
   framework. The reactive, immediate-mode, terminal, canvas, and
-  dashboard-oriented approaches in the note are illustrative alternatives,
-  never approved packages, APIs, or a roadmap.
+  dashboard-oriented approaches are illustrative alternatives, never approved
+  packages, APIs, or a roadmap.
 - Authority and lifecycle take precedence: accepted security requirements and
-  lifecycle schemas override the note's speculative service methods,
+  lifecycle schemas override speculative service methods,
   coroutine/stream interfaces, custom event vocabulary, and facility lists.
   Process execution, agent spawning, IPC, networking, and credentials are
   illustrative mechanism needs, never ambient access or authorization, and
@@ -342,17 +330,17 @@ Terminal-side conclusions carried from the note, composed with the accepted
 
 Model/provider abstraction, normalized provider streaming, tool schemas and
 registries, context/memory, workflows, and multi-agent orchestration
-illustrations in the note belong to the Wheel and AI owners and establish no
-terminal contract here.
+illustrations belong to the Wheel and AI owners and establish no terminal
+contract here.
 
-## T-6 Packaging and distribution note (from 054, Candidate)
+## T-6 Packaging and distribution direction (Candidate)
 
 **Candidate.** Bitty owns its plugin package manager (lifecycle, permissions,
 services, compatibility) while the Lua dependency tool serves only the Lua
 dependency layer at development and packaging time, producing self-contained
 installable plugin artifacts.
 
-Terminal-side conclusions carried from the note, composed with the accepted
+Terminal-side conclusions, composed with the accepted
 [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/package-lifecycle-rfc.md)
 (OQ-021):
 
@@ -378,60 +366,10 @@ Terminal-side conclusions carried from the note, composed with the accepted
   as storage through host Rust services.
 - Never let project composition files auto-install or execute plugins on
   entering a repository: declarations prompt for explicit user trust first.
-  This matches the trust-on-first-use direction also discussed in note 050
-  (unverified, owner-pending; see the annex below).
+  This matches the trust-on-first-use direction (owner-pending).
 - Manager/lockfile/manifest shapes, artifact format, trust-prompt UX, and
   registry scope are owner-pending (`bitty-plugins-docs` owner); the registry
   and index role belongs to the plugin-ecosystem owners.
-
-## Annex: notes 048–052 are Unverified read-only input
-
-The summaries for notes 048–052 each assert a `Captured` status without
-identifying verified canonical destinations. Per task scope they are treated
-as **Unverified**: this record relies on nothing in them, absorbs none of
-their conclusions, and lists them here only so readers know exactly what was
-read and set aside:
-
-- 048 (Coding Agent Quality Factors and Wheel Harness Philosophy): the
-  quality-formula, context-efficiency, capability-registry, skill-resolver,
-  verification-runtime, and evaluation directions route to the Wheel, context,
-  tool, skill, and verification owners once capture evidence exists.
-- 049 (Wheel Context Compiler Design): the Cold/Warm/Hot layering, context
-  IR, stability zones, cache planning, and provider-lowering directions route
-  to the Wheel context-compiler and AI/provider owners once capture evidence
-  exists.
-- 050 (Portable Capabilities in `.agents`, Harness Behavior in `.wheel`):
-  the portable-capability versus harness-control-plane split routes to the
-  Wheel configuration owners once capture evidence exists.
-- 051 (Git-Inspired Context, Compaction, and Multi-Agent Design): the
-  content-addressed context DAG, checkpoint/branch/merge/reflog/GC directions
-  route to the Wheel context-storage owners once capture evidence exists.
-- 052 (Wheel Plugin Decomposition: Kernel, Plugins, Distribution): the
-  minimal-harness-kernel versus Lua-plugin composition split routes to the
-  Wheel architecture and plugin-ecosystem owners once capture evidence
-  exists.
-
-Cited external statistics, numeric budgets, score weights, API spellings, CLI
-vocabulary, and storage-format choices inside those notes are discussion
-inputs, never accepted Bitty requirements.
-
-## Related work and provenance pointers
-
-- Adjacent governance issues under review (cited, not absorbed):
-  [bitty-docs #332](https://github.com/bitty-terminal/bitty-docs/issues/332)
-  (implementation-status claims versus evidence matrix),
-  [#333](https://github.com/bitty-terminal/bitty-docs/issues/333) (panel API
-  attribution),
-  [#334](https://github.com/bitty-terminal/bitty-docs/issues/334) (plugin
-  corpus mount routing), and
-  [#335](https://github.com/bitty-terminal/bitty-docs/issues/335) (research
-  ledger identities and capture statuses). Provenance and status claims in
-  this record must stay consistent with the ledger fix tracked in #335.
-- Sibling research-summary task
-  ([CTX-0030](https://github.com/bitty-terminal/bitty-terminal-docs/issues/61)
-  context): missing summaries and completion marking live there, not here.
-- Layout ownership: parallel task CTX-0028 owns top-level layout; this record
-  adds content only and moves nothing.
 
 ## Open items
 
@@ -440,7 +378,3 @@ inputs, never accepted Bitty requirements.
   behavior.
 - Terminal-side job-visibility and needs-input contracts (T-1) need an owning
   design task before any panel surface is specified.
-- Verification of the 048–052 capture destinations by the owning commander
-  before any of that material enters this corpus.
-- Consistency with the #335 ledger fix once it lands: re-check the
-  provenance pointers in this record against the corrected ledger.

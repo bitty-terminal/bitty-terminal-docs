@@ -12,10 +12,10 @@ sidebar_order: 23
 # Graphics and Appearance Model
 
 > Status: **draft** (frontmatter `draft`), docs-only, candidate direction not
-> implementation. This document distills the user rendering/appearance
+> implementation. This document records the user rendering/appearance
 > direction recorded as
-> [DIR-021](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)
-> (CTX-0207, closed companion research note 035). Every layer order,
+> [DIR-021](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md).
+> Every layer order,
 > type name, and crate sketch below is a **model to plan against**, not an
 > implementation claim. It changes nothing accepted: not the
 > [Rich Presentation RFC](https://github.com/bitty-terminal/bitty-terminal-docs/blob/main/specifications/rich-presentation-rfc.md)

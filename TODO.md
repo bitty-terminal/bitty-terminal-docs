@@ -22,6 +22,14 @@ than accumulating here.
       `bitty/.gitmodules` carries `[submodule "docs"] path = docs`; the
       implementation pin trails `main` by design. Remaining cross-repository
       link and CI notes continue as ordinary documentation sync.
+- [x] Make the terminal corpus research-free (CTX-0039): add the normative
+      `docs/development/documentation-workflow.md` self-containment rule,
+      convert the record-named distillation pages into the topical
+      [Terminal Platform Boundaries (Candidate)](specifications/terminal-platform-boundaries-candidate.md)
+      and
+      [Event-Sourced Panel Model (Candidate)](specifications/event-sourced-panel-model-candidate.md)
+      documents, and strip research citations from the remaining canonical
+      pages.
 
 ## Blocked / open
 

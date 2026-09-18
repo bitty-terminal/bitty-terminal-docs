@@ -12,8 +12,8 @@ sidebar_order: 34
 # Panel Environment State (Candidate)
 
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
-> **Compatible**, and not normative. This document distills the dense essence
-> of workspace research note `036.md` (Panel environment state design) into a
+> **Compatible**, and not normative. This document records the Panel
+> environment-state design direction as a
 > reviewable direction. It records an accepted working direction
 > ([DIR-022](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md))
 > at the design level only: it authorizes no shipped, stable, or
@@ -26,9 +26,9 @@ sidebar_order: 34
 
 | #   | Claim in this document                                                                | Status in this document                                                                                                                                                   |
 | --- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C-1 | Four-layer model and inheritance chain                                                | Candidate direction from note 036; no accepted env-layer contract exists today                                                                                            |
+| C-1 | Four-layer model and inheritance chain                                                | Candidate direction; no accepted env-layer contract exists today                                                                                                          |
 | C-2 | Prompt-time `bitty __shell-sync` acquisition; no input parsing; no `/proc`            | Candidate direction; grouped with the existing shell-integration family (cwd, command boundary, exit code), which stays owned by its accepted sources                     |
-| C-3 | Snapshot-first `PanelEnvSnapshot`, revision per prompt sync, no diff in v1            | Candidate direction; sizes (few KiB to tens of KiB) are note-036 observations, not budgets                                                                                |
+| C-3 | Snapshot-first `PanelEnvSnapshot`, revision per prompt sync, no diff in v1            | Candidate direction; sizes (few KiB to tens of KiB) are observations, not budgets                                                                                         |
 | C-4 | No separate `EnvManager`; Panel-owned `ShellState` (`launch_context` + `shell_state`) | Candidate direction; rationale only — future agent / headless / `.wheel` / venv / execution composition is a goal, not a contract                                         |
 | C-5 | Execution View versus sanitized Agent View; Use ≠ Read; env-snapshot handles          | Candidate direction with normative conformance (see [Security conformance](#security-conformance)); agent-side adoption is an ai-docs rollout follow-up, not decided here |
 | C-6 | `new` / `clean` / `spawn --env` semantics; Lua shapes illustrative-only               | Candidate direction; Lua spellings are sketches, never an API commitment                                                                                                  |

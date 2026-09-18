@@ -65,7 +65,9 @@ stay under `docs/`.
 
 - The
   [documentation workflow](https://github.com/bitty-terminal/bitty-terminal-docs/blob/main/docs/development/documentation-workflow.md)
-  is normative for authoring, metadata, status, and review.
+  is normative for authoring, metadata, status, self-containment, and review.
+  Canonical documents are self-contained: they never reference a research
+  repository, a record number, or a coverage ledger.
 - Every canonical document (root topic trees and `docs/`) carries the flat
   frontmatter schema and declares its own status; design intention must never
   read as implemented behavior.

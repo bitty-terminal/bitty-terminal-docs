@@ -87,9 +87,8 @@ verification process.
 ## Provenance
 
 The direction and constraints above are recorded from the project initiator's
-closed local research note 020 on pixel-art mascot systems, which covers
+pixel-art mascot systems direction, which covers
 88×31 web badges, terminal cell geometry versus image pixels, and
-image-protocol and zoom semantics (findings summarized inline above). The research note is workspace scratch
-material; this document is the canonical record. The direction is registered as
+image-protocol and zoom semantics (findings summarized inline above). This document is the canonical record. The direction is registered as
 DIR-013 in the
 [bitty-docs decision register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md).

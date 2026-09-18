@@ -26,13 +26,11 @@ sidebar_order: 15
 - Phase: vision draft before any Panel contract is accepted.
 - Implementation status: no Panel runtime, Event Bus, or distribution is
   implemented; this document does not claim any capability is available.
-- Provenance: workspace-local, temporary, untracked, untrusted research inputs (non-canonical, non-normative)
-  `tmp/research/chatgpt-2026-08-30-1.md` (the first available snapshot; the
-  unsuffixed path does not exist) and `tmp/research/chatgpt-2026-08-30-2.md`
-  (workspace `bitty-terminal`), plus the prior eight rounds of product
-  discussion summarized in the [Product Vision](vision.md). These snapshots
+- Provenance: workspace-local, temporary, untracked, untrusted design inputs
+  (non-canonical, non-normative), plus the prior eight rounds of product
+  discussion summarized in the [Product Vision](vision.md). These inputs
   are not canonical repository evidence; claims drawn from them are
-  non-normative, and delivery does not depend on their availability. Research
+  non-normative, and delivery does not depend on their availability. This
   provenance preserves the inspiration; this vision re-expresses it as typed,
   reviewable direction and defers normative choices to RFCs or ADRs.
 - Review rule: changing an accepted direction requires an ADR or explicit
@@ -296,8 +294,8 @@ end)
 
 ## Prior art and lineages
 
-Candidate synthesis of the second research snapshot
-`tmp/research/chatgpt-2026-08-30-2.md`. Bitty does not claim to invent
+Candidate synthesis of the second design discussion.
+Bitty does not claim to invent
 `Terminal Emulator + first-class generic Panel + Plugin UI Runtime + IPC +
 Workspace + arbitrary application surface` as a novel combination; several
 prior projects each realize large subsets of it. The table and notes below
@@ -401,8 +399,8 @@ becomes`, so `bitty-dev`, `bitty-cloud`, or `bitty-minimal` would be
 
 ### Comparison table
 
-Candidate overview derived from the second research snapshot. Check marks
-summarize that snapshot's assessment; any normative statement still belongs
+Candidate overview derived from the second design discussion. Check marks
+summarize that discussion's assessment; any normative statement still belongs
 to a future RFC or ADR.
 
 | Project          | Pane non-PTY        | Plugin UI           | IPC and control     | Workspace           | App platform        |
@@ -416,7 +414,7 @@ to a future RFC or ADR.
 | Emacs            | Yes                 | Yes (Elisp)         | Server              | Yes                 | Yes                 |
 | **Bitty vision** | **Yes (candidate)** | **Yes (candidate)** | **Yes (candidate)** | **Yes (candidate)** | **Yes (candidate)** |
 
-The candidate thesis of the second research snapshot is that Bitty's
+The candidate thesis of the second design discussion is that Bitty's
 potential differentiation is not any single row of this table but the
 composition: unifying ideas currently dispersed across Zellij (first-class
 non-PTY pane and WASM plugin surface), kitty (remote control),
@@ -429,7 +427,7 @@ Buffer/Window model` alongside the accepted IPC and plugin specs.
 
 ### Thought lineage
 
-Two directional sketches from the second research snapshot, consolidated
+Two directional sketches from the second design discussion, consolidated
 without adopting them as implementation:
 
 ```text
@@ -679,7 +677,7 @@ Bitty
         terminal, git, files, browser, markdown, AI
 ```
 
-Historical positioning in the research snapshot:
+Historical positioning in the design discussion:
 
 ```text
 terminal emulator -> programmable terminal -> terminal workspace -> extensible application shell
@@ -858,7 +856,7 @@ precedence it defines.
 
 ## Primitive priority
 
-Candidate API stability order from the research snapshot, with the top tier
+Candidate API stability order from the design discussion, with the top tier
 determining the ecosystem ceiling. Higher items should stabilize first and
 change least.
 
@@ -896,7 +894,7 @@ are the closest accepted anchors for this priority.
 | Panel as first-class container generalizing View                                                                               | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
 | Unified Panel trait, Panel Runtime, inter-panel Event Bus                                                                      | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
 | Panel != Pty; `PanelSurface { Terminal, Plugin, HelperProcessBacked, WebView }` as candidate surface model                     | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Prior art: Zellij/kitty/WezTerm/tmux/Emacs/Warp comparison and lineages                                                        | Candidate | This vision + `tmp/research/chatgpt-2026-08-30-2.md`                                                                                                                                                                                                                                                     |
+| Prior art: Zellij/kitty/WezTerm/tmux/Emacs/Warp comparison and lineages                                                        | Candidate | This vision                                                                                                                                                                                                                                                                                              |
 | Three composition paths (WebView, helper-process-backed/native service, CLI adapter)                                           | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
 | Four-layer hierarchy and browser-optional `bitty-webview`                                                                      | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
 | Small by default, limitless by design; pay only for what you use; two-sided experience                                         | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
@@ -909,12 +907,10 @@ are the closest accepted anchors for this priority.
 | Seven presentation modes with Mode as runtime property, preferred mode plus Panel Rules                                        | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
 | Service Registry as plugin-on-plugin mechanism with graceful service disappearance                                             | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
 
-Research provenance `tmp/research/chatgpt-2026-08-30-1.md` (the first available
-snapshot; the unsuffixed path does not exist) and
-`tmp/research/chatgpt-2026-08-30-2.md` refers to workspace-local, temporary,
-untracked, untrusted inputs (non-canonical, non-normative). It is not canonical
-repository evidence, its claims are non-normative, and delivery does not depend
-on its availability; accepted documents override it where they conflict.
+Provenance: workspace-local, temporary, untracked, untrusted design inputs
+(non-canonical, non-normative). They are not canonical repository evidence,
+their claims are non-normative, and delivery does not depend on their
+availability; accepted documents override them where they conflict.
 
 ## Open questions and next steps
 
@@ -973,8 +969,5 @@ a standalone product document per the
 - [UI and Compositor Gap Analysis](../specifications/ui-compositor-gap-analysis.md)
 - [Panel Runtime and Event Bus Pre-Study](../specifications/panel-runtime-pre-study.md)
 - [AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ai-architecture.md)
-- External research `tmp/research/chatgpt-2026-08-30-1.md`
-  and `tmp/research/chatgpt-2026-08-30-2.md`
-  (workspace-local, temporary, untracked, untrusted, non-canonical inputs in
-  workspace `bitty-terminal`; not canonical repository evidence and not required
-  for delivery)
+- Workspace-local, temporary, untracked, untrusted, non-canonical design
+  inputs; not canonical repository evidence and not required for delivery.

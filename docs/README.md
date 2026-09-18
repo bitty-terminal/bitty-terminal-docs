@@ -55,10 +55,10 @@ documents live under `docs/`.
 
 ## Process documents
 
-| Document                                                        | Purpose                                                   |
-| --------------------------------------------------------------- | --------------------------------------------------------- |
-| [Development](development/README.md)                            | Contributor entry point and local gates.                  |
-| [Documentation workflow](development/documentation-workflow.md) | Normative authoring, metadata, status, and review policy. |
+| Document                                                        | Purpose                                                                     |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [Development](development/README.md)                            | Contributor entry point and local gates.                                    |
+| [Documentation workflow](development/documentation-workflow.md) | Normative authoring, metadata, status, self-containment, and review policy. |
 
 ## Maintaining the corpus
 
@@ -67,6 +67,10 @@ documents live under `docs/`.
    `deprecated`, `archived`.
 3. Cross-link one authoritative definition instead of copying divergent
    wording.
-4. Update this index and the root `README.md` when navigation changes.
-5. Run `just check` before every push; documentation synchronization is part of
+4. Keep canonical documents self-contained: no research-repository references,
+   record numbers, or coverage ledgers. Summarize external research into a
+   standalone document instead (see the
+   [documentation workflow](development/documentation-workflow.md#docs-self-containment-normative)).
+5. Update this index and the root `README.md` when navigation changes.
+6. Run `just check` before every push; documentation synchronization is part of
    delivery completion.

@@ -30,7 +30,7 @@
   <!-- Header Bar -->
   <rect x="0" y="0" width="1180" height="65" fill="#1e293b" />
   <text x="30" y="32" class="title">L1 Workspace Compositor &amp; Panel Architecture</text>
-  <text x="30" y="52" class="subtitle">Instance, Window, Workspace, LayoutTree, and View containers with the accepted Panel Runtime binding and the Candidate 055 Event-Sourced panel model.</text>
+  <text x="30" y="52" class="subtitle">Instance, Window, Workspace, LayoutTree, and View containers with the accepted Panel Runtime binding and the Candidate Event-Sourced panel model.</text>
 
   <!-- Interactive Link Banner -->
   <a href="../interactive/03-panel-system.html" target="_blank">

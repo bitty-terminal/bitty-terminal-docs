@@ -1176,7 +1176,7 @@
       level: "L1",
       category: "Core Subsystems",
       summary:
-        "Hierarchy of Instance, Window, Workspace, LayoutTree, and View containers plus the accepted Panel Runtime binding and the Candidate 055 Event-Sourced panel model (headed/headless separation, immutable Event Log, hybrid storage, decoupled folding, retention). Agent Graph halves stay owner-pending pointers.",
+        "Hierarchy of Instance, Window, Workspace, LayoutTree, and View containers plus the accepted Panel Runtime binding and the Candidate Event-Sourced panel model (headed/headless separation, immutable Event Log, hybrid storage, decoupled folding, retention). Agent Graph halves stay owner-pending pointers.",
       source: "docs/projects/bitty/architecture/d2/03-panel-system.d2",
       groups: [
         {
@@ -1389,7 +1389,7 @@
           height: 60,
           fill: "#fefce8",
           stroke: "#ca8a04",
-          desc: "Candidate 055 T-1: human-owned panel; agent read and observe only; touching user work forks an execution snapshot, never keystroke injection.",
+          desc: "Candidate Event-Sourced T-1: human-owned panel; agent read and observe only; touching user work forks an execution snapshot, never keystroke injection.",
         },
         {
           id: "headless_panel",
@@ -1403,7 +1403,7 @@
           height: 60,
           fill: "#eff6ff",
           stroke: "#3b82f6",
-          desc: "Candidate 055 T-1: agents act only here (read, write, execute); shared headless panels gate on lease or capability; detached panels keep history only.",
+          desc: "Candidate Event-Sourced T-1: agents act only here (read, write, execute); shared headless panels gate on lease or capability; detached panels keep history only.",
         },
         {
           id: "fork_snapshot",
@@ -1417,7 +1417,7 @@
           height: 60,
           fill: "#f8fafc",
           stroke: "#64748b",
-          desc: "Candidate 055 T-1: terminal-surface guarantee offering a snapshot fork path (working directory, worktree, environment, recent commands, outputs, context references). Illustrative-only field list.",
+          desc: "Candidate Event-Sourced T-1: terminal-surface guarantee offering a snapshot fork path (working directory, worktree, environment, recent commands, outputs, context references). Illustrative-only field list.",
         },
         {
           id: "panel_event_log",
@@ -1431,7 +1431,7 @@
           height: 65,
           fill: "#ecfdf5",
           stroke: "#059669",
-          desc: "Candidate 055 T-2: panel history as an immutable Event Log (aligns with Panel History PH-4); illustrative vocabulary task.created, agent.attached, tool.started, tool.progress, tool.finished, artifact.created, decision.recorded, context.shared, agent.message, checkpoint.created. Never replaces Core scrollback.",
+          desc: "Candidate Event-Sourced T-2: panel history as an immutable Event Log (aligns with Panel History PH-4); illustrative vocabulary task.created, agent.attached, tool.started, tool.progress, tool.finished, artifact.created, decision.recorded, context.shared, agent.message, checkpoint.created. Never replaces Core scrollback.",
         },
         {
           id: "event_store",
@@ -1445,7 +1445,7 @@
           height: 65,
           fill: "#f8fafc",
           stroke: "#64748b",
-          desc: "Candidate 055 T-3: SQLite index direction versus content-addressed object store for outputs/patches/snapshots; JSON/JSONL interchange only. Open conflict with Panel History PH-3/PH-5 awaits an owning RFC.",
+          desc: "Candidate Event-Sourced T-3: SQLite index direction versus content-addressed object store for outputs/patches/snapshots; JSON/JSONL interchange only. Open conflict with Panel History PH-3/PH-5 awaits an owning RFC.",
         },
         {
           id: "fold_inspect",
@@ -1459,7 +1459,7 @@
           height: 65,
           fill: "#f8fafc",
           stroke: "#64748b",
-          desc: "Candidate 055 T-4: UI collapse and context materialization never coupled; running tasks show status/elapsed/parsed progress, full logs load on demand (tail, errors-only, ranges). T-5 retention: tombstone or segment expiry, never in-place edits.",
+          desc: "Candidate Event-Sourced T-4: UI collapse and context materialization never coupled; running tasks show status/elapsed/parsed progress, full logs load on demand (tail, errors-only, ranges). T-5 retention: tombstone or segment expiry, never in-place edits.",
         },
       ],
       edges: [
