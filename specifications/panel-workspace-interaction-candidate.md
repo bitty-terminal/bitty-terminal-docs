@@ -34,8 +34,8 @@ lifecycle set. It changes none of them.
 
 In scope (all **Candidate** unless cited otherwise):
 
-- PW-1: `Mod`+left-drag Panel repositioning and free validated resizing inside
-  one Workspace.
+- PW-1: `Mod`+left-drag Panel repositioning and `Mod`+edge/corner drag free
+  resizing with Core-validated bounds inside one Workspace.
 - PW-2: `Mod`+V tiled/floating toggle confined to the Bitty surface.
 - PW-3: animated open, close, move, resize, workspace switch, and float-toggle
   transitions.
@@ -98,22 +98,29 @@ handle, native surface, or OS window identifier
 ## PW-1 Panel movement and sizing (Candidate)
 
 **Candidate.** `Mod`+left-drag repositions a Panel within the current Workspace,
-and a Panel resizes freely between very small and very large through validated
-geometry. Every gesture stays inside the Bitty terminal.
+and `Mod`+mouse-drag on a Panel edge or corner resizes that Panel freely (both
+dimensions where applicable) between very small and very large through
+Core-validated geometry. Every gesture stays inside the Bitty terminal.
 
 Terminal-side conclusions, composed with the accepted
 [interactions](workspace-compositor.md#interactions-drag-resize-move-scratchpad):
 
-- The reposition gesture extends the accepted drag interaction (pointer drag on
-  `View` border or decoration re-parents the leaf through the command registry
-  as a validated `LayoutTree` update) with an explicit modifier; it is not a
-  direct pointer write into layout.
-- Free resizing maps to the accepted split-`ratio` mechanics: a resize adjusts
-  the targeted `H` or `V` `ratio`, never reorders leaves, and out-of-range
-  values are rejected rather than clamped. Very small and very large are
-  expressed as validated geometry bounds, not as unbounded coordinates; the
-  accepted `ratio` range `[0.1, 0.9]`, the zero-area rule (a zero-area
-  rectangle never reaches a PTY,
+- The reposition gesture extends the accepted `drag` interaction (pointer drag
+  on `View` border or decoration re-parents the leaf through the command
+  registry as a validated `LayoutTree` update) with an explicit modifier; it is
+  not a direct pointer write into layout.
+- The resize gesture is explicit too: holding the unified `Mod` while dragging a
+  Panel edge or corner resizes that Panel. For a **tiled** Panel the drag
+  adjusts the adjacent split `ratio` within the accepted `[0.1, 0.9]` bound and
+  never reorders leaves; for a **floating** Panel (PW-2) it adjusts the floating
+  rectangle within Core bounds and stays clipped to the Bitty surface. Both
+  dimensions resize where the geometry permits (corner drags adjust both the `H`
+  and `V` ratios of the adjacent splits; edge drags adjust one).
+- Resize is Core-validated: a `LayoutProvider` proposes geometry but Core
+  commits it, out-of-range ratios are rejected rather than clamped, and very
+  small and very large are expressed as validated geometry bounds, not as
+  unbounded coordinates. The accepted `ratio` range `[0.1, 0.9]`, the zero-area
+  rule (a zero-area rectangle never reaches a PTY,
   [WS-INV-21](workspace-panel-invariants.md#geometry-and-damage)), and the
   `[1,1024]` grid clamp remain the floor and ceiling until a reviewed amendment
   says otherwise.
@@ -123,11 +130,38 @@ Terminal-side conclusions, composed with the accepted
 - The gesture cannot create, reference, or expose an OS window; the accepted
   no-window-leak rule is not weakened.
 
+**Candidate reconciliation with the accepted interaction set.** The accepted
+[interaction table](workspace-compositor.md#interactions-drag-resize-move-scratchpad)
+defines `drag` as a modifier-less pointer drag initiating a `View` move and
+`resize` as a modifier-less drag on the split handle between `View`s. This
+candidate **refines, and does not amend, that set**: it records an explicit
+`Mod`-held gesture for both move and resize (edge/corner drag for resize)
+alongside the accepted modifier-less spellings. The modifier spelling,
+remapping surface, and conflict diagnostics remain owner-pending under the
+unified-`Mod` contract
+([OQ-052](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md));
+this document names no default and changes no accepted row.
+
+Interaction notes:
+
+- **PW-3 animations**: a resize transition is candidate chrome (PW-3); it must
+  obey the same presentation-only rules and never interpolate terminal content,
+  cursor, selection, or scrollback.
+- **Bar and Workspace area**: a resize may cross the Bar edge or the Workspace
+  boundary; the geometry it produces must still respect the Bar-occupied area
+  (PW-4) and the accepted decoration insets, and cross-Workspace resize is not
+  defined here (moving a Panel across Workspaces stays PW-7).
+
 **Open.** The modifier spelling, remapping surface, and conflict diagnostics
-belong to the unified `Mod` contract (owner-pending, [OQ-052](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md));
+belong to the unified `Mod` contract (owner-pending,
+[OQ-052](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md));
 this document names no default. Exact minimum and maximum Panel sizes (cells or
-logical px), the resize handle hit area, and whether free resize is direct
-manipulation or a command-driven resize are undecided.
+logical px), the resize handle hit area (edge/corner thickness and priority
+against the move gesture), and whether free resize is direct manipulation or a
+command-driven resize are undecided. Live-resize behavior is also undecided:
+whether geometry previews during the drag with commit on release, whether each
+step commits immediately, and how undo composes with the accepted
+every-interaction-is-undoable rule.
 
 ## PW-2 Floating mode (Candidate)
 
@@ -511,18 +545,18 @@ observation (a tab click is a focus request, never a second focus mechanism).
 
 ## Relation to existing systems
 
-| Direction                    | Status                                                                                                          | Owning document                                                                                                                                                                                                                                                   |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PW-1 movement and sizing     | Candidate refining accepted drag/resize mechanics; `Mod` spelling Open (OQ-052)                                 | [Workspace Compositor](workspace-compositor.md) (Accepted)                                                                                                                                                                                                        |
-| PW-2 floating mode           | Candidate mapping onto the accepted `PresentationMode` and `Float` overlay tier; transition gate Open           | [Workspace Compositor](workspace-compositor.md) shipped slice, [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                                                               |
-| PW-3 animations              | Move/resize/float-toggle leaves Candidate; open/close/focus/workspace already Accepted; ownership Open          | [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md) (Accepted, `bitty-docs` owner)                                                                                        |
-| PW-4 Bar configurability     | Candidate refining the draft Status System placement contract; not a change to it                               | [Status System Specification](status-system.md) (Draft)                                                                                                                                                                                                           |
-| PW-5 stable identity         | Hierarchy Accepted; restart persistence Open (`RFC-OQ-9`); `ViewId` retirement gap tracked in the invariant set | [Workspace Compositor](workspace-compositor.md), [Panel Runtime RFC](panel-runtime-rfc.md), [Workspace Panel Invariants](workspace-panel-invariants.md) (Candidate)                                                                                               |
-| PW-6 never-empty Workspace   | Candidate; aligns with tested Implementation-only WS-INV-13; empty-Workspace focus reconciliation Open          | [Workspace Panel Invariants](workspace-panel-invariants.md) (Candidate), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                                                     |
-| PW-7 cross-Workspace moves   | Accepted `move` atomicity; unified `Mod` naming Open (OQ-052); Bar drop target Candidate                        | [Workspace Compositor](workspace-compositor.md) (Accepted)                                                                                                                                                                                                        |
-| PW-8 drag-to-Bar semantics   | Candidate tiling-WM semantics; conflicts with the accepted drag-target set remain Open                          | this document, composed with [Status System Specification](status-system.md) (Draft)                                                                                                                                                                              |
-| PW-9 Lua surface             | Candidate; capability dimensions and API version Owner-pending (OQ-056)                                         | [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) (Accepted posture), [OQ-056](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)                 |
-| PW-10 tab bar and panel tabs | Candidate Core/UI direction; supersedes nothing and must not revive the deprecated `bitty-terminal.tabs` alias  | [Workspace Compositor](workspace-compositor.md) (Accepted), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted), [Default Distribution RFC](default-distribution-rfc.md) (deprecated alias disposition), [Status System Specification](status-system.md) (Draft) |
+| Direction                    | Status                                                                                                              | Owning document                                                                                                                                                                                                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PW-1 movement and sizing     | Candidate refining accepted drag/resize mechanics with an explicit `Mod`-held gesture; `Mod` spelling Open (OQ-052) | [Workspace Compositor](workspace-compositor.md) (Accepted)                                                                                                                                                                                                        |
+| PW-2 floating mode           | Candidate mapping onto the accepted `PresentationMode` and `Float` overlay tier; transition gate Open               | [Workspace Compositor](workspace-compositor.md) shipped slice, [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                                                               |
+| PW-3 animations              | Move/resize/float-toggle leaves Candidate; open/close/focus/workspace already Accepted; ownership Open              | [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md) (Accepted, `bitty-docs` owner)                                                                                        |
+| PW-4 Bar configurability     | Candidate refining the draft Status System placement contract; not a change to it                                   | [Status System Specification](status-system.md) (Draft)                                                                                                                                                                                                           |
+| PW-5 stable identity         | Hierarchy Accepted; restart persistence Open (`RFC-OQ-9`); `ViewId` retirement gap tracked in the invariant set     | [Workspace Compositor](workspace-compositor.md), [Panel Runtime RFC](panel-runtime-rfc.md), [Workspace Panel Invariants](workspace-panel-invariants.md) (Candidate)                                                                                               |
+| PW-6 never-empty Workspace   | Candidate; aligns with tested Implementation-only WS-INV-13; empty-Workspace focus reconciliation Open              | [Workspace Panel Invariants](workspace-panel-invariants.md) (Candidate), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                                                     |
+| PW-7 cross-Workspace moves   | Accepted `move` atomicity; unified `Mod` naming Open (OQ-052); Bar drop target Candidate                            | [Workspace Compositor](workspace-compositor.md) (Accepted)                                                                                                                                                                                                        |
+| PW-8 drag-to-Bar semantics   | Candidate tiling-WM semantics; conflicts with the accepted drag-target set remain Open                              | this document, composed with [Status System Specification](status-system.md) (Draft)                                                                                                                                                                              |
+| PW-9 Lua surface             | Candidate; capability dimensions and API version Owner-pending (OQ-056)                                             | [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) (Accepted posture), [OQ-056](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)                 |
+| PW-10 tab bar and panel tabs | Candidate Core/UI direction; supersedes nothing and must not revive the deprecated `bitty-terminal.tabs` alias      | [Workspace Compositor](workspace-compositor.md) (Accepted), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted), [Default Distribution RFC](default-distribution-rfc.md) (deprecated alias disposition), [Status System Specification](status-system.md) (Draft) |
 
 ## Open items (not global open questions)
 
@@ -535,8 +569,10 @@ amendment, an RFC-0002 revision, or a persistence RFC settles them:
 - owner review of each Candidate slice (PW-1 through PW-10), reconciled against
   the accepted compositor, panel-runtime, status, and identity contracts rather
   than copied as normative APIs;
-- free-resize bounds and the resize handle model (PW-1), and the floating
-  transition, restore, and focus rules (PW-2);
+- free-resize bounds, the resize handle model, live-resize preview/commit/undo,
+  and the `Mod`-held gesture reconciliation with the accepted modifier-less
+  `drag`/`resize` rows (PW-1), and the floating transition, restore, and focus
+  rules (PW-2);
 - the move, resize, and float-toggle animation leaves and their duration/easing
   ownership (PW-3);
 - the Bar configurability owner and the Workspace-area recomputation for each
