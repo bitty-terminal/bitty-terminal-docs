@@ -526,6 +526,14 @@ observation (a tab click is a focus request, never a second focus mechanism).
 
 ## Owner-pending pointers
 
+- Workspace-native UI runtime — the retained declarative `UiTree`, the
+  four-layer `Workspace`/`View`/`Panel`/`Activity` model, the Window Chrome
+  Runtime with typed Panel Rules, the gesture transaction, Core-owned motion
+  and UI budgets, panel state axes, and the Beacon core engine are recorded in
+  the sibling candidate
+  [Workspace-Native UI Runtime (Candidate)](ui-runtime-candidate.md), which
+  extends this document's PW-1, PW-3, PW-4, PW-5, PW-7, and PW-8 directions by
+  reference and duplicates none of them.
 - Unified `Mod` — the modifier spelling, remapping surface, and conflict
   diagnostics for every `Mod` gesture above:
   [OQ-052](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)
@@ -591,6 +599,10 @@ amendment, an RFC-0002 revision, or a persistence RFC settles them:
 
 ## References
 
+- [Workspace-Native UI Runtime (Candidate)](ui-runtime-candidate.md) — sibling
+  candidate extending PW-1, PW-3, PW-4, PW-5, PW-7, and PW-8 by reference with
+  the retained `UiTree`, chrome runtime, gesture transaction, motion, budget,
+  state-axis, and Beacon-core directions.
 - [Workspace Compositor Specification](workspace-compositor.md) — accepted
   tiling, identity, decoration, and interaction contract.
 - [Panel Runtime RFC](panel-runtime-rfc.md) — accepted panel lifecycle,
