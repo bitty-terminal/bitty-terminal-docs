@@ -30,6 +30,14 @@ than accumulating here.
       [Event-Sourced Panel Model (Candidate)](specifications/event-sourced-panel-model-candidate.md)
       documents, and strip research citations from the remaining canonical
       pages.
+- [x] Record the Phodopus successor-runtime direction and the `bitty-lua`
+      Host ABI deferral (CTX-0044): add the
+      [Phodopus Host ABI (Candidate)](specifications/phodopus-host-abi-candidate.md)
+      page for the runtime boundary, async pending-handle trampoline, and
+      `utf8` versus typography split; add a candidate refinement pointer in
+      [Core and Plugin Boundaries](architecture/core-boundaries.md); keep the
+      accepted mlua/Lua 5.4 contract unchanged and `bitty-lua` implementation
+      deferred.
 
 ## Blocked / open
 

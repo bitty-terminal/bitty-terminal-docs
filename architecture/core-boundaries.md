@@ -21,6 +21,11 @@ ownership tables and P0 gates below are `Accepted` via the Plugin Platform RFC
 (OQ-008/015/016), CLI Contract RFC (OQ-017), IPC and Agent RFC (OQ-018), and
 Lua ADRs (OQ-030/031/032); tail crates (`bitty-rich`, `bitty-ipc`,
 `bitty-agent`, `bitty-lua`) are `Implemented` but not yet `Verified`.
+The `bitty-lua` tail crate keeps a generic-runtime boundary today; the
+**candidate** successor-runtime direction (Phodopus, recorded in
+[Phodopus Host ABI (Candidate)](../specifications/phodopus-host-abi-candidate.md))
+and the deferral of `bitty-lua` implementation work are owner-pending and change
+nothing here.
 “Core” and “Plugin” in the tables indicate accepted ownership with lifecycle
 `Specified -> Accepted -> Implemented -> Verified -> Compatible -> Release-ready`
 per the [risk evidence RFC](../specifications/risk-evidence-rfc.md); risk
