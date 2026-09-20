@@ -84,8 +84,9 @@ Out of scope and owned elsewhere (pointers, not content):
   rate limits. The RI-2 control layer shares concepts with that surface; it
   redefines nothing, publishes no method, and grants no authority, and
   possession of a remote handle grants no authority beyond its explicit grant.
-- [Future Boundaries](../architecture/future-boundaries.md) (candidate): the
-  recorded Core network boundary — Core never initiates network connections and
+- [Future Boundaries](../architecture/future-boundaries.md) (Draft; recorded
+  network-boundary sections are candidate direction): the recorded Core network
+  boundary — Core never initiates network connections and
   network exists only behind explicit transport or provider boundaries. The
   remote direction adds a new explicit transport boundary; it does not place
   network dependencies in the terminal core crates or the AI core crates, and
@@ -124,7 +125,7 @@ Terminal-side conclusions:
 
 - The positioning composes with the accepted ADR 0008 taxonomy: this is the
   "Remote UI" category — a frontend that renders a Terminal's snapshot on a
-  machine different from the host, via a network transport — and inherits its
+  machine different from the daemon host, via a network transport — and inherits its
   gate rather than arguing around it.
 - The candidate form factor notes that a tablet configuration (workspace
   sidebar, panel area, custom key bar, hardware keyboard and trackpad) may be
@@ -154,11 +155,14 @@ Terminal-side conclusions:
   primitive because a Bitty panel is far more than a shell (it may host a
   plugin's declarative UI, an agent surface, or rich content), so the panel
   state layer carries semantics the byte stream does not.
-- The control layer shares concepts with the accepted local IPC surface
-  (workspace and panel listing, attach, detach, focus, resize, subscription).
-  It is recorded as a concept-sharing statement only: the accepted IPC RFC
-  owns its wire, no remote method is published by this record, and the control
-  layer adds no authority to any surface.
+- The control layer is candidate direction that composes with the accepted
+  local IPC direction without restating it: the accepted RFC places remote TCP
+  and headless-daemon detach/reattach design out of scope, and its candidate
+  method spellings are explicitly not accepted compatibility promises. The
+  shared material stays conceptual (listing, focus, splitting and resize, and
+  event subscription as a direction); the accepted RFC owns its wire, this
+  record publishes no remote method, and the control layer adds no authority to
+  any surface.
 
 **Open.** The reconciliation of the control layer with the accepted IPC method
 surface; the exact capability a device needs per control verb; the interaction
@@ -406,8 +410,8 @@ experiments; whether any of the four becomes a product surface.
 | ----------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | RI-1 positioning              | Candidate composing with the accepted daemon/remote taxonomy                | [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md) (Accepted), [Architecture Overview](../architecture/overview.md) (Draft)                                                                      |
 | RI-2 protocol layering        | Candidate; shares concepts with the accepted local IPC, publishes no method | [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) (Accepted)                                                                                                                                 |
-| RI-3 semantic synchronization | Candidate; adds a serializable-tree constraint                              | [Workspace-Native UI Runtime](ui-runtime-candidate.md) (Draft), [UI Convergence Roadmap](ui-convergence-roadmap.md) (Draft)                                                                                                                               |
-| RI-4 transport                | Candidate; new explicit transport boundary                                  | [Future Boundaries](../architecture/future-boundaries.md) (candidate network boundary), [Performance Budget RFC](performance-budget-rfc.md) (Accepted hot paths)                                                                                          |
+| RI-3 semantic synchronization | Candidate; adds a serializable-tree constraint                              | [Workspace-Native UI Runtime](ui-runtime-candidate.md) (candidate), [UI Convergence Roadmap](ui-convergence-roadmap.md) (Draft)                                                                                                                           |
+| RI-4 transport                | Candidate; new explicit transport boundary                                  | [Future Boundaries](../architecture/future-boundaries.md) (Draft; candidate network-boundary sections), [Performance Budget RFC](performance-budget-rfc.md) (Accepted hot paths)                                                                          |
 | RI-5 session services         | Candidate; no accepted event-bus or IPC text changed                        | [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) (Accepted)                                                                                                                                 |
 | RI-6 device grants            | Candidate; composes with the accepted capability families                   | [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) (Accepted), [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) (normative) |
 | RI-8 notification             | Candidate; delivery channel only, aggregation ownership stays open          | [Workspace-Native UI Runtime](ui-runtime-candidate.md) (attention Open item), plugin-corpus aggregation direction (owner-pending)                                                                                                                         |
@@ -418,11 +422,13 @@ experiments; whether any of the four becomes a product surface.
 This record changes no accepted security boundary and grants no capability: it
 is a direction statement whose entire trust analysis is deferred to the gate
 the accepted [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)
-already requires — network authentication at least as strong as mTLS or SSH
-trust, explicit scope separation for remote versus local clients, replay
-resistance, a separate consent ledger for remote identities, and a
-network-exposed framing corpus meeting the same "oversized header sheds with no
-allocation of claimed size" bar as the local framing property. Per that ADR, the
+already requires — network authentication (mTLS with pinned CA or SSH-tunnel
+trust, not an ambient bearer token in the environment that R-012 forbids),
+encryption in transit, replay resistance, a separate consent ledger for
+`(remote identity, AgentId)`, explicit scope separation for remote versus local
+clients, and a network-exposed fuzz and property corpus for the framing wire
+meeting the same "oversized header sheds with no allocation of claimed size" bar
+as the local framing property. Per that ADR, the
 security corpus
 ([Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md),
 [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md))
@@ -466,15 +472,15 @@ Conformance with this direction requires, at minimum:
 
 ## Affected contracts
 
-| Contract                                                                                                                  | Effect                                                                                      |
-| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md) (accepted)    | Unchanged; remains the acceptance gate; this record supplies candidate direction only       |
-| [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) (accepted) | Unchanged; no method, scope, or framing change; concept sharing only                        |
-| [Architecture Overview](../architecture/overview.md) (draft)                                                              | The candidate long-term evolution section gains a pointer to this record                    |
-| [Specifications register](README.md)                                                                                      | Gains a Draft-table row                                                                     |
-| [Workspace-Native UI Runtime](ui-runtime-candidate.md) (candidate)                                                        | Gains a candidate serializable/remoteable constraint pointer; stays draft, no text weakened |
-| Open-question register (governance)                                                                                       | No entry opened, closed, or reopened; `OQ-020` remains closed by ADR 0008                   |
-| Sibling corpora (plugin, AI, governance slices)                                                                           | Owner-pending; recorded here as pointers only                                               |
+| Contract                                                                                                                  | Effect                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md) (accepted)    | Unchanged; remains the acceptance gate; this record supplies candidate direction only                   |
+| [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) (accepted) | Unchanged; no method, scope, or framing change; concept sharing only                                    |
+| [Architecture Overview](../architecture/overview.md) (draft)                                                              | The candidate long-term evolution section gains a pointer to this record                                |
+| [Specifications register](README.md)                                                                                      | Gains a Draft-table row                                                                                 |
+| [Workspace-Native UI Runtime](ui-runtime-candidate.md) (candidate)                                                        | Unchanged in this wave; the constraint is recorded here only and routes to the UI Runtime successor RFC |
+| Open-question register (governance)                                                                                       | No entry opened, closed, or reopened; `OQ-020` remains closed by ADR 0008                               |
+| Sibling corpora (plugin, AI, governance slices)                                                                           | Owner-pending; recorded here as pointers only                                                           |
 
 ## Open points
 
