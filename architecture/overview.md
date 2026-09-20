@@ -300,7 +300,7 @@ scope or capability acceptance. The accepted
 ## Candidate long-term evolution
 
 - A headless runtime in which Terminal, PTY, and the plugin host do not depend on a GUI (accommodated early per [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md); headless runtime is prerequisite to any daemon, deferred daemon does not imply remote UI).
-- `bittyd` owning multiple Terminals and allowing GUI, CLI, or remote clients to attach. Deferred to post-v1.0 with trust-boundary gate per [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md), closing [OQ-020](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md); see [Candidate daemon staging](../product/proposed-delivery-sequence.md).
+- `bittyd` owning multiple Terminals and allowing GUI, CLI, or remote clients to attach. Deferred to post-v1.0 with trust-boundary gate per [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md), closing [OQ-020](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md); see [Candidate daemon staging](../product/proposed-delivery-sequence.md) and the candidate [Remote Infrastructure and Remote Client](../specifications/remote-infrastructure-candidate.md) direction.
 - A record and replay format that reproduces parser, resize, image, and rendering
   problems from deterministic input.
 - A software renderer as a fallback path for CI, snapshot tests, GPU failures,
