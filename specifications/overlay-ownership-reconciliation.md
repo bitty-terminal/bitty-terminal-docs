@@ -107,8 +107,9 @@ candidate picker as an input concern (draft,
 - `OverlayKind` is `Modal`, `NonModal`, `Tooltip`, or `Palette`. A second modal
   request while a modal is active fails with `OverlayBusy` and leaves the first
   in place; non-modal entries are bounded by `max_overlays_per_window`.
-- Bounded text: overlay text truncates at a character boundary at 128 chars and
-  tooltips at 256 chars, setting a `truncated` flag rather than failing.
+- Bounded text: the implementation truncates overlay text at a character
+  boundary at 128 chars (`MAX_OVERLAY_TEXT_LEN`) and tooltips at 256 chars
+  (`MAX_OVERLAY_TOOLTIP_LEN`), setting a `truncated` flag rather than failing.
 - `modal_active` is the **single modal authority for panel overlays**: the
   integration feeds it to `bitty_runtime::Runtime::set_overlay_modal_active`,
   whose bit the app's one capture predicate reads. The manager never paints grid

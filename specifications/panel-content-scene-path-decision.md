@@ -52,10 +52,10 @@ accessibility semantics (draft, [Accessibility Baseline (Candidate)](accessibili
   execution), invariant 7 (bounded inputs), and the untrusted-by-default
   posture for plugin-produced content.
 - [Rich Presentation RFC](rich-presentation-rfc.md) (accepted): the `SceneNode`
-  contract, the bounded budgets (`SCENE_MAX_BLOCKS_PER_TERMINAL = 64`,
-  `SCENE_MAX_NODES_PER_BLOCK = 2048`, `SCENE_MAX_DEPTH = 32`,
-  `SCENE_MAX_RICH_BYTES_PER_TERMINAL = 2 MiB`), and the rule that rich
-  presentation never becomes Terminal Truth.
+  contract, the accepted scene limits (SCN-1..SCN-5: 2048 nodes per block,
+  depth 32, 256 KiB text per block, 2 MiB aggregated rich bytes per terminal,
+  64 blocks per terminal), and the rule that rich presentation never becomes
+  Terminal Truth.
 - [Panel Runtime RFC](panel-runtime-rfc.md) (accepted): panel identity, the
   lifecycle, focus routing, the command registry, and the `4+1` envelope.
 - [Workspace Compositor Specification](workspace-compositor.md) (accepted):

@@ -59,8 +59,9 @@ plugin chrome-slot grants (accepted v1 surface,
   the hierarchy, `gaps_out` insetting the tiling area, Core-owned decoration,
   and the no-window-leak rule.
 - [Status System Specification](status-system.md) (draft): the single
-  bottom-anchored Bar, the status module budget (8 components x 64 chars, 128
-  total), and the module cadence and failure posture.
+  bottom-anchored Bar, the closed set of built-in module identifiers, the
+  bounded per-module text, icon, and tooltip lengths, the capped total bar
+  segment count, and the module cadence and failure posture.
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
   (accepted): the closed v1 slot set (`terminal | top | bottom | left | right |
 tabline | statusline | overlay`), the exclusive tabline declaration, and the
