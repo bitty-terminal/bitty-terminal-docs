@@ -1,6 +1,6 @@
 ---
 title: Panel Placement Decision
-description: Accepted-shape reconciliation of the three candidate Panel placement options into one recorded direction with identity migration, focus routing, and persistence consequences
+description: Draft decision record reconciling the three candidate Panel placement options into one recorded direction with identity migration, focus routing, and persistence consequences
 category: specifications
 audience: maintainer
 document_type: specification

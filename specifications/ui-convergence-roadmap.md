@@ -55,6 +55,15 @@ global open-question register
 - [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md):
   invariants 3 and 4.
 
+## Terminology
+
+| Term            | Meaning in this document                                                                                       |
+| --------------- | -------------------------------------------------------------------------------------------------------------- |
+| Successor RFC   | An acceptance owner that absorbs one or more candidate records; one of the five named in this roadmap.         |
+| Candidate input | A draft record routed to a successor; it binds nothing until the successor restates and accepts its rules.     |
+| Blocking item   | An open question or follow-up a successor must close before it consumes the candidate rules that depend on it. |
+| Retirement      | Archiving a candidate record once a successor names and restates the rules it keeps; never deletion.           |
+
 ## The five successor RFCs
 
 | #   | Successor RFC             | Scope                                                                                         | Candidate inputs it consumes                                                                                                                                                                                                                                                              |

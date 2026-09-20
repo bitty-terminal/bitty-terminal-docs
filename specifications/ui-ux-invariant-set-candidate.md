@@ -12,9 +12,10 @@ sidebar_order: 47
 # UI/UX Invariant Set (Candidate)
 
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
-> **Compatible**, and not normative. The accepted
-> [Workspace Panel Invariants](workspace-panel-invariants.md) cover identity,
-> ownership, lifecycle, and session behavior at the compositor level. This
+> **Compatible**, and not normative. The draft
+> [Workspace Panel Invariants](workspace-panel-invariants.md) (per-row statuses,
+> several accepted) cover identity, ownership, lifecycle, and session behavior
+> at the compositor level. This
 > record states the **UX-level** invariants that the panel, chrome, overlay, and
 > interaction records each assume but no single document collects: properties a
 > user can observe and a test can assert. It accepts nothing, weakens no
@@ -38,7 +39,7 @@ the accepted invariant document; and the rule that these are observable UX
 properties, not implementation details.
 
 Out of scope and owned elsewhere: compositor-level identity and lifecycle
-invariants (`WS-INV-*`, accepted,
+invariants (`WS-INV-*`, draft with per-row statuses,
 [Workspace Panel Invariants](workspace-panel-invariants.md)); overlay
 composition (draft,
 [Overlay Ownership Reconciliation](overlay-ownership-reconciliation.md)); chrome
@@ -78,7 +79,7 @@ accessibility (draft, [Accessibility Baseline (Candidate)](accessibility-baselin
 | UX-INV-2  | A chrome surface never receives keyboard or IME input and never becomes a focus target.                                                                                           | Panel Runtime RFC (accepted), chrome candidate                            | Accepted — Covered             |
 | UX-INV-3  | An overlay never resizes a PTY and never re-enters the `LogicalRect -> PTY` path.                                                                                                 | Panel Runtime RFC (accepted)                                              | Accepted — Covered             |
 | UX-INV-4  | A non-focused panel never receives keyboard, IME, or wheel events; observation runs only through the bounded bus or snapshot path.                                                | Panel Runtime RFC (accepted)                                              | Accepted — Covered             |
-| UX-INV-5  | Focus re-homes to the next MRU target in the same workspace _before_ a detach or destroy commits; with no target, focus is `None` and the `no_focus` counter increments.          | Workspace Panel Invariants (accepted)                                     | Accepted — Covered             |
+| UX-INV-5  | Focus re-homes to the next MRU target in the same workspace _before_ a detach or destroy commits; with no target, focus is `None` and the `no_focus` counter increments.          | Panel Runtime RFC (accepted); WS-INV-19 (row accepted, refined)           | Accepted — Covered             |
 | UX-INV-6  | A layout or move interaction is all-or-nothing: on validation failure both source and destination remain unchanged and a diagnostic is emitted.                                   | Workspace Compositor (accepted)                                           | Accepted — Covered             |
 | UX-INV-7  | No UI surface leaks an OS window handle: the `LayoutTree` carries no window identity and no Lua value exposes one.                                                                | Workspace Compositor (accepted)                                           | Accepted — Covered             |
 | UX-INV-8  | A gesture mutates layout only through the command registry as a validated update; no direct pointer write exists.                                                                 | Workspace Compositor (accepted)                                           | Accepted — Covered             |
@@ -90,7 +91,7 @@ accessibility (draft, [Accessibility Baseline (Candidate)](accessibility-baselin
 | UX-INV-14 | No chrome segment is recomputed per keystroke or per PTY read; a revision or an active animation is the only wakeup source for chrome.                                            | Chrome Surface Contract (draft)                                           | Candidate — Uncovered (F-UX-4) |
 | UX-INV-15 | A scene-backed leaf presents through the Scene path or the grid snapshot path, never both, and its accessibility projection is derived and read-only.                             | Panel Content Scene Path Decision (draft), Accessibility Baseline (draft) | Candidate — Uncovered (F-UX-5) |
 | UX-INV-16 | Budget overflow fails closed: admission refusal or reported degradation, never silent substitution or partial application.                                                        | UI Motion and Budget (draft)                                              | Candidate — Uncovered (F-UX-3) |
-| UX-INV-17 | Session restore rehydrates layout, attachment, focus, and scrollback before the first frame; no incremental plugin-side rebuild and no flash.                                     | Workspace Panel Invariants (accepted)                                     | Accepted — Covered             |
+| UX-INV-17 | Session restore rehydrates layout, attachment, focus, and scrollback before the first frame; no incremental plugin-side rebuild and no flash.                                     | TerminalRegistry and View Lifecycle Contract (accepted)                   | Accepted — Covered             |
 | UX-INV-18 | Every `SceneNode` kind presented has a mapped accessibility role; an unmapped kind fails closed at validation.                                                                    | Accessibility Baseline (draft)                                            | Candidate — Uncovered (F-UX-5) |
 
 ## Coverage and follow-ups

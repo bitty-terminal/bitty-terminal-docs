@@ -1,6 +1,6 @@
 ---
 title: Panel Content Scene Path Decision
-description: Candidate resolution of OQ-051 for the non-terminal panel content path the compositor sub-surface boundary Scene ownership and the retirement of the per-leaf grid snapshot
+description: Candidate resolution of OQ-051 covering the non-terminal panel content path, the compositor sub-surface boundary, Scene ownership, and the retirement of the per-leaf grid snapshot
 category: specifications
 audience: maintainer
 document_type: specification
