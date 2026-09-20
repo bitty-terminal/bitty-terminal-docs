@@ -38,8 +38,17 @@ than accumulating here.
       [Core and Plugin Boundaries](architecture/core-boundaries.md); keep the
       accepted mlua/Lua 5.4 contract unchanged and `bitty-lua` implementation
       deferred.
+- [x] Record the vertical-slice review-gate evidence (CTX-0047): add the
+      [Vertical Slice Review Gates (A1-A9)](product/vertical-slice-review-gates.md)
+      register marking each acceptance criterion and review gate `Evidenced` or
+      `Open`; link it from the acceptance plan; keep the plan `Draft` with
+      architecture, security, performance, and docs-curator gates `Open`.
 
 ## Blocked / open
 
 - Website consumption of `website_publish: true` documents remains a later
   phase.
+- Independent architecture, security, performance, and docs-curator review of
+  the single-window vertical slice (`bitty-terminal/bitty#1155`, M1-29) remains
+  open; the slice stays unauthorized as an accepted design constraint until
+  those gates are recorded.
