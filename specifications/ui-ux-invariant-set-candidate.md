@@ -35,7 +35,7 @@ rather than a search task.
 
 In scope: the invariant identifiers, their statements, their source, and their
 current evidence status; the coverage and follow-up discipline inherited from
-the accepted invariant document; and the rule that these are observable UX
+the draft `WS-INV-*` register; and the rule that these are observable UX
 properties, not implementation details.
 
 Out of scope and owned elsewhere: compositor-level identity and lifecycle
@@ -106,7 +106,7 @@ accessibility (draft, [Accessibility Baseline (Candidate)](accessibility-baselin
 
 An invariant may only move from `Uncovered` to `Covered` with a named,
 reviewable check. An invariant with no check may not be frozen as accepted; the
-discipline is inherited from the accepted invariant document.
+discipline is inherited from the draft `WS-INV-*` register.
 
 ## Security review
 
@@ -149,8 +149,8 @@ that grants a plugin-observable surface.
 
 ## Open points
 
-- Whether the UX set eventually merges into the accepted invariant document or
-  stays a separate register.
+- Whether the UX set eventually merges into the `WS-INV-*` register or stays a
+  separate register.
 - The exact check form for source-level assertions (which are not headless
   tests) and whether they count as `Covered`.
 - Whether invariant status is per milestone or per release.
