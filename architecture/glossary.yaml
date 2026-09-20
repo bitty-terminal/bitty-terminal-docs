@@ -3,7 +3,7 @@
 # Visual rules: rect=module/crate, rounded=panel/capability, dashed=boundary/sandbox, solid=call/depends, dashed=event/async
 # Levels: L0 overview, L1 subsystem, L2 flow, L3 relation
 schema_version: 1
-updated: "2026-09-18"
+updated: "2026-09-20"
 synchronized_revision: "eb321f7fcfca24008630bee477650528cc11d876"
 synchronized_short: "eb321f7"
 baseline_revision: "de134ec"
@@ -110,7 +110,7 @@ nodes:
     kind: crate
     shape: rect
     level: L1
-    description: Deterministic Lua VM — piccolo 0.3.3, Fuel budgets, per-plugin VMs
+    description: Deterministic Lua VM — current pin piccolo 0.3.3 with Fuel budgets and per-plugin VMs; accepted successor direction is Phodopus (ADR 0012), migration deferred and not landed
     crate_path: crates/bitty-lua
   - id: bitty-rich
     label: bitty-rich

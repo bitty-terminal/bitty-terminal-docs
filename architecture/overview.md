@@ -214,7 +214,9 @@ should not turn every source module into a crate. The adopted workspace
 decomposition and dependency edges are fixed in
 [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md);
 `bitty-package` lifecycle and integrity model is `Accepted` (OQ-021) with
-signatures still draft, `bitty-lua` `Accepted` (OQ-009/030-032), and the tail
+signatures still draft, `bitty-lua` `Accepted` (OQ-009/030-032; runtime
+successor direction recorded in [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md),
+still on `piccolo` 0.3.3), and the tail
 crates (`bitty-rich` OQ-008/015/016, `bitty-ipc`/`bitty-agent` OQ-018) are
 `Implemented` but not yet `Verified`, implementing the tail of the
 [Proposed Delivery Sequence](../product/proposed-delivery-sequence.md) as
