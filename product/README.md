@@ -35,6 +35,7 @@ carries no duplicate normative prose.
 | [G1 Publish Checklist](g1-publish-checklist.md)                              | Draft    | Draft checklist for G1 leaf-crate dry-run publish verification.                      |
 | [G1 Publish Log](g1-publish-log.md)                                          | Draft    | Draft dry-run log for G1 leaf crates at 0.0.1; no crates.io upload.                  |
 | [Single-Window Vertical Slice Acceptance Plan](vertical-slice-acceptance.md) | Draft    | Acceptance contract for the first single-window terminal vertical slice.             |
+| [Vertical Slice Review Gates (A1-A9)](vertical-slice-review-gates.md)        | Draft    | Revision-locked evidence status for A1-A9 and the five slice review gates.           |
 
 ## Compatibility and operations evidence
 

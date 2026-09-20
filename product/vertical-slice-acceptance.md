@@ -33,7 +33,11 @@ sidebar_order: 23
 > experimental implementation was reviewed only as code evidence, not as
 > spec acceptance; `Accepted` still requires independent architecture,
 > security, and performance review and `just check`, `actionlint`, and
-> `act -n -W .github/workflows/ci.yml` pass on the same revision.
+> `act -n -W .github/workflows/ci.yml` pass on the same revision. The
+> revision-locked evidence status for A1-A9 and the five review gates is
+> recorded in [Vertical Slice Review Gates (A1-A9)](vertical-slice-review-gates.md):
+> the four independent review gates remain `Open`, local gates are `Evidenced`
+> on the docs revision, and no gate here is `Accepted`/`Verified`.
 
 ## Purpose and scope
 
@@ -493,7 +497,11 @@ Damage` for offline inspection. Its scope and schema remain owned by the
 
 ### Review gates (block implementation until passed)
 
-The slice is **not authorized** for product code until all hold:
+The slice is **not authorized** for product code until all hold. The
+revision-locked evidence status for each gate and for A1-A9 is maintained in
+the [Vertical Slice Review Gates (A1-A9)](vertical-slice-review-gates.md)
+record; as of that record the four independent review gates are `Open` and only
+the local-gates gate is `Evidenced` on the docs revision.
 
 1. **Architecture review** — slice scope, single-window ownership, dependency
    diagram, damage/replay contract, and crate edges reviewed by the
@@ -577,6 +585,7 @@ as its accepted design constraint.
 - [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md), [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md), [Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md), [P0 Acceptance Criteria](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md), [Evidence Matrix](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/evidence-matrix.md) — normative P0 gates.
 - [Proposed Delivery Sequence](proposed-delivery-sequence.md) — candidate spine `PTY -> VT -> Grid -> Font -> GPU -> Correct Terminal -> Config` and early-deferral list.
 - [Release Ladder](release-ladder.md) — `v0.1` minimal terminal slice mapping.
+- [Vertical Slice Review Gates (A1-A9)](vertical-slice-review-gates.md) — revision-locked evidence status for the acceptance criteria and the five review gates.
 - [Now / Next / Later](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/roadmap/now-next-later.md) — candidate horizon that will carry the slice sequencing once CTX-0111 reconciles it.
 - [Documentation Workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md) — lifecycle `Draft -> experimental review evidence -> Accepted -> normative`.
 - [Open-Question Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) — 32 OQs `Accepted` as of 2026-08-29.
