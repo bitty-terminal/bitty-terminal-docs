@@ -185,7 +185,10 @@ Terminal-side conclusions, composed with the accepted contracts:
   `ViewId` generation history is not migrated, no `ViewId` naming change is
   performed, and no function accepts one identity where another is expected.
   The placement decision remains [`RFC-OQ-3`](panel-runtime-rfc.md#open-questions);
-  this document decides nothing.
+  this document decides nothing. The candidate direction that reconciles the
+  three options — including the split between identity semantics and the
+  transitional `ViewContent` encoding — is recorded in the
+  [Panel Placement Decision](panel-placement-decision.md).
 - **Reconciliation with the accepted compositor.** The accepted
   `Instance -> Window -> Workspace -> LayoutTree -> View` hierarchy, its
   identity invariants, Core-owned decoration, and interaction atomicity remain
@@ -619,7 +622,7 @@ supersedes that page, and no replacement vision exists yet.
 | Direction                      | Status                                                                                                          | Owning document                                                                                                                                                                                                        |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | U-1 retained `UiTree`          | Candidate generalizing the accepted Declarative UI boundary; tree schema and reconciliation Open                | [Core and Plugin Boundaries](../architecture/core-boundaries.md) (Accepted), owner-pending UI Runtime RFC (U-9)                                                                                                        |
-| U-2 spatial/identity model     | Candidate; `RFC-OQ-3` placement Open; accepted compositor and panel contracts unchanged                         | [Workspace Compositor](workspace-compositor.md) (Accepted), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                       |
+| U-2 spatial/identity model     | Candidate; `RFC-OQ-3` placement Open; accepted compositor and panel contracts unchanged                         | [Workspace Compositor](workspace-compositor.md) (Accepted), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted), [Panel Placement Decision](panel-placement-decision.md) (Draft)                                      |
 | U-3 five-level architecture    | Candidate; Level 0 mechanism ownership Accepted, Levels 1-4 split owner-pending                                 | [Core and Plugin Boundaries](../architecture/core-boundaries.md) (Accepted), [bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs) (owner-pending)                                                |
 | U-4 chrome runtime and rules   | Candidate; Bar surface remains the draft Status System contract; rail drops extend PW-8 direction               | [Status System Specification](status-system.md) (Draft), [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md)                                                                       |
 | U-5 gesture transaction        | Candidate extending PW-1/PW-7/PW-8 and the accepted interaction atomicity; `Mod` spelling Open (OQ-052)         | [Workspace Compositor](workspace-compositor.md) (Accepted), [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md)                                                                    |

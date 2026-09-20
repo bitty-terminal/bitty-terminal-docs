@@ -221,6 +221,11 @@ observed today and the research preference of the
 [Workspace Compositor Specification](workspace-compositor.md) candidate Panel
 model, but that model stays candidate until placement is accepted; the choice
 and any `ViewId` versus `PanelId` migration is [`RFC-OQ-3`](#open-questions).
+The [Panel Placement Decision](panel-placement-decision.md) records the
+candidate direction that reconciles the three options — Panel as the visible
+application identity, `View` as the internal attachment point, and
+`ViewContent::Panel` retained as the transitional encoding — for review under
+`CTX-0046`; it does not accept the contract or change any text above.
 
 ## Command registry
 
@@ -481,7 +486,8 @@ The `Panel(PanelId)` content variant shown above is the current implementation
 shape (see [Implementation status](#implementation-status)); placing it in the
 accepted hierarchy is still [`RFC-OQ-3`](#open-questions). The accepted
 `ViewId` generation, focus, visibility, and scratchpad semantics apply to a
-panel host unchanged.
+panel host unchanged. The candidate resolution of that open question is
+recorded in the [Panel Placement Decision](panel-placement-decision.md).
 
 ## Identity: PanelId distinct
 
@@ -647,7 +653,9 @@ revising them:
   candidate `ViewContent` variant, not a second tiling primitive. The
   compositor's candidate Panel model and the `ViewContent` spelling remain
   candidate until placement is accepted ([`RFC-OQ-3`](#open-questions)); this
-  RFC does not rewrite the compositor.
+  RFC does not rewrite the compositor. See the
+  [Panel Placement Decision](panel-placement-decision.md) for the candidate
+  direction.
 - **Identity**: `ViewId != TerminalId` is authoritative per both accepted
   contracts. This RFC adds `PanelId != ViewId != TerminalId` and reuses the
   same generation and `StaleHandle` rules; no migration of `ViewId` naming is
@@ -793,17 +801,17 @@ are renumbered away from the pre-study as `RFC-OQ-1` through `RFC-OQ-9`
 may claim the affected contract; none is a global open-question register entry
 until it is admitted there.
 
-| ID         | Open question                                                                                                                                                                                          | Pre-study item |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
-| `RFC-OQ-1` | Which panel types belong in the first implemented slice: `terminal` only, or `terminal` plus `rich` and one additional type such as `helper` or `canvas`?                                              | 1              |
-| `RFC-OQ-2` | Exact `PanelProvider` trait spelling and error taxonomy beyond the illustrative sketch.                                                                                                                | 2              |
-| `RFC-OQ-3` | Whether Panel becomes typed `View` content (Option A, the current implementation shape), replaces `View` as leaf, or composes as a side-car, and the `ViewId` versus `PanelId` migration this implies. | 3              |
-| `RFC-OQ-4` | Exact bus topic taxonomy for v1 (panel lifecycle, focus, file, git, AI, helper-process) and whether cross-window topics route through IPC or an in-process bus first.                                  | 4              |
-| `RFC-OQ-5` | Capability mapping for each panel type, especially `panel.overlay` and any new `panel.*` family versus reuse of `ui.*`.                                                                                | 5              |
-| `RFC-OQ-6` | Distribution ownership: which first-party panels, if any, ship enabled and how they relate to the [Default Distribution RFC](default-distribution-rfc.md).                                             | 6              |
-| `RFC-OQ-7` | Whether primitive priority (`Panel`, `Workspace`, `Layout`, `Command`, `Keybinding`, `Event`, `Capability`, `Service`, `Widget`, `Plugin`) becomes a formal versioning policy.                         | 7              |
-| `RFC-OQ-8` | Whether `Browser` panels require an extra per-window process budget beyond the existing `RC-3` aggregate.                                                                                              | 8              |
-| `RFC-OQ-9` | Whether the seven presentation modes, `preferred_mode` plus Panel Rules precedence, the scrolling-layout option, and workspace save/restore enter a Panel RFC together or as separate follow-ups.      | 9              |
+| ID         | Open question                                                                                                                                                                                                                                                                                       | Pre-study item |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `RFC-OQ-1` | Which panel types belong in the first implemented slice: `terminal` only, or `terminal` plus `rich` and one additional type such as `helper` or `canvas`?                                                                                                                                           | 1              |
+| `RFC-OQ-2` | Exact `PanelProvider` trait spelling and error taxonomy beyond the illustrative sketch.                                                                                                                                                                                                             | 2              |
+| `RFC-OQ-3` | Whether Panel becomes typed `View` content (Option A, the current implementation shape), replaces `View` as leaf, or composes as a side-car, and the `ViewId` versus `PanelId` migration this implies. Candidate direction recorded in the [Panel Placement Decision](panel-placement-decision.md). | 3              |
+| `RFC-OQ-4` | Exact bus topic taxonomy for v1 (panel lifecycle, focus, file, git, AI, helper-process) and whether cross-window topics route through IPC or an in-process bus first.                                                                                                                               | 4              |
+| `RFC-OQ-5` | Capability mapping for each panel type, especially `panel.overlay` and any new `panel.*` family versus reuse of `ui.*`.                                                                                                                                                                             | 5              |
+| `RFC-OQ-6` | Distribution ownership: which first-party panels, if any, ship enabled and how they relate to the [Default Distribution RFC](default-distribution-rfc.md).                                                                                                                                          | 6              |
+| `RFC-OQ-7` | Whether primitive priority (`Panel`, `Workspace`, `Layout`, `Command`, `Keybinding`, `Event`, `Capability`, `Service`, `Widget`, `Plugin`) becomes a formal versioning policy.                                                                                                                      | 7              |
+| `RFC-OQ-8` | Whether `Browser` panels require an extra per-window process budget beyond the existing `RC-3` aggregate.                                                                                                                                                                                           | 8              |
+| `RFC-OQ-9` | Whether the seven presentation modes, `preferred_mode` plus Panel Rules precedence, the scrolling-layout option, and workspace save/restore enter a Panel RFC together or as separate follow-ups.                                                                                                   | 9              |
 
 ## References
 
