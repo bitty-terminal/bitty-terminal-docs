@@ -59,7 +59,7 @@ tokens (accepted,
   routing, and the rule that a plugin observes focus only on the cold path.
 - [Performance Budget RFC](performance-budget-rfc.md) (accepted): no periodic
   timers and bounded per-frame work.
-- [Lua and XDG configuration](../configuration/lua-and-xdg.md) (accepted): the
+- [Lua and XDG configuration](../configuration/lua-and-xdg.md) (draft): the
   appearance surface, `appearance.animations.*`, and reduced motion posture.
 
 ## Terminology

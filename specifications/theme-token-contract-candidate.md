@@ -53,7 +53,7 @@ panel rule grammar (owner-pending,
   (accepted): value grammar, per-key resolution order, AC-1..AC-3 contrast,
   `bitty --safe` forced pair, and the rule that no plugin or `LayoutProvider`
   sets Core-owned chrome colors at runtime.
-- [Lua and XDG configuration](../configuration/lua-and-xdg.md) (accepted): the
+- [Lua and XDG configuration](../configuration/lua-and-xdg.md) (draft): the
   appearance key surface a theme supplies.
 - [Configuration Model RFC](configuration-model-rfc.md) (accepted): `ConfigPlan`
   validation, per-field attribution, `Live` versus `restart-required` reload,
@@ -191,7 +191,7 @@ logic or a new value type.
 | Contract                                                                                                                                                           | Effect                                                                               |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | [RFC-0001 appearance configuration](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md) (accepted)    | Unchanged; supplies the grammar, per-key order, contrast rules, and `--safe` posture |
-| [Lua and XDG configuration](../configuration/lua-and-xdg.md) (accepted)                                                                                            | Unchanged; the appearance keys gain a named token set to resolve against             |
+| [Lua and XDG configuration](../configuration/lua-and-xdg.md) (draft)                                                                                               | Unchanged; the appearance keys gain a named token set to resolve against             |
 | [Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md) (draft)                                                                                | Gains the token namespace its surfaces consume                                       |
 | [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/architecture/ui-extensibility-architecture.md) (draft)              | The Lua-side token ownership direction gains a namespace and boundary                |
 | [Lua UI Component Model (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/lua-ui-component-model-candidate.md) (candidate) | L2 library tokens compose with this namespace                                        |
