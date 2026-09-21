@@ -1,6 +1,6 @@
 ---
 title: VT Fuzz Corpus — R-001 (P0-AC-001/002)
-description: Retained VT/UTF-8/OSC/DCS/APC fuzz corpus for CTX-0088, closing R-001 per risk evidence RFC RS-1..RS-7 — boundary matrix, chunking determinism, and in-repo corpus hash for the Verified gate.
+description: Retained VT/UTF-8/OSC/DCS/APC fuzz corpus for CTX-0088, supplying the boundary matrix, chunking determinism, and in-repo corpus hash evidence for the R-001 gate (R-001 stays Open in the governance register).
 category: product
 audience: maintainer
 document_type: research
@@ -16,10 +16,11 @@ sidebar_order: 55
 ## Status and provenance
 
 - Status: **research** — produced by CTX-0088
-  `ctx-0088/feat-vt-r001-verification` for the `Verified` gate on R-001.
-  This document alone does not move R-001; the owning
-  `docs/security/**` evidence-matrix / manual-audit report (Subagent B)
-  carries the `Open → Mitigated` transition.
+  `ctx-0088/feat-vt-r001-verification` as evidence for the R-001 gate; R-001
+  stays `Open` in the governance register. This document alone does not move
+  R-001; the owning `docs/security/**` evidence-matrix / manual-audit report
+  (Subagent B) carries the `Open → Mitigated` transition, and the merged
+  audit authorizes only that transition without recording it.
 - Priority: P0 | Area: vt | Labels: feat,area:vt,P0 | Milestone: v0.1.0
   | RFC: OQ-007 | Task: CTX-0088
 - Scope: `crates/bitty-vt/**`, `fuzz/corpora/**`, `tests/compat/**`
@@ -118,5 +119,8 @@ cargo check --target x86_64-pc-windows-gnu --workspace --all-targets --locked
 ```
 
 All must be green before the security-auditor moves R-001. The model is
-`Specified → Accepted → Implemented → Verified`; this corpus + matrix moves
-the project from `Implemented` (tests existed) to `Verified` on R-001.
+`Specified → Accepted → Implemented → Verified`; this corpus plus the matrix
+supplies the `Implemented`-side evidence for R-001 and does not itself move
+the row. The governance register keeps R-001 `Open`: the merged audit
+authorizes only `Open → Mitigated` without recording it, and the P0-AC-002
+long-running fuzz campaign remains outstanding.
