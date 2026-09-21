@@ -159,8 +159,8 @@ Terminal-side conclusions:
   local IPC direction without restating it: the accepted RFC places remote TCP
   and headless-daemon detach/reattach design out of scope, and its candidate
   method spellings are explicitly not accepted compatibility promises. The
-  shared material stays conceptual (listing, focus, splitting and resize, and
-  event subscription as a direction); the accepted RFC owns its wire, this
+  shared material stays conceptual (listing, focus, splitting, and event
+  subscription as a direction); the accepted RFC owns its wire, this
   record publishes no remote method, and the control layer adds no authority to
   any surface.
 
@@ -423,7 +423,7 @@ This record changes no accepted security boundary and grants no capability: it
 is a direction statement whose entire trust analysis is deferred to the gate
 the accepted [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)
 already requires — network authentication (mTLS with pinned CA or SSH-tunnel
-trust, not an ambient bearer token in the environment that R-012 forbids),
+trust, not ambient bearer token in the `BITTY_*` environment that R-012 forbids),
 encryption in transit, replay resistance, a separate consent ledger for
 `(remote identity, AgentId)`, explicit scope separation for remote versus local
 clients, and a network-exposed fuzz and property corpus for the framing wire
