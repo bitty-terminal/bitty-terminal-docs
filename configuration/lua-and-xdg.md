@@ -263,7 +263,10 @@ developer tools can explain every effective value and conflict.
 Status: **shipped defaults** for profile selection, naming, and layering
 (read-only from `bitty` `origin/main`,
 `crates/bitty-config/src/file.rs`, CTX-0169, issue #271);
-**candidate** for multi-parent `extends`.
+**candidate** for multi-parent `extends`. Single-parent `extends` chains are
+shipped (read-only from `bitty` `origin/main`, `crates/bitty-config/src/file.rs`,
+`load_profile_chain`, issue #1366): base-first resolution with cycle detection,
+missing/illegal parents fail closed, 16-hop cap.
 
 Shipped mechanics:
 
@@ -279,8 +282,9 @@ Shipped mechanics:
 - A requested-but-missing or invalid profile fails closed (exit 2); a bare
   launch with no profile request keeps working.
 
-Candidate (unchanged): profile composition via single-parent `extends` chains
-with cycle detection; multiple inheritance remains open.
+Shipped: profile composition via single-parent `extends` chains
+with cycle detection (base-first, 16-hop cap, fail-closed);
+multiple inheritance remains open.
 
 Profiles compose focused changes rather than duplicate an entire config. A
 coding profile, for example, may extend a default profile, add development
