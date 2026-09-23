@@ -48,8 +48,8 @@ does not redefine them.
 | [Rich Presentation RFC](rich-presentation-rfc.md)                                                                            | Accepted boundary: cursor and selection keep per-cluster granularity; presentation never changes terminal truth |
 | [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) (`OQ-099`) | Selection and hit-testing across a shaped cluster or ligature span stays open                                   |
 
-Implementation evidence, read-only from `bitty` `origin/main` `fce0c3b`
-(2026-09-20):
+Implementation evidence, read-only from `bitty` `972818d`
+(2026-09-22, re-verified for CTX-0677):
 
 - No `ligature` matches anywhere under `crates/`. No shaping run, feature-tag
   query extension, or font-feature config key exists.
