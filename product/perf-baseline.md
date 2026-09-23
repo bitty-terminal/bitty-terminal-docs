@@ -25,7 +25,10 @@ sidebar_order: 49
   and `tools/perf/{startup,rss,latency,idle}` plus this doc and `crates/bitty-perf`
   owner crate, all headless, bounded, `forbid(unsafe)`, no window/GPU leak.
 - Authority: `performance-budget-rfc` is **accepted** (2026-08-26, closes OQ-001);
-  budgets PB-1..PB-7 are accepted targets (none measured against a real build yet).
+  budgets PB-1..PB-7 are accepted targets (at scaffold time none was measured
+  against a real build; since then `bitty` CTX-0699/#1297 measured the PB-7
+  10-minute window — see [`perf-evidence.md`](./perf-evidence.md) — while the
+  other budgets remain unmeasured).
   Enforcement mechanisms require this implementing task; until reference hardware,
   corpora, and measurement harnesses are defined, budgets are arch constraints,
   not hard CI gates (see RFC Cross-cutting rules). This scaffold does not close
@@ -95,7 +98,7 @@ Headless `GridRenderer` with `FakeRasterizer` (same fake `src/cache.rs`/`src/gpu
 - `startup` — PB-1 `hyperfine` 50-run p50/p99 when `hyperfine` present, else `date +%s%N` fallback (5 samples), `cargo run --release -p bitty-app -- --help` headless proxy, `timeout` bounded.
 - `rss` — PB-2/PB-3 via `ps -o rss=` / `/proc/<pid>/status VmRSS` (KiB → MB), transient `cargo run --release -p bitty-app -- --help` child, plus self-shell baseline and 5× reclaim proxy.
 - `latency` — PB-4 via `cargo bench --no-run` compile plus bench bins (or `cargo bench --bench terminal_state/render_prepare` fallback) plus `python3` deterministic loop proxy; true keystroke→photon needs Wayland + frame-presented timestamp.
-- `idle` — PB-7 via `GridRenderer` clean-frame assert + `ps -o %cpu` 10 s sample (sleep child ≈ 0 %); real 10 min ≤ 1 % measured on Tier 1 ref machine.
+- `idle` — PB-7 via `GridRenderer` clean-frame assert + `ps -o %cpu` 10 s sample (sleep child ≈ 0 %); the real 10-minute window was measured in `bitty` CTX-0699 (#1297, closes #1062) — see [`perf-evidence.md`](./perf-evidence.md) — Tier 1 reference-hardware pinning is still open.
 
 Each tool prints the PB budget line, the headless proxy note, and the `timeout` bound. They are executable `chmod +x`, `shellcheck -S warning` clean, and never open a window.
 

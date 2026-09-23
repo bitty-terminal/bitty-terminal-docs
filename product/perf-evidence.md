@@ -166,6 +166,33 @@ Interpretation:
 
 - All 9 frame-on-demand checks pass, proving zero periodic wakeups: after every `tick` that presents, the next `tick` without new generation returns `None`, keeping `ControlFlow::Wait` (no polling loop). `FrameMode::Clean` with `dirty=0` and `needs_draw=false` when no damage proves no unnecessary redraw. `idle_tick_mean` 1.85 µs and `clean_render_mean` 0.02 µs are far under PB-4 headroom, so the idle path burns no budget. The `sampled_cpu=4.3%` is a headless proxy (`ps -o %cpu` sampled immediately after a busy bench loop); the real **≤1% over 10 min** is gated on a Tier 1 ref machine with a compositor (compositor-driven wakeup band 0.007–0.011%). The invariant (`tick == None` → Wait) is what enables that budget, and it is proven here headlessly.
 
+### PB-7 10-minute acceptance soak (`bitty` CTX-0699, closes #1062)
+
+On 2026-09-23 `bitty` CTX-0699 (PR #1297, in `origin/main` at
+`c01f538`) ran the full PB-7 acceptance window — one 600 s parked-`Runtime`
+sample plus a 600 s real-window supplementary leg — and closed #1062.
+`MAX_IDLE_WINDOW_SECS` went 300 → 600 so one sample covers the whole window.
+The committed artifact is `bitty`
+`crates/bitty-perf/baselines/pb-idle.json`, documented in `bitty`
+`crates/bitty-perf/baselines/idle-evidence.md` (read-only inspection at
+`c01f538`; the soak ran with `BITTY_PERF_TASK=CTX-0699`,
+`BITTY_PERF_REVISION=436283e`):
+
+| Metric, 600 s window              | Measured                  | Budget                | Verdict |
+| --------------------------------- | ------------------------- | --------------------- | ------- |
+| Parked-`Runtime` avg CPU          | 0.0017 % (1 tick @100 Hz) | ≤ 1 % avg over 10 min | `PASS`  |
+| Parked-`Runtime` wakeups          | 14 (8v + 6i, edge effect) | zero periodic wakeups | `PASS`  |
+| Real-window avg CPU (0.0.20 park) | 0.3867 % (232 ticks)      | ≤ 1 % avg over 10 min | `PASS`  |
+| Real-window wakeups               | 416 (informational)       | —                     | —       |
+
+This supersedes the `ABOVE_BUDGET` headless-proxy verdict above for the
+10-minute window only. Stated honestly, as the `bitty` record does: the
+parked leg measures a default `Runtime` on a condvar, not a windowed session
+with compositor, GPU, PTY, or plugins; the numbers are a regression anchor on
+one machine, not a cross-platform claim; budgets stay arch constraints until
+Tier 1 reference hardware is pinned (PERF-01/OQ-100). This doc still changes
+no budget and claims no `Verified` gate.
+
 ## Verification
 
 ```text
@@ -189,7 +216,7 @@ All gates are headless; `BITTY_PERF_REAL_WINDOW=1` on a Tier 1 box adds the real
 
 - Pin reference hardware + OS (`../specifications/performance-budget-rfc.md` Open items) and define the fixed synthetic corpus revision in the evidence area before tightening PB-1..PB-7 to hard gates. Until then budgets remain arch constraints, not CI gates (cross-cutting rule).
 - Land 50-run `hyperfine` p50/p99 + variance on the Tier 1 ref machine and record them here (secondary comparison in `tools/perf/startup` retains `--help` history).
-- Replace the headless `ps %cpu` proxy with a 10 min compositor-traced idle sample on Wayland (`cage`/`sway` frame-presented timestamp) to gate PB-7.
+- The 10-minute PB-7 legs (600 s parked-`Runtime` + 600 s real-window) landed in `bitty` CTX-0699 (#1297, closes #1062); the remaining PB-7 step is pinning Tier 1 reference hardware (PERF-01/OQ-100) before tightening to a hard gate, not another idle sample.
 - Coordinate OQ-014 isolation so plugin VM creation cost is charged against plugin budgets, not PB-2/PB-3.
 
 ## Relationship to other docs
