@@ -587,26 +587,34 @@ blur remain `Open`). The accepted animation contract is the
 [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md)
 (accepted; OQ-040 closed 2026-09-12 and shipped in `3c5878e` CTX-0341).
 
-| Key                         | Default                        | Range or values                    |
-| --------------------------- | ------------------------------ | ---------------------------------- |
-| `appearance.theme`          | `bitty-dark` (alias `dark`)    | preset name; unknown falls back    |
-| `theme` (alias)             | unset                          | `appearance.theme` wins            |
-| `font.family`               | `JetBrainsMono Nerd Font`      | non-empty, `<= 128` bytes          |
-| `font.size`                 | `12.0`                         | `(0, 128]`                         |
-| `font.line_height`          | `1.375`                        | `[1.0, 2.0]`                       |
-| `font.letter_spacing`       | `2.0`                          | `[0.0, 8.0]`                       |
-| `window.opacity`            | `1.0`                          | `[0.0, 1.0]` whole window          |
-| `window.padding`            | `8`                            | `0..=64` logical px                |
-| `window.radius_px`          | `0`                            | `0..=24` physical px (no-op S0)    |
-| `layout.gaps_in`/`gaps_out` | `0`/`0`                        | `0..=16` cells                     |
-| `decoration.*`              | see decoration reference above | logical px                         |
-| `scrollbar.mode`/`width`    | `hidden`/`8`                   | `hidden`/`always`/`auto`, `1..=32` |
+| Key                         | Default                        | Range or values                         |
+| --------------------------- | ------------------------------ | --------------------------------------- |
+| `appearance.theme`          | `bitty-dark` (alias `dark`)    | preset name; unknown falls back         |
+| `theme` (alias)             | unset                          | `appearance.theme` wins                 |
+| `appearance.colors.*`       | unset                          | complete inline palette, `#RRGGBB`-only |
+| `font.family`               | `JetBrainsMono Nerd Font`      | non-empty, `<= 128` bytes               |
+| `font.size`                 | `12.0`                         | `(0, 128]`                              |
+| `font.line_height`          | `1.375`                        | `[1.0, 2.0]`                            |
+| `font.letter_spacing`       | `2.0`                          | `[0.0, 8.0]`                            |
+| `window.opacity`            | `1.0`                          | `[0.0, 1.0]` whole window               |
+| `window.padding`            | `8`                            | `0..=64` logical px                     |
+| `window.radius_px`          | `0`                            | `0..=24` physical px (no-op S0)         |
+| `layout.gaps_in`/`gaps_out` | `0`/`0`                        | `0..=16` cells                          |
+| `decoration.*`              | see decoration reference above | logical px                              |
+| `scrollbar.mode`/`width`    | `hidden`/`8`                   | `hidden`/`always`/`auto`, `1..=32`      |
 
 The built-in preset names, aliases, and dark/light categories are listed in the
 [theme preset catalog](themes.md); the full 30-preset catalog resolves today.
 `appearance.theme` matches a name or alias case-insensitively with surrounding
 whitespace trimmed; an unknown name falls back to the default preset and logs a
 warning to stderr instead of failing the process.
+
+- Inline custom palette (CTX-0392; read-only from `bitty` `origin/main` at
+  `c64dd1e`): `appearance.colors` carries `background`, `foreground`,
+  `cursor`, `selection`, plus exactly 16 `ansi` hex strings. Every leaf is
+  `#RRGGBB`-only; a missing, short, long, or malformed leaf rejects the whole
+  reload fail-closed, never a partial palette. No file path is accepted
+  (OQ-047 stays open).
 
 - The gap layers compose: effective gap =
   `decoration.gap * DPI_scale + layout.gap_cells * cell_axis` (CTX-0333).
@@ -694,7 +702,9 @@ Status: **shipped defaults** (read-only from `bitty` `origin/main`, CTX-0236,
 CTX-0257, CTX-0258, CTX-0259, CTX-0262, CTX-0263, CTX-0264, CTX-0265; merged
 to `bitty` origin `main` at commits `2a5e451`, `227ca3a`, `6e662a2`,
 `1ea2f66`, `8b987a0`, `bc1fbba`, `11d9bec`, `c8faa52`, all verified read-only
-via `merge-base --is-ancestor`). This section is the shipped reference for the
+via `merge-base --is-ancestor`; the `leader_key`, `leader_timeout_ms`, and
+`close_confirm` rows are read-only from `origin/main` at `c64dd1e`
+(CTX-0715, CTX-0370), same verification). This section is the shipped reference for the
 keybinding surface; the merge-class instantiation stays in the
 [Configuration Model RFC](../specifications/configuration-model-rfc.md), and
 the input-side dispatch evidence stays in the
@@ -703,9 +713,12 @@ the input-side dispatch evidence stays in the
 Shipped schema:
 
 ```lua
--- Shipped schema (CTX-0236/CTX-0257).
+-- Shipped schema (CTX-0236/CTX-0257; leader override CTX-0715; close safety CTX-0370).
 return {
     mod_key = "alt", -- "alt" (default; opt/option) or "super" (meta/cmd/win)
+    leader_key = "ctrl+q", -- leader chord override; default Alt+Space (Ctrl+Space on Windows)
+    leader_timeout_ms = 1500, -- leader fail-open timeout in ms, 100..=60000 (default 1000)
+    close_confirm = "when_busy", -- "always" | "when_busy" (default) | "never"
     keymaps = {
         { chord = "alt+h", action = "goto_split:left", context = "global" },
     },
@@ -721,6 +734,16 @@ return {
   replaces the shipped entry, anything else appends. The shipped set is
   82 entries, all context `global`; unknown chords, actions, or contexts
   fail closed, and single-character keys require at least one modifier.
+- `leader_key` is a fully-optional top-level scalar (CTX-0715, resolved at
+  startup per CTX-0723; read-only from `bitty` `origin/main` at `c64dd1e`).
+  When present it must be a chord spelling in the shared chord grammar
+  (`"ctrl+q"`, `"alt+space"`); a bare letter fails closed with the
+  `leader_key` field path and can never steal shell typing. Absent means the
+  platform default (`Alt+Space`, `Ctrl+Space` on Windows).
+- `leader_timeout_ms` is a fully-optional top-level integer (CTX-0715) for the
+  leader fail-open timeout. When present it must be `100..=60000`
+  (default `1000`); anything else fails closed with the `leader_timeout_ms`
+  field path.
 - Shipped groups (canonical Alt spelling): new panel `alt+n`, workspace
   `alt+t` / `alt+1..9` /
   `alt+-` / `alt+=` / `alt+tab` / `alt+w` (CTX-0257, DEC-0034) plus
@@ -745,13 +768,23 @@ return {
   popup (CTX-0265) is a presentation-only overlay generated from the live
   registry on every show; it is informational, not modal, so unbound keys
   still reach the shell while it is visible.
+- `close_confirm` is a fully-optional top-level scalar (CTX-0370; read-only
+  from `bitty` `origin/main` at `c64dd1e`) selecting the view/window close
+  safety: `"always"` confirms every close, `"when_busy"` (default) confirms
+  only while some pane's PTY runs a foreground job beyond the idle shell,
+  and `"never"` never confirms. Anything else fails closed with the
+  `close_confirm` field path. The workspace kill-confirm gate (CTX-0257) is a
+  separate control and is not governed by this key; project layers must not
+  declare it, so a repository-local file can never disable this data-loss
+  guard.
 
 Open: whether the shipped set grows CLI flags or a command-palette surface;
-the candidate Leader sequences and flash-style jump remain unimplemented
-candidates in the [Input and Pointer Contract](../specifications/input-pointer-rfc.md).
+the leader chord override plus bounded fail-open timeout above are shipped
+(CTX-0715/CTX-0723), while Leader sequences and flash-style jump remain
+unimplemented candidates in the [Input and Pointer Contract](../specifications/input-pointer-rfc.md).
 Candidate configuration surfaces are not accepted and have no schema yet, so
-none of them may be documented as working: a Leader binding plus bounded modal
-timeout ([OQ-088](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)), and the Bitty Beacon label
+none of them may be documented as working: bounded modal use of the leader
+beyond the shipped override ([OQ-088](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)), and the Bitty Beacon label
 pools, handedness preference, and script-action registrations
 ([OQ-089](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md),
 [Semantic Terminal RFC](../specifications/semantic-terminal-rfc.md#p7-bitty-beacon-spatial-action-engine-candidate)).
@@ -759,7 +792,10 @@ pools, handedness preference, and script-action registrations
 ## Reload classification (shipped schema inventory)
 
 Status: **implementation reference** read-only from `bitty` `origin/main` at
-`828a787` (verified read-only via `merge-base --is-ancestor`). The accepted
+`828a787` (verified read-only via `merge-base --is-ancestor`; the
+`appearance.colors`, `leader_key`, `leader_timeout_ms`, and `close_confirm`
+rows below are read-only from `origin/main` at `c64dd1e`, same verification).
+The accepted
 framework is the
 [Configuration Model RFC](../specifications/configuration-model-rfc.md)
 "Reload classification" section (OQ-010). Classification is declared by the
@@ -786,13 +822,16 @@ Shipped leaf inventory:
 | `decoration.border_color_focused`, `decoration.border_color_idle`                            | live     | `#FFFFFF`, `#808080` |
 | `decoration.border_width`, `decoration.border_width_focused`, `decoration.border_width_idle` | live     | `1`, `1`, `1`        |
 | `appearance.theme`                                                                           | live     | built-in default     |
+| `appearance.colors`                                                                          | live     | unset                |
 | `appearance.animations.enabled`, `appearance.animations.reduced_motion`                      | live     | built-in default     |
 | `appearance.animations.duration_ms.*`                                                        | live     | `0` ms               |
 | `appearance.animations.easing.*`                                                             | live     | built-in default     |
 | `mod_key`, `keymaps`                                                                         | live     | built-in default     |
+| `leader_key`, `leader_timeout_ms`                                                            | live     | built-in default     |
 | `terminal.scrollback`, `terminal.shell`                                                      | restart  | built-in default     |
 | `terminal.scroll_lines_per_notch`, `terminal.scroll_pixels_per_notch`                        | restart  | built-in default     |
 | `selection.auto_copy`                                                                        | restart  | built-in default     |
+| `close_confirm`                                                                              | restart  | built-in default     |
 | `layout.gaps_in`, `layout.gaps_out`                                                          | restart  | built-in default     |
 | `scrollbar.mode`, `scrollbar.width`                                                          | restart  | built-in default     |
 | `mouse.focus_follows_mouse`, `mouse.focus_follows_mouse_delay_ms`                            | restart  | built-in default     |

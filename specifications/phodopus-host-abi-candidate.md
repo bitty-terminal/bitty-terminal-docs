@@ -13,12 +13,15 @@ sidebar_order: 39
 
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document is a design record for the
-> terminal-platform slice of the owner direction to adopt **Phodopus** (a
+> terminal-platform slice of the successor direction to adopt **Phodopus** (a
 > sandbox-first successor fork of Piccolo) as the generic Lua runtime behind
-> `bitty-lua`. It authorizes no shipped, stable, or compatibility-guaranteed
-> behavior, weakens no accepted source it cites, and makes no implementation
-> claim. Crate names, call spellings, and bounds repeated here are direction,
-> not contract.
+> `bitty-lua`. The direction itself is now recorded as accepted in
+> [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md);
+> this terminal-side host-ABI record stays **draft** until the `bitty-lua`
+> migration lands, and `bitty-lua` still depends on `piccolo` 0.3.3 today. It
+> authorizes no shipped, stable, or compatibility-guaranteed behavior, weakens
+> no accepted source it cites, and makes no implementation claim. Crate names,
+> call spellings, and bounds repeated here are direction, not contract.
 
 ## Purpose and scope
 
@@ -40,21 +43,22 @@ In scope (all **Candidate** unless cited otherwise):
 Out of scope and owned elsewhere (pointers, not content):
 
 - the generic VM, compiler, stackless executor, `gc-arena` cycle collector, and
-  Fuel mechanism (owner-pending, Phodopus runtime);
+  Fuel mechanism (owner-pending, the `phodopus` runtime project);
 - the modular standard library, native Lua patterns, and `utf8.*` implementation
-  (owner-pending, Phodopus runtime);
+  (owner-pending, the `phodopus` runtime project);
 - the sandboxed module resolver (`require`, searcher chain, capability VFS),
   hard memory quotas, and capability-gated resource accounting (owner-pending,
-  Phodopus runtime and plugin ecosystem);
+  the `phodopus` runtime project and the plugin ecosystem);
 - the plugin-side `HostOp` consumer mapping, `LuxPackageSearcher` binding, and
-  dependency-management direction (owner-pending,
-  [bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs));
+  dependency-management direction (draft candidate,
+  [Phodopus Plugin Runtime (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/phodopus-runtime-candidate.md));
 - plugin manifest, capability grammar, and package lifecycle (accepted,
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md),
   [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/plugin-host-runtime-rfc.md),
   [Isolation and Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md));
 - shared governance and the supersession of the Piccolo watch-list clause
-  (owner-pending, [bitty-docs](https://github.com/bitty-terminal/bitty-docs)).
+  (recorded, [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md),
+  [bitty-docs](https://github.com/bitty-terminal/bitty-docs)).
 
 ## Status vocabulary
 
@@ -88,13 +92,15 @@ Terminal-side conclusions, composed with the accepted contracts:
   A Bitty-agnostic VM core is what makes those ceilings attributable and the
   runtime independently auditable.
 - The generic runtime is an independent sibling project; the accepted
-  dependency policy still governs its adoption until a governance ADR records
-  the change.
+  dependency policy still governs its adoption, whose direction is recorded in
+  [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md)
+  without changing the current pins.
 
 **Open.** The exact crate split, crate names, and the host-seam module boundary
-between `bitty-lua` and the generic runtime; the licensing and vendoring policy
-for the adopted runtime; and the governance supersession of the Piccolo
-watch-list clause of the accepted dependency and Lua-pin ADRs.
+between `bitty-lua` and the generic runtime; and the licensing and vendoring
+policy for the adopted runtime. The governance supersession of the Piccolo
+watch-list clause of the accepted dependency and Lua-pin ADRs is recorded as a
+direction in ADR 0012; its adoption timing remains deferred with the migration.
 
 ## P-2 Async host ABI: typed pending-handle trampoline (Candidate)
 
@@ -175,7 +181,8 @@ unchanged, and no `bitty-lua` runtime swap is claimed or scheduled.
 - The accepted Lua Runtime RFC and the accepted Lua-pin, `os.getenv`, and
   async/GC ADR decisions stay authoritative today
   ([Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md),
-  [bitty-docs decisions](https://github.com/bitty-terminal/bitty-docs)).
+  [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md)
+  and the [bitty-docs decisions](https://github.com/bitty-terminal/bitty-docs)).
 - The deferral is not a rejection of the accepted path; it is a scheduling
   statement that this document records without editing any accepted status.
 
@@ -185,27 +192,25 @@ swap at the `bitty-lua` seam.
 
 ## Relation to existing systems
 
-| Direction                  | Status                                                                     | Owning document                                                                                                                                                                                         |
-| -------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P-1 runtime boundary       | Candidate; accepted Lua Runtime RFC and per-plugin VM ceilings unchanged   | [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md) (Accepted), [Core and Plugin Boundaries](../architecture/core-boundaries.md) (Accepted)    |
-| P-2 async trampoline       | Candidate composing with the accepted host-service `Send` contract         | [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/plugin-host-runtime-rfc.md) (Accepted), [Performance Budget RFC](performance-budget-rfc.md) (Accepted) |
-| P-3 utf8 versus typography | Candidate restating the accepted Terminal Truth split                      | [Text and Rendering RFC](text-rendering-rfc.md) (Draft), [Text Compatibility (draft)](text-compatibility.md) (Draft)                                                                                    |
-| P-4 roadmap and deferral   | Candidate; accepted mlua/Lua 5.4 contract unchanged until a readiness gate | [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md) (Accepted), owner-pending governance ADR (`bitty-docs`)                                    |
+| Direction                  | Status                                                                     | Owning document                                                                                                                                                                                                                                         |
+| -------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P-1 runtime boundary       | Candidate; accepted Lua Runtime RFC and per-plugin VM ceilings unchanged   | [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md) (Accepted), [Core and Plugin Boundaries](../architecture/core-boundaries.md) (Accepted)                                                    |
+| P-2 async trampoline       | Candidate composing with the accepted host-service `Send` contract         | [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/plugin-host-runtime-rfc.md) (Accepted), [Performance Budget RFC](performance-budget-rfc.md) (Accepted)                                                 |
+| P-3 utf8 versus typography | Candidate restating the accepted Terminal Truth split                      | [Text and Rendering RFC](text-rendering-rfc.md) (Draft), [Text Compatibility (draft)](text-compatibility.md) (Draft)                                                                                                                                    |
+| P-4 roadmap and deferral   | Candidate; accepted mlua/Lua 5.4 contract unchanged until a readiness gate | [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md) (Accepted), [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md) (Accepted) |
 
-## Owner-pending pointers
+## Related owner records
 
-- Governance decision and Piccolo successor-fork record; this direction is
-  owner-pending and this document decides nothing:
-  [bitty-docs issue 359](https://github.com/bitty-terminal/bitty-docs/issues/359)
-  (intended record `docs/decisions/adrs/ADR-0012-phodopus-runtime.md`), with the
-  accepted [ADR 0004](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0004-upstream-dependencies.md)
+- Governance decision and Piccolo successor-fork record (Accepted): [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md)
+  records the successor direction, refining but not rewriting the accepted
+  [ADR 0004](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0004-upstream-dependencies.md)
   and [ADR 0005](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0005-lua-pins-and-stdlib.md)
-  unchanged until that ADR lands.
-- Plugin-runtime candidate — module resolution, sandbox quotas, async bridge,
-  and dependency binding:
-  [bitty-plugins-docs issue 76](https://github.com/bitty-terminal/bitty-plugins-docs/issues/76)
-  (intended record `runtime/phodopus-runtime-candidate.md`); the plugin-side
-  halves are not restated here.
+  pins; it does not migrate code or change the current runtime. This document
+  still decides nothing.
+- Plugin-runtime candidate (Draft) — module resolution, sandbox quotas, async
+  bridge, and dependency binding:
+  [Phodopus Plugin Runtime (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/phodopus-runtime-candidate.md);
+  the plugin-side halves are not restated here.
 - Generic runtime project and generic-runtime documentation:
   [phodopus](https://github.com/bitty-terminal/phodopus).
 - Plugin-ecosystem halves — `LuxPackageSearcher`, `PluginVfsSearcher`, and the
@@ -245,5 +250,10 @@ settles them:
   — accepted host bridge, VM lifecycle, and host-service `Send` contract.
 - [Isolation and Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)
   — accepted isolation boundaries and resource ceilings.
+- [Phodopus Plugin Runtime (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/phodopus-runtime-candidate.md)
+  — draft plugin-side counterpart; module resolution, sandbox quotas, async
+  bridge, and Lux binding.
+- [ADR 0012 — Phodopus Runtime as the Lua Successor Path](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md)
+  — accepted successor-direction record; `bitty-lua` migration deferred.
 - [bitty-docs](https://github.com/bitty-terminal/bitty-docs) — shared
   governance, ADRs, and the open-question register.
