@@ -344,7 +344,7 @@ composition, never by `LayoutProvider` plugins or `View` content.
 | --------------- | -------------------------------------------------------------- | ---------------- | ----------- | --------- | ----- |
 | `gaps_in`       | Gap between adjacent `View`s inside one `Workspace`            | 6 px             | 0 to 32 px  | 0         | Core  |
 | `gaps_out`      | Gap between the `Workspace` tiling area and `Window` edge      | 6 px             | 0 to 32 px  | 0         | Core  |
-| `border`        | Border thickness drawn around each `View`                      | 2 px             | 0 to 8 px   | 1         | Core  |
+| `border`        | Border thickness drawn around each `View`                      | 1 px             | 0 to 8 px   | 1         | Core  |
 | `radius`        | Corner radius for `View` frames                                | 6 px             | 0 to 16 px  | 0         | Core  |
 | `content_inset` | Padding between the `View` frame border and its hosted content | 6 px             | 0 to 32 px  | 0         | Core  |
 
