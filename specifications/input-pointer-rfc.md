@@ -297,7 +297,7 @@ registry-driven plugin discovery remain unimplemented candidates.
    and terminal-fallthrough layers; the plugin-suggested layer is not live.
 3. **Workspace chords and close discipline** (`bitty` #433 `227ca3a`,
    CTX-0257, DEC-0034; move in `bitty` #457 `8b987a0`, CTX-0259):
-   `alt+n`/`alt+1..9`/`alt+-`/`alt+=`/`alt+tab`/`alt+w` plus
+   `alt+t`/`alt+1..9`/`alt+-`/`alt+=`/`alt+tab`/`alt+w` plus
    `shift+alt+1..9` move the focused window. A live workspace close never
    kills silently: the first chord arms a pending confirm (loud summary plus
    overlay banner), repeating the chord confirms, `Esc` cancels, and idle
