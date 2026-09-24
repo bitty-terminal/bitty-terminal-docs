@@ -732,7 +732,7 @@ return {
   keep their exact spelling and overlay by `context + chord` identity.
 - `keymaps` is set-by-identifier: a user entry with the same `context + chord`
   replaces the shipped entry, anything else appends. The shipped set is
-  79 entries, all context `global`; unknown chords, actions, or contexts
+  82 entries, all context `global`; unknown chords, actions, or contexts
   fail closed, and single-character keys require at least one modifier.
 - `leader_key` is a fully-optional top-level scalar (CTX-0715, resolved at
   startup per CTX-0723; read-only from `bitty` `origin/main` at `c64dd1e`).
@@ -744,7 +744,8 @@ return {
   leader fail-open timeout. When present it must be `100..=60000`
   (default `1000`); anything else fails closed with the `leader_timeout_ms`
   field path.
-- Shipped groups (canonical Alt spelling): workspace `alt+n` / `alt+1..9` /
+- Shipped groups (canonical Alt spelling): new panel `alt+n`, workspace
+  `alt+t` / `alt+1..9` /
   `alt+-` / `alt+=` / `alt+tab` / `alt+w` (CTX-0257, DEC-0034) plus
   `shift+alt+1..9` move-to-workspace (CTX-0259); spatial focus
   `alt+h/j/k/l`, `alt+arrows`, `ctrl+alt+arrows`; split

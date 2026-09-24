@@ -195,7 +195,7 @@ defaults` per [Lua and XDG configuration](../configuration/lua-and-xdg.md).
 | `layout.gaps_in` / `gaps_out`                                             | `0` / `0` cells (`0..=16`); edge-to-edge tiling; stack leaves take the `gaps_out` inset only (CTX-0240)                                                                                                                 | scalar replace        |
 | `decoration.gaps_in` / `gaps_out` / `border` / `radius` / `content_inset` | `6` / `6` / `1` / `6` / `6` logical px (`0..=32` / `0..=32` / `0..=8` / `0..=16` / `0..=32`); Core-owned; painted on the live present path (CTX-0292/CTX-0294/CTX-0311/CTX-0333; `border` thinned 2→1 in `bitty` #1353) | scalar replace        |
 | `appearance.theme`                                                        | unset means the `bitty-dark` preset (alias `dark`); unknown names fall back to it with a stderr warning                                                                                                                 | scalar replace        |
-| `keymaps`                                                                 | shipped Alt-as-Mod set (79 entries, context `global`); user entries replace by `context + chord`, else append                                                                                                           | set-by-identifier     |
+| `keymaps`                                                                 | shipped Alt-as-Mod set (82 entries, context `global`); user entries replace by `context + chord`, else append                                                                                                           | set-by-identifier     |
 | `plugins`                                                                 | empty by default                                                                                                                                                                                                        | set-by-identifier     |
 
 Absent `selection`/`layout`/`decoration` tables (or absent keys within them)
@@ -208,7 +208,7 @@ The shipped keymap set is the canonical Alt spelling rendered through the
 `mod_key` setting above (`alt` default, `super` opt-in rebinding): `alt+h/j/k/l`
 and `ctrl+alt+arrows` move focus, with CTX-0262 `alt+arrows` aliases;
 `alt+1..9` focuses workspace `1..=9`, and `shift+alt+1..9` moves the focused
-window to workspace N (CTX-0259, `bitty` #457); `alt+n` / `alt+w` / `alt+-` /
+window to workspace N (CTX-0259, `bitty` #457); `alt+t` / `alt+w` / `alt+-` /
 `alt+=` / `alt+tab` drive new, kill-confirmed close, previous, next, and
 last-used workspace (CTX-0257, `bitty` #433, DEC-0034); `alt+u`/`alt+i` page
 up/down; `shift+alt+h/j/k/l` plus CTX-0262 `shift+alt+arrows` split;
