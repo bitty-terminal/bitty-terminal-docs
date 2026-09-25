@@ -13,10 +13,16 @@ sidebar_order: 21
 
 ## Status and provenance
 
-- Stage: **Pre-alpha / Engineering Milestones M1-M8** as of 2026-09-25 (`bitty` `679f12f`
-  last snapshot, previous `23c3eb6`, baseline `de134ec`, 21 crates,
-  54 OQs `Accepted`, release `v0.0.21`; the implementation-state section below stays
-  pinned at `491c567` post pivot-wave #1200-1213, an ancestor of `679f12f`).
+- Stage: **Pre-alpha / Engineering Milestones M1-M8** at the canonical snapshot of
+  `2026-09-25` (`bitty` synchronized revision `679f12f`, canonical
+  `previous_revision` `23c3eb6`, baseline `de134ec`, 21 crates, 54 OQs `Accepted`
+  with 46 open, release `v0.0.21`). The
+  [revision-pinned implementation state](#revision-pinned-implementation-state-at-491c567-historical)
+  below is historical evidence pinned to `491c567` after pivot-wave #1200-1213;
+  `491c567` and `679f12f` are separate rewritten histories with distinct root
+  commits (`43739d0` and `9cbcce9`, no merge base), so `491c567` is neither an
+  ancestor nor a descendant of `679f12f` and no statement in that section is
+  re-derived at `679f12f`.
   Experimental implementations `c0aadd2` (CTX-0095 vertical slice, PR #148) +
   `7e3104d` (CTX-0096 dogfood, PR #149) + `a8735d0` (CTX-0098 PTY reply fix,
   PR #151) are `Implemented` (experimental) not `Verified`/`Compatible`. This
@@ -61,7 +67,13 @@ sidebar_order: 21
   #137/#138/#139) per `project-state.json` and remains `Mitigated` (not
   `Verified`).
 
-## Implementation state at 491c567 (post pivot-wave #1200-1213)
+## Revision-pinned implementation state at 491c567 (historical)
+
+Everything in this section is evidence pinned to the `bitty` revision `491c567`
+(after pivot-wave #1200-1213) and is superseded by the canonical snapshot in
+_Status and provenance_ above. `491c567` and `679f12f` are separate rewritten
+histories (distinct root commits `43739d0` and `9cbcce9`, no merge base), so this
+section is a historical record, not a description of the `679f12f` tree.
 
 - **Workspace**: 21 members in `bitty/Cargo.toml` (edition 2024, resolver 3,
   `rust-version` 1.85, toolchain 1.98.1): `bitty-vt`, `bitty-pty`,
@@ -82,11 +94,15 @@ sidebar_order: 21
   and AUR (`bitty` plus `bitty-bin` prebuilt) distribution per `bitty`
   CHANGELOG; the binary artifact was renamed `bitty-app` -> `bitty` with the
   crate name unchanged. Release artifacts are distribution evidence, not
-  `Verified`/`Compatible` claims. No version bump followed `v0.0.20`: `bitty`
-  `491c567` still carries `workspace.package.version 0.0.20`, and
-  `[Unreleased]` was synced with the pivot-wave merges (#1213).
-- **Accepted**: 40 OQs via 17 RFCs and 8 ADRs as of 2026-09-14 (OQ-001..OQ-045
-  range):
+  `Verified`/`Compatible` claims. At the pinned `491c567` the workspace still
+  carries `workspace.package.version 0.0.20` and `[Unreleased]` was synced with
+  the pivot-wave merges (#1213); the version bump to `v0.0.21` recorded in the
+  canonical snapshot landed later, and the synchronized revision `679f12f`
+  carries `workspace.package.version 0.0.21`.
+- **Accepted**: the open questions accepted at that revision via 17 RFCs and 8
+  ADRs, enumerated below over the OQ-001..OQ-045 range. The current `Accepted`
+  and open counts are the snapshot figures recorded in _Status and provenance_
+  above, not a count re-derived from this pinned revision:
   Performance Budget (OQ-001), Platform Support Tiers (OQ-003), Compatibility
   Milestone (OQ-004 M1), Core Workspace Topology (OQ-005), Upstream Dependencies
   (OQ-006), Terminal State (OQ-007), Lua Runtime (OQ-009), Configuration Model
@@ -126,7 +142,7 @@ sidebar_order: 21
 
 ## Candidate maturity ladder (from proposed-delivery-sequence)
 
-| Version | Candidate scope (maturity label, not date)                | Workspace focus at that slice                                                                                                                                                                                                           | Status at `491c567`                                                                                                                                                                                                                                                                                                               |
+| Version | Candidate scope (maturity label, not date)                | Workspace focus at that slice                                                                                                                                                                                                           | Status at pinned `491c567` (historical)                                                                                                                                                                                                                                                                                           |
 | ------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | v0.0.x  | Architecture and protocol prototypes                      | `bitty-core` seed only                                                                                                                                                                                                                  | prototypes done; seed retained but `publish = false`                                                                                                                                                                                                                                                                              |
 | v0.1    | Minimal terminal slice (shell echo, resize, backpressure) | `vt` + `pty` + `term-state` + `platform` + `config` + `render` + `ui` + `runtime` + `app` gated by [Single-Window Vertical Slice Acceptance Plan](vertical-slice-acceptance.md) (CTX-0109 draft, one process/window/workspace/terminal) | `Draft` spec at CTX-0109, `Experimental Implementation` at `c0aadd2` (CTX-0095 PR #148) + `a8735d0` (CTX-0098 PTY fix) `Implemented` not `Verified`; headless deterministic replay `be3bdb4` 808 tests plus visible `winit`/`wgpu` evidence now exists but remains not `Verified`; acceptance gated on spec + experimental review |
@@ -142,14 +158,20 @@ sidebar_order: 21
 
 `bittyd` and remote UI are post-v1.0 candidates (OQ-020 deferred per ADR 0008).
 
+The status column reports the revision-pinned `491c567` evidence recorded in the
+historical section above; it is not re-derived at the synchronized `679f12f`. No
+row in this ladder claims `Verified`, `Compatible`, or `Release-ready`.
+
 ## Verification gates
 
 - `just check` 0 issues (`fmt-check` + `markdownlint` + `links` +
-  `metadata` + `language` + `agents` + `hygiene` + `state` + `actionlint`), `act -n`
+  `metadata` + `language` + `agents` + `hygiene` + `svg` + `actionlint`; the
+  repository `justfile` has no `state` recipe), `act -n`
   DRYRUN success for the Docs quality `ci.yml` workflow.
 - `cargo check --workspace --all-targets --locked` and
   `cargo check --target x86_64-pc-windows-gnu` pass at the synchronized
-  `bitty` revision per that repository's CI (merge gates green through `491c567`).
+  `bitty` revision per that repository's CI (merge gates green through
+  `679f12f`).
 - `cargo test --workspace --all-targets --locked` soak passes
   (`Implemented`); `cargo clippy -- -D warnings` 0 warnings; `cargo fmt --check` clean.
 - Publish order verified via `cargo publish --dry-run` (leaves
