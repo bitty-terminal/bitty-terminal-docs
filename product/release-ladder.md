@@ -1,6 +1,6 @@
 ---
 title: Release Ladder
-description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (21 crates 491c567, 40 OQs Accepted, release v0.0.20) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
+description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (21 crates 679f12f, 54 OQs Accepted, release v0.0.21) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
 category: product
 audience: maintainer
 document_type: overview
@@ -13,9 +13,10 @@ sidebar_order: 21
 
 ## Status and provenance
 
-- Stage: **Pre-alpha / Engineering Milestones M1-M8** as of 2026-09-21 (`bitty` `491c567`
-  post pivot-wave #1200-1213, last snapshot `bea338d`, baseline `de134ec`, 21 crates,
-  40 OQs `Accepted`, release `v0.0.20`).
+- Stage: **Pre-alpha / Engineering Milestones M1-M8** as of 2026-09-25 (`bitty` `679f12f`
+  last snapshot, previous `23c3eb6`, baseline `de134ec`, 21 crates,
+  54 OQs `Accepted`, release `v0.0.21`; the implementation-state section below stays
+  pinned at `491c567` post pivot-wave #1200-1213, an ancestor of `679f12f`).
   Experimental implementations `c0aadd2` (CTX-0095 vertical slice, PR #148) +
   `7e3104d` (CTX-0096 dogfood, PR #149) + `a8735d0` (CTX-0098 PTY reply fix,
   PR #151) are `Implemented` (experimental) not `Verified`/`Compatible`. This
@@ -32,9 +33,9 @@ sidebar_order: 21
   maturity remains `Pre-alpha` (not `Verified`/`Compatible`/`Release-ready`).
   Canonical snapshot:
   [`docs/project/project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
-  (synchronized `bea338d`, `2026-09-14`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
+  (synchronized `679f12f`, `2026-09-25`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
   `Open`, `R-005`/`R-006`/`R-007` `Mitigated`, experimental `c0aadd2`/`7e3104d`/`a8735d0`
-  `Implemented` not `Verified`, release `v0.0.20`) validated by `bun .github/scripts/check-state.mjs`.
+  `Implemented` not `Verified`, release `v0.0.21`) validated by `bun .github/scripts/check-state.mjs`.
 - Lifecycle: `Draft -> Experimental Implementation -> Accepted -> Verified -> Compatible -> Release-ready`
   (spec) and `Specified -> Accepted -> Implemented -> Verified -> Compatible -> Release-ready`
   (crate) per the [Risk Evidence RFC](../specifications/risk-evidence-rfc.md).
