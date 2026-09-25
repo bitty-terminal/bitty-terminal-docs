@@ -33,6 +33,12 @@ sidebar_order: 18
 > Lifecycle is `Draft -> Experimental Implementation -> Accepted -> Verified`.
 > Candidate sections below are explicitly marked **Candidate** and carry no
 > compatibility promise until a reviewed acceptance decision records them.
+> The [IME composition and commit](#ime-composition-and-commit-candidate)
+> section was synchronized separately against `bitty` `679f12f` and records
+> the open `P1` defect
+> [bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449); that
+> section's lifecycle rules are stated, the implementation does not yet meet
+> them.
 
 ## Purpose and scope
 
@@ -516,19 +522,138 @@ line counts.
 
 ## IME composition and commit (candidate)
 
-- Platform IME state is adapter-owned. The presentation layer shows **preedit**
-  as an inline overlay at the cursor (bounded `<= 128` chars, one grapheme
-  cluster per preedit span) and does not write preedit into terminal state
-  or PTY.
-- `IME::Commit(text)` is the only path that reaches the encoder. Commit
-  text is bounded (`<= 256` chars / `<= 1024` bytes UTF-8 per commit) and
-  then encoded via the active keyboard mode (bracketed paste not applied;
-  see paste handling).
-- `IME::Enabled/disabled` is per-View. Focus change commits or cancels
-  preedit deterministically; a cancelled preedit produces no PTY bytes.
-- Interaction with Kitty: a commit while Kitty is active is encoded as
-  individual `CSI u` frames for each codepoint when the Kitty text flag is
-  set, otherwise as UTF-8 bytes. The choice is mode-driven, not heuristic.
+Platform IME state is adapter-owned; Core sees only the bounded
+`ImeEvent { Preedit, Commit, Enabled, Disabled }` family. This section is the
+authoritative statement of the composition lifecycle, the preedit-to-commit
+ordering rule, and the verbatim-commit guarantee. The text-domain half
+(width, combining behavior, terminfo) lives in
+[Text Compatibility](text-compatibility.md) and is not restated here.
+
+### Composition lifecycle
+
+- The presentation layer shows **preedit** as an inline overlay at the cursor
+  (bounded `<= 128` chars, one grapheme cluster per preedit span) and does not
+  write preedit into terminal state, snapshots, scrollback, damage, or the PTY.
+- `Ime::Enabled` / `Ime::Disabled` is per-View. `Enabled` opens a composition
+  session; `Disabled` cancels it.
+- **Composition liveness is tracked separately from overlay content.** A
+  composition is _active_ from the first non-empty `Preedit` until its commit
+  or cancel has been fully processed. The presence of overlay text is not a
+  valid proxy for liveness: the overlay is cleared by events that do not end
+  the composition.
+- While a composition is active, raw key presses are consumed by the
+  composition and never reach the encoder. Modifier tracking still runs so
+  chord state cannot desynchronize, and key releases produce no bytes.
+
+### Preedit-to-commit ordering
+
+`winit`'s `Ime::Commit` contract — which the Wayland `text-input-v3` and X11
+XIM backends implement — delivers the end of a composition as an ordered pair:
+an **empty `Preedit`** that clears the overlay, immediately followed by
+**`Commit`**. The clearing event is a presentation reset, not the end of the
+composition.
+
+- The clearing `Preedit` and the following `Commit` are processed as one
+  transition. Liveness survives the clearing event; the composition closes
+  only after `Commit` has been encoded, or after a cancel.
+- The key press that triggered the commit (typically `Space` or `Enter`) belongs
+  to the composition. It is consumed while the composition is active and is
+  never forwarded to the encoder, whether the platform delivers it before,
+  between, or after the `Commit` event.
+- No ordering of the platform events may produce a second insertion of the
+  committed text, and none may drop it. Commit lands exactly once.
+
+### Verbatim commit (no synthetic trailing space)
+
+`Ime::Commit(text)` is the only path that reaches the encoder.
+
+- Commit text is bounded (`<= 256` chars / `<= 1024` bytes UTF-8 per commit,
+  char-boundary truncation) and is then encoded via the active keyboard mode
+  (bracketed paste is not applied; see paste handling).
+- **The bytes written to the PTY are exactly the committed text.** The encoder
+  adds no separator, no terminator, and no trailing space, and never pads or
+  normalizes the payload. A commit of `N` scalars produces the UTF-8 encoding
+  of those `N` scalars and nothing else.
+- A synthetic trailing space is a contract violation, not a cosmetic defect: it
+  corrupts shell input, adds spurious arguments, and breaks prompts that
+  inspect the current line. Appending a separator to make composition
+  "feel" complete is explicitly rejected.
+- An empty commit is a no-op that emits no bytes.
+
+### Focus loss and cancel
+
+| Trigger                                    | Composition | Preedit overlay | PTY bytes           |
+| ------------------------------------------ | ----------- | --------------- | ------------------- |
+| `Commit(text)`                             | closes      | cleared         | `text`, verbatim    |
+| `Commit("")`                               | closes      | cleared         | none                |
+| `Ime::Disabled`                            | cancelled   | cleared         | none                |
+| Input focus lost while composing           | cancelled   | cleared         | none                |
+| Preedit overflow (`> 128` chars)           | stays open  | truncated       | none                |
+| Commit overflow (`> 256` chars / `1024` B) | closes      | cleared         | bounded prefix only |
+
+- Focus loss **cancels**; it never commits. Losing focus must not deliver
+  uncommitted composition text to a shell the user has left, and a preedit
+  whose clearing event never arrives (IME restart, backend quirk) must not
+  brick the keyboard: cancel releases the keyboard for the next event.
+- A cancel releases the keyboard immediately. The next key press after a
+  commit or a cancel is delivered normally; a stale liveness flag that
+  suppresses it is a defect.
+- Cancellation is silent: it emits no PTY bytes and no user-visible error.
+
+### Interaction with Kitty
+
+A commit while Kitty is active is encoded as individual `CSI u` frames for each
+codepoint when the Kitty text flag is set, otherwise as UTF-8 bytes. The choice
+is mode-driven, not heuristic. The verbatim guarantee above holds for both
+encodings: neither adds a trailing space or separator.
+
+### IME commit and focus evidence (implementation status)
+
+Status: **experimental review evidence only.** This subsection records the
+shipped `bitty` input slice; it does not accept the candidate sections above
+and does not close OQ-004/OQ-007.
+
+Shipped at `bitty` `679f12f` (2026-09-25), read-only:
+
+- Platform event family and bounds: `ImeEvent` at
+  `crates/bitty-platform/src/event.rs:541-548`; `winit` translation and the
+  preedit/commit bounding in `map_ime` at
+  `crates/bitty-platform/src/event.rs:719-761` (preedit `128` chars, commit
+  `256` chars / `1024` bytes).
+- Runtime bounds: `IME_PREEDIT_MAX_CHARS = 128`,
+  `IME_COMMIT_MAX_CHARS = 256`, `IME_COMMIT_MAX_BYTES = 1024`
+  (`crates/bitty-runtime/src/runtime/input.rs:12`, `:100`, `:103`).
+- Composition consumption of raw presses while a preedit is present:
+  `crates/bitty-runtime/src/runtime/input.rs:548` and `:682`.
+- Overlay-only preedit: `handle_ime_preedit`
+  (`crates/bitty-runtime/src/runtime/input.rs:1634-1658`); the platform
+  dispatch that maps an empty preedit to an overlay clear and routes
+  `Enabled`/`Disabled` is the `Ime` arm at
+  `crates/bitty-runtime/src/runtime/resize.rs:643-663`.
+- Bounded single-write commit: `handle_ime_commit`
+  (`crates/bitty-runtime/src/runtime/input.rs:1668-1703`); it clears the
+  overlay, then pushes the bounded text through the same bounded PTY queue as
+  keyboard input, with no added bytes.
+- Focus-loss cancel: `crates/bitty-runtime/src/runtime/input.rs:1598-1602`
+  (added for `bitty` #1356 so a preedit whose clearing event never arrives
+  cannot brick the keyboard).
+- Headless evidence: `crates/bitty-runtime/tests/ime_input.rs` (7 tests),
+  including `empty_preedit_then_commit_inserts_exactly_once` and
+  `raw_keys_during_composition_do_not_double_input`.
+
+**Open defect `bitty` #1449 (`[P1]` trailing space after an fcitx commit).**
+The shipped composition guard is keyed on overlay presence
+(`ime_preedit.is_some()`), so the empty `Preedit` that precedes `Commit` ends
+the composition before the commit-triggering key press can be suppressed. On
+a Wayland or X11 fcitx session the commit key is then encoded as ordinary
+input, which is the reported synthetic trailing space. Two contract
+obligations are therefore unmet at `679f12f`: the commit-triggering key is not
+consumed, and the committed text is not the only input the commit produces.
+The corpus records this as an open `P1` defect with the product fix owned by
+the `bitty` repository; the required fix must keep composition liveness
+independent of overlay content and add hermetic fcitx-shaped
+composition/commit fixtures (no personal input data). Status stays
+`Implemented` (experimental), not `Verified`/`Compatible`.
 
 ## Selection, copy, and paste (candidate)
 
@@ -632,17 +757,21 @@ the consumer.
 
 ## Failure semantics (candidate)
 
-| Failure                                      | Candidate behavior                                                        |
-| -------------------------------------------- | ------------------------------------------------------------------------- |
-| Unknown scancode / keysym                    | Drop with `unknown_key` counter; no PTY output.                           |
-| Truncated Kitty frame                        | Drop frame, emit telemetry, fall back to legacy for next key.             |
-| Mouse outside grid after clamp               | Clamp to edge; encode clamped coordinate with `clamped` telemetry.        |
-| Wheel accumulator overflow                   | Clamp `accum` to `4 * cell_size`; emit what fits.                         |
-| IME preedit overflow                         | Truncate preedit to `128` chars; commit remains bounded.                  |
-| Paste oversize                               | Truncate to `8192` before inspection; mark `truncated`.                   |
-| PTY backpressure                             | Drop new input, increment `pty.backpressure_drops`, surface in DevTools.  |
-| Platform adapter error (`winit` `BadWindow`) | Isolate View; other Views unaffected; log once.                           |
-| Focus lost mid-drag/IME                      | Cancel drag (no selection commit) or commit/cancel IME deterministically. |
+| Failure                                      | Candidate behavior                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------ |
+| Unknown scancode / keysym                    | Drop with `unknown_key` counter; no PTY output.                          |
+| Truncated Kitty frame                        | Drop frame, emit telemetry, fall back to legacy for next key.            |
+| Mouse outside grid after clamp               | Clamp to edge; encode clamped coordinate with `clamped` telemetry.       |
+| Wheel accumulator overflow                   | Clamp `accum` to `4 * cell_size`; emit what fits.                        |
+| IME preedit overflow                         | Truncate preedit to `128` chars; commit remains bounded.                 |
+| IME commit overflow                          | Emit the bounded prefix only; never pad, pad-with-space, or terminate.   |
+| Commit-triggering key press after a commit   | Consumed by the composition; never forwarded to the encoder.             |
+| Commit or cancel leaves the keyboard held    | Release immediately; the next key press is delivered normally.           |
+| Paste oversize                               | Truncate to `8192` before inspection; mark `truncated`.                  |
+| PTY backpressure                             | Drop new input, increment `pty.backpressure_drops`, surface in DevTools. |
+| Platform adapter error (`winit` `BadWindow`) | Isolate View; other Views unaffected; log once.                          |
+| Focus lost mid-drag                          | Cancel the drag; no selection commit.                                    |
+| Focus lost mid-IME                           | Cancel the composition; no PTY bytes; keyboard released.                 |
 
 All failures are fail-closed: no fallback writes raw bytes that bypass the
 encoder, and no failure grants a capability or mode the user did not request.
@@ -735,13 +864,15 @@ or moves an accepted owner.
 
 ## Alternatives considered
 
-| Alternative                                                    | Trade-off                                                                                                      | Verdict                                               |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Raw per-keystroke plugin hook (`input.pre-encode`)             | Gives plugins maximal control but puts Lua on the hot path, violates invariant 4, and makes PB-4 unachievable. | Rejected; command-bound dispatch is sufficient.       |
-| Application-only mouse capture with no Shift override          | Simpler router but traps users in TUIs with no selection path.                                                 | Rejected; Shift override is the accessibility escape. |
-| Pixel-exact PTY wheel (every `ScrollDelta::Pixel` as one line) | Faithful to device but floods PTY and breaks TUI expectations.                                                 | Rejected; accumulation to cell lines is required.     |
-| IME preedit written into terminal grid                         | Visible preedit without overlay but corrupts Terminal Truth and breaks replay.                                 | Rejected; overlay-only preedit.                       |
-| Unbounded paste through PTY                                    | Simple but violates R-004 and enables T-04 exfiltration.                                                       | Rejected; 8192 bound + inspection.                    |
+| Alternative                                                    | Trade-off                                                                                                      | Verdict                                                |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Raw per-keystroke plugin hook (`input.pre-encode`)             | Gives plugins maximal control but puts Lua on the hot path, violates invariant 4, and makes PB-4 unachievable. | Rejected; command-bound dispatch is sufficient.        |
+| Application-only mouse capture with no Shift override          | Simpler router but traps users in TUIs with no selection path.                                                 | Rejected; Shift override is the accessibility escape.  |
+| Pixel-exact PTY wheel (every `ScrollDelta::Pixel` as one line) | Faithful to device but floods PTY and breaks TUI expectations.                                                 | Rejected; accumulation to cell lines is required.      |
+| IME preedit written into terminal grid                         | Visible preedit without overlay but corrupts Terminal Truth and breaks replay.                                 | Rejected; overlay-only preedit.                        |
+| Synthetic separator space appended after an IME commit         | Makes composition look "complete" but corrupts the committed line for shells, prompts, and argument parsing.   | Rejected; commit text is verbatim.                     |
+| Commit the composition on focus loss                           | Never loses typed text but delivers a half-finished composition to a shell the user has left.                  | Rejected; focus loss cancels, per the lifecycle table. |
+| Unbounded paste through PTY                                    | Simple but violates R-004 and enables T-04 exfiltration.                                                       | Rejected; 8192 bound + inspection.                     |
 
 ## Candidate versus accepted
 
@@ -760,21 +891,23 @@ any implementation may claim it as stable.
 
 ## Verification plan (candidate)
 
-| Evidence                      | Method                                                  | Pass threshold                                                                        |
-| ----------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Physical key mapping          | Unit + Tier 1 platform matrix (Wayland/X11/Win32/macOS) | Every physical key maps or is counted as `unknown_key`; no panic on unknown scancode. |
-| Modifier and DECCKM/DECKPAM   | Integration (mode on/off matrix)                        | Encoder output matches xterm/kitty oracle; mode flip takes effect on next event.      |
-| Kitty protocol                | Differential corpus + fuzz (CSI u)                      | All flag combinations bounded; legacy fallback proven; fuzz zero crashes.             |
-| Mouse SGR 1000/1002/1003/1006 | Integration (golden PTY bytes per mode)                 | Coordinates clamped and bounded; motion coalesced; SGR only.                          |
-| Shift override + alt-screen   | Integration (capture on/off × Shift)                    | Shift always forces selection; exit alt-screen releases capture.                      |
-| Pixel accumulation            | Unit (fractional thresholds)                            | Accumulator clamps at `4 * cell_size`; remainder preserved.                           |
-| Inertial/edge auto-scroll     | Unit + manual audit                                     | Inertial decays within `200 ms`; edge scroll bounded and cancellable.                 |
-| Pinch/swipe                   | Unit                                                    | At most `4` commands per `100 ms`; no PTY bytes.                                      |
-| IME preedit/commit            | Platform matrix + unit (bounds)                         | Preedit `<= 128`, commit `<= 256/1024`; focus loss commits/cancels deterministically. |
-| Selection/copy/paste          | Adversarial + integration (C0/C1/BiDi)                  | `23+13` suspicious + paste tests green; bracketed defense-only proven.                |
-| Bounded payloads              | Adversarial (oversized)                                 | Every bound enforced at the producing edge; no unbounded alloc.                       |
-| PTY backpressure              | Integration (full buffer)                               | Drops counted, UI remains responsive, telemetry increments.                           |
-| Hot-path exclusion            | Static check + perf harness                             | No Lua call on hot path; PB-4 `8 ms` p50 holds with plugin load.                      |
+| Evidence                      | Method                                                            | Pass threshold                                                                                                                                                                                                 |
+| ----------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Physical key mapping          | Unit + Tier 1 platform matrix (Wayland/X11/Win32/macOS)           | Every physical key maps or is counted as `unknown_key`; no panic on unknown scancode.                                                                                                                          |
+| Modifier and DECCKM/DECKPAM   | Integration (mode on/off matrix)                                  | Encoder output matches xterm/kitty oracle; mode flip takes effect on next event.                                                                                                                               |
+| Kitty protocol                | Differential corpus + fuzz (CSI u)                                | All flag combinations bounded; legacy fallback proven; fuzz zero crashes.                                                                                                                                      |
+| Mouse SGR 1000/1002/1003/1006 | Integration (golden PTY bytes per mode)                           | Coordinates clamped and bounded; motion coalesced; SGR only.                                                                                                                                                   |
+| Shift override + alt-screen   | Integration (capture on/off × Shift)                              | Shift always forces selection; exit alt-screen releases capture.                                                                                                                                               |
+| Pixel accumulation            | Unit (fractional thresholds)                                      | Accumulator clamps at `4 * cell_size`; remainder preserved.                                                                                                                                                    |
+| Inertial/edge auto-scroll     | Unit + manual audit                                               | Inertial decays within `200 ms`; edge scroll bounded and cancellable.                                                                                                                                          |
+| Pinch/swipe                   | Unit                                                              | At most `4` commands per `100 ms`; no PTY bytes.                                                                                                                                                               |
+| IME preedit/commit            | Platform matrix + unit (bounds)                                   | Preedit `<= 128`, commit `<= 256/1024`; focus loss cancels deterministically and releases the keyboard.                                                                                                        |
+| IME preedit/commit ordering   | Hermetic fcitx-shaped fixtures (headless, no personal input data) | For the ordered `Preedit("") -> Commit -> commit-key` sequence the PTY receives exactly the committed UTF-8 bytes: no trailing space, no separator, no second insertion, and the commit key produces no bytes. |
+| IME cancel paths              | Unit (focus loss, `Ime::Disabled`, empty commit)                  | Zero PTY bytes on every cancel path; the next key press after a commit or a cancel is delivered.                                                                                                               |
+| Selection/copy/paste          | Adversarial + integration (C0/C1/BiDi)                            | `23+13` suspicious + paste tests green; bracketed defense-only proven.                                                                                                                                         |
+| Bounded payloads              | Adversarial (oversized)                                           | Every bound enforced at the producing edge; no unbounded alloc.                                                                                                                                                |
+| PTY backpressure              | Integration (full buffer)                                         | Drops counted, UI remains responsive, telemetry increments.                                                                                                                                                    |
+| Hot-path exclusion            | Static check + perf harness                                       | No Lua call on hot path; PB-4 `8 ms` p50 holds with plugin load.                                                                                                                                               |
 
 No milestone is complete without this evidence plus independent
 architecture and security-auditor review.
@@ -792,6 +925,16 @@ architecture and security-auditor review.
   enter acceptance together or as separate follow-ups; the cross-platform
   Leader strategy is registered as OQ-088 and the Beacon spatial action engine
   as OQ-089.
+- How far composition liveness must be tracked to satisfy the preedit/commit
+  ordering rule on backends that deliver the commit key before, between, or
+  after `Commit`, and whether that state belongs in the adapter or the router.
+  The lifecycle rule above is fixed; only its placement is open, and the
+  placement decision belongs to the owning `bitty` task for
+  [bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449) rather than
+  to this candidate.
+- Whether the inline candidate-window decoration (TXT-14 in the
+  [Text and Rendering RFC](text-rendering-rfc.md)) enters this contract or
+  stays presentation-only in that RFC.
 
 These are tracked as candidate follow-ups; they do not block the rest of the
 contract.
@@ -804,7 +947,15 @@ own RFCs. It is registered as a **Draft** in
 [Decision Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md) candidate queue; experimental
 implementation exists at `bitty` `c0aadd2` + `a8735d0` (CTX-0095/0098,
 `Implemented` experimental not `Verified`) as review evidence per CTX-0116.
-Future acceptance would update those indexes, the open-question register only
+The IME composition lifecycle, preedit/commit ordering, and verbatim-commit
+rules were synchronized against `bitty` `679f12f` (2026-09-25) and record the
+open [bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449) defect
+(`P1`, trailing space after an fcitx commit) as unmet, with the product fix
+owned by the `bitty` repository. The [Terminal compatibility matrix](../reference/compatibility-matrix.md)
+records live IME composition as an uncovered `gap` because the compat lab
+replays bytes and cannot drive an input method; that gap is unaffected by this
+synchronization and still needs a platform input-layer harness. Future
+acceptance would update those indexes, the open-question register only
 via a registered decision, and the machine-readable
 [`project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json) (synchronized `a8735d0`,
 chain `d4d75e9 -> c0aadd2 -> 7e3104d -> a8735d0`, lifecycle
@@ -818,6 +969,11 @@ vs `Accepted` vs `Verified` remain distinct per `project-state.json`.
   [Architecture Overview](../architecture/overview.md).
 - Specifications: [Terminal State RFC](terminal-state-rfc.md),
   [Compatibility Milestone RFC](compatibility-milestone-rfc.md),
+  [Text Compatibility](text-compatibility.md) (text-domain IME and width
+  companion; the composition lifecycle, ordering, and verbatim-commit rules
+  are stated only here),
+  [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md) (shipped
+  versus missing verdicts, including the open IME defect),
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md),
   [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md),
   [Performance Budget RFC](performance-budget-rfc.md).

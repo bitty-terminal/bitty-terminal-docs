@@ -21,7 +21,10 @@ sidebar_order: 32
 > refreshed rows carry their implementing commits, and the remaining rows keep
 > the evidence recorded for the earlier pin. The CW-adjacent rows were
 > re-checked at `c01f538addc5edadc813351e3060a5642dbd40b9` (2026-09-23,
-> CTX-0056); only the Hints / quick-select evidence moved. It does not claim behavior beyond
+> CTX-0056); only the Hints / quick-select evidence moved. The IME
+> preedit/commit row alone was re-verified again at
+> `679f12f3529e6d75dcd63a485fb4c88c2e6141cd` (2026-09-25). It does not claim
+> behavior beyond
 > those revisions, changes no accepted contract, and closes no
 > open question. It registers new open questions
 > [OQ-073 through OQ-078](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) for genuinely
@@ -79,6 +82,13 @@ Related material, not duplicated here:
   read-only). Only the Hints / quick-select evidence needed a refinement (CW
   present-derivation consumption, verdict unchanged); all other rows retain
   the evidence recorded for the earlier pins.
+- Third pin, single row: the IME preedit/commit row was re-verified at `bitty`
+  origin `main` `679f12f3529e6d75dcd63a485fb4c88c2e6141cd` (2026-09-25),
+  read-only, after the `P1` defect
+  [bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449) was filed
+  against the fcitx commit path. No other row was re-inspected at that
+  revision, so every other verdict keeps its `b377820`, `2a26480`, or
+  `c01f538` evidence.
 - Method: symbol, mode, parser-dispatch, keymap-action, config-type, and test
   inspection. Verdicts are `shipped`, `partial`, `implemented-only (unwired)`,
   `missing`, `refused`, or `open-question`. `implemented-only (unwired)` means
@@ -185,7 +195,7 @@ These rows are recorded so absence elsewhere is not read as omission.
 | Bracketed paste (2004)                          | shipped         | `crates/bitty-runtime/src/paste.rs:213` and `:352-355`; query reply `crates/bitty-runtime/src/queries.rs:229`. Verified at HEAD.                                                                                                                                                                                                                                                                          |
 | Focus events (1004)                             | shipped         | `FocusEvents` mode (`crates/bitty-term-state/src/modes.rs:42`), query reply (`crates/bitty-runtime/src/queries.rs:216`), `CSI I`/`CSI O` emission on focus change (`crates/bitty-runtime/src/runtime/input.rs:1204`). Verified at HEAD.                                                                                                                                                                   |
 | Cursor shape via DECSCUSR                       | shipped         | `CursorStyle` parsing/state (`crates/bitty-term-state/src/cursor.rs`), block/bar/underline rendering (`crates/bitty-render/src/grid.rs:537-543`). Verified at HEAD.                                                                                                                                                                                                                                       |
-| IME preedit overlay and commit routing          | shipped         | CTX-0367 `20babf0`; bounds `IME_PREEDIT_MAX_CHARS`/`IME_COMMIT_MAX_CHARS` (`crates/bitty-runtime/src/runtime/input.rs:12`, `:18`), `crates/bitty-runtime/tests/ime_input.rs`.                                                                                                                                                                                                                             |
+| IME preedit overlay and commit routing          | partial         | CTX-0367 `20babf0`; bounds `IME_PREEDIT_MAX_CHARS = 128` / `IME_COMMIT_MAX_CHARS = 256` / `IME_COMMIT_MAX_BYTES = 1024` (`crates/bitty-runtime/src/runtime/input.rs:12`, `:100`, `:103`), `crates/bitty-runtime/tests/ime_input.rs` (7 tests). Re-verified at `679f12f`: preedit/commit ordering unmet, open `P1` [bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449); see evidence limits. |
 | Per-glyph font fallback                         | shipped         | CTX-0163/CTX-0368 `828a787`; `crates/bitty-render/src/fallback.rs` (coverage-driven fallback plus tofu).                                                                                                                                                                                                                                                                                                  |
 | Per-window font zoom                            | shipped         | CTX-0263 `bc1fbba`; `increase_font_size`/`decrease_font_size`/`reset_font_size` actions (`crates/bitty-config/src/keymap.rs`), `crates/bitty-runtime/tests/font_zoom.rs`.                                                                                                                                                                                                                                 |
 | OSC 7 cwd and OSC 133 zones                     | shipped (parse) | `crates/bitty-vt/src/parser/dispatch.rs:701` (OSC 7) and `:742` (OSC 133); `crates/bitty-term-state/src/state.rs:174`. Verified at HEAD.                                                                                                                                                                                                                                                                  |
@@ -277,6 +287,30 @@ Workspace Compositor and OQ-052; synchronized output and OSC 10/11 stay
 
 ## Evidence limits and non-claims
 
+- **The IME preedit/commit row is `partial`, not `shipped`.** The overlay, the
+  bounds, the single bounded commit write, and the focus-loss cancel ship with
+  headless evidence. The preedit-to-commit ordering and the verbatim-commit
+  obligation do not hold at `679f12f`: the composition guard is keyed on
+  overlay presence, so the empty `Preedit` that precedes `Commit` on Wayland
+  and X11 ends the composition before the commit-triggering key can be
+  suppressed, leaving a synthetic trailing space after an fcitx commit. The
+  existing headless tests do not cover that ordering: the
+  commit-triggering key press is delivered _after_ the commit in the shipped
+  fixture, where the composition has already closed and forwarding the key is
+  the expected result. The candidate contract (ordering, verbatim commit,
+  focus-loss cancel) is stated in the
+  [Input and Pointer Contract](input-pointer-rfc.md#ime-composition-and-commit-candidate),
+  which stays `Draft`; this document records the gap and does not accept that
+  contract. The product fix and its hermetic fcitx-shaped regression fixtures
+  are owned by the `bitty` repository under
+  [bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449). This
+  document records the gap; it does not claim the fix, and the row returns to
+  `shipped` only when that issue closes with the ordering fixtures green.
+- **No live input method was driven for this analysis.** Verdicts come from
+  source and test inspection at the pinned revisions. The
+  [terminal compatibility matrix](../reference/compatibility-matrix.md)
+  records live IME composition as an uncovered `gap` for the same reason, and
+  a byte-replay corpus cannot detect an input-method event-ordering defect.
 - **Mode 1007 row in the M1 RFC (resolved).** The accepted RFC now records
   the 2026-09-13 classification correction: `1007` is **Alternate Scroll**,
   not a focus-event mode, and focus events are mode `1004` only
@@ -302,5 +336,10 @@ Workspace Compositor and OQ-052; synchronized output and OSC 10/11 stay
 Re-verify this page whenever a `bitty` revision changes a row verdict, and
 close OQ-073 through OQ-078 only through their accepted decision artifact with
 the register and affected canonical documents updated in the same change. The
-next natural checkpoint is the M3 usable-terminal wave named in the
+IME row has a dated trigger: re-verify it when
+[bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449) closes, and
+keep this page, the
+[Input and Pointer Contract](input-pointer-rfc.md#ime-composition-and-commit-candidate),
+and [Text Compatibility](text-compatibility.md#ime-overlay-vs-commit) in the
+same change. The next natural checkpoint is the M3 usable-terminal wave named in the
 [roadmap](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/roadmap/now-next-later.md#candidate-horizon-mapping-hints-not-commitments).
