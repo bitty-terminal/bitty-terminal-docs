@@ -34,9 +34,38 @@ Unicode scalar width, grapheme-adjacent handling, and IME preedit/commit boundar
 
 ## IME — overlay vs commit
 
-- See [`docs/product/unicode-ime.md`](https://github.com/bitty-terminal/bitty/blob/706fa2565c5130a5dfd58dbeb8f84f71fc9f49dd/docs/product/unicode-ime.md) (§ IME model) for the full pipeline draft. This draft restates only the text-domain bite:
-- **Preedit** is ephemeral overlay, never `Snapshot`/`State`/`scrollback`/`damage`. Rendering is inline decorated overlay (underline + caret) above the cursor; grid invariants are untouched.
-- **Commit** is bounded UTF-8 bytes through the single PTY writer queue (same path as `encode_key_event`). `IME_PREEDIT_MAX_SCALARS = 256`, `IME_COMMIT_MAX_BYTES = 256` per commit; truncation is deterministic char-boundary cut (same as `BoundedString`).
+The composition lifecycle, the preedit-to-commit ordering rule, and the
+verbatim-commit guarantee are stated once in the
+[Input and Pointer Contract](input-pointer-rfc.md#ime-composition-and-commit-candidate).
+This section records only the text-domain bite and does not restate them.
+
+- See [`docs/product/unicode-ime.md`](https://github.com/bitty-terminal/bitty/blob/706fa2565c5130a5dfd58dbeb8f84f71fc9f49dd/docs/product/unicode-ime.md) (§ IME model) for the retired pipeline draft.
+- **Preedit** is ephemeral overlay, never `Snapshot`/`State`/`scrollback`/`damage`. Rendering is inline decorated overlay (underline + caret) above the cursor; grid invariants are untouched. The preedit is text-domain bounded at `IME_PREEDIT_MAX_CHARS = 128` scalars, char-boundary truncated.
+- **Commit** is bounded UTF-8 bytes through the single PTY writer queue (same path as `encode_key_event`), bounded at `IME_COMMIT_MAX_CHARS = 256` scalars and `IME_COMMIT_MAX_BYTES = 1024` bytes per commit; truncation is a deterministic char-boundary cut (same as `BoundedString`).
+- **Commit text is verbatim.** The bytes written to the PTY are exactly the UTF-8 encoding of the committed scalars. No separator, no terminator, and no synthetic trailing space is added, and a commit is never padded to a line width. A trailing space after a composition is a contract violation ([bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449)), not a rendering nicety.
+- **Preedit-to-commit ordering.** Wayland `text-input-v3` and X11 XIM end a composition with an empty `Preedit` followed by `Commit`. The clearing event ends the _overlay_, not the composition: composition liveness is tracked independently of overlay content, so the commit-triggering key press is consumed instead of being encoded as a literal space or newline.
+- **Cancel paths emit nothing.** `Ime::Disabled` and input-focus loss cancel the composition with zero PTY bytes and release the keyboard for the next event. Focus loss never commits uncommitted text.
+
+Current status at `bitty` `679f12f` (2026-09-25), read-only: the overlay,
+bounds, single-queue commit, and focus-loss cancel ship with headless evidence
+in `crates/bitty-runtime/tests/ime_input.rs`. The commit-key suppression and
+the verbatim-commit obligation are **not** met at that revision — the shipped
+composition guard is keyed on overlay presence, so the empty preedit ends the
+composition before the commit key can be consumed. The defect is open as
+`bitty` #1449 with the product fix owned by the `bitty` repository. This draft
+therefore records the bounds as `Implemented` (experimental) and the ordering
+and verbatim rules as **candidate, not yet implemented**; nothing here is
+`Verified`.
+
+The retired draft's `IME_PREEDIT_MAX_SCALARS = 256` and per-commit
+`256`-byte values do not match the shipped `128`/`256`/`1024` bounds; the
+shipped values above are the ones the
+[Input and Pointer Contract](input-pointer-rfc.md#bounded-payloads-candidate)
+binds, while the
+[Text and Rendering RFC](text-rendering-rfc.md#bounded-resources-and-hard-ceilings)
+ceiling table still carries the older `256` scalars (`TXT-10`) and `256` bytes
+(`TXT-11`) candidates. That divergence is unresolved here: reconciling the two
+candidate tables needs the text-RFC owner, not this draft.
 
 ## Terminfo
 
@@ -46,7 +75,23 @@ Unicode scalar width, grapheme-adjacent handling, and IME preedit/commit boundar
 
 - Pin the authoritative width tables per the text RFC (ADR-0004) and replace the compact `char_cell_width` tables with generated ones when accepted.
 - Land `terminfo/bitty.ti` draft and `bitty-platform` IME seam.
+- Reconcile the `TXT-10`/`TXT-11` candidate ceilings in the
+  [Text and Rendering RFC](text-rendering-rfc.md) with the shipped `128`
+  preedit / `256`-char / `1024`-byte IME bounds recorded above.
+- Re-verify the ordering and verbatim-commit rows after the owning `bitty`
+  task closes [bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449);
+  the bounds rows do not need re-verification for that fix.
 
 ## References
 
-- [`terminal-state-rfc.md`](terminal-state-rfc.md), `crates/bitty-term-state/src/cell.rs`, `crates/bitty-vt/src/parser.rs`, `crates/bitty-pty/src/builder.rs`, `tests/compat/harness.rs`, and the retired [`docs/product/unicode-ime.md`](https://github.com/bitty-terminal/bitty/blob/706fa2565c5130a5dfd58dbeb8f84f71fc9f49dd/docs/product/unicode-ime.md) draft.
+- [`input-pointer-rfc.md`](input-pointer-rfc.md) — authoritative IME
+  composition lifecycle, preedit/commit ordering, and verbatim-commit rules.
+- [`terminal-state-rfc.md`](terminal-state-rfc.md),
+  [`terminal-feature-gap-analysis.md`](terminal-feature-gap-analysis.md) —
+  shipped-versus-missing verdicts, including the open IME defect,
+  `crates/bitty-term-state/src/cell.rs`, `crates/bitty-vt/src/parser.rs`,
+  `crates/bitty-pty/src/builder.rs`, `crates/bitty-runtime/src/runtime/input.rs`,
+  `crates/bitty-runtime/tests/ime_input.rs`, `tests/compat/harness.rs`, and
+  the retired
+  [`docs/product/unicode-ime.md`](https://github.com/bitty-terminal/bitty/blob/706fa2565c5130a5dfd58dbeb8f84f71fc9f49dd/docs/product/unicode-ime.md)
+  draft.
