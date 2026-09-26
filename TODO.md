@@ -52,3 +52,36 @@ than accumulating here.
   the single-window vertical slice (`bitty-terminal/bitty#1155`, M1-29) remains
   open; the slice stays unauthorized as an accepted design constraint until
   those gates are recorded.
+
+## 2026-09-26 update
+
+### Completed
+
+- [x] IME contract specification (#126 -> PR #127, merged)
+
+### Pending (P1)
+
+- [ ] #123: Specify peer/session/rate/network restriction contracts
+  - Define debug scope implication
+  - Accepted peer proof
+  - Per-connection principal/session/consent
+  - Endpoint rate ownership
+  - Windows commitment
+  - Network redirect/transfer/deadline/proxy restrictions
+  - Typed failure
+  - Requires: Security review
+
+- [ ] #122: Freeze DevTools/IPC/network security contracts
+  - Parent issue for #123
+  - Consolidate all security contract decisions
+  - Requires: Independent review
+
+### Dependencies
+
+- Bitty implementation depends on these contract specifications
+- bitty-devtools refactoring requires these contracts
+- bitty-network implementation requires these restriction definitions
+
+---
+
+Updated: 2026-09-26
