@@ -1,6 +1,6 @@
 ---
 title: Release Ladder
-description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (21 crates 679f12f, 54 OQs Accepted, release v0.0.21) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
+description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (21 crates c6db24d, 54 OQs Accepted, release v0.0.21) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
 category: product
 audience: maintainer
 document_type: overview
@@ -14,15 +14,15 @@ sidebar_order: 21
 ## Status and provenance
 
 - Stage: **Pre-alpha / Engineering Milestones M1-M8** at the canonical snapshot of
-  `2026-09-25` (`bitty` synchronized revision `679f12f`, canonical
-  `previous_revision` `23c3eb6`, baseline `de134ec`, 21 crates, 54 OQs `Accepted`
+  `2026-09-27` (`bitty` synchronized revision `c6db24d`, canonical
+  `previous_revision` `679f12f`, baseline `de134ec`, 21 crates, 54 OQs `Accepted`
   with 46 open, release `v0.0.21`). The
   [revision-pinned implementation state](#revision-pinned-implementation-state-at-491c567-historical)
   below is historical evidence pinned to `491c567` after pivot-wave #1200-1213;
-  `491c567` and `679f12f` are separate rewritten histories with distinct root
+  `491c567` and `c6db24d` are separate rewritten histories with distinct root
   commits (`43739d0` and `9cbcce9`, no merge base), so `491c567` is neither an
-  ancestor nor a descendant of `679f12f` and no statement in that section is
-  re-derived at `679f12f`.
+  ancestor nor a descendant of `c6db24d` and no statement in that section is
+  re-derived at `c6db24d`.
   Experimental implementations `c0aadd2` (CTX-0095 vertical slice, PR #148) +
   `7e3104d` (CTX-0096 dogfood, PR #149) + `a8735d0` (CTX-0098 PTY reply fix,
   PR #151) are `Implemented` (experimental) not `Verified`/`Compatible`. This
@@ -39,7 +39,7 @@ sidebar_order: 21
   maturity remains `Pre-alpha` (not `Verified`/`Compatible`/`Release-ready`).
   Canonical snapshot:
   [`docs/project/project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
-  (synchronized `679f12f`, `2026-09-25`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
+  (synchronized `c6db24d`, `2026-09-27`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
   `Open`, `R-005`/`R-006`/`R-007` `Mitigated`, experimental `c0aadd2`/`7e3104d`/`a8735d0`
   `Implemented` not `Verified`, release `v0.0.21`) validated by `bun .github/scripts/check-state.mjs`.
 - Lifecycle: `Draft -> Experimental Implementation -> Accepted -> Verified -> Compatible -> Release-ready`
@@ -71,9 +71,9 @@ sidebar_order: 21
 
 Everything in this section is evidence pinned to the `bitty` revision `491c567`
 (after pivot-wave #1200-1213) and is superseded by the canonical snapshot in
-_Status and provenance_ above. `491c567` and `679f12f` are separate rewritten
+_Status and provenance_ above. `491c567` and `c6db24d` are separate rewritten
 histories (distinct root commits `43739d0` and `9cbcce9`, no merge base), so this
-section is a historical record, not a description of the `679f12f` tree.
+section is a historical record, not a description of the `c6db24d` tree.
 
 - **Workspace**: 21 members in `bitty/Cargo.toml` (edition 2024, resolver 3,
   `rust-version` 1.85, toolchain 1.98.1): `bitty-vt`, `bitty-pty`,
@@ -97,7 +97,7 @@ section is a historical record, not a description of the `679f12f` tree.
   `Verified`/`Compatible` claims. At the pinned `491c567` the workspace still
   carries `workspace.package.version 0.0.20` and `[Unreleased]` was synced with
   the pivot-wave merges (#1213); the version bump to `v0.0.21` recorded in the
-  canonical snapshot landed later, and the synchronized revision `679f12f`
+  canonical snapshot landed later, and the synchronized revision `c6db24d`
   carries `workspace.package.version 0.0.21`.
 - **Accepted**: the open questions accepted at that revision via 17 RFCs and 8
   ADRs, enumerated below over the OQ-001..OQ-045 range. The current `Accepted`
@@ -159,7 +159,7 @@ section is a historical record, not a description of the `679f12f` tree.
 `bittyd` and remote UI are post-v1.0 candidates (OQ-020 deferred per ADR 0008).
 
 The status column reports the revision-pinned `491c567` evidence recorded in the
-historical section above; it is not re-derived at the synchronized `679f12f`. No
+historical section above; it is not re-derived at the synchronized `c6db24d`. No
 row in this ladder claims `Verified`, `Compatible`, or `Release-ready`.
 
 ## Verification gates
@@ -171,7 +171,8 @@ row in this ladder claims `Verified`, `Compatible`, or `Release-ready`.
 - `cargo check --workspace --all-targets --locked` and
   `cargo check --target x86_64-pc-windows-gnu` pass at the synchronized
   `bitty` revision per that repository's CI (merge gates green through
-  `679f12f`).
+  `679f12f`; the synchronized head `c6db24d` adds only a docs-submodule pin
+  bump).
 - `cargo test --workspace --all-targets --locked` soak passes
   (`Implemented`); `cargo clippy -- -D warnings` 0 warnings; `cargo fmt --check` clean.
 - Publish order verified via `cargo publish --dry-run` (leaves
