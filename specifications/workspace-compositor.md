@@ -375,12 +375,18 @@ Rules:
    `radius = 0`, `content_inset = 0` regardless of user configuration.
 7. Overlay bounds (`LayoutTree` overlay nodes for floats, popups, and other
    tiers) are authored in cells, in the same coordinate space as the
-   `Workspace` container. Every solver interprets them in that unit. The cell
-   solver uses them directly. The physical-pixel present solver scales them
-   by the live cell size before clipping them to the parent area and
-   applying `border` and `content_inset` inside them. An overlay therefore
-   presents, sizes its hosted grid, and hit-tests at the same rectangle the
-   cell path allocates.
+   `Workspace` container. The cell solver uses them directly. The
+   physical-pixel present solver scales them by the live cell size and then
+   clips them to its parent area. An overlay's present frame and hit-test
+   rectangle therefore equal its cell allocation scaled by the live cell size
+   (clipped to the parent area). Its hosted grid follows the content
+   rectangle inside that frame, after `border` and `content_inset`.
+
+Change provenance for rule 7 and the topmost hit-test sentence in the
+Interactions rule 1 (CTX-0807/CTX-0803, `bitty` PR #1485): both record the
+overlay-unit and hit-test alignment shipped in `bitty` `d2ccd64`. The
+CTX-0333 provenance note below covers the decoration defaults, not these
+additions.
 
 Change provenance (CTX-0333, `bitty` PR #562): this amendment raises
 `decoration.gaps_in` from `4` to `6` so the default sibling
@@ -478,8 +484,11 @@ interactions, and scratchpad retention in this specification are not
 implemented in the slice. Live present-path px decoration painting is no longer
 a non-claim (`bitty` PR #519 CTX-0294 and PR #533 CTX-0311 shipped it; the
 single-window path also still paints the cell-unit `layout.*` gaps). The
-`smart_split` constructor and the overlay tiers above are opt-in `bitty-ui`
-primitives recorded as evidence, not live compositor wiring.
+`smart_split` constructor and the `overlay_tiered`/`overlay_stack`
+constructors above are opt-in `bitty-ui` primitives recorded as evidence, not
+live compositor wiring. The `OverlayTier` ordering itself is consumed at
+runtime: the present path paints frames in tier order, and hit testing
+resolves the topmost tier (entry 7).
 
 ## Layout algorithms as plugin via LayoutProvider
 

@@ -675,7 +675,8 @@ composition/commit fixtures (no personal input data). Status stays
   range; scrollback pruning truncates it.
 - Selection is `CopyOnSelect` only when the user enables it; the candidate
   default is explicit copy.
-- **Ownership (decision recorded in `bitty` CTX-0803).** At most one live selection exists, owned by
+- **Ownership (candidate; matches the `bitty` implementation decision DEC-0078,
+  CTX-0803).** At most one live selection exists, owned by
   exactly one View. Its coordinates are cells of that View's own grid (its
   attached terminal), never of another View. A selection without an owner is
   not representable. Starting a selection in another View replaces the live
@@ -697,8 +698,9 @@ composition/commit fixtures (no personal input data). Status stays
 - **Lifecycle.** The selection is dropped when:
   - its owner leaves the active layout (close, zoom, workspace switch or
     move);
-  - the owner's terminal session is removed or respawned;
-  - primary ownership moves away from it;
+  - the owner's pane session is removed or respawned (its grid is
+    replaced);
+  - primary ownership moves away from an owner that read the primary grid;
   - a session is restored;
   - a grid-erasing action runs on the owner's own grid (an erase on another
     View's grid leaves it alone).
@@ -753,8 +755,9 @@ Each new suite fails on the commit before its fix. Status stays
 
 Known residuals, tracked in `bitty` #1484:
 
-- A click in the window padding can still arm a link at the focused View's
-  edge cell.
+- A click in the window padding or a gap band can still arm an OSC 8 link at
+  the focused View's clamped edge cell; link activation is not yet
+  fail-closed outside every frame.
 - With a capturing View focused, a press on another View's status bar moves
   focus.
 - A selection clipped to a single visible cell is not painted while a grid is

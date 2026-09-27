@@ -108,17 +108,20 @@ owning View, not by the primary terminal grid.
 
 - The selection is owned by exactly one `ViewId` and read from that View's
   own grid.
-- Pointer events resolve the topmost View in paint order and are encoded in
-  that View's own cells.
+- Pointer hit testing resolves the topmost View in paint order. Mouse reports
+  are encoded in the receiving (focused) View's own cells, clamped at its
+  edge. A left press on another View moves focus there first when either
+  terminal tracks the mouse.
 - Copy mode and search are bound to the View they started in.
 - Output attribution lets a View-bound consumer react only to its own
   Terminal's output.
 - Every consumer fails closed when its View no longer resolves to a live grid
   in the active layout.
 
-This is the View/Terminal separation above applied to presentation state. It
-also means that a later multi-View presentation of one Terminal keys
-selection per View, not per Terminal. The contract and evidence are in the
+This is the View/Terminal separation above applied to presentation state. The
+candidate model would therefore key selection per View, not per Terminal, if
+one Terminal is later presented by several Views. The contract and evidence
+are in the
 [Input and Pointer Contract](../specifications/input-pointer-rfc.md) and the
 [TerminalRegistry and View Lifecycle Contract](../specifications/terminal-registry-view-lifecycle-rfc.md).
 
