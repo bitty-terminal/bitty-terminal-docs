@@ -102,6 +102,26 @@ After separation, multiple Views can present the same Terminal, while the model
 also preserves space for future detach and attach, session persistence, and a
 remote UI. Those future capabilities are not themselves commitments.
 
+Implementation note (`bitty` PR #1485, `d2ccd64`; `Implemented`, not
+`Verified`): pointer- and keyboard-driven presentation state is keyed by the
+owning View, not by the primary terminal grid.
+
+- The selection is owned by exactly one `ViewId` and read from that View's
+  own grid.
+- Pointer events resolve the topmost View in paint order and are encoded in
+  that View's own cells.
+- Copy mode and search are bound to the View they started in.
+- Output attribution lets a View-bound consumer react only to its own
+  Terminal's output.
+- Every consumer fails closed when its View no longer resolves to a live grid
+  in the active layout.
+
+This is the View/Terminal separation above applied to presentation state. It
+also means that a later multi-View presentation of one Terminal keys
+selection per View, not per Terminal. The contract and evidence are in the
+[Input and Pointer Contract](../specifications/input-pointer-rfc.md) and the
+[TerminalRegistry and View Lifecycle Contract](../specifications/terminal-registry-view-lifecycle-rfc.md).
+
 ### Separate the parser from Terminal State
 
 The VT parser converts a byte stream into semantic `TerminalAction` values.

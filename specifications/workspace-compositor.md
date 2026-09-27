@@ -373,6 +373,14 @@ Rules:
    are `6` logical px.
 6. `bitty --safe` starts with `gaps_in = 0`, `gaps_out = 0`, `border = 1`,
    `radius = 0`, `content_inset = 0` regardless of user configuration.
+7. Overlay bounds (`LayoutTree` overlay nodes for floats, popups, and other
+   tiers) are authored in cells, in the same coordinate space as the
+   `Workspace` container. Every solver interprets them in that unit. The cell
+   solver uses them directly. The physical-pixel present solver scales them
+   by the live cell size before clipping them to the parent area and
+   applying `border` and `content_inset` inside them. An overlay therefore
+   presents, sizes its hosted grid, and hit-tests at the same rectangle the
+   cell path allocates.
 
 Change provenance (CTX-0333, `bitty` PR #562): this amendment raises
 `decoration.gaps_in` from `4` to `6` so the default sibling
@@ -395,7 +403,7 @@ contract. It does not promote this specification beyond `Accepted`, does not
 close its open items, and does not claim `Verified`/`Compatible`; the full
 compositor above remains the target. Entries 1-4 record the single-window
 compositor slice; entries 5-6 record `bitty-ui` presentation primitives merged
-later. All cited commits are ancestors of `origin/main`, verified read-only via
+later; entry 7 records the overlay-unit and hit-test alignment. All cited commits are ancestors of `origin/main`, verified read-only via
 `merge-base --is-ancestor`.
 
 What merged, exactly:
@@ -450,6 +458,20 @@ What merged, exactly:
    geometry are unchanged, and the heuristic is unit-tested. This is an opt-in
    `bitty-ui` constructor, not the `LayoutProvider` dwindle plugin promised
    above, and the app split path still chooses an explicit axis.
+7. **Overlay units and topmost hit testing** (`bitty` PR #1485 `d2ccd64`,
+   CTX-0807/CTX-0803, closes `bitty` #1481):
+   - `layout_with_decoration_scaled` scales overlay bounds by the live cell
+     size (`OverlayUnits` in `crates/bitty-ui/src/decoration.rs`), per rule 7
+     above. Before this, a float presented as a sliver whose pixel frame
+     equalled its cell numbers, with a `1 x 1` hosted grid. The unit-agnostic
+     `layout_with_decoration` output is unchanged.
+   - `cursor_to_present_cell`, `cursor_to_leaf_cell`, and the in-grid status
+     bar probe resolve the topmost frame in paint order, per the Interactions
+     rule 1 below.
+   - Evidence: `crates/bitty-runtime/tests/overlay_units_present.rs` and the
+     decoration unit tests. The View-owned selection and pointer routing that
+     ships in the same PR is recorded in the
+     [Input and Pointer Contract](input-pointer-rfc.md).
 
 Explicit non-claims: the `LayoutProvider` plugin algorithms, drag/resize
 interactions, and scratchpad retention in this specification are not
@@ -535,7 +557,10 @@ Rules:
 
 1. Drag and resize never run inside the VT parser or damage-to-snapshot path;
    they are presentation interactions with explicit hit testing against
-   decoration-inclusive `View` rectangles.
+   decoration-inclusive `View` rectangles. Hit testing resolves the topmost
+   `View` in paint order (base, then overlay tiers, later solver order
+   winning within a tier), so a visible overlay owns the pointer over the
+   `View` it covers.
 2. Cross-workspace moves are atomic: both source and destination `LayoutTree`s
    are validated before either is committed; on validation failure both remain
    unchanged and a diagnostic is emitted.
