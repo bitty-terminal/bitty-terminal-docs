@@ -231,7 +231,7 @@ Rules:
 Focus is per window and owned by the workspace that is active in that window:
 
 1. Exactly zero or one `ViewId` per active workspace is focused. Zero occurs only when the window is unfocused, the workspace is empty, or the focused view was just detached. The window regains focus by focusing the most-recently-focused view per MRU order inside that workspace.
-2. Focus follows the routing rule in the [Input and Pointer Contract](input-pointer-rfc.md): `Platform -> Router -> focused View -> keymap -> encoder -> PTY of the attached terminal`. Keyboard, IME preedit, and wheel routing all read the same focused `ViewId`. Mouse events use hit testing against view rectangles; keyboard and IME use focus regardless of pointer position.
+2. Focus follows the routing rule in the [Input and Pointer Contract](input-pointer-rfc.md): `Platform -> Router -> focused View -> keymap -> encoder -> PTY of the attached terminal`. Keyboard, IME preedit, and wheel routing all read the same focused `ViewId`. Mouse events use hit testing against view rectangles and resolve the topmost View in paint order: base Views first, then overlay tiers `Editor < Float < Popup < Messages`, with later solver order winning within a tier. A visible float therefore owns the pointer over the View it covers, for click-to-focus, hover focus, capture, chrome, and selection alike. Keyboard and IME use focus regardless of pointer position.
 3. Changing focus emits a cold-path `FocusChanged { window_id, workspace_id, old_view, new_view }` and synthesizes focus-report bytes `CSI I` and `CSI O` only when the newly focused terminal has enabled focus reporting `1004`. No focus change mutates terminal grid.
 4. Detaching the focused view moves focus to the next view in MRU order inside the same workspace before the detach commits. Destroying the focused view does the same. If the workspace has no other view focus becomes `None` and keyboard input is dropped with a `no_focus` counter rather than routed to a stale terminal.
 5. Focus is not a capability. A plugin that requests `terminal.input` still routes through the focused view; it cannot address a background view without an explicit capability.
@@ -306,8 +306,8 @@ Reconciled with the [Text and Rendering RFC](text-rendering-rfc.md) and [Termina
 Reconciled with the [Input and Pointer Contract](input-pointer-rfc.md) and [Terminal State RFC](terminal-state-rfc.md):
 
 1. Alternate-screen state is terminal state (`DECSET 1049` and related). Entering alternate screen saves the primary-screen cursor, style, and mode set; exiting restores them. The registry does not duplicate this state per view.
-2. Mouse capture (modes `1000`, `1002`, `1003`, `1006`) is terminal state per terminal, but its effect is per attached view. A mouse event is captured and encoded to PTY only when the terminal of the focused or hit-tested view has enabled a mouse mode and the view is visible. Inactive or hidden views never capture.
-3. Shift override is unconditional: holding Shift on a mouse press, drag, or release bypasses capture for that event and routes it to the selection path for the hit-tested view, per the input draft. The registry does not arbitrate Shift; the router does, then notifies the registry of the selection outcome only as presentation state.
+2. Mouse capture (modes `1000`, `1002`, `1003`, `1006`) is terminal state per terminal, but its effect is per attached view. A mouse event is captured and encoded to PTY only when the terminal of the focused or hit-tested view has enabled a mouse mode and the view is visible. Inactive or hidden views never capture. Encoded coordinates are cells of the receiving view's own grid, measured from its content-frame origin and clamped at its edge. A left press on a view other than the focused one first moves focus to the hit view when either terminal tracks the mouse; capture is then decided for that same press against the newly focused view.
+3. Shift override is unconditional: holding Shift on a mouse press, drag, or release bypasses capture for that event and routes it to the selection path for the hit-tested view, per the input draft. The registry does not arbitrate Shift; the router does, then notifies the registry of the selection outcome only as presentation state. The resulting selection is owned by the hit-tested view (at most one live selection) and follows the single selection-model lifecycle defined in the [Input and Pointer Contract](input-pointer-rfc.md#selection-model); this contract does not restate it.
 4. On alternate-screen exit all queued but not yet encoded captured events are re-evaluated as uncaptured before encoding. Already encoded bytes remain in the PTY buffer; they are not recalled.
 
 ## Shared observation policy
@@ -403,6 +403,7 @@ for Lua and no bypass of existing P0 gates.
    - View rectangle plus DPI-aware cell metrics decide cols and rows; zero-area rect, clamped out-of-range geometry, and debounce coalescing at `64` rects per tick are covered; every committed resize revalidates cursor integrity and geometry invariants.
 6. **Alternate-screen and capture tests**:
    - Alternate-screen entry saves and exit restores primary cursor and modes; mouse capture is per terminal but effective only for visible attached views; Shift override routes to selection regardless of capture.
+   - Captured reports carry the receiving view's own cells, clamped at its edge; a press on another view moves focus and re-evaluates capture on the same press; a press over a visible float resolves the float, not the view beneath it.
 7. **Reattachment versus recreation tests**:
    - Detached terminal survives with same ids; reattached terminal retains history; exited terminal reports `TerminalExited`; `close` retires the id and a subsequent create with the same `PersistentId` rehydrates scrollback but allocates fresh `TerminalId` and `RuntimeId`.
 8. **Headless composition tests**: workspace view rectangles, registry lifecycle, focus, and resize routing each have headless tests without a window or GPU, asserting rectangle equivalence and atomicity.
@@ -421,7 +422,11 @@ for Lua and no bypass of existing P0 gates.
 
 This specification refines OQ-005 and OQ-007 at the lifecycle level per
 CTX-0117; it does not open a new OQ and does not claim `Verified` or
-`Compatible` status. Remaining open items above require follow-up RFCs or
+`Compatible` status. The topmost-in-paint-order hit rule, pane-local capture
+coordinates, same-press capture re-evaluation, and view-owned selection
+lifecycle above were synchronized against `bitty` `d2ccd64` (PR #1485,
+`Implemented` experimental, not `Verified`); the implementation evidence is
+recorded in the [Input and Pointer Contract](input-pointer-rfc.md). Remaining open items above require follow-up RFCs or
 tasks per the [documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md)
 and [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 

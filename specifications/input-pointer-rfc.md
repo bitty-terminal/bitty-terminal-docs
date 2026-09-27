@@ -426,9 +426,12 @@ extends it with the full pointer contract:
 
 - **Coordinate mapping**: Cell coordinates are `(col+1, row+1)` per SGR. Pixel
   coordinates from the platform are converted via current cell size; the
-  result is clamped to `[1, 65535]` and then to the View grid. A coordinate
-  outside the grid is clamped, not dropped, with a `clamped` flag for
-  telemetry.
+  result is clamped to `[1, 65535]` and then to the View grid. The View grid
+  is the grid of the View that receives the report: its own content-frame
+  origin is subtracted before the division, so a View that does not start at
+  the window origin still reports its own cells. A coordinate outside the grid
+  (including a pointer over a sibling View) is clamped to that View's nearest
+  edge cell, not dropped, with a `clamped` flag for telemetry.
 - **Button mapping**: Left/Middle/Right, plus `Button8+` as bounded
   additional buttons (`<= 8` total). Wheel is not a button; see scroll.
 - **Motion coalescing**: Consecutive motion events within one frame are
@@ -444,8 +447,13 @@ extends it with the full pointer contract:
   mode, mouse events are considered **captured**: they encode to PTY and do
   not create a selection by default.
 - Capture is per-View, not global. Switching the active View releases capture
-  for the unfocused View; the newly focused View re-evaluates capture on the
-  next event.
+  for the unfocused View; the newly focused View re-evaluates capture for the
+  same press that focused it. A left press on a View other than the focused
+  one moves focus to the View under the pointer first whenever either View's
+  terminal tracks the mouse, so the press is reported to (or selects in) the
+  View it landed on and is never reported to the previously focused
+  application at clamped coordinates. `Shift` (selection escape), `Alt`
+  (float move), gap bands, and split handles keep their own routing.
 - On alternate-screen exit (`rMC`), capture ends immediately. Queued
   captured events already encoded remain in the PTY buffer; queued but not
   yet encoded events are re-evaluated as uncaptured.
@@ -667,6 +675,93 @@ composition/commit fixtures (no personal input data). Status stays
   range; scrollback pruning truncates it.
 - Selection is `CopyOnSelect` only when the user enables it; the candidate
   default is explicit copy.
+- **Ownership (candidate; matches the `bitty` implementation decision DEC-0078,
+  CTX-0803).** At most one live selection exists, owned by
+  exactly one View. Its coordinates are cells of that View's own grid (its
+  attached terminal), never of another View. A selection without an owner is
+  not representable. Starting a selection in another View replaces the live
+  one; per-View persistent selections (one per View at the same time) are a
+  deferred option.
+- **Owner resolution.** A press selects in the View under the pointer,
+  resolved as the topmost View in paint order, so a visible float wins over
+  the View it covers. `Shift`+press selects in that View without moving
+  focus. A press in the window padding or a gap band falls back to the
+  focused View with clamped mapping.
+- **Drag confinement.** Drag and release map the pointer into the owner's
+  content frame and clamp at its edge, so a drag that leaves the owner never
+  selects a sibling View's cells.
+- **Owner-grid readers.** Text extraction, word/line expansion, resize
+  reclamp, and the highlight all read the owner's grid. The highlight is
+  painted only inside the owner's content frame, using the same row
+  translation as hit testing. A reader whose owner no longer resolves to a
+  live grid in the active layout sees no selection (fail closed).
+- **Lifecycle.** The selection is dropped when:
+  - its owner leaves the active layout (close, zoom, workspace switch or
+    move);
+  - the owner's pane session is removed or respawned (its grid is
+    replaced);
+  - primary ownership moves away from an owner that read the primary grid;
+  - a session is restored;
+  - a grid-erasing action runs on the owner's own grid (an erase on another
+    View's grid leaves it alone).
+- **Keyboard consumers.** Copy mode and the scrollback search overlay bind to
+  the focused View when they start. They walk, match, and copy that View's
+  grid for the whole session, even if focus moves. They end when that View
+  loses its grid, and the selection they drive is owned by that View. Output
+  on another View's grid never refreshes a bound search. Select-all selects
+  the focused View's grid. The persistent-selection API follows the same
+  keyboard View.
+
+### View-owned selection and pointer routing (implementation evidence)
+
+Status: **experimental implementation evidence.** This records the shipped
+`bitty` behavior and does not accept the candidate sections above.
+
+Shipped in `bitty` PR #1485, squash-merged as `d2ccd64` (2026-09-27). It
+closes `bitty` #1476, #1433, #1477, #1478, and #1481 (CTX-0803, CTX-0804,
+CTX-0805, CTX-0807).
+
+- Selection state: `Option<SelectionState { owner, selection, anchor_press,
+dragging }>` in `crates/bitty-runtime/src/runtime/selection.rs`. Grid
+  resolution goes through `grid_of`, `session_state_for`, and the
+  fail-closed `live_view_state`. The lifecycle funnels are
+  `invalidate_stale_view_bindings` and `drop_view_bindings_for`.
+- Pointer mapping in `crates/bitty-runtime/src/runtime/layout_focus.rs`:
+  - `selection_press_target`: press target View and cell.
+  - `cursor_to_owner_cell`: drag and release clamped to the owner frame.
+  - `owner_row_window_start`: the row translation shared by hit testing and
+    paint.
+  - `mouse_report_cell`: pane-local report cells.
+  - `hyperlink_uri_at`: OSC 8 activation in the clicked View's grid, which
+    fails closed while that View is scrolled into history.
+- Hit testing: `cursor_to_present_cell` and `cursor_to_leaf_cell` resolve the
+  topmost View in paint order (overlay tier, then solver order).
+  Click-to-focus, hover focus, the capture pre-focus
+  (`focus_pointer_pane_before_capture`), the in-grid status bar, and the
+  selection press therefore agree on a float over a base View.
+- Output attribution: `fed_grid_view` in `runtime/panes.rs` names the grid
+  the shared output pipeline is feeding (a pane drain swaps its grid into the
+  primary slot). An erase or search refresh therefore affects only the View
+  bound to that grid.
+- Headless evidence, all Unix-gated where a real pane session is needed:
+  - `crates/bitty-runtime/tests/selection_view_owned.rs`
+  - `mouse_report_panes.rs`
+  - `copy_search_view_bound.rs`
+  - `overlay_units_present.rs`
+  - frame-clip unit tests in `runtime/present.rs`
+
+Each new suite fails on the commit before its fix. Status stays
+`Implemented` (experimental), not `Verified`.
+
+Known residuals, tracked in `bitty` #1484:
+
+- A click in the window padding or a gap band can still arm an OSC 8 link at
+  the focused View's clamped edge cell; link activation is not yet
+  fail-closed outside every frame.
+- With a capturing View focused, a press on another View's status bar moves
+  focus.
+- A selection clipped to a single visible cell is not painted while a grid is
+  taller than its frame.
 
 ### Copy
 
@@ -951,7 +1046,14 @@ The IME composition lifecycle, preedit/commit ordering, and verbatim-commit
 rules were synchronized against `bitty` `679f12f` (2026-09-25) and record the
 open [bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449) defect
 (`P1`, trailing space after an fcitx commit) as unmet, with the product fix
-owned by the `bitty` repository. The [Terminal compatibility matrix](../reference/compatibility-matrix.md)
+owned by the `bitty` repository. The selection model, mouse coordinate
+mapping, and alternate-screen capture sections were synchronized against
+`bitty` `d2ccd64` (2026-09-27, PR #1485). Selection is View-owned end to end,
+pointer consumers address the View under the pointer, and copy mode and
+search are View-bound. The capture rule now re-evaluates on the same press
+that moves focus instead of "on the next event". The residual defects are
+recorded in [bitty#1484](https://github.com/bitty-terminal/bitty/issues/1484).
+The [Terminal compatibility matrix](../reference/compatibility-matrix.md)
 records live IME composition as an uncovered `gap` because the compat lab
 replays bytes and cannot drive an input method; that gap is unaffected by this
 synchronization and still needs a platform input-layer harness. Future
