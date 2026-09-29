@@ -125,6 +125,11 @@ policy over workspace primitives`.
   (including PTY teardown and save-on-close policy), never a parallel path.
 - This record opens no surface and no capability; it is a scope statement
   only.
+- Workspace pills are not tabs. Under the candidate
+  [Chrome Band Contract](chrome-band-contract-candidate.md) the built-in
+  `workspace` module renders one pill per workspace on the Bar's edge band;
+  panel tabs remain the separate `PW-10` surface on the exclusive `tabline`
+  claim, and this recommendation is unchanged by the pills.
 
 ## Verification backlog
 

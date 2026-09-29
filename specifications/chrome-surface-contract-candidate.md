@@ -95,7 +95,10 @@ tabline | statusline | overlay`), the exclusive tabline declaration, and the
    accepted invariant restated for the full chrome inventory.
 2. **Chrome geometry is Core-owned.** Placement, thickness, and the resulting
    `gaps_out` inset are decided by Core; an edge change recomputes the Workspace
-   tiling area before the next present and never resizes a PTY as a side effect.
+   tiling area before the next present. Rendering chrome never resizes a PTY as
+   a side effect: a chrome geometry change is a layout input whose normal
+   reflow drives any PTY resize through the ordinary resize path, as defined by
+   the candidate [Chrome Band Contract](chrome-band-contract-candidate.md).
 3. **Chrome reads identity, not content.** A chrome surface may read
    `PanelId`, title, focus, and presentation order. It may not read terminal
    grid contents, scrollback, or another panel's buffer except through the
@@ -146,15 +149,16 @@ Chrome is a presentation surface with no authority. This record adds no
 capability and no host surface; it restates the accepted read-only rule for a
 wider inventory and keeps chrome slots inside the accepted closed set and
 budget. Two properties matter for review: a plugin gains no ability to read
-another panel's content through chrome, and chrome geometry can never drive a
-PTY resize. No `P0` criterion is affected; a security reviewer is required if a
+another panel's content through chrome, and chrome geometry reaches a PTY only
+through the ordinary reflow and resize path, never from rendering. No `P0` criterion is affected; a security reviewer is required if a
 future revision admits a new chrome slot family or grants chrome a modal
 surface.
 
 ## Verification plan
 
 1. A headless test asserting an edge change of the Bar recomputes the tiling
-   area and issues no PTY resize.
+   area and resizes the PTY only through the reflow's ordinary resize path,
+   while a Bar content update issues no PTY resize.
 2. A test asserting a chrome surface receiving keyboard input routes it to the
    focused panel or overlay and never consumes it itself.
 3. A source-level assertion that chrome segment producers read identity or
@@ -227,3 +231,5 @@ decision changes. The security review above records that disposition.
   chrome runtime direction and U-9 convergence roadmap.
 - [Overlay Ownership Reconciliation](overlay-ownership-reconciliation.md) —
   overlay tiers and modal authority.
+- [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md) —
+  edge band geometry, content regions, and interaction for the Bar.
