@@ -848,12 +848,25 @@ Shipped leaf inventory:
   start: `terminal.shell` and `terminal.scrollback` are spawn-time state, and
   `selection.auto_copy`, `layout.gaps_in`/`gaps_out`, `scrollbar.*`, and
   `mouse.*` are adopted into the runtime configuration once at startup.
-- **Activation status.** "Live-reconcilable" is the declared class; the runtime
-  hot-swap activation path is not wired yet. `bitty ctl config reload` validates
-  the file and reports its path with `"hot_swap":"follow-up"`, and
-  `reconcile_live` has no production caller. The runtime live-adopt setters
-  (`set_decoration`, `set_outline`, `set_animations`) exist for the presentation
-  subset, but nothing drives them from the reload diff yet.
+- **Activation status.** "Live-reconcilable" is the declared class and the
+  presentation subset is now wired. `reconcile_live` has a production caller:
+  the composition root installs a reload context at startup (skipped under
+  `--safe`), and both `bitty ctl config reload` and an automatic file poll
+  (mtime + length, so atomic-rename writes are seen) drive the same path. A
+  live reload diffs the incoming file against the active config, and on an
+  all-`Live` change adopts it and drives the runtime live-adopt setters
+  (`set_decoration`, `set_outline`, `set_animations`, `set_window_padding`,
+  `set_window_radius_px`, `set_font_size`) from the resulting `RuntimeConfig`.
+  The control reply reports `{"reloaded":true,"applied":<bool>,"kind":...,
+"path":...,"changed":[...]}`; a change that needs a restart or a rejected key
+  keeps the previous good plan active (`should_retain_previous`) and applies
+  nothing. With no reload context installed (for example a config-probing or
+  `--safe` process) the reply degrades to the older probe-only
+  `"hot_swap":"follow-up"` shape, which validates the file without applying it.
+  Still follow-ups (no runtime adopter yet): `font.family`/`line_height`/
+  `letter_spacing`, `appearance.theme`/`colors`, `keymaps`/`leader`/`mod_key`,
+  and `window.opacity` (the last needs the live GPU surface, not a headless
+  tick).
 - Unknown and undeclared keys are rejected by validation; the previous good
   plan stays active (`should_retain_previous`).
 
