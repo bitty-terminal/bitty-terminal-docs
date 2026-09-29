@@ -77,7 +77,7 @@ sidebar_order: 22
 | macOS             | x86_64  | binary → `.app` / `.dmg`                  | Tier 1/2                       |
 | Windows           | x86_64  | `.exe` → installer                        | **Tier 1**                     |
 | Windows           | ARM64   | `.exe`                                    | Tier 2                         |
-| FreeBSD           | x86_64  | binary / package                          | Later                          |
+| FreeBSD           | x86_64  | binary / `tar.xz`                         | Tier 2 (binary built)          |
 | 32-bit / RISC-V   | —       | —                                         | Out of scope                   |
 
 - The most urgent four (recorded as already-visible pipeline inconsistencies,
@@ -113,6 +113,13 @@ First-hand verification against the `bitty` checkout at the time of writing
   `Terminal=false`, `Categories=System;TerminalEmulator;`. No AppStream
   metainfo file exists anywhere under `packaging/`, `nfpm.yaml`, or
   `.github/`.
+- FreeBSD x86_64 (ADR-0002 Tier 2) now has both a nightly, non-PR-gating CI
+  leg (`.github/workflows/bsd-tier.yml`, `schedule` + `workflow_dispatch`,
+  booting a real FreeBSD 15.1 VM through `cross-platform-actions`) and a
+  release `build-freebsd` job in `.github/workflows/release.yml` that builds
+  the native binary and a `bitty-<version>-x86_64-unknown-freebsd.tar.xz`
+  inside the guest. nfpm cannot emit a FreeBSD `pkg`, so no native package
+  ships yet.
 
 ## Ordered hardening plan (candidate)
 
@@ -173,7 +180,10 @@ validate`) and IDs agree across desktop file, metainfo, and Wayland
     setup.exe / winget come later. Acceptance: unzip-and-run works on a
     clean Windows runner.
 11. **Deferred bucket.** Windows installer, macOS codesign/notarize,
-    FreeBSD packaging, AppImage — explicitly after items 1–10.
+    AppImage — explicitly after items 1–10. (FreeBSD x86_64 graduated out of
+    this bucket as an ADR-0002 Tier 2 target: a nightly FreeBSD VM CI leg and
+    a release `build-freebsd` job now build the native binary and a `tar.xz`;
+    nfpm has no FreeBSD `pkg` backend, so a native `.pkg` stays deferred.)
 
 ## Explicit non-goals
 
