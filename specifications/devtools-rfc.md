@@ -378,7 +378,7 @@ holds both the capability and the debug scope. `debug.control` actions
 affect only the owning plugin generation and never sibling plugins or
 unrelated terminals, matching FS-3 containment.
 
-> Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515, issue
+> Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515 (`c9b386f`), issue
 > #1404): the terminal-reading debug methods (`getSnapshot`, `getGridText`,
 > `getInputRing`, `getModifiers`, `getFocus`) require a debug scope and
 > `terminal.inspect`. Their published stores are not yet attributed to one
@@ -538,7 +538,7 @@ owning session lifetime):
    calls, `bitty plugin revoke` parity, and host-side detachment with an
    auditable receipt.
 
-> Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515): bearer
+> Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515 (`c9b386f`)): bearer
 > tokens are 128 bits from the platform CSPRNG, and each bearer is bound to
 > one session, principal, consent generation, terminal, and method family; a
 > consent change or session end voids it. The connection-bound issuer is not
@@ -888,7 +888,7 @@ reconnect-counter issue #106, and claims no Verified status.
 > spoofing. The accepted contract above is unchanged; this note claims no
 > Verified status.
 >
-> Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515, issues
+> Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515 (`c9b386f`), issues
 > #1403/#1404): each accepted connection gets its own server-minted principal
 > and session from a process-wide, non-reusing counter; closing or dropping
 > the connection ends the session and revokes every automation bearer bound
