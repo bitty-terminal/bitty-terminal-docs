@@ -558,6 +558,15 @@ owning session lifetime):
 > ceiling) are not treated as consent. Item 4's revocation surface is
 > likewise not wired to a user-facing action. This note claims no Verified
 > status.
+>
+> Implementation note (Implemented-only, `bitty` CTX-0855, PR #1523
+> (`0f7134f9`)): the authority-less `ServeContext` constructors and the
+> context-free bearer minters, which bind an empty principal and consent
+> generation 0, are compiled only with the `bitty-ipc` `test-support` cargo
+> feature. That feature is enabled only from dev-dependencies. A repository
+> gate fails the build when any normal or build dependency edge of the
+> workspace enables a `test-support` feature, so production builds contain no
+> bearer minter until the consent gesture in item 1 exists.
 
 **Campaign client helper (Implemented-only, `bitty-devtools` CTX-0059/#105):**
 `runCampaign` defaults to read-only probes. Mutating probes require explicit
@@ -925,6 +934,20 @@ Verification: hermetic loopback fixtures cover benign requests just above
 admission. They also cover malformed, incomplete, over-limit, interleaved,
 and late sequences, each ending in a typed error or a silent close as defined
 above, with no dispatch.
+
+> Implementation note (Implemented-only, `bitty` CTX-0828, PR #1525
+> (`5e97751b`); `bitty-devtools` CTX-0084, PR #149 (`449b65d8`)): the core
+> serve loop reassembles fragments under the receiver rules above. While a
+> reassembly is open, every socket read waits at most the time left before
+> the 5-second deadline, so a peer that drips a fragment byte by byte cannot
+> hold a connection past it. The envelope parser accepts up to the 1 MiB
+> logical limit, and the per-method `params` caps are unchanged: no current
+> method accepts `params` above 32 KiB, so a large request today ends in one
+> correlated `PayloadTooLarge` reply. The TypeScript and Rust DevTools clients
+> send byte-identical fragments. The live TypeScript socket sends a
+> fragmented request only on an idle connection and continues partial writes
+> on socket drain. Acceptance of this amendment stays open, and this note
+> claims no Verified status.
 
 ## Transport, authentication, and session lifecycle (accepted)
 
