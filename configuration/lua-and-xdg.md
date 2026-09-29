@@ -852,13 +852,17 @@ Shipped leaf inventory:
   presentation subset is now wired. `reconcile_live` has a production caller:
   the composition root installs a reload context at startup (skipped under
   `--safe`), and both `bitty ctl config reload` and an automatic file poll
-  (mtime + length, so atomic-rename writes are seen) drive the same path. A
+  (mtime + length at most every 500 ms, so atomic-rename writes are seen
+  without a per-frame `stat`) drive the same path. A
   live reload diffs the incoming file against the active config, and on an
   all-`Live` change adopts it and drives the runtime live-adopt setters
   (`set_decoration`, `set_outline`, `set_animations`, `set_window_padding`,
   `set_window_radius_px`, `set_font_size`) from the resulting `RuntimeConfig`.
   The control reply reports `{"reloaded":true,"applied":<bool>,"kind":...,
-"path":...,"changed":[...]}`; a change that needs a restart or a rejected key
+"path":...,"changed":[...],"restart_required":[...]}`: `applied` covers only
+  the adopted presentation subset, and `restart_required` lists changed
+  `Live`-class fields the runtime cannot adopt yet (they take effect on the
+  next start). A change that needs a restart or a rejected key
   keeps the previous good plan active (`should_retain_previous`) and applies
   nothing. With no reload context installed (for example a config-probing or
   `--safe` process) the reply degrades to the older probe-only
