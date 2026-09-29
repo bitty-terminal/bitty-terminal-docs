@@ -99,7 +99,7 @@ to Bitty without copying Waybar implementation details:
 | Per-module `format`, `interval`, `on-click`, `tooltip`     | Per-module typed configuration block keyed by module identifier                    | Schema-validated via `ConfigPlan`; no executable code in format strings; actions route through the command registry.                                                            |
 | Composable, independent modules                            | `StatusBar` composes modules as pure presentation segments                         | Modules cannot read or mutate Terminal State, grid, or IPC policy; they read only their declared inputs (workspace state, cwd, git snapshot, metrics snapshot, battery, clock). |
 | User-controlled enable/disable and slot moves              | Registry `enabled` and slot reassignment via configuration                         | Disabled modules are not instantiated and incur no sampling cost; unknown identifiers fail validation.                                                                          |
-| Bar-level `height`, `position`, `layer`                    | StatusBar placement contract (bottom-anchored, presentation layer)                 | Bitty fixes placement to one bar for v1; layer/position are not user-configurable beyond enabled/ordering.                                                                      |
+| Bar-level `height`, `position`, `layer`                    | StatusBar placement contract (bottom-anchored, presentation layer)                 | Bitty fixes placement to one bar for v1; layer/position are not user-configurable beyond enabled/ordering. The candidate Chrome Band Contract extends this to `top`/`bottom`.   |
 
 Rules of the import:
 
@@ -406,6 +406,13 @@ registry identifier, and allows slot placement like
   three privileged metrics.
 - Concrete headless test harness placement for registry and
   `SystemMetricsService` adapter injection.
+- Bar placement beyond the bottom-only v1 note: the candidate
+  [Chrome Band Contract](chrome-band-contract-candidate.md) defines the Bar as a
+  Core-owned edge band (four edges defined, `top`/`bottom` planned for v0.1)
+  that reduces the tiling area instead of occluding terminal content, maps the
+  registry `left`/`center`/`right` slots onto band regions, and renders the
+  `workspace` module as one pill per workspace. This draft adopts none of it
+  until that record or a successor Bar RFC is accepted.
 
 This draft does not close an open question on its own; it will track to the
 owning status-system question once that question is recorded in the
@@ -417,6 +424,7 @@ a standalone specification per the [documentation workflow](https://github.com/b
 - Waybar: highly customizable Wayland bar with composable modules and
   `modules-left`/`modules-center`/`modules-right` slot composition.
 - [Configuration Model RFC](configuration-model-rfc.md)
+- [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md)
 - [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
 - [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)
 - [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md)

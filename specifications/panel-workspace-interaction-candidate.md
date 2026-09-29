@@ -256,12 +256,19 @@ Terminal-side conclusions:
   [Lua and XDG configuration](../configuration/lua-and-xdg.md#appearance-knobs-supported-reference));
   they are new Candidate keys and are not defined here.
 
-**Open.** Whether edge placement, height, colors, indicator color, animations,
-active-workspace color, and hiding land in the Status System draft, a Bar RFC,
-or the appearance/configuration model; how the Workspace area, decoration
-insets, and PTY geometry are recomputed for each edge; whether the Bar is
-per-`Window` or per-`Workspace`; and how a hidden or relocated Bar behaves in
-`bitty --safe` are undecided.
+**Resolved by the candidate
+[Chrome Band Contract](chrome-band-contract-candidate.md).** Edge placement,
+height, active/inactive colors, and hiding land in that record as candidate
+`workspace.bar.edge`, `workspace.bar.size`, `workspace.bar.colors`, and the
+retained `workspace.show_bar`; the Workspace area, decoration insets, and PTY
+geometry are recomputed per edge by the band geometry and reflow rules there
+(four edges defined, `top`/`bottom` planned for v0.1); and a hidden or
+relocated Bar in `bitty --safe` falls back to the minimal bar on the configured
+edge. These resolutions are candidate, not accepted.
+
+**Open.** Indicator/slider color and Bar animations beyond the band thickness
+transition, and whether the Bar is per-`Window` or per-`Workspace`, remain
+undecided.
 
 ## PW-5 Stable identity (Candidate)
 
@@ -393,7 +400,11 @@ undoable through the same command surface), the exact meaning of position
 (insertion index versus left/right ordering) and its composition with the
 existing MRU workspace order, behavior at the workspace capacity bound, behavior
 on top and bottom Bar edges where a horizontal slider has no left/right edge,
-and the reconciliation with the accepted drag-target rules are undecided.
+and the reconciliation with the accepted drag-target rules are undecided. The
+candidate [Chrome Band Contract](chrome-band-contract-candidate.md) resolves
+undo (same command surface), shared hit-test geometry, and top/bottom edge
+behavior (edge zones are each pill's leading and trailing ends); zone widths
+remain open there.
 
 ## PW-9 Lua API surface (Candidate)
 
@@ -558,7 +569,7 @@ observation (a tab click is a focus request, never a second focus mechanism).
 | PW-1 movement and sizing     | Candidate refining accepted drag/resize mechanics with an explicit `Mod`-held gesture; `Mod` spelling Open (OQ-052) | [Workspace Compositor](workspace-compositor.md) (Accepted)                                                                                                                                                                                                        |
 | PW-2 floating mode           | Candidate mapping onto the accepted `PresentationMode` and `Float` overlay tier; transition gate Open               | [Workspace Compositor](workspace-compositor.md) shipped slice, [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                                                               |
 | PW-3 animations              | Move/resize/float-toggle leaves Candidate; open/close/focus/workspace already Accepted; ownership Open              | [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md) (Accepted, `bitty-docs` owner)                                                                                        |
-| PW-4 Bar configurability     | Candidate refining the draft Status System placement contract; not a change to it                                   | [Status System Specification](status-system.md) (Draft)                                                                                                                                                                                                           |
+| PW-4 Bar configurability     | Candidate refining the draft Status System placement contract; geometry and keys in the Chrome Band Contract        | [Status System Specification](status-system.md) (Draft), [Chrome Band Contract](chrome-band-contract-candidate.md) (Candidate)                                                                                                                                    |
 | PW-5 stable identity         | Hierarchy Accepted; restart persistence Open (`RFC-OQ-9`); `ViewId` retirement gap tracked in the invariant set     | [Workspace Compositor](workspace-compositor.md), [Panel Runtime RFC](panel-runtime-rfc.md), [Workspace Panel Invariants](workspace-panel-invariants.md) (Candidate)                                                                                               |
 | PW-6 never-empty Workspace   | Candidate; aligns with tested Implementation-only WS-INV-13; empty-Workspace focus reconciliation Open              | [Workspace Panel Invariants](workspace-panel-invariants.md) (Candidate), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                                                     |
 | PW-7 cross-Workspace moves   | Accepted `move` atomicity; unified `Mod` naming Open (OQ-052); Bar drop target Candidate                            | [Workspace Compositor](workspace-compositor.md) (Accepted)                                                                                                                                                                                                        |
@@ -583,8 +594,10 @@ amendment, an RFC-0002 revision, or a persistence RFC settles them:
   rules (PW-2);
 - the move, resize, and float-toggle animation leaves and their duration/easing
   ownership (PW-3);
-- the Bar configurability owner and the Workspace-area recomputation for each
-  edge (PW-4);
+- the Bar indicator color, animations, and per-`Window` versus
+  per-`Workspace` scope (PW-4; the configurability owner and per-edge
+  Workspace-area recomputation are resolved as candidate in the
+  [Chrome Band Contract](chrome-band-contract-candidate.md));
 - Panel and Workspace identity persistence across restart and its composition
   with `PersistentId` rehydration and the WS-INV-4 retirement gap (PW-5);
 - the last-Panel-close policy (reassign, merge, or move) and the
@@ -605,6 +618,8 @@ amendment, an RFC-0002 revision, or a persistence RFC settles them:
   state-axis, and Beacon-core directions.
 - [Workspace Compositor Specification](workspace-compositor.md) — accepted
   tiling, identity, decoration, and interaction contract.
+- [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md) —
+  candidate Bar geometry, content regions, and interaction for PW-4 and PW-8.
 - [Panel Runtime RFC](panel-runtime-rfc.md) — accepted panel lifecycle,
   presentation modes, focus routing, and `PanelId` contract.
 - [Workspace Panel Invariants (Candidate)](workspace-panel-invariants.md) —
