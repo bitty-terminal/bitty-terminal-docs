@@ -378,6 +378,17 @@ holds both the capability and the debug scope. `debug.control` actions
 affect only the owning plugin generation and never sibling plugins or
 unrelated terminals, matching FS-3 containment.
 
+> Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515, issue
+> #1404): the terminal-reading debug methods (`getSnapshot`, `getGridText`,
+> `getInputRing`, `getModifiers`, `getFocus`) require a debug scope and
+> `terminal.inspect`. Their published stores are not yet attributed to one
+> terminal, so `terminal.inspect` must hold for every terminal the
+> connection's capability map covers; a client-named `terminalId` is
+> validated but cannot select a looser entry. Terminal-addressed control
+> verbs check the capability of the terminal they address. The capability
+> map never exceeds the connection's scopes. This note claims no Verified
+> status.
+
 ### Plugin-runtime methods (accepted v1)
 
 Methods are grouped by concern. Parameters and results are bounded and
@@ -526,6 +537,16 @@ owning session lifetime):
 4. Revocation reuses the accepted session-consent lifecycle: explicit revoke
    calls, `bitty plugin revoke` parity, and host-side detachment with an
    auditable receipt.
+
+> Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515): bearer
+> tokens are 128 bits from the platform CSPRNG, and each bearer is bound to
+> one session, principal, consent generation, terminal, and method family; a
+> consent change or session end voids it. The connection-bound issuer is not
+> reachable from any production path yet: the explicit local-user consent
+> gesture in item 1 is not implemented, and a connection's scopes (operator
+> ceiling) are not treated as consent. Item 4's revocation surface is
+> likewise not wired to a user-facing action. This note claims no Verified
+> status.
 
 **Campaign client helper (Implemented-only, `bitty-devtools` CTX-0059/#105):**
 `runCampaign` defaults to read-only probes. Mutating probes require explicit
@@ -866,6 +887,29 @@ reconnect-counter issue #106, and claims no Verified status.
 > endpoint re-verification narrows but does not close same-UID fd-passing
 > spoofing. The accepted contract above is unchanged; this note claims no
 > Verified status.
+>
+> Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515, issues
+> #1403/#1404): each accepted connection gets its own server-minted principal
+> and session from a process-wide, non-reusing counter; closing or dropping
+> the connection ends the session and revokes every automation bearer bound
+> to it. Every queued control carries the authorization snapshot it was
+> enqueued under, and the runtime drain re-validates it against the live
+> session (session, consent generation, scopes, terminal capability map)
+> immediately before mutation; a consent change or session end in between
+> denies the control with no effect. An apply only starts while at least
+> 500 ms of the control's deadline remains, and a waiter whose deadline
+> passes during an in-flight apply reports an unknown outcome instead of a
+> no-effect timeout; the CLI waits the server budget plus a 1 s reply grace
+> so it observes that reply. Request-rate admission is one RC-9 budget
+> (100 req/s, 200 burst) per endpoint, shared by all connections, so opening
+> more connections never buys more requests. A stale socket is reclaimed
+> only when a probe connection is refused: the path is moved to a private
+> quarantine name and its dev/inode/owner/mode are re-verified before
+> removal; any other probe error, a replacement, or a symlink refuses the
+> takeover, and the restore never overwrites a newly bound endpoint. A
+> worker-thread spawn failure releases the reserved connection slot. The
+> accepted contract above is unchanged; this note claims no Verified
+> status.
 
 ## Record/replay and MCP adapter (accepted staging)
 
