@@ -65,6 +65,14 @@ sidebar_order: 19
 > additional implementation beyond the merged `bitty` CTX-0506 (PR #831,
 > commit `92cd709`), weakens no normative control, and records the
 > implementation half without moving acceptance.
+>
+> Amendment A4 (proposed, `bitty` issue #1482): this RFC additionally
+> proposes the wire rules for inbound request continuation, so a logical
+> request above one 256 KiB physical frame, and within the accepted 1 MiB
+> inbound limit, reaches the server as one exchange. Everything under
+> [Inbound request continuation](#inbound-request-continuation-proposed-amendment-a4)
+> is proposed contract with acceptance open; it adds no method, scope, or
+> authority and weakens no normative control.
 
 ## Purpose and scope
 
@@ -349,7 +357,10 @@ JSON records over a bounded framing.
   removing or narrowing an existing method requires a major version and
   a reviewed migration note in this RFC.
 - Payload limits: inbound method frames at most 1 MiB; outbound streams
-  are chunked at 256 KiB with explicit continuation frames. For valid Unicode
+  are chunked at 256 KiB with explicit continuation frames. An inbound
+  request above one 256 KiB physical frame uses the
+  [inbound request continuation](#inbound-request-continuation-proposed-amendment-a4)
+  rules (proposed, Amendment A4). For valid Unicode
   scalar text, the text-chunk helpers split only at scalar boundaries, and
   concatenating successfully returned chunks reproduces the original text
   exactly, including U+FEFF as data. The configured chunk limit must be a
@@ -824,6 +835,97 @@ verb, no per-pane cursor or render-digest assertion (the reused `getGridText`
 covers the primary grid and cursor only), no E2E event stream, and no CLI verb
 wraps `testExit` — a harness sends the raw wire method.
 
+## Inbound request continuation (proposed, Amendment A4)
+
+> Status: Proposed, acceptance open (`bitty` issue #1482). This section
+> defines how a client sends one logical request that is larger than one
+> physical frame. It adds no method, scope, or authority, and weakens no
+> normative control: the accepted 1 MiB inbound limit, the 256 KiB frame
+> bound, and the RC-9 rate and connection limits stay as they are. Where it
+> conflicts with a normative source, the normative text wins.
+
+The implemented transport carries every message as one physical frame: a
+4-byte big-endian length followed by exactly that many payload bytes, at most
+262 144 bytes (256 KiB). A plain request frame carries one complete JSON
+envelope. A logical request above 262 144 bytes is split into continuation
+fragments, each carried in its own physical frame.
+
+| Offset | Size | Field             | Rule                                                                                       |
+| ------ | ---- | ----------------- | ------------------------------------------------------------------------------------------ |
+| 0      | 4    | `magic`           | `0x00 0x42 0x43 0x31` (`\0BC1`); a JSON envelope never starts with `0x00`, so no ambiguity |
+| 4      | 4    | `continuation_id` | Unsigned, big-endian, nonzero; identical in every fragment of one logical request          |
+| 8      | 2    | `sequence`        | Unsigned, big-endian; `0` for the first fragment, then exactly one more per fragment       |
+| 10     | 1    | `flags`           | Bit 0 is `FINAL`; every other bit is zero                                                  |
+| 11     | 1    | `reserved`        | Zero                                                                                       |
+| 12     | 4    | `total_length`    | Unsigned, big-endian byte length of the logical request; identical in every fragment       |
+| 16     | n    | `chunk`           | The next `n` bytes of the logical request; a non-final fragment carries exactly 262 128    |
+
+Sender rules:
+
+1. A logical request of at most 262 144 bytes is sent as one plain frame.
+   Continuation is used only when `total_length` is above 262 144.
+2. `total_length` is at most 1 048 576 (the 1 MiB inbound limit). The sender
+   checks this before writing any byte.
+3. Every non-final fragment is a full physical frame (a 262 128-byte chunk).
+   The final fragment carries the remainder and sets `FINAL`, so a 1 MiB
+   request takes at most five fragments.
+4. The fragments of one logical request are written back to back, and the
+   sender writes nothing else on the connection until that request's response
+   arrives. Each logical request uses a new `continuation_id` on the
+   connection.
+
+Receiver rules:
+
+1. A fragment with `sequence` 0 opens a reassembly. The receiver validates the
+   header before it buffers anything: magic, nonzero `continuation_id`, zero
+   undefined flag bits, zero reserved byte, and `total_length` above 262 144
+   and at most 1 048 576.
+2. A connection has at most one open reassembly, and its buffer is bounded by
+   the declared `total_length`. At the RC-9 cap of 16 concurrent connections,
+   reassembly memory per endpoint is therefore at most 16 MiB.
+3. Each later fragment carries the same `continuation_id` and `total_length`
+   and the next `sequence`. A non-final fragment is full, the reassembled length
+   never exceeds `total_length`, and `FINAL` is set exactly when the reassembled
+   length reaches `total_length`.
+4. The final fragment arrives within 5 seconds of the first. A reassembly that
+   misses this deadline is discarded as a whole, even if it would complete
+   later.
+5. The reassembled bytes are then handled exactly like one plain frame: one
+   RC-9 admission, one envelope parse, one dispatch, and one response under the
+   existing outbound rules. Fragments are not admitted or counted as requests
+   on their own. Reassembled bytes that start with the fragment magic are
+   malformed; fragments never nest.
+6. Every violation fails closed with zero side effects. The receiver discards
+   the buffer without parsing or dispatching any part of it, writes one error
+   with `id` `0` (the logical request id is still unknown), and closes the
+   connection. A `total_length` above the inbound limit is
+   `transport`/`FrameTooLarge`, a missed deadline is
+   `transport`/`ContinuationTimeout`, and every other violation is
+   `transport`/`ContinuationInvalid`. Other violations include a bad header;
+   a wrong `continuation_id`, `sequence`, or `total_length`; a short non-final
+   fragment; an overrun; a `FINAL` mismatch; and a plain frame or a new first
+   fragment while a reassembly is open. End of stream during reassembly
+   discards the buffer and closes the connection without a reply.
+
+A server without this amendment reads a fragment as a plain frame. The fragment
+is not valid JSON, so the server answers it with a parse error and dispatches
+nothing. An older server therefore fails closed as well.
+
+Security review: fragments are untrusted peer bytes. The header is validated
+and the declared length is checked against the inbound limit before any
+allocation. The full-frame rule bounds a logical request to five fragments,
+which removes slow-drip fragment amplification. Nothing is dispatched before
+the request is complete and inside its deadline, so a partial, late, or
+malformed request has no side effect. Peer proof, scopes, the connection
+authority, and the per-dispatch rechecks apply to the reassembled request
+exactly as to a plain frame.
+
+Verification: hermetic loopback fixtures cover benign requests just above
+256 KiB and near 1 MiB, each answered by exactly one response after one
+admission. They also cover malformed, incomplete, over-limit, interleaved,
+and late sequences, each ending in a typed error or a silent close as defined
+above, with no dispatch.
+
 ## Transport, authentication, and session lifecycle (accepted)
 
 1. DevTools connections use the existing IPC transport: current-user
@@ -1055,6 +1157,14 @@ require a follow-up decision:
     the `--test-mode` E2E surface: whether registration-gated test methods and
     the argv-only flag ever become accepted contract, and whether the deferred
     `view resize` verb and an E2E event stream join it.
+15. (Amendment A4, proposed, acceptance open) Whether the inbound request
+    continuation rules become accepted contract, including the 5-second
+    reassembly deadline and the close-on-violation rule.
+16. (Amendment A4, proposed) The accepted wire-format text above names
+    newline-delimited JSON, while the implemented transport and both clients
+    use 4-byte big-endian length-prefixed frames. Amendment A4 is defined over
+    the length-prefixed frames; reconciling the accepted wire-format text
+    needs a follow-up decision.
 
 ## Acceptance criteria
 
