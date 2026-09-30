@@ -71,7 +71,7 @@ tabline | statusline | overlay`), the exclusive tabline declaration, and the
 
 | Term                | Meaning in this document                                                                                                              |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Chrome surface      | A non-tiled presentation surface owned by Core: Bar, rail, tab strip, notification area, command surface, overlay root.               |
+| Chrome surface      | A non-tiled host surface owned by Core (edge band, tab claim, notification, command, overlay root) that plugins present into.         |
 | Chrome slot         | A bounded region of a chrome surface into which a declarative subtree may be mounted under a capability grant.                        |
 | Read-only rule      | Chrome reads identity, title, focus, and order and renders declarative segments; it never mutates grid, cursor, modes, or scrollback. |
 | Core-owned geometry | Chrome placement, thickness, and the decoration insets that follow from it; never set by a plugin or `LayoutProvider`.                |
@@ -79,14 +79,25 @@ tabline | statusline | overlay`), the exclusive tabline declaration, and the
 
 ## Chrome surface inventory
 
-| Surface           | Owns                                                                 | Status of its contract                                       |
-| ----------------- | -------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Bar / StatusBar   | Workspace indicator, module segments, status diagnostics             | Draft (Status System); PW-4 extends to any edge, candidate   |
-| WorkspaceRail     | Workspace list, active-workspace indication, creation target         | Candidate (PW-8 drop target; U-4 direction)                  |
-| Tab strip         | Panel projections for one `Window`/`Workspace`: order, active, close | Candidate (PW-10)                                            |
-| Notification area | Transient notifications and banners on the `Messages` tier           | Candidate; consumes the accepted overlay envelope            |
-| Command surface   | Command palette and query surfaces on the `Palette` kind             | Candidate; consumes the accepted overlay envelope            |
-| Overlay root      | The composition point where overlay layers attach                    | Accepted behavior (Panel Runtime `4+1`); naming is candidate |
+Core owns host mechanisms; named bars are plugin presentations on them, per the
+draft [Chrome Surface API](chrome-surface-api-candidate.md). With no plugin
+enabled, no presentation below is drawn. The Core text workspaceline shipped
+today is transitional and retires after plugin migration.
+
+| Core host surface      | Owns (mechanism only)                                                                   | Status of its contract                                       |
+| ---------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Edge surfaces (bands)  | Band reservation for mounted trees, per-edge stacking, budgeted render, shared hit-test | Candidate (Chrome Band Contract, Chrome Surface API)         |
+| Tab strip claim        | Exclusive `tabline` claim reserved for panel projections                                | Candidate (PW-10)                                            |
+| Notification primitive | Transient notifications and banners on the `Messages` tier                              | Candidate; consumes the accepted overlay envelope            |
+| Command surface        | Command Registry entry on the `Palette` kind                                            | Candidate; consumes the accepted overlay envelope            |
+| Overlay root           | The composition point where overlay layers attach                                       | Accepted behavior (Panel Runtime `4+1`); naming is candidate |
+
+| Plugin presentation | Composes                                                             | Status of its contract                              |
+| ------------------- | -------------------------------------------------------------------- | --------------------------------------------------- |
+| Bar / StatusBar     | Module segments, a workspace indicator via workspace L1 data         | Draft (Status System); PW-4 extends to any edge     |
+| WorkspaceRail       | Workspace list, active-workspace indication, `+` creation command    | Candidate (PW-8 drop target; U-4 direction)         |
+| Tab strip content   | Panel projections for one `Window`/`Workspace`: order, active, close | Candidate (PW-10)                                   |
+| Palette             | Command palette and query UI on the command surface                  | Independent first-party package; contract candidate |
 
 ## Rules
 
@@ -127,9 +138,10 @@ tabline | statusline | overlay`), the exclusive tabline declaration, and the
 9. **Chrome animation composes with the accepted animation contract.**
    Durations stay in `0..=500` ms with the closed easing set; reduced motion and
    `bitty --safe` collapse to the final committed state.
-10. **The Bar and the rail are two surfaces, not one.** The rail projects
-    workspaces; the Bar projects status modules and the active-workspace
-    indicator. Whether the rail replaces or composes beside the Bar remains
+10. **The Bar and the rail are two presentations, not one.** Both are plugin
+    compositions on edge surfaces: the rail projects workspaces; the Bar
+    projects status modules and may include the active-workspace indicator.
+    Whether a rail plugin replaces or composes beside a bar plugin remains
     open (U-4); sharing configuration keys does not merge the contracts.
 
 ## Chrome-side consequences of the candidate UI runtime

@@ -247,6 +247,42 @@ headless libraries without expanding the accepted topology until `Verified`.
 Current revision and milestone evidence lives in
 [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
+## Candidate UI layering
+
+Status: candidate direction. Core provides UI mechanisms and APIs, and Lua
+organizes and presents all window chrome. The API shapes live in the draft
+[Chrome Surface API](../specifications/chrome-surface-api-candidate.md); the
+ownership rules come from [Core and Plugin Boundaries](core-boundaries.md).
+
+| Layer          | Owns                                                                                                                                                                                                            |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rust mechanism | Layout and focus, edge band geometry reserved only for mounted surfaces, rendering of bounded declarative nodes, hit-testing against rendered geometry, the Command Registry, and bounded domain data providers |
+| Lua policy     | Which surfaces exist, which edge they mount on, what they show, how they compose, and which commands their clicks invoke                                                                                        |
+
+```text
+Lua plugin (workspace bar, status line, tabs, ...)
+   | bitty.<domain>.list() / <domain>.* events      (read gate)
+   | bitty.ui.mount(edge, tree) / ui.update         (ui.rich)
+   | on_click -> registered command                 (control gate)
+   v
+Core: band reservation -> render nodes -> hit-test -> Command Registry
+```
+
+A workspace bar, a status line, and a tab strip are plugin compositions on
+these generic surfaces, not Core surfaces. The same read, event, and command
+pattern serves every domain, so no API is specific to workspaces.
+
+**Zero-plugin baseline.** With no plugin enabled, Bitty is a plain terminal
+window comparable to Alacritty: a shell, the grid, scrollback, selection and
+clipboard, fonts, colors, and themes, keymaps, typed configuration, and splits
+and workspaces as Core primitives reachable through commands and key bindings.
+It draws no chrome: no bar, no tab strip, and no status line.
+
+Current state: Core still draws a transitional text workspaceline in a
+reserved band (`workspace.show_bar`, `workspace.bar.edge`); mounted plugin
+trees are stored but not yet rendered. The workspaceline retires once a
+first-party plugin covers it.
+
 ## Candidate execution-domain model
 
 The current recommendation distinguishes at least the following logical

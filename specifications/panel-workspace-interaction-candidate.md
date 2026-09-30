@@ -241,8 +241,10 @@ Terminal-side conclusions:
   state and ordering
   ([Waybar module philosophy import](status-system.md#waybar-module-philosophy-import)).
   The extended configurability is Candidate and would enter through that
-  document's own open items or a successor Bar RFC; until then the draft's
-  bottom-anchored placement remains the only drafted position.
+  document's own open items or a successor Bar RFC. The candidate
+  [Chrome Surface API](chrome-surface-api-candidate.md) now supplies that
+  path: the Bar is a plugin composition on a generic edge band, so edge,
+  height, and colors are plugin policy, and v0.1 places `top` and `bottom`.
 - The Bar is presentation, never Terminal Truth: it composes declarative status
   segments and never reads or mutates grid, cursor, modes, scrollback, or IPC
   policy; its modules keep their own cadence and failure posture.

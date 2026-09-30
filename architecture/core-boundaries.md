@@ -159,6 +159,25 @@ decode/placement evidence and its recorded deviations.
 The default distribution may bundle some of these plugins, but it cannot grant
 first-party plugins additional authority through private APIs.
 
+### Zero-plugin baseline (candidate)
+
+Status: candidate clarification of the ownership tables above; it changes no
+row. The mechanism APIs it relies on are specified in the draft
+[Chrome Surface API (Candidate)](../specifications/chrome-surface-api-candidate.md).
+
+With no plugin enabled, Bitty is a plain terminal window comparable to
+Alacritty: a shell, the grid, scrollback, selection and clipboard, fonts,
+colors, and themes, keymaps, typed configuration, and splits and workspaces as
+Core primitives reachable through commands and key bindings. It draws no
+chrome: no bar, no tab strip, and no status line. Every piece of chrome is a
+plugin composition on generic Core mechanisms, so the Tabs, Status line, and
+Sessions / Workspaces rows above own presentation entirely, including any
+workspace bar.
+
+Current state: Core still draws a transitional text workspaceline in a
+reserved band (`workspace.show_bar`, `workspace.bar.edge`). It retires after a
+first-party plugin covers it, per the migration in the Chrome Surface API.
+
 ## Mechanism and policy examples
 
 | Scenario          | Core mechanism                                       | Plugin policy                                               |
@@ -224,6 +243,17 @@ Plugins should submit declarative descriptions for text, rows, columns, lists,
 popups, overlays, and status areas. They cannot create shaders, pipelines,
 glyphs, or native windows directly. This keeps the renderer backend replaceable
 and prevents the Plugin API from freezing the GPU implementation.
+
+Candidate clarification (see the draft
+[Chrome Surface API](../specifications/chrome-surface-api-candidate.md)):
+chrome surfaces are generic host mechanisms, not named Core features. Core
+reserves edge bands only for mounted surfaces, stacks and renders their
+declarative trees within budgets, hit-tests clicks against the rendered
+geometry, and dispatches bound commands through the Command Registry. Domain
+data (workspaces, panels, terminal status, plugins) reaches plugins through
+one uniform pattern: a bounded `<domain>.read` snapshot and events, with
+mutations only through registered commands gated by `<domain>.control`.
+Which surfaces exist, what they show, and how they compose is plugin policy.
 
 ### Lifecycle
 
