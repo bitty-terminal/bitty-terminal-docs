@@ -51,7 +51,7 @@ and defines the accepted contracts for:
 - **Core-owned decoration** — `gaps_in`, `gaps_out`, `border`, `radius`, and
   `content_inset` owned by Core with validated bounds, never by plugins or
   layout algorithms;
-- **Layout algorithms as plugin** — `dwindle`, `master`, and `grid` supplied as
+- **Layout algorithms as plugin** — `dwindle`, `spiral`, `master`, and `grid` supplied as
   `LayoutProvider` plugins, not as Core built-ins;
 - **Interactions** — drag, resize, move, and scratchpad semantics.
 
@@ -149,13 +149,13 @@ to Bitty without copying Hyprland implementation details. Hyprland and Waybar
 are read-only references for philosophy and interaction vocabulary; Bitty does
 not embed Hyprland or Waybar code, configuration files, or configuration syntax.
 
-| Hyprland concept                         | Bitty import                                                      | Adaptation                                                                                                                                                        |
-| ---------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Hyprland workspace tiling windows        | `Workspace` tiling `View`s inside one `Window`                    | A Hyprland workspace maps to a Bitty `Workspace`; a Hyprland window maps to a Bitty `View`, never to a Bitty `Window`. Window stays as the native OS window only. |
-| `dwindle` `master` `grid` layouts        | `LayoutProvider` plugin algorithms `dwindle` `master` `grid`      | Algorithms are plugins behind a capability, not Core built-ins; Core supplies only H and V primitives and decoration.                                             |
-| `gaps_in` `gaps_out` `border` `rounding` | Core-owned `gaps_in` `gaps_out` `border` `radius` `content_inset` | Owned by Core, validated via `ConfigPlan`; `content_inset` has no Hyprland counterpart; no plugin or `LayoutProvider` mutates these values at runtime.            |
-| Drag, resize, move between workspaces    | `View` drag, resize, move, and scratchpad                         | Gestures route through the command registry; `LayoutProvider` proposes geometry, Core commits it.                                                                 |
-| Waybar `modules-left` `center` `right`   | Out of scope for this document                                    | Waybar philosophy is owned by the Status System Specification; this document does not duplicate its registry.                                                     |
+| Hyprland concept                           | Bitty import                                                          | Adaptation                                                                                                                                                        |
+| ------------------------------------------ | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hyprland workspace tiling windows          | `Workspace` tiling `View`s inside one `Window`                        | A Hyprland workspace maps to a Bitty `Workspace`; a Hyprland window maps to a Bitty `View`, never to a Bitty `Window`. Window stays as the native OS window only. |
+| `dwindle` `spiral` `master` `grid` layouts | `LayoutProvider` plugin algorithms `dwindle` `spiral` `master` `grid` | Algorithms are plugins behind a capability, not Core built-ins; Core supplies only H and V primitives and decoration.                                             |
+| `gaps_in` `gaps_out` `border` `rounding`   | Core-owned `gaps_in` `gaps_out` `border` `radius` `content_inset`     | Owned by Core, validated via `ConfigPlan`; `content_inset` has no Hyprland counterpart; no plugin or `LayoutProvider` mutates these values at runtime.            |
+| Drag, resize, move between workspaces      | `View` drag, resize, move, and scratchpad                             | Gestures route through the command registry; `LayoutProvider` proposes geometry, Core commits it.                                                                 |
+| Waybar `modules-left` `center` `right`     | Out of scope for this document                                        | Waybar philosophy is owned by the Status System Specification; this document does not duplicate its registry.                                                     |
 
 Rules of the import:
 
@@ -453,17 +453,18 @@ What merged, exactly:
    presentation layer reuses `OverlayTier::Float` for overlay-like
    `PresentationMode`s, but multi-tier stacking through
    `overlay_tiered`/`overlay_stack` is not yet consumed by the app present path.
-6. **Adaptive dwindle `smart_split` orientation** (`bitty` #358 `75f8637`,
-   CTX-0209, closes `bitty` #357): `LayoutNode::smart_split` and
-   `smart_split_with_multiplier` choose the axis from the container aspect
-   ratio with the Hyprland heuristic
-   `splitTop = height * width_multiplier > width` (`smart_split_axis`): wide
-   containers split side-by-side, tall containers stack, square ties break
-   side-by-side, and non-finite or non-positive multipliers fall back to
-   `1.0`. The constructors delegate to the explicit `split` path, whose API and
-   geometry are unchanged, and the heuristic is unit-tested. This is an opt-in
-   `bitty-ui` constructor, not the `LayoutProvider` dwindle plugin promised
-   above, and the app split path still chooses an explicit axis.
+6. **Adaptive dwindle `smart_split` orientation and cell aspect ratio** (`bitty` #358 `75f8637`,
+   CTX-0209, closes `bitty` #357; updated in PR #1542, CTX-0881, closes `bitty` #1541):
+   `LayoutNode::smart_split` and `smart_split_with_multiplier` choose the split axis
+   from the container aspect ratio with the heuristic
+   `split_vertical = (height * width_multiplier * CELL_ASPECT_RATIO) > width`
+   (`smart_split_axis`). `CELL_ASPECT_RATIO = 2.0` accounts for monospace terminal
+   characters having roughly a 1:2 width-to-height ratio, preventing wide containers
+   from prematurely stacking vertically when characters are tall. Wide containers
+   split side-by-side, tall containers stack, square ties break side-by-side, and
+   non-finite or non-positive multipliers fall back to `1.0`. The constructors
+   delegate to the explicit `split` path, whose API and geometry are unchanged,
+   and the heuristic is unit-tested.
 7. **Overlay units and topmost hit testing** (`bitty` PR #1485 `d2ccd64`,
    CTX-0807/CTX-0803, closes `bitty` #1481):
    - `layout_with_decoration_scaled` scales overlay bounds by the live cell
@@ -478,6 +479,20 @@ What merged, exactly:
      decoration unit tests. The View-owned selection and pointer routing that
      ships in the same PR is recorded in the
      [Input and Pointer Contract](input-pointer-rfc.md).
+8. **Spiral layout provider and child shell exit reaping** (`bitty` PR #1542 `15897cad`,
+   CTX-0881, closes `bitty` #1541):
+   - `SpiralProvider` (`SPIRAL_PROVIDER_ID = ProviderId(4)`) registered under
+     `"spiral"` implements 4-way clockwise spiral tiling (`Right -> Down -> Left -> Up`),
+     alternating split cut axes and leaf placement sides. Unlike `dwindle` (which
+     always places the new view at the bottom/right child), `spiral` rotates
+     placement around all four edges.
+   - Child shell process lifecycle: `TerminalApp::reap_exited_shells` checks
+     child shell processes on presentation ticks via non-blocking `try_wait()`.
+     When a child shell exits (e.g. via `exit` or `Ctrl+D`), its pane leaf is
+     pruned from the layout tree; when the last remaining shell exits, the application
+     exits cleanly (`ShellExitOutcome::ExitApp`).
+   - Evidence: `crates/bitty-ui/src/provider.rs` unit tests, `crates/bitty-terminal/src/terminal_app.rs`
+     lifecycle tests.
 
 Explicit non-claims: the `LayoutProvider` plugin algorithms, drag/resize
 interactions, and scratchpad retention in this specification are not
@@ -493,7 +508,7 @@ resolves the topmost tier (entry 7).
 ## Layout algorithms as plugin via LayoutProvider
 
 Layout algorithms are not Core built-ins. Core provides only `H` and `V`
-primitives and decoration; `dwindle`, `master`, and `grid` are supplied by
+primitives and decoration; `dwindle`, `spiral`, `master`, and `grid` are supplied by
 `LayoutProvider` plugins.
 
 ### Provider contract
@@ -502,7 +517,7 @@ primitives and decoration; `dwindle`, `master`, and `grid` are supplied by
 // Illustrative shapes only; not an implemented API.
 trait LayoutProvider {
     fn id(&self) -> ProviderId;
-    fn name(&self) -> BoundedString<32>; // dwindle | master | grid | ...
+    fn name(&self) -> BoundedString<32>; // dwindle | spiral | master | grid | ...
     fn propose(
         &self,
         workspace: &WorkspaceSnapshot,
@@ -531,14 +546,15 @@ Properties:
 
 ### Algorithm mapping
 
-| Algorithm | Hyprland precedent | Bitty behavior as LayoutProvider                                                                               |
-| --------- | ------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `dwindle` | Hyprland dwindle   | Recursive H and V splits that spiral inward; direction alternates per depth; respects `gaps_in` only via Core. |
-| `master`  | Hyprland master    | One master `View` on the left at a fixed ratio with remaining `View`s stacked vertically on the right.         |
-| `grid`    | Hyprland grid      | Views arranged in a near-square grid using only `H` and `V` splits; empty cells render as empty `View`s.       |
+| Algorithm | Hyprland precedent | Bitty behavior as LayoutProvider                                                                                   |
+| --------- | ------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `dwindle` | Hyprland dwindle   | Recursive H and V splits that spiral inward; direction alternates per depth; respects `gaps_in` only via Core.     |
+| `spiral`  | Hyprland spiral    | True 4-way clockwise spiral splits (Right -> Down -> Left -> Up) rotating placement side and alternating cut axis. |
+| `master`  | Hyprland master    | One master `View` on the left at a fixed ratio with remaining `View`s stacked vertically on the right.             |
+| `grid`    | Hyprland grid      | Views arranged in a near-square grid using only `H` and `V` splits; empty cells render as empty `View`s.           |
 
 Additional providers may be registered under qualified names
-`owner.name:algorithm`; bare names `dwindle`, `master`, and `grid` are reserved
+`owner.name:algorithm`; bare names `dwindle`, `spiral`, `master`, and `grid` are reserved
 for the canonical providers. Unknown provider names fail validation.
 
 ### Selection
@@ -634,7 +650,7 @@ Lua and no bypass of the existing P0 gates.
      `decoration.gap * DPI_scale + layout.gap_cells * cell_axis`.
    - `--safe` inverts to the safe decoration defaults regardless of user config.
 5. **Provider tests**:
-   - `dwindle`, `master`, and `grid` providers each produce well-formed trees for
+   - `dwindle`, `spiral`, `master`, and `grid` providers each produce well-formed trees for
      1 to 16 `View`s; invalid trees are rejected and the previous tree is
      retained.
    - Unregistered provider names fail validation; budget overruns in `propose`

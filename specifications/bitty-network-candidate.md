@@ -283,25 +283,25 @@ automatic extension of the pilot grant.
 
 ## Built versus not built
 
-Verified 2026-09-23 against `bitty` `main` and the `bitty-ai`
+Verified 2026-09-30 against `bitty` `main` and the `bitty-ai`
 workspace. `Implemented` below means code exists; nothing below is
 `Verified`, and nothing authorizes shipped or
-compatibility-guaranteed behavior. There is no network stack in the
-workspace today.
+compatibility-guaranteed behavior. The default terminal core remains
+completely network-free.
 
-| #   | Claim                                                           | State            | Evidence                                                                                                                |
-| --- | --------------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| 1   | The `bitty` workspace carries no network dependencies           | Implemented-only | 21 crates verified with zero network dependencies: no HTTP client, TLS, or QUIC implementation in the closure           |
-| 2   | The `bitty-ai` workspace carries no network dependencies        | Implemented-only | 2 crates verified with zero network dependencies; provider network use is future work, not present code                 |
-| 3   | The only async-runtime use is panel-adjacent                    | Implemented-only | the single async-runtime use is `bitty-runtime` `panels_async.rs`; no shared network runtime exists                     |
-| 4   | A `bitty-network-api` crate exists                              | NOT built        | no API crate, service trait, or capability-definition type exists in either workspace                                   |
-| 5   | A `bitty-network` implementation crate exists                   | NOT built        | no runtime, transport, HTTP, WebSocket, TLS, DNS, or policy implementation exists                                       |
-| 6   | A shared Tokio runtime or pooled connection state exists        | NOT built        | no shared runtime, HTTP pool, DNS cache, or TLS session cache; per-plugin runtimes are moot — there is nothing to share |
-| 7   | Unified proxy or TLS-provider handling exists                   | NOT built        | no `HTTPS_PROXY` handling, system or PAC inheritance, unified CA store, or client-certificate policy                    |
-| 8   | A `bitty.network` Lua path exists                               | NOT built        | no Lua network API surface; plugins have no network path at all                                                         |
-| 9   | A manifest network permission or capability check exists        | NOT built        | no `[permissions.network]` declaration, allowlist enforcement, or capability-check wiring; OQ-085 stays open            |
-| 10  | A Network Inspector, Service Bridge, or network daemon exists   | NOT built        | no traffic view, no bridge, no `bitty-networkd`; all three are named future directions                                  |
-| 11  | Any AI provider, weather-class, or remote-panel consumer exists | NOT built        | no consumer of a shared stack exists because neither crate exists                                                       |
+| #   | Claim                                                            | State            | Evidence                                                                                                                                                                                                                               |
+| --- | ---------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | The `bitty` workspace carries no network dependencies by default | Implemented-only | 21 crates verified with zero default network dependencies (no HTTP client, TLS, or QUIC in default closure; `bitty-network-lua` decoupled behind optional Cargo feature `network` in `bitty-runtime`/`bitty-lua`, PR #1544 / CTX-0882) |
+| 2   | The `bitty-ai` workspace carries no network dependencies         | Implemented-only | 2 crates verified with zero network dependencies; provider network use is future work, not present code                                                                                                                                |
+| 3   | The only async-runtime use is panel-adjacent                     | Implemented-only | the single async-runtime use is `bitty-runtime` `panels_async.rs`; no shared network runtime exists                                                                                                                                    |
+| 4   | A `bitty-network-api` crate exists                               | NOT built        | no API crate, service trait, or capability-definition type exists in either workspace                                                                                                                                                  |
+| 5   | A `bitty-network` implementation crate exists                    | NOT built        | no runtime, transport, HTTP, WebSocket, TLS, DNS, or policy implementation exists                                                                                                                                                      |
+| 6   | A shared Tokio runtime or pooled connection state exists         | NOT built        | no shared runtime, HTTP pool, DNS cache, or TLS session cache; per-plugin runtimes are moot — there is nothing to share                                                                                                                |
+| 7   | Unified proxy or TLS-provider handling exists                    | NOT built        | no `HTTPS_PROXY` handling, system or PAC inheritance, unified CA store, or client-certificate policy                                                                                                                                   |
+| 8   | A `bitty.network` Lua path exists                                | NOT built        | no default Lua network API surface; `bitty-network-lua` prototype is gated behind optional `network` feature                                                                                                                           |
+| 9   | A manifest network permission or capability check exists         | NOT built        | no `[permissions.network]` declaration, allowlist enforcement, or capability-check wiring; OQ-085 stays open                                                                                                                           |
+| 10  | A Network Inspector, Service Bridge, or network daemon exists    | NOT built        | no traffic view, no bridge, no `bitty-networkd`; all three are named future directions                                                                                                                                                 |
+| 11  | Any AI provider, weather-class, or remote-panel consumer exists  | NOT built        | no consumer of a shared stack exists because neither crate exists                                                                                                                                                                      |
 
 Rows 4–11 are the gap this candidate exists to name. Any future RFC
 that claims to close a row must cite implementation evidence in the
