@@ -44,6 +44,17 @@ sidebar_order: 52
   the product shape (which plugins exist and at what priority) while CTX-0120
   reconciles the mechanism depth (how Browser and Agent would be isolated).
 
+- Later change (2026-09-30, `bitty` CTX-0886; issues #1554, #1556, #1557): the
+  bundled-disabled catalog is now two plugins,
+  `bitty-terminal.shell-integration` and `bitty-terminal.workspace`.
+  `bitty-terminal.project`, `bitty-terminal.browser-panel`,
+  `bitty-terminal.ai-panel`, and `bitty-terminal.mail-panel` are removed from
+  Core: AI surfaces move to the separate optional `bitty-ai` extension, mail
+  is not planned, and project and browser may return later as independent
+  optional plugins. The `5c885f2` baseline and candidate rows below are kept
+  as the dated research record; see the
+  [Default Distribution RFC](../specifications/default-distribution-rfc.md#removed-from-core-2026-09-30).
+
 ## Scope
 
 In scope (research, not normative):
@@ -476,3 +487,6 @@ On this worktree at `5c885f2` + `05e8803` + this task delta:
   P1/P2/P3 priority; reconcile with shipped shell-integration/workspace/palette/statusline/project
   at `5c885f2` and generic Panel Runtime at `05e8803` (PR-1..PR-12); cross-repo
   textual alignment with docs CTX-0120 BA-1..BA-12; gates `just check` + `git diff --check` PASS; docs only, bounded, English.
+- `2026-09-30` `bitty` CTX-0886 — status note: `project`, `browser-panel`,
+  `ai-panel`, and `mail-panel` removed from Core; bundled catalog is
+  `shell-integration` and `workspace`. Research body unchanged.

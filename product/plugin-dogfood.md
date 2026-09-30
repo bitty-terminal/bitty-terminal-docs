@@ -37,6 +37,14 @@ sidebar_order: 51
   are **explicitly out of scope** for this task and are not described as
   implemented.
 
+- Later change (2026-09-30, `bitty` CTX-0886; issues #1554, #1556, #1557): the
+  current bundled-disabled catalog is two plugins,
+  `bitty-terminal.shell-integration` and `bitty-terminal.workspace`;
+  `bitty-terminal.project` (with `palette` and `statusline`, which split
+  earlier) is no longer bundled in Core. This page remains the dated CTX-0096
+  evidence record; see the
+  [Default Distribution RFC](../specifications/default-distribution-rfc.md#removed-from-core-2026-09-30).
+
 - Worktree: `.worktrees/ctx-0096`, branch `carryctx/ctx-0096`, base `c0aadd2`
   (CTX-0095 vertical slice). Agent `core-implementer-0096`.
 
@@ -330,3 +338,6 @@ On this worktree at `c0aadd2` + this task delta:
 ## Revision history
 
 - `2026-08-31` CTX-0096 `carryctx/ctx-0096` — draft creation: add `bundled.rs` catalog, two dogfood suites (14 tests), `plugin-dogfood.md` evidence, `Cargo.lock` sync; gates `just check` + `act -n` + `cargo test` PASS; worktree dirty until PR.
+- `2026-09-30` `bitty` CTX-0886 — status note: bundled catalog reduced to
+  `shell-integration` and `workspace`; `project` removed from Core. Evidence
+  body unchanged.

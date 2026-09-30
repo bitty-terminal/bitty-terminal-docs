@@ -100,9 +100,12 @@ fonts, colors, and basic input are the candidate minimum set discussed so far.
 Tabs, workspaces, status lines, project management, SSH management, and AI
 assistants are candidate plugin experiences. The bundled first-party set is
 defined by the [Default Distribution RFC](../specifications/default-distribution-rfc.md):
-the accepted bundled-plugin split (OQ-053) targets an eight-plugin catalog,
-every entry bundled but disabled (see the RFC for current catalog status), with `palette` and `statusline` shipped as
-independent first-party packages instead.
+the catalog is two plugins, `shell-integration` and `workspace`, both bundled
+but disabled, after `bitty` CTX-0886 removed `project`, `browser-panel`,
+`ai-panel`, and `mail-panel` from Core (see the RFC for current catalog
+status). `palette`, `statusline`, `file-manager`, and `git-panel` ship as
+independent first-party packages instead, and AI surfaces move to the
+separate optional `bitty-ai` extension.
 
 With no plugin enabled, Bitty is a plain terminal window comparable to
 Alacritty: a shell, the grid, scrollback, selection and clipboard, fonts,
@@ -265,8 +268,9 @@ this vision, but their exact designs still require RFCs.
 ## Accepted distribution decision
 
 The [Default Distribution RFC](../specifications/default-distribution-rfc.md)
-owns the bundled-disabled first-party set (the accepted OQ-053 split targets
-an eight-plugin catalog) and keeps the enabled-by-default set empty.
+owns the bundled-disabled first-party set (two plugins, `shell-integration`
+and `workspace`, since `bitty` CTX-0886) and keeps the enabled-by-default set
+empty.
 
 ## Open questions
 

@@ -23,6 +23,12 @@ sidebar_order: 34
 > by absolute URL only, never copied as accepted. Acceptance records a
 > reviewed contract; it does not prove implementation, and evidence rules in
 > each cited document still apply.
+>
+> Later change (2026-09-30, `bitty` CTX-0886, issue #1554): the
+> `bitty-terminal.ai-panel` bundled entry and its `ai_panel` Core module were
+> removed from Core; AI surfaces move to the separate optional `bitty-ai`
+> extension. The accepted subset below is kept as the dated record and applies
+> to any future AI panel built on the generic primitives.
 
 ## Purpose and scope
 
