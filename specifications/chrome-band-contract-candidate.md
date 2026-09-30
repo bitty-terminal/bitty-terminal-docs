@@ -19,6 +19,12 @@ sidebar_order: 64
 > behavior, weakens no accepted source it cites, and makes no implementation
 > claim. Implementation is **planned** under separate `bitty` tasks; every type
 > name, configuration key, and constant below is a candidate spelling.
+>
+> Partly superseded: the owner direction moves bar content to optional Lua
+> plugins. The Core-rendered `workspace` pills and the `workspace.bar.colors`
+> and `workspace.bar.pill_align` keys are superseded by the candidate
+> [Chrome Surface API](chrome-surface-api-candidate.md); band geometry, reflow,
+> degradation, and hit-test geometry here remain in force.
 
 ## Purpose and scope
 
@@ -183,6 +189,13 @@ usable = container inset by gaps_out and the accepted decoration insets,
 
 ### Built-in `workspace` module
 
+> Superseded by the candidate
+> [Chrome Surface API](chrome-surface-api-candidate.md): Core renders no
+> workspace pills. Workspace content comes from optional plugins through the
+> L0 surface and L1 workspace domain; the rules below survive only as
+> guidance for those plugins (stable identity, no derived counters, no content
+> reads).
+
 1. The `workspace` module renders **one pill per workspace**, in workspace
    order. Each pill shows the workspace name and its content state (active,
    has panels, attention), resolved through theme tokens.
@@ -251,9 +264,11 @@ usable = container inset by gaps_out and the accepted decoration insets,
 2. `workspace.bar.edge` accepts `left` and `right` only once a later revision
    ships vertical bands; until then those values are rejected, not silently
    mapped.
-3. `workspace.bar.colors` accepts theme token names from the
-   [Theme Token Contract](theme-token-contract-candidate.md), never raw
-   plugin-supplied colors.
+3. `workspace.bar.colors` (and the unmerged `workspace.bar.pill_align`) is
+   superseded and will not be introduced; plugin surfaces use theme token
+   style attributes under the
+   [Chrome Surface API](chrome-surface-api-candidate.md). The fate of
+   `workspace.show_bar` and `workspace.bar.edge` is an open point there.
 4. Changes to `edge`, `size`, and `show_bar` are live-reconcilable and take
    effect through the reflow above.
 
@@ -307,6 +322,7 @@ influence band thickness or edge.
 | [Chrome Surface Contract](chrome-surface-contract-candidate.md) (candidate)                                                                     | Rule 2 clarified: band geometry is a layout input; rendering never resizes a PTY    |
 | [Panel and Workspace Interaction](panel-workspace-interaction-candidate.md) (candidate)                                                         | PW-4 geometry and recomputation items resolved here; PW-8 horizontal edges resolved |
 | [Status System Specification](status-system.md) (draft)                                                                                         | Bottom-only v1 placement extends to `top`/`bottom` bands through this record        |
+| [Chrome Surface API](chrome-surface-api-candidate.md) (candidate)                                                                               | Supersedes Core pills and `workspace.bar.colors`; bands hold plugin surfaces        |
 | [Tabs Scope Decision](tabs-scope-decision.md) (draft)                                                                                           | Workspace pills live on the band; panel tabs stay PW-10 on `tabline`                |
 | [Workspace Compositor Specification](workspace-compositor.md) (accepted)                                                                        | Unchanged; the compositor receives the usable extent as its tiling area             |
 | [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md) (accepted) | Unchanged; mounts gain a documented band host and a per-band per-frame cap          |
@@ -341,6 +357,8 @@ trust decision changes. The security review above records that disposition.
 
 ## References
 
+- [Chrome Surface API (Candidate)](chrome-surface-api-candidate.md) — plugin
+  surfaces, domain data, and composition that supersede the Core pills.
 - [Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md) —
   chrome inventory and read-only rules.
 - [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md)
