@@ -412,7 +412,11 @@ registry identifier, and allows slot placement like
   that reduces the tiling area instead of occluding terminal content, maps the
   registry `left`/`center`/`right` slots onto band regions, and renders the
   `workspace` module as one pill per workspace. This draft adopts none of it
-  until that record or a successor Bar RFC is accepted.
+  until that record or a successor Bar RFC is accepted. The later candidate
+  [Chrome Surface API](chrome-surface-api-candidate.md) supersedes the
+  Core-rendered pills: `workspace` content comes from a plugin (such as
+  `statusline` or a `workspacebar` plugin) reading the L1 workspace domain,
+  and Core renders the plugin's surface.
 
 This draft does not close an open question on its own; it will track to the
 owning status-system question once that question is recorded in the
@@ -425,6 +429,7 @@ a standalone specification per the [documentation workflow](https://github.com/b
   `modules-left`/`modules-center`/`modules-right` slot composition.
 - [Configuration Model RFC](configuration-model-rfc.md)
 - [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md)
+- [Chrome Surface API (Candidate)](chrome-surface-api-candidate.md)
 - [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
 - [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)
 - [Lua Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md)

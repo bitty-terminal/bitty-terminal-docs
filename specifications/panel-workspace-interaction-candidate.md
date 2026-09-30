@@ -266,6 +266,13 @@ geometry are recomputed per edge by the band geometry and reflow rules there
 relocated Bar in `bitty --safe` falls back to the minimal bar on the configured
 edge. These resolutions are candidate, not accepted.
 
+**Appearance owned by plugins.** Under the candidate
+[Chrome Surface API](chrome-surface-api-candidate.md), Core renders no
+workspace bar: bar appearance (pill colors, indicator, alignment) belongs to
+the optional plugin that mounts the surface, using theme token style
+attributes. `workspace.bar.colors` is superseded; Core keeps only band
+geometry.
+
 **Open.** Indicator/slider color and Bar animations beyond the band thickness
 transition, and whether the Bar is per-`Window` or per-`Workspace`, remain
 undecided.
@@ -404,7 +411,10 @@ and the reconciliation with the accepted drag-target rules are undecided. The
 candidate [Chrome Band Contract](chrome-band-contract-candidate.md) resolves
 undo (same command surface), shared hit-test geometry, and top/bottom edge
 behavior (edge zones are each pill's leading and trailing ends); zone widths
-remain open there.
+remain open there. Under the candidate
+[Chrome Surface API](chrome-surface-api-candidate.md), the drop consumes L0
+presented-frame hit-test geometry over the plugin's surface and commits
+through the L1 `workspace:move_panel` (or new-workspace) command.
 
 ## PW-9 Lua API surface (Candidate)
 
@@ -450,7 +460,10 @@ dedicated `panel.*`/`workspace.*` family or an extension of existing
 IPC verbs are undecided. Implementation-level workspace operations exist in the
 shipped slice
 ([Workspace Compositor](workspace-compositor.md#shipped-slice-implementation-evidence))
-and are shipped reference, not the contract proposed here.
+and are shipped reference, not the contract proposed here. The candidate
+[Chrome Surface API](chrome-surface-api-candidate.md) proposes the uniform
+read, event, and command pattern this surface would take per domain, with
+workspaces first.
 
 ## PW-10 Tab bar and panel tabs (Candidate)
 
@@ -620,6 +633,8 @@ amendment, an RFC-0002 revision, or a persistence RFC settles them:
   tiling, identity, decoration, and interaction contract.
 - [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md) —
   candidate Bar geometry, content regions, and interaction for PW-4 and PW-8.
+- [Chrome Surface API (Candidate)](chrome-surface-api-candidate.md) —
+  plugin surfaces and domain APIs for PW-4 appearance, PW-8, and PW-9.
 - [Panel Runtime RFC](panel-runtime-rfc.md) — accepted panel lifecycle,
   presentation modes, focus routing, and `PanelId` contract.
 - [Workspace Panel Invariants (Candidate)](workspace-panel-invariants.md) —

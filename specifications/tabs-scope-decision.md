@@ -129,7 +129,9 @@ policy over workspace primitives`.
   [Chrome Band Contract](chrome-band-contract-candidate.md) the built-in
   `workspace` module renders one pill per workspace on the Bar's edge band;
   panel tabs remain the separate `PW-10` surface on the exclusive `tabline`
-  claim, and this recommendation is unchanged by the pills.
+  claim, and this recommendation is unchanged by the pills. The candidate
+  [Chrome Surface API](chrome-surface-api-candidate.md) moves workspace bar
+  rendering to optional plugins and keeps `tabline` reserved for `PW-10`.
 
 ## Verification backlog
 
