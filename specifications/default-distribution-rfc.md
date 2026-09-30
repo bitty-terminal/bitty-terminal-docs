@@ -286,6 +286,12 @@ exclusive claim, close policy) and workspace lifecycle remain Core behavior;
 only statusline presentation moved. Shell integration stays bundled and
 remains the upstream OSC 7/133 semantic-zone provider.
 
+> Note (2026-09-30, CTX-0076): the owner direction recorded in the draft
+> [Chrome Surface API (Candidate)](chrome-surface-api-candidate.md) makes all
+> workspace bar presentation plugin-owned. Workspace lifecycle stays Core; the
+> Core text workspaceline is transitional and retires once a first-party
+> plugin covers it. This note changes no accepted decision in this RFC.
+
 **Capability and behavior deltas.** These are implementation-status facts, not
 contract changes; they are recorded so the accepted corpus reflects reality.
 The decision record's

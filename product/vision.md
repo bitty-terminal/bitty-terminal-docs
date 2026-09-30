@@ -98,10 +98,19 @@ The accepted product direction is a lightweight foundation extended by plugins.
 Starting a shell, displaying the terminal, scrolling, selection, copy and paste,
 fonts, colors, and basic input are the candidate minimum set discussed so far.
 Tabs, workspaces, status lines, project management, SSH management, and AI
-assistants are candidate plugin experiences. The accepted Default Distribution
-RFC staged set is `shell-integration`, `tabs`, `statusline`, `palette`, and
-`project`; all five are bundled but disabled, while `splits` and `search` remain
-future dogfooding candidates rather than bundled plugins.
+assistants are candidate plugin experiences. The bundled first-party set is
+defined by the [Default Distribution RFC](../specifications/default-distribution-rfc.md):
+the accepted bundled-plugin split (OQ-053) targets an eight-plugin catalog,
+every entry bundled but disabled (see the RFC for current catalog status), with `palette` and `statusline` shipped as
+independent first-party packages instead.
+
+With no plugin enabled, Bitty is a plain terminal window comparable to
+Alacritty: a shell, the grid, scrollback, selection and clipboard, fonts,
+colors, and themes, keymaps, typed configuration, and splits and workspaces as
+Core primitives reachable through commands and key bindings. It draws no
+chrome: no bar, no tab strip, and no status line. Core supplies the mechanisms
+and APIs; Lua plugins decide which chrome exists and what it shows (candidate,
+[Chrome Surface API](../specifications/chrome-surface-api-candidate.md)).
 
 A small core does not mean that everything is a plugin. The discussion
 recommends keeping correctness-critical capabilities such as VT parsing,
@@ -242,9 +251,12 @@ The following goals are not yet scheduled on a formal roadmap.
 ## Experience vision
 
 On default startup, users should get a fast, reliable terminal with predictable
-resource use. After installing or enabling plugins, the same core can compose
-into a development environment with tabs, splits, a status line, sessions,
-projects, SSH, Git, or AI workflows.
+resource use. With no plugin enabled the experience is Alacritty-like: one
+terminal window with no bar, tabs, or status line, while splits and workspaces
+remain reachable through commands and key bindings. After installing or
+enabling plugins, the same core can compose into a development environment
+with a workspace bar, tabs, a status line, sessions, projects, SSH, Git, or AI
+workflows, each assembled in Lua on generic Core surfaces.
 
 Disabling a plugin should also remove its capability and resident resource cost.
 Lazy loading, reclaimable lifecycles, and diagnosability are important parts of
@@ -253,9 +265,8 @@ this vision, but their exact designs still require RFCs.
 ## Accepted distribution decision
 
 The [Default Distribution RFC](../specifications/default-distribution-rfc.md)
-accepts `shell-integration`, `tabs`, `statusline`, `palette`, and `project` as
-the bundled-disabled first-party set; the enabled-by-default set remains
-empty.
+owns the bundled-disabled first-party set (the accepted OQ-053 split targets
+an eight-plugin catalog) and keeps the enabled-by-default set empty.
 
 ## Open questions
 

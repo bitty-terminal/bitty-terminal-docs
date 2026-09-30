@@ -275,19 +275,29 @@ components. No package, API, or repository is created by this direction.
 
 ## U-4 Window Chrome Runtime and Panel Rules (Candidate)
 
-**Candidate.** Window chrome is elevated into a `WindowChromeRuntime` with
-named surfaces:
+**Candidate.** Window chrome is elevated into a `WindowChromeRuntime`. Core
+provides generic host mechanisms only; named bars are plugin compositions on
+them (see the draft
+[Chrome Surface API](chrome-surface-api-candidate.md)):
 
-- **`WorkspaceRail`** — a permanent dock (candidate vertical placement) that
-  lists workspaces, acts as the primary drop target for panel dragging, and
-  carries the workspace-creation `+` target.
-- **`StatusBar`** — the composable status surface; the draft
-  [Status System Specification](status-system.md) remains its module registry
-  contract.
+- **Edge surfaces (bands)** — `top`, `bottom`, `left`, `right`, and
+  `statusline` mounts that reserve space only while a plugin mounts a tree,
+  stack deterministically per edge, render within budgets, and route clicks to
+  registered commands.
 - **`OverlayRoot`** — the host-owned root for transient overlays such as the
   command palette, which-key help, and jump labels.
-- **`NotificationArea`** — the notification and attention-badge surface.
-- **`CommandSurface`** — the command palette and command entry surface.
+- **Notification primitive** — the notification and attention-badge
+  mechanism behind a `NotificationArea` presentation.
+- **Command primitive** — the Command Registry and command entry hook behind a
+  `CommandSurface` presentation such as a palette plugin.
+
+`WorkspaceRail` (a workspace list with drop and `+` creation targets),
+`StatusBar`, and a tab strip are **plugin compositions** on edge surfaces that
+read domain data through `<domain>.read` snapshots and events and mutate only
+through `<domain>.control` commands. They are not Core surfaces; with no plugin
+enabled, no bar, rail, or tab strip is drawn. The draft
+[Status System Specification](status-system.md) remains the module registry
+contract a status plugin consumes.
 
 **Typed Panel Rules.** Declarative rules assign placement, presentation, size
 constraints, and appearance to a stable panel identity with explicit priority,
@@ -318,7 +328,9 @@ Terminal-side conclusions, composed with the accepted contracts:
   identity and declarative state and never mutate grid, cursor, modes, or
   scrollback.
 - The Bar contract today is the draft Status System's single bottom-anchored
-  bar; extended edge placement, colors, hiding, and animation are candidate
+  bar, which the Chrome Surface API reframes as a plugin-mounted surface; the
+  Core text workspaceline shipped today is transitional and retires after
+  plugin migration. Extended edge placement, colors, hiding, and animation are candidate
   in [PW-4](panel-workspace-interaction-candidate.md). The rail drop-target
   and `+` creation target extend the candidate
   [PW-8 drag-to-Bar semantics](panel-workspace-interaction-candidate.md) as
@@ -332,7 +344,7 @@ Terminal-side conclusions, composed with the accepted contracts:
   defined here.
 
 **Open.** Chrome runtime ownership and scope (the owner-pending Window Chrome
-RFC, U-9); whether the rail replaces or composes beside the Bar; the Panel Rule
+RFC, U-9); whether a rail plugin replaces or composes beside a bar plugin; the Panel Rule
 grammar, specificity algorithm, and conflict diagnostics; whether the cascade
 is user-visible as a resolution trace; how the safety policy rank is expressed
 and how `bitty --safe` intersects the cascade; and the plugin chrome-slot
@@ -575,8 +587,9 @@ RFCs; this document creates none of them:
    `PanelProvider`, lifecycle, and persistence state.
 4. **Panel Rules & Styling RFC** — rules, size constraints, appearance,
    themes, and precedence.
-5. **Window Chrome RFC** — `WorkspaceRail`, `StatusBar`, plugin chrome slots,
-   notifications, and global overlays.
+5. **Window Chrome RFC** — generic edge surfaces and plugin chrome slots
+   (hosting plugin-composed rails and status bars), notifications, and global
+   overlays.
 
 The recorded intent to retire or archive
 [Panel Extensibility Vision](../product/panel-vision.md#document-status) in
@@ -624,7 +637,7 @@ supersedes that page, and no replacement vision exists yet.
 | U-1 retained `UiTree`          | Candidate generalizing the accepted Declarative UI boundary; tree schema and reconciliation Open                | [Core and Plugin Boundaries](../architecture/core-boundaries.md) (Accepted), owner-pending UI Runtime RFC (U-9)                                                                                                        |
 | U-2 spatial/identity model     | Candidate; `RFC-OQ-3` placement Open; accepted compositor and panel contracts unchanged                         | [Workspace Compositor](workspace-compositor.md) (Accepted), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted), [Panel Placement Decision](panel-placement-decision.md) (Draft)                                      |
 | U-3 five-level architecture    | Candidate; Level 0 mechanism ownership Accepted, Levels 1-4 split owner-pending                                 | [Core and Plugin Boundaries](../architecture/core-boundaries.md) (Accepted), [bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs) (owner-pending)                                                |
-| U-4 chrome runtime and rules   | Candidate; Bar surface remains the draft Status System contract; rail drops extend PW-8 direction               | [Status System Specification](status-system.md) (Draft), [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md)                                                                       |
+| U-4 chrome runtime and rules   | Candidate; Core provides generic edge surfaces, bars and rails are plugin compositions; rail drops extend PW-8  | [Chrome Surface API (Candidate)](chrome-surface-api-candidate.md), [Status System Specification](status-system.md) (Draft), [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md)    |
 | U-5 gesture transaction        | Candidate extending PW-1/PW-7/PW-8 and the accepted interaction atomicity; `Mod` spelling Open (OQ-052)         | [Workspace Compositor](workspace-compositor.md) (Accepted), [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md)                                                                    |
 | U-6 motion and budgets         | Tiers 1-2 restate Accepted controls; motion tree, UI/GPU tier, and display lists Candidate                      | [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md) (Accepted), [Performance Budget RFC](performance-budget-rfc.md) (Accepted) |
 | U-7 state axes and rehydration | Lifecycle/presentation/focus Accepted; attention, interaction, activity, and rehydration Candidate (`RFC-OQ-9`) | [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted), [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md)                                                                          |
