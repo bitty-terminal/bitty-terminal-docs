@@ -82,7 +82,8 @@ tabline | statusline | overlay`), the exclusive tabline declaration, and the
 Core owns host mechanisms; named bars are plugin presentations on them, per the
 draft [Chrome Surface API](chrome-surface-api-candidate.md). With no plugin
 enabled, no presentation below is drawn. The Core text workspaceline shipped
-today is transitional and retires after plugin migration.
+today is transitional and retires after plugin migration. The ownership split
+is accepted by [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md).
 
 | Core host surface      | Owns (mechanism only)                                                                   | Status of its contract                                       |
 | ---------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------ |

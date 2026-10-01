@@ -24,6 +24,13 @@ sidebar_order: 55
 > [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md) row remain
 > authoritative. `OQ-052` closes only through an owner-accepted decision
 > artifact, never through this record alone.
+>
+> Owner decision (2026-10-01): the recommended option 2 is adopted by
+> [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md) on
+> [bitty#1558](https://github.com/bitty-terminal/bitty/issues/1558).
+> Workspace is a Core mechanism; the tab strip, workspace bar, and sidebar are
+> plugin-only presentation. That ADR resolves the M1-31 slice of `OQ-052`;
+> `PW-10` acceptance and all API spellings stay open.
 
 ## Purpose
 

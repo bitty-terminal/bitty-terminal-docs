@@ -264,16 +264,17 @@ height, active/inactive colors, and hiding land in that record as candidate
 `workspace.bar.edge`, `workspace.bar.size`, `workspace.bar.colors`, and the
 retained `workspace.show_bar`; the Workspace area, decoration insets, and PTY
 geometry are recomputed per edge by the band geometry and reflow rules there
-(four edges defined, `top`/`bottom` planned for v0.1); and a hidden or
-relocated Bar in `bitty --safe` falls back to the minimal bar on the configured
-edge. These resolutions are candidate, not accepted.
+(four edges defined, `top`/`bottom` planned for v0.1). The earlier
+`bitty --safe` minimal-bar fallback is superseded by
+[ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md): safe mode draws no bar. These resolutions are candidate,
+not accepted.
 
 **Appearance owned by plugins.** Under the candidate
 [Chrome Surface API](chrome-surface-api-candidate.md), Core renders no
 workspace bar: bar appearance (pill colors, indicator, alignment) belongs to
 the optional plugin that mounts the surface, using theme token style
 attributes. `workspace.bar.colors` is superseded; Core keeps only band
-geometry.
+geometry. The ownership split is accepted by [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md).
 
 **Open.** Indicator/slider color and Bar animations beyond the band thickness
 transition, and whether the Bar is per-`Window` or per-`Workspace`, remain

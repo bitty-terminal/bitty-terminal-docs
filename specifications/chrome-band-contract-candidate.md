@@ -205,9 +205,9 @@ usable = container inset by gaps_out and the accepted decoration insets,
    that changes when other workspaces close.
 3. The module reads workspace identity, name, order, and focus only; it never
    reads panel content (Chrome Surface Contract rule 3).
-4. In `bitty --safe`, the minimal bar (`workspace` + `clock`) of the Status
-   System applies on the configured edge, falling back to `bottom` if the edge
-   value is invalid.
+4. Superseded by [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md): `bitty --safe` has no built-in minimal
+   bar. With no plugin mounted, no band is reserved, and workspace switching
+   stays reachable through key bindings and commands.
 
 ### Lua-mounted chrome
 

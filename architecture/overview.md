@@ -249,7 +249,9 @@ Current revision and milestone evidence lives in
 
 ## Candidate UI layering
 
-Status: candidate direction. Core provides UI mechanisms and APIs, and Lua
+Status: candidate direction for the API shapes; the ownership split is
+**accepted** by [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md) (Workspace is Core mechanism, workspace
+presentation is plugin-only). Core provides UI mechanisms and APIs, and Lua
 organizes and presents all window chrome. The API shapes live in the draft
 [Chrome Surface API](../specifications/chrome-surface-api-candidate.md); the
 ownership rules come from [Core and Plugin Boundaries](core-boundaries.md).
@@ -280,8 +282,9 @@ It draws no chrome: no bar, no tab strip, and no status line.
 
 Current state: Core still draws a transitional text workspaceline in a
 reserved band (`workspace.show_bar`, `workspace.bar.edge`); mounted plugin
-trees are stored but not yet rendered. The workspaceline retires once a
-first-party plugin covers it.
+trees are stored but not yet rendered. The workspaceline and the bundled
+`bitty-terminal.workspace` manifest retire once a first-party presentation
+plugin covers it.
 
 ## Candidate execution-domain model
 

@@ -356,9 +356,9 @@ registry identifier, and allows slot placement like
    live-reconcilable; adding a previously unknown Provider component is
    restart-allowed but not rejected, with diagnostics pointing at the
    provider lifecycle.
-3. `bitty --safe` starts with the minimal built-in bar (`workspace` +
-   `clock` only) regardless of user configuration, matching the safe-mode
-   posture in the configuration model.
+3. `bitty --safe` loads no status plugin and therefore shows no bar. The
+   earlier minimal built-in bar (`workspace` + `clock`) is superseded by
+   [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md): Core draws no workspace or status presentation.
 
 ## Resource limits and security review
 
