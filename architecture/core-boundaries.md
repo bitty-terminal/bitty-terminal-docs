@@ -19,8 +19,11 @@ experiences in plugins, and one independent repository per plugin. The
 ownership tables and P0 gates below are `Accepted` via the Plugin Platform RFC
 (OQ-011/012/013), Isolation Resource RFC (OQ-014), Rich Presentation RFC
 (OQ-008/015/016), CLI Contract RFC (OQ-017), IPC and Agent RFC (OQ-018), and
-Lua ADRs (OQ-030/031/032); tail crates (`bitty-rich`, `bitty-ipc`,
-`bitty-agent`, `bitty-lua`) are `Implemented` but not yet `Verified`.
+Lua ADRs (OQ-030/031/032); tail crate `bitty-rich` is `Implemented` but not yet
+`Verified`. Out-of-process IPC (`bitty-ipc`), shared networking
+(`bitty-network`), agent protocol queues (`bitty-agent`), and observability
+(`bitty-observability`) have been extracted into dedicated L1 Rust Core
+Extension repositories to preserve the small-core Unix baseline.
 The `bitty-lua` tail crate keeps a generic-runtime boundary today; its current
 `piccolo` 0.3.3 runtime is unchanged by the accepted successor direction
 (Phodopus, recorded in
@@ -105,10 +108,11 @@ capability or protocol belongs in the first milestone. Crate presence follows
 [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md)
 and is `Implemented` but not yet `Verified`; `bitty-package`
 lifecycle and integrity model is `Accepted` (OQ-021) with signatures
-still draft, `bitty-lua` `Accepted` (OQ-009/030-032), and the tail crates
-(`bitty-rich` OQ-008/015/016, `bitty-ipc`/`bitty-agent` OQ-018) are
-`Implemented` (proposed contracts headless) and do not expand the accepted
-topology until `Verified`. Current revision and milestone evidence lives in
+still draft, `bitty-lua` `Accepted` (OQ-009/030-032), and `bitty-rich`
+is `Implemented`. IPC, networking, agent protocols, and observability
+are partitioned into dedicated L1 Rust Core Extensions (`bitty-ipc`,
+`bitty-network`, `bitty-agent`, `bitty-observability`), decoupling them from
+Core terminal platform dependencies. Current revision and milestone evidence lives in
 [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
 | Domain               | Core mechanisms and invariants                                                                       |
@@ -186,6 +190,27 @@ reserved band (`workspace.show_bar`, `workspace.bar.edge`), and the bundled
 `bitty-terminal.workspace` manifest still exists without plugin code. Both
 retire after a first-party presentation plugin covers the workspaceline, per
 the migration in the Chrome Surface API and ADR 0014.
+
+### L1 Core Extensions and Programmability
+
+Under Bitty's small-core philosophy, capabilities that do not belong to the
+fundamental terminal emulation loop are not built into Core. Instead, Bitty
+provides two distinct extension tiers:
+
+1. **L1 Rust Core Extensions**: Standalone first-party Rust repositories providing
+   optional, host-side system capabilities without polluting the Core crate graph:
+   - `bitty-ipc`: Generic out-of-process IPC bridge (`bitty-ipc-api`, `ipc-auth`,
+     `ipc-core`, `ipc-devtools`, `ipc-mcp`), default-off.
+   - `bitty-network`: Shared optional networking runtime (`bitty-network-api`,
+     `bitty-network`), default-off, network-free Core baseline.
+   - `bitty-agent`: AI agent protocol layer (`bitty-agent-api`, `bitty-agent`),
+     default-off.
+   - `bitty-observability`: Zero-dependency tracing and metrics definitions
+     (`bitty-observability-api`).
+2. **L2 Plugins (Lua Runtime)**: Lightweight, sandboxed user-facing extensions
+   running on the embedded Lua VM (`bitty-lua` / `phodopus`). All window chrome
+   (workspace bars, statuslines, unified bars) and auxiliary tools (file
+   managers, git panels, command palettes) are implemented as L2 plugins.
 
 ## Mechanism and policy examples
 
