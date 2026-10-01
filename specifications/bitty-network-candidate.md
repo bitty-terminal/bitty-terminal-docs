@@ -21,8 +21,12 @@ sidebar_order: 62
 > cites, and makes no implementation claim beyond the explicitly
 > labeled built-versus-not-built record below. Crate names, module
 > paths, API spellings, and defaults repeated here are direction, not
-> contract. Neither crate exists yet. (The earlier working name
-> `bitty-net` is superseded by the split below.)
+> contract. The crates exist in the bitty-network repository (see the
+> built-versus-not-built record below). The name `bitty-net` now names
+> the native component executable that hosts the implementation out of
+> process under the accepted
+> [DIR-030](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)
+> direction, not a crate.
 
 ## Purpose and scope
 
@@ -49,8 +53,9 @@ In scope (all **Candidate** unless cited otherwise):
 - BN-4: the internal layering (runtime, transport, protocol, TLS,
   DNS, policy) and which layer each consumer class uses.
 - BN-5: the feature flags, all default-off.
-- BN-6: the deployment shape (embedded backend first, Service Bridge,
-  optional external daemon later).
+- BN-6: the deployment shape (a `bitty-net` native component
+  coprocess from the start, per DIR-030; no embedded backend and no
+  daemon).
 - BN-7: the L0/L1/L2 extension model and the core-network-AI
   boundary.
 - BN-8: the consumer order (AI provider first, capability gating
@@ -112,6 +117,12 @@ Out of scope and owned elsewhere (pointers, not content):
   (normative): least-privilege capability families, sensitive-data
   handling, and the P0 gates. The security corpus co-owns any future
   network trust-boundary change.
+- [DIR-030](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)
+  and the
+  [Native Component Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/native-component-boundary.md)
+  (accepted direction): native capabilities run as independently
+  installed stdio coprocesses that Core resolves without `PATH`,
+  verifies by digest, spawns, and grants; BN-3 and BN-6 follow it.
 - [Open-question register, OQ-085](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)
   (open): the L0–L4 trust-level model (level 0 Core, 1 bundled Lua, 2
   third-party Lua, 3 native sidecar, 4 external tools and network) and
@@ -170,16 +181,24 @@ error, never to silent retry storms or ambient background traffic.
 ## BN-3 Lua path and permission model (Candidate)
 
 **Candidate.** The Lua path is `bitty.network` (for example a
-`net.get` call shape) mapping onto the Lua API, which calls into
-`bitty-network-api`, which dispatches to the Rust implementation. A
-Lua plugin deals with URLs and responses only: sockets, TLS,
+request call shape returning a handle whose response arrives as an
+event) mapping onto the Core component broker, which forwards the
+request with its grant to the `bitty-net` component, which dispatches
+to the Rust implementation (Lua -> Core broker -> `bitty-net`, per
+DIR-030). No network crate is linked into Core or exposed to the Lua
+VM. A Lua plugin deals with URLs and responses only: sockets, TLS,
 runtimes, certificates, and proxy settings are never visible at the
 Lua layer.
 
-**Candidate.** Permission flows from the plugin manifest: a
-`[permissions.network]` section declares the hosts allowlist, the
-Network API enforces a capability check against that declaration, and
-only then does the implementation move bytes. Plugins are denied raw
+**Candidate.** Permission flows from the plugin manifest: granted
+`network.connect:HOST[:PORT]` capabilities name the allowed
+destinations; the reference host additionally implements a
+`[[network.egress]]` table, whose status as a manifest field is owned
+by the plugin corpus (its manifest capability authority specification
+currently classifies it as a host implementation experiment). Core
+computes the per-plugin grant from those declarations, attaches it to
+every request, and the component re-checks it before it moves bytes;
+the component never widens it. Plugins are denied raw
 `sockets` and unrestricted `connect` by construction, not by
 convention — there is no plugin-reachable path to an arbitrary
 endpoint outside its grant.
@@ -228,12 +247,19 @@ rejected: the Rust ABI is not stable enough to carry this boundary,
 so a `cdylib` plugin-style split would trade a reviewed API for an
 accidental one.
 
-**Candidate.** The recommended compromise is a light Network API plus
-a Service Bridge: the MVP ships an embedded backend behind the
-unchanged `bitty-network-api` surface, and a future external
-`bitty-networkd` may move the implementation out of process later.
-The API does not change between the two deployments, so consumers —
-including already-shipped plugins — never observe the move.
+**Accepted direction (DIR-030).** The implementation runs out of
+process from the start as the native component `net` (executable
+`bitty-net`): Core resolves it from its component install root (never
+`PATH`), verifies its descriptor and SHA-256 digest before every
+spawn, starts it on first use as a stdin/stdout coprocess, stops it
+when idle, and remains the policy authority that issues every grant.
+The wire codec is the `bitty-network-wire` crate; its byte layout is
+owned by the bitty-network repository. The earlier recommendation —
+an embedded backend first and a future `bitty-networkd` socket daemon
+later — is superseded: there is no embedded phase and no daemon. The
+`bitty-network-api` surface stays the consumer contract, so plugins
+never observe the deployment shape. The process, install, and
+authority model is defined in the [Native Component Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/native-component-boundary.md).
 
 ## BN-7 Extension model and the hardest boundary (Candidate)
 
@@ -283,27 +309,28 @@ automatic extension of the pilot grant.
 
 ## Built versus not built
 
-Verified 2026-09-30 against `bitty` `main` and the `bitty-ai`
-workspace. `Implemented` below means code exists; nothing below is
+Verified 2026-10-01 against `bitty` `main`, the bitty-network
+repository `main`, and the `bitty-ai` workspace. `Implemented` below means code exists; nothing below is
 `Verified`, and nothing authorizes shipped or
 compatibility-guaranteed behavior. The default terminal core remains
 completely network-free.
 
-| #   | Claim                                                            | State            | Evidence                                                                                                                                                                                                                               |
-| --- | ---------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | The `bitty` workspace carries no network dependencies by default | Implemented-only | 21 crates verified with zero default network dependencies (no HTTP client, TLS, or QUIC in default closure; `bitty-network-lua` decoupled behind optional Cargo feature `network` in `bitty-runtime`/`bitty-lua`, PR #1544 / CTX-0882) |
-| 2   | The `bitty-ai` workspace carries no network dependencies         | Implemented-only | 2 crates verified with zero network dependencies; provider network use is future work, not present code                                                                                                                                |
-| 3   | The only async-runtime use is panel-adjacent                     | Implemented-only | the single async-runtime use is `bitty-runtime` `panels_async.rs`; no shared network runtime exists                                                                                                                                    |
-| 4   | A `bitty-network-api` crate exists                               | NOT built        | no API crate, service trait, or capability-definition type exists in either workspace                                                                                                                                                  |
-| 5   | A `bitty-network` implementation crate exists                    | NOT built        | no runtime, transport, HTTP, WebSocket, TLS, DNS, or policy implementation exists                                                                                                                                                      |
-| 6   | A shared Tokio runtime or pooled connection state exists         | NOT built        | no shared runtime, HTTP pool, DNS cache, or TLS session cache; per-plugin runtimes are moot — there is nothing to share                                                                                                                |
-| 7   | Unified proxy or TLS-provider handling exists                    | NOT built        | no `HTTPS_PROXY` handling, system or PAC inheritance, unified CA store, or client-certificate policy                                                                                                                                   |
-| 8   | A `bitty.network` Lua path exists                                | NOT built        | no default Lua network API surface; `bitty-network-lua` prototype is gated behind optional `network` feature                                                                                                                           |
-| 9   | A manifest network permission or capability check exists         | NOT built        | no `[permissions.network]` declaration, allowlist enforcement, or capability-check wiring; OQ-085 stays open                                                                                                                           |
-| 10  | A Network Inspector, Service Bridge, or network daemon exists    | NOT built        | no traffic view, no bridge, no `bitty-networkd`; all three are named future directions                                                                                                                                                 |
-| 11  | Any AI provider, weather-class, or remote-panel consumer exists  | NOT built        | no consumer of a shared stack exists because neither crate exists                                                                                                                                                                      |
+| #   | Claim                                                            | State            | Evidence                                                                                                                                                                                                                                                                                          |
+| --- | ---------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | The `bitty` workspace carries no network dependencies by default | Implemented-only | 21 crates verified with zero default network dependencies (no HTTP client, TLS, or QUIC in default closure; `bitty-network-lua` decoupled behind optional Cargo feature `network` in `bitty-runtime`/`bitty-lua`, PR #1544 / CTX-0882); that embedded feature path is being removed under DIR-030 |
+| 2   | The `bitty-ai` workspace carries no network dependencies         | Implemented-only | 2 crates verified with zero network dependencies; provider network use is future work, not present code                                                                                                                                                                                           |
+| 3   | The only async-runtime use is panel-adjacent                     | Implemented-only | the single async-runtime use is `bitty-runtime` `panels_async.rs`; no shared network runtime exists                                                                                                                                                                                               |
+| 4   | A `bitty-network-api` crate exists                               | Implemented-only | `bitty-network-api` exists in the bitty-network repository with request, response, error, and capability types; no `bitty` crate links it                                                                                                                                                         |
+| 5   | A `bitty-network` implementation crate exists                    | Implemented-only | `bitty-network` plus `bitty-network-core`, `bitty-network-dns`, and `bitty-network-tls` exist in the bitty-network repository with default-off `http` and `websocket` features                                                                                                                    |
+| 6   | A shared Tokio runtime or pooled connection state exists         | Implemented-only | runtime, DNS cache, and transport modules exist inside `bitty-network`; no cross-consumer sharing exists because no deployed consumer exists                                                                                                                                                      |
+| 7   | Unified proxy or TLS-provider handling exists                    | Implemented-only | proxy handling (`HTTPS_PROXY`, `NO_PROXY`) and a TLS trust provider exist in the bitty-network crates; no PAC or system-proxy inheritance is claimed here                                                                                                                                         |
+| 8   | A `bitty.network` Lua path exists                                | NOT built        | the embedded `bitty-network-lua` skeleton binding (optional `bitty` feature `network`) is being retired under DIR-030; the Lua -> Core broker -> `bitty-net` path does not exist yet                                                                                                              |
+| 9   | A manifest network permission or capability check exists         | Implemented-only | `network.connect:HOST[:PORT]` capability parsing exists in `bitty-package` and the reference host reads `[[network.egress]]`; the Core broker grant intersection does not exist yet; OQ-085 stays open                                                                                            |
+| 10  | A Network Inspector, component broker, or `bitty-net` exists     | NOT built        | no traffic view and no Core component broker; the `bitty-network-wire` codec and the `bitty-net` binary land under bitty-network#71; the `bitty-networkd` daemon is superseded by DIR-030 and will not be built                                                                                   |
+| 11  | Any AI provider, weather-class, or remote-panel consumer exists  | NOT built        | no consumer of the shared stack is deployed                                                                                                                                                                                                                                                       |
 
-Rows 4–11 are the gap this candidate exists to name. Any future RFC
+Rows 8, 10, and 11 are the remaining gap this candidate names; rows
+4–7 and 9 record code that exists but is not `Verified`. Any future RFC
 that claims to close a row must cite implementation evidence in the
 owning repository; this note alone closes nothing.
 
@@ -321,9 +348,10 @@ CA and client-certificate policy, and remote-panel authentication at
 the strength ADR 0008 requires. A future implementation RFC will need
 its own security review covering certificate validation, credential
 storage for providers and mail-class consumers, timeout and retry
-ceilings, audit retention and redaction, and the Service Bridge and
-any future daemon's IPC authentication and sandboxing; that review is
-an acceptance gate for the successor, not for this note.
+ceilings, audit retention and redaction, and the `bitty-net`
+component's digest verification, grant re-check, wire bounds, and
+process sandboxing (the sandboxing follow-up named by DIR-030); that
+review is an acceptance gate for the successor, not for this note.
 
 ## Verification plan
 
@@ -332,14 +360,15 @@ an acceptance gate for the successor, not for this note.
    merge gate for this docs-only repository.
 2. Built-versus-not-built rows re-checked against `bitty` `main` and
    the `bitty-ai` workspace at review time: the zero-network-dependency
-   closures, the single `panels_async.rs` async use, and the absence
-   of both crates, the shared runtime, proxy handling, the Lua path,
-   and the capability wiring. Any drift becomes a revision of the
+   closures, the single `panels_async.rs` async use, the existing
+   bitty-network crates, and the absence of the broker Lua path, the
+   component broker, the wire codec, and the `bitty-net` binary. Any drift becomes a revision of the
    table, never a silent claim.
 3. Independent reviewer confirms candidate status is unmistakable, the
-   two-crate naming is used consistently (no `bitty-net` remainder),
-   QUIC transport, the Inspector, and the external daemon are stated
-   as direction rather than contract, no research-process reference
+   two-crate naming is used consistently (`bitty-net` names only the
+   component executable), QUIC transport and the Inspector are stated
+   as direction rather than contract, the coprocess deployment cites
+   DIR-030, no research-process reference
    leaked in, no normative wording leaked in, and cross-links point at
    canonical documents rather than duplicating them.
 
@@ -347,7 +376,7 @@ an acceptance gate for the successor, not for this note.
 
 - **One crate instead of two.** Rejected: a single crate puts
   implementation dependencies in every consumer's closure, so plugins
-  observe backend choices and the embedded-to-daemon move in BN-6
+  observe backend choices and the out-of-process deployment in BN-6
   becomes a breaking change. The API crate is what makes the backend
   swappable and the plugin side stable.
 - **Each consumer wires its own stack.** Rejected: AI providers,
@@ -367,19 +396,20 @@ an acceptance gate for the successor, not for this note.
   outright.
 - **Dynamic library for the implementation.** Rejected: the Rust ABI
   is not stable, so the library boundary would freeze accidents
-  instead of the reviewed API surface. Out-of-process movement, if
-  ever needed, goes through the Service Bridge to a daemon, never
-  through a `cdylib`.
-- **QUIC transport or external daemon now.** Rejected as the initial
-  posture: endpoint identity, discovery, relay, and the daemon IPC
-  are all undecided direction, and specifying them here would promise
-  what no review has accepted. Embedded backend with WebSocket
-  transport covers the first consumers; the rest stays named future
-  direction.
+  instead of the reviewed API surface. The implementation runs out of
+  process as the `bitty-net` coprocess (DIR-030), never through a
+  `cdylib`.
+- **Embedded backend first, `bitty-networkd` daemon later.**
+  Superseded by DIR-030: an embedded phase links network code into
+  Core, and a socket daemon adds discovery, authentication, and
+  cross-instance state that a per-instance stdio coprocess avoids.
+- **QUIC transport now.** Rejected as the initial posture: endpoint
+  identity, discovery, relay, and migration are undecided direction,
+  and specifying them here would promise what no review has accepted.
 - **Defining the full network RFC here.** Rejected: the API method
   surface, timeout and retry ceilings, certificate policy detail,
   proxy precedence detail, the per-level capability table, and the
-  daemon protocol belong to successor RFCs with implementation
+  component wire protocol belong to successor RFCs with implementation
   evidence and security-corpus review. This note fixes only the
   architecture those documents assume.
 
@@ -404,7 +434,8 @@ retroactively normativize it.
 1. The `bitty-network-api` method surface and error taxonomy (which
    calls, which typed offline and denied shapes, streaming versus
    request-response) — owned by the future network RFC, not decided
-   here.
+   here. The wire protocol v1 byte layout is owned by the
+   bitty-network repository.
 2. The per-level OQ-085 network-domain table (which domains each
    trust level may hold) and its mapping onto the L0/L1/L2 extension
    layers — owned by the security corpus with the capability-gating
@@ -417,9 +448,10 @@ retroactively normativize it.
    the future network RFC.
 5. Timeout, retry, rate-limit, and cache-size ceilings per consumer
    class — owned by the future network RFC with measurement evidence.
-6. The Service Bridge IPC shape and the admission bar for ever
-   building the external daemon — owned by the deployment successor,
-   not decided here.
+6. WebSocket messages over the component wire protocol, the registry
+   install source for components, and per-platform component
+   sandboxing — follow-ups named by DIR-030; cross-instance sharing is
+   not provided.
 7. Whether the weather-class pilot admits polling, push, or both, and
    its refresh budget — owned by the pilot proposal, not decided here.
 
@@ -440,18 +472,17 @@ retroactively normativize it.
    layer and QUIC as direction, not contract.
 6. BN-5 states the feature flags with every default off and the
    weather pilot compiling `client` plus `http` only.
-7. BN-6 states the rejected dynamic library, the embedded-first
-   Service Bridge compromise, and the API-stable path to a future
-   external daemon.
+7. BN-6 states the rejected dynamic library and the DIR-030
+   `bitty-net` coprocess deployment from the start, with the embedded
+   phase and the `bitty-networkd` daemon superseded.
 8. BN-7 states the L0/L1/L2 extension model, the core ≠ network ≠ AI
    boundary, and the small-core rule, without conflating the OQ-085
    numbering.
 9. BN-8 states the AI-provider-first, capability-gating-second,
    weather-pilot-third order with later classes individually gated.
-10. The built-versus-not-built table is present, states neither crate
-    exists, matches the verified 2026-09-23 record, and claims
-    nothing beyond `Implemented`-only where the absence of network
-    code is observed.
+10. The built-versus-not-built table is present, records the existing
+    bitty-network crates and the missing broker, codec, and
+    `bitty-net` binary, and claims nothing beyond `Implemented`-only.
 11. `just check` passes; the document is registered in the
     Specifications index draft table.
 
@@ -460,7 +491,7 @@ retroactively normativize it.
 Not applicable: no security boundary, capability, resource ceiling, or
 trust decision changes. The security review above records that
 disposition, including the shared-runtime isolation, certificate,
-proxy-credential, rate-limit, audit, bridge-authentication, and
+proxy-credential, rate-limit, audit, component-integrity, and
 remote-authentication questions flagged for the successor network
 RFCs. Those successors will require owner and security-reviewer
 sign-off before acceptance.
@@ -484,6 +515,9 @@ sign-off before acceptance.
 - [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)
   (`Accepted`, `bitty-ai-docs`) — local-surface concepts the
   remote-panel posture composes with.
+- [Native Component Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/native-component-boundary.md)
+  (accepted direction DIR-030, `bitty-docs`) — the component process,
+  install, and authority model BN-6 adopts.
 - [Open-question register, OQ-085](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)
   (`Open`, `bitty-docs`) — the L0–L4 trust-level and capability-domain
   model BN-3 adopts as direction.
