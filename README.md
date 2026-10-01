@@ -56,6 +56,7 @@ stay under `docs/`.
 | `docs/README.md`                 | Documentation map and authority rules for this repository.                                                                         |
 | `docs/development/`              | Contributor workflow and the normative documentation policy.                                                                       |
 | `<topic>/`                       | Canonical platform documents (architecture, specifications, configuration, interfaces, product, reference, and user-facing trees). |
+| `FAQ.md`                         | Frequently asked questions on configuration, environment isolation, platform paths, and runtime.                                   |
 | `TODO.md`                        | Work register for this repository.                                                                                                 |
 | `AGENTS.md`                      | Agent scope, CarryCtx workflow, and local gate rules.                                                                              |
 | `.github/scripts/check-docs.mjs` | Links, metadata, language, budgets, and hygiene checks.                                                                            |
