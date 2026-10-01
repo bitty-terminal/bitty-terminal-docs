@@ -848,29 +848,42 @@ Shipped leaf inventory:
   start: `terminal.shell` and `terminal.scrollback` are spawn-time state, and
   `selection.auto_copy`, `layout.gaps_in`/`gaps_out`, `scrollbar.*`, and
   `mouse.*` are adopted into the runtime configuration once at startup.
-- **Activation status.** "Live-reconcilable" is the declared class and the
-  presentation subset is now wired. `reconcile_live` has a production caller:
+- **Activation status.** "Live-reconcilable" is the declared class, and every
+  `Live` key has a runtime adopter. `reconcile_live` has a production caller:
   the composition root installs a reload context at startup (skipped under
   `--safe`), and both `bitty ctl config reload` and an automatic file poll
   (mtime + length at most every 500 ms, so atomic-rename writes are seen
-  without a per-frame `stat`) drive the same path. A
-  live reload diffs the incoming file against the active config, and on an
-  all-`Live` change adopts it and drives the runtime live-adopt setters
-  (`set_decoration`, `set_outline`, `set_animations`, `set_window_padding`,
-  `set_window_radius_px`, `set_font_size`) from the resulting `RuntimeConfig`.
-  The control reply reports `{"reloaded":true,"applied":<bool>,"kind":...,
-"path":...,"changed":[...],"restart_required":[...]}`: `applied` covers only
-  the adopted presentation subset, and `restart_required` lists changed
-  `Live`-class fields the runtime cannot adopt yet (they take effect on the
-  next start). A change that needs a restart or a rejected key
-  keeps the previous good plan active (`should_retain_previous`) and applies
-  nothing. With no reload context installed (for example a config-probing or
-  `--safe` process) the reply degrades to the older probe-only
-  `"hot_swap":"follow-up"` shape, which validates the file without applying it.
-  Still follow-ups (no runtime adopter yet): `font.family`/`line_height`/
-  `letter_spacing`, `appearance.theme`/`colors`, `keymaps`/`leader`/`mod_key`,
-  and `window.opacity` (the last needs the live GPU surface, not a headless
-  tick).
+  without a per-frame `stat`) drive the same path. A live reload diffs the
+  incoming file against the active config, and on an all-`Live` change adopts
+  it. The runtime live-adopt setters are driven from the resulting
+  `RuntimeConfig`: `set_theme_palette` (`appearance.theme` / `colors`; live
+  OSC 4/10/11/12 overrides are kept), `set_decoration`, `set_outline`,
+  `set_outline_widths`, `set_background_appearance`
+  (`decoration.background_*` and `views`; the fail-closed image pipeline and
+  the RFC-0001 AC-1/AC-2 check against every existing View run before any
+  swap), `set_animations`, `set_window_padding`, `set_window_radius_px`,
+  `set_font_face` (`font.family`, `font.size`, `font.line_height`, and
+  `font.letter_spacing` in one atlas rebuild; the face loads before commit,
+  then the grid reflows), `set_window_opacity` (GPU surface alpha), and the
+  workspace-bar setters. The theme and outline colors and widths are
+  installed before the per-View check, and a rollback restores the previously
+  decoded backgrounds from memory. The app-owned keys (`keymaps`, `mod_key`,
+  `leader_key`, `leader_timeout_ms`, `hints_enabled`, and the window
+  transparency hint for `window.opacity`) are re-resolved with the startup
+  resolvers and adopted on the same tick; a Leader window or hint session
+  armed under the old bindings is cancelled. Any resolve or setter error
+  rolls the reload back and reports `apply-error`. On X11, winit honors the
+  transparency hint only at window creation, so raising transparency on a
+  window that started opaque can stay visually opaque until restart; the
+  renderer half still adopts. The control reply reports
+  `{"reloaded":true,"applied":<bool>,"kind":...,"path":...,"changed":[...],"restart_required":[...]}`;
+  `restart_required` lists changed `Live`-class fields without a runtime
+  adopter, which is currently none. A change that needs a restart or a
+  rejected key keeps the previous good plan active (`should_retain_previous`)
+  and applies nothing. With no reload context installed (for example a
+  config-probing or `--safe` process) the reply degrades to the older
+  probe-only `"hot_swap":"follow-up"` shape, which validates the file without
+  applying it.
 - Unknown and undeclared keys are rejected by validation; the previous good
   plan stays active (`should_retain_previous`).
 
