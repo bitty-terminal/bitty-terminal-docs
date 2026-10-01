@@ -65,6 +65,19 @@ sidebar_order: 20
 > set, disable surfaces, precedence, budgets, and security contracts are
 > unchanged; see
 > [Removed from Core (2026-09-30)](#removed-from-core-2026-09-30).
+>
+> Workspace amendment (2026-10-01,
+> [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md),
+> [bitty#1558](https://github.com/bitty-terminal/bitty/issues/1558)):
+> workspace management is a Core mechanism and workspace presentation is
+> plugin-only. The bundled `bitty-terminal.workspace` entry (and its
+> `bitty-terminal.tabs` alias) is retiring: its commands become Core
+> workspace commands, its `workspaceline` claim is removed, and the catalog
+> shrinks to `bitty-terminal.shell-integration` once the `bitty` removal
+> lands. A first-party workspace presentation plugin, when it exists, is an
+> independent optional package and is not enabled by default. Rows and
+> examples below that name `bitty-terminal.workspace` remain the dated
+> catalog record until that removal lands.
 
 ## Purpose and scope
 
@@ -252,7 +265,7 @@ version, checksum, plugin-api = "^1.0", compat.bitty }` and is validated
 | Plugin ID                          | Stage purpose                                                                         | Default                                                     | Capability sketch (illustrative)                          |
 | ---------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------- |
 | `bitty-terminal.shell-integration` | OSC 7/133 semantic zones, cwd/title, fail-closed fallback when absent                 | bundled, **disabled**                                       | `terminal.semantic-read` (read-only)                      |
-| `bitty-terminal.workspace`         | workspace commands, workspaceline presentation, ordering and closing policy           | bundled, disabled                                           | `ui.rich` or status-component slot, `workspaceline` claim |
+| `bitty-terminal.workspace`         | retiring (ADR 0014); manifest only, workspace commands run in Core                    | bundled, disabled                                           | `ui.rich` or status-component slot, `workspaceline` claim |
 | `bitty-terminal.tabs`              | **deprecated alias** of `bitty-terminal.workspace`; legacy tabline claim and commands | deprecated alias, not separately staged (removal >= v0.2.0) | legacy `tabline` claim (deprecated)                       |
 
 Revision (2026-09-13, CTX-0170): the **accepted** staged set as of

@@ -121,6 +121,7 @@ topology until `Verified`. Current revision and milestone evidence lives in
 | Input                | Keyboard/mouse encoding, IME, focus, paste, and the keymap registry                                  |
 | Presentation         | Scene/render snapshots, damage, renderer, glyph cache, and the software-fallback interface           |
 | UI primitives        | View, `LayoutNode`, split, stack, overlay, focus, resize, and selection primitives                   |
+| Workspaces           | Workspace lifecycle and state: create, close, rename, focus, order, move panels, active workspace    |
 | Platform             | Windows, clipboard primitives, DPI, monitors, notification primitives, and the open-URL gate         |
 | Extension host       | Command, Event, Capability, plugin lifecycle, API version, and lazy triggers                         |
 | Configuration        | Typed runtime configuration, validation, migration, and reload/reconcile semantics                   |
@@ -141,42 +142,50 @@ decode/placement evidence and its recorded deviations.
 
 ## Accepted Plugin ownership
 
-| Optional experience   | Policy owned by the plugin                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------------ |
-| Tabs                  | Tab commands, tab line, ordering, key bindings, and closing policy                                     |
-| Splits                | When to split, default direction, layout policy, and key bindings; the split primitive remains in Core |
-| Search                | Search UI, navigation, and history policy using a controlled Terminal snapshot                         |
-| Status line           | Presentation of cwd, modes, Git, tasks, and similar state                                              |
-| Sessions / Workspaces | Saving, restoring, naming, and organizing user workflows                                               |
-| SSH manager           | Host management and connection UX; PTY and transport security mechanisms remain in Core or a Service   |
-| Shell enhancement     | Optional UX for prompt marks, jump-to-prompt, and command regions                                      |
-| Project / Git         | Project discovery, status presentation, and command composition                                        |
-| Quick/Quake terminal  | Window and presentation policy                                                                         |
-| AI / Agent            | Provider integration, Agent panes, status, tasks, and context UX                                       |
-| MCP client            | Consumption of external MCP services; the MCP adapter for Bitty debug is a separate tool               |
-| Palette / picker      | Command palette, file picker, and optional UI                                                          |
+| Optional experience  | Policy owned by the plugin                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------ |
+| Tabs                 | Tab strip and tab line presentation over Core panel and workspace commands                             |
+| Splits               | When to split, default direction, layout policy, and key bindings; the split primitive remains in Core |
+| Search               | Search UI, navigation, and history policy using a controlled Terminal snapshot                         |
+| Status line          | Presentation of cwd, modes, Git, tasks, and similar state                                              |
+| Workspace bar        | Workspace bar, tabs, sidebar, or pills over published workspace state; Core keeps the workspaces       |
+| Sessions             | Saving, restoring, naming, and organizing user workflows                                               |
+| SSH manager          | Host management and connection UX; PTY and transport security mechanisms remain in Core or a Service   |
+| Shell enhancement    | Optional UX for prompt marks, jump-to-prompt, and command regions                                      |
+| Project / Git        | Project discovery, status presentation, and command composition                                        |
+| Quick/Quake terminal | Window and presentation policy                                                                         |
+| AI / Agent           | Provider integration, Agent panes, status, tasks, and context UX                                       |
+| MCP client           | Consumption of external MCP services; the MCP adapter for Bitty debug is a separate tool               |
+| Palette / picker     | Command palette, file picker, and optional UI                                                          |
 
 The default distribution may bundle some of these plugins, but it cannot grant
 first-party plugins additional authority through private APIs.
 
-### Zero-plugin baseline (candidate)
+### Zero-plugin baseline
 
-Status: candidate clarification of the ownership tables above; it changes no
-row. The mechanism APIs it relies on are specified in the draft
-[Chrome Surface API (Candidate)](../specifications/chrome-surface-api-candidate.md).
+Status: **accepted** by
+[ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md)
+(owner decision 2026-10-01, `bitty` #1558). Workspace is a Core mechanism;
+every workspace bar, tab strip, and sidebar is an optional plugin, in the way a
+tiling compositor owns workspaces while a separate bar shows them. The
+mechanism APIs it relies on are specified in the draft
+[Chrome Surface API (Candidate)](../specifications/chrome-surface-api-candidate.md),
+whose spellings stay candidate.
 
 With no plugin enabled, Bitty is a plain terminal window comparable to
 Alacritty: a shell, the grid, scrollback, selection and clipboard, fonts,
 colors, and themes, keymaps, typed configuration, and splits and workspaces as
 Core primitives reachable through commands and key bindings. It draws no
-chrome: no bar, no tab strip, and no status line. Every piece of chrome is a
-plugin composition on generic Core mechanisms, so the Tabs, Status line, and
-Sessions / Workspaces rows above own presentation entirely, including any
-workspace bar.
+chrome: no bar, no tab strip, and no status line, including in `bitty --safe`.
+Every piece of chrome is a plugin composition on generic Core mechanisms, so
+the Tabs, Workspace bar, and Status line rows above own presentation
+entirely.
 
 Current state: Core still draws a transitional text workspaceline in a
-reserved band (`workspace.show_bar`, `workspace.bar.edge`). It retires after a
-first-party plugin covers it, per the migration in the Chrome Surface API.
+reserved band (`workspace.show_bar`, `workspace.bar.edge`), and the bundled
+`bitty-terminal.workspace` manifest still exists without plugin code. Both
+retire after a first-party presentation plugin covers the workspaceline, per
+the migration in the Chrome Surface API and ADR 0014.
 
 ## Mechanism and policy examples
 

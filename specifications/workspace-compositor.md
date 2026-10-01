@@ -425,7 +425,10 @@ What merged, exactly:
    CTX-0333 amendment (`bitty` PR #562); see the change provenance note above.
 2. **Workspace operations entry** (`bitty` #433 `227ca3a`, CTX-0257, DEC-0034):
    runtime-owned workspace slots with MRU order (capacity `16`), a pure
-   workspaceline overlay string, and a presented overlay banner. Keys:
+   workspaceline overlay string, and a presented overlay banner. Per
+   [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md) the slots are the Core workspace mechanism, while the
+   workspaceline is transitional presentation that retires once a plugin
+   covers it. Keys:
    `Alt+N` new, `Alt+1..9` focus, `Alt+-`/`Alt+=` previous/next, `Alt+Tab`
    last-used, `Alt+W` close. Close never kills silently: a live workspace
    arms a pending confirm, repeating the chord confirms, `Esc` cancels, and

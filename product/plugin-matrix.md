@@ -54,6 +54,12 @@ sidebar_order: 52
   optional plugins. The `5c885f2` baseline and candidate rows below are kept
   as the dated research record; see the
   [Default Distribution RFC](../specifications/default-distribution-rfc.md#removed-from-core-2026-09-30).
+- Later change (2026-10-01, [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md),
+  [bitty#1558](https://github.com/bitty-terminal/bitty/issues/1558)): the
+  workspace mechanism is Core and workspace presentation is plugin-only.
+  `bitty-terminal.workspace` no longer owns presentation and is retiring from
+  the bundled catalog; rows below that describe it as owning the
+  workspaceline are the dated record.
 
 ## Scope
 

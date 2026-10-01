@@ -20,6 +20,11 @@ sidebar_order: 65
 > current-state section. Every API name, capability, event, command, and
 > constant below is a candidate spelling pending
 > [OQ-056](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
+>
+> The ownership direction (Workspace is Core mechanism; workspace bars, tabs,
+> and sidebars are optional plugins; the Core workspaceline and the bundled
+> `bitty-terminal.workspace` manifest retire) is **accepted** by
+> [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md). The API shapes in this record remain candidate.
 
 ## Purpose and scope
 
@@ -226,10 +231,12 @@ pattern itself.
    Contract.
 2. `name` is bounded by the workspace name limit; `id` is the stable
    workspace identity, never a display counter.
-3. Mutation commands reuse the existing workspace command handlers, including
-   the capacity bound, the never-empty invariant (PW-6), and undo. The
-   shipped `bitty-terminal.workspace:new|close|next` commands are the starting
-   set; the final namespace is pending OQ-056.
+3. Mutation commands reuse the existing Core workspace command handlers,
+   including the capacity bound, the never-empty invariant (PW-6), and undo.
+   They are Core commands, not plugin commands: the
+   `bitty-terminal.workspace:new|close|next` names from the retiring bundled
+   manifest are not the target namespace, and the final namespace is pending
+   OQ-056.
 
 ```lua
 -- Illustrative-only candidate shape; not an implemented API.
@@ -284,7 +291,10 @@ bounds; this record fixes only the shape.
    workspace-segment L2 module; a new first-party `workspacebar` plugin
    repository provides the workspace bar. Both are optional and independent.
 3. **Core workspaceline retires last.** The Core text workspaceline is removed
-   once a first-party plugin covers it. Until then it stays as shipped.
+   once a first-party plugin covers it. Until then it stays as shipped. The
+   bundled `bitty-terminal.workspace` manifest, its `bitty-terminal.tabs`
+   alias, and the `workspaceline` claim are removed in the same step
+   (ADR 0014).
 4. **Key mapping.** `workspace.show_bar` and `workspace.bar.edge` either map to
    `workspacebar` plugin settings (enable state and preferred edge) with a
    deprecation window, or are removed with the Core workspaceline; the choice
