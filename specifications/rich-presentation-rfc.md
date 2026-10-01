@@ -219,6 +219,13 @@ Notes:
 
 - IMG-2 and IMG-3 together prevent decompression bombs where a tiny payload
   declares huge dimensions.
+- IMG-1 bounds compressed payloads (PNG, any `o=` compression) and every
+  stream whose decoded size is not declared up front. An uncompressed raw
+  Kitty stream (`f=24`/`f=32` with a non-zero `s`/`v` claim and no `o=`)
+  carries the bitmap itself, so the parser bounds it to its exact declared
+  size `s x v x channels`, validated on the first chunk against IMG-2 and
+  IMG-3 before any payload byte is buffered. The stream can never grow past
+  its own claim; see the recorded deviation below for the peak effect.
 - IMG-4 is an aggregate budget across all protocols and all terminals of one
   window; it follows the isolation budget floor and maximum policy in the
   [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md).
@@ -380,6 +387,15 @@ Recorded deviations and open items (not silently resolved):
   The memory ceiling is identical either way, but the side cap differs;
   aligning the IMG-2 wording or tightening the Kitty path is a follow-up for
   the owning RFC revision.
+- Uncompressed raw Kitty frames are bounded by their declared size under
+  IMG-2/IMG-3 rather than by the IMG-1 4 MiB cap (bitty#1567), so
+  full-screen HD frames from `chafa -f kitty` render. No limit value changes,
+  but the encoded input that IMG-3 treats as bounded overhead can now reach
+  64 MiB for one raw stream: the transient per-image peak (assembled payload
+  plus decoded copy) is about 128 MiB instead of about 20 MiB, and one
+  in-flight stream per pane parser sits outside IMG-4. Moving the payload
+  into the decoder without a copy, or charging in-flight streams against
+  IMG-4, is follow-up work for the owning RFC revision.
 - Images are topmost over same-origin cursor and selection fills
   (cursor-on-top is follow-up), the decoded-image store is global FIFO (a
   noisy origin can evict another origin's stored images; per-origin quotas are
