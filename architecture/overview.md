@@ -239,12 +239,12 @@ decomposition and dependency edges are fixed in
 `bitty-package` lifecycle and integrity model is `Accepted` (OQ-021) with
 signatures still draft, `bitty-lua` `Accepted` (OQ-009/030-032; runtime
 successor direction recorded in [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md),
-still on `piccolo` 0.3.3), and the tail
-crates (`bitty-rich` OQ-008/015/016, `bitty-ipc`/`bitty-agent` OQ-018) are
-`Implemented` but not yet `Verified`, implementing the tail of the
-[Proposed Delivery Sequence](../product/proposed-delivery-sequence.md) as
-headless libraries without expanding the accepted topology until `Verified`.
-Current revision and milestone evidence lives in
+still on `piccolo` 0.3.3), and the tail crate `bitty-rich` (OQ-008/015/016) is
+`Implemented` but not yet `Verified`. The out-of-process IPC (`bitty-ipc`),
+shared networking (`bitty-network`), agent protocol layer (`bitty-agent`), and
+observability infrastructure (`bitty-observability`) have been externalized into
+dedicated L1 Rust Core Extension repositories, preserving Core as a lean,
+resilient terminal platform. Current revision and milestone evidence lives in
 [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
 ## Candidate UI layering
@@ -330,10 +330,11 @@ Agent tooling. Permissions for MCP, Agents, and DevTools follow the
 ## Host gateway surface (Phase-A mechanism)
 
 Status: `Implemented` mechanism record, not an accepted contract change.
-The five services below are shipped mechanism in `bitty-ipc` on `bitty`
-main; the reconciliation note is a draft design record in `bitty`.
-Wire and bridge publication plus live Runtime wiring are sequel work and
-are not claimed here. Accepted ownership tables in
+The five services below were prototyped in Phase A and now reside in the
+independent `bitty-ipc` extension repository (under `bitty-ipc-core`,
+`bitty-ipc-devtools`, and `bitty-ipc-mcp`); the reconciliation note is a draft
+design record in `bitty`. Wire and bridge publication plus live Runtime wiring
+are sequel work and are not claimed here. Accepted ownership tables in
 [Core and Plugin Boundaries](core-boundaries.md) are unchanged.
 
 Direction:
