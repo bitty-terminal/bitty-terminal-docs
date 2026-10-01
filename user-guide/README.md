@@ -25,6 +25,11 @@ a preview of commands that users can run today.
 | Getting started | First launch, shell setup, basic navigation, configuration location, and safe defaults.              | The referenced commands and behavior are covered by acceptance tests.  |
 | Daily use       | Sessions, windows, panes, selection, search, links, clipboard, profiles, plugins, and accessibility. | The user-facing contract is stable for the documented release.         |
 | Troubleshooting | Diagnostics, logs, safe startup, recovery, compatibility issues, and support information.            | Diagnostic behavior and recovery paths have reproducible evidence.     |
+| FAQ             | Common questions on configuration, environment isolation, paths, and performance.                    | The documented contracts are grounded in existing specifications.      |
+
+## Documents
+
+- [Frequently asked questions](faq.md) — Architectural and practical questions covering declarative configuration, environment isolation, platform paths, and resource footprints.
 
 No placeholder page should invent command names, package identifiers, default
 key bindings, filesystem paths, or support guarantees. Add a section only when
