@@ -391,11 +391,11 @@ Recorded deviations and open items (not silently resolved):
   IMG-2/IMG-3 rather than by the IMG-1 4 MiB cap (bitty#1567), so
   full-screen HD frames from `chafa -f kitty` render. No limit value changes,
   but the encoded input that IMG-3 treats as bounded overhead can now reach
-  64 MiB for one raw stream: the transient per-image peak (assembled payload
-  plus decoded copy) is about 128 MiB instead of about 20 MiB, and one
-  in-flight stream per pane parser sits outside IMG-4. Moving the payload
-  into the decoder without a copy, or charging in-flight streams against
-  IMG-4, is follow-up work for the owning RFC revision.
+  64 MiB for one raw stream. The transient per-image peak for f=32 RGBA is
+  about 64 MiB (bitty#1576): the payload moves into the decoder without a
+  copy when the length matches exactly. In-flight streams across the primary
+  parser and all pane parsers are charged against IMG-4 before buffering more
+  input (bitty#1576).
 - Images are topmost over same-origin cursor and selection fills
   (cursor-on-top is follow-up), the decoded-image store is global FIFO (a
   noisy origin can evict another origin's stored images; per-origin quotas are
