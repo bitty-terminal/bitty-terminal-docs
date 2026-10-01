@@ -37,17 +37,16 @@ how a user installs those pieces or how a plugin declares that it
 needs them. Without that answer, a plugin that needs network access
 or AI assistance has no portable way to state its dependency, and a
 user has no predictable install, diagnose, and upgrade path that
-survives the move from an embedded backend to an out-of-process
-sidecar.
+survives the out-of-process native component model (DIR-030).
 
 In scope (all **Candidate** unless cited otherwise):
 
 - LI-1: the single-binary install model with default-off features.
 - LI-2: the distribution package split used now.
 - LI-3: the extension commands and the doctor surface.
-- LI-4: the sidecar phase later with IPC discovery and stable user
-  commands across both phases.
-- LI-5: the `bitty-ai` install shape (feature-first, service-later).
+- LI-4: native component coprocesses (DIR-030) with stable user
+  commands.
+- LI-5: the `bitty-ai` install shape (the `ai` native component).
 - RQ-1: the `[capabilities]` network list plus `[network]`
   allow-table shape, with the client-versus-listen,
   HTTP-versus-TCP, and named-host-versus-arbitrary-host
@@ -113,8 +112,14 @@ Out of scope and owned elsewhere (pointers, not content):
   network entries plus the new `[network]` and `[limits]` tables
   below extend that contract as candidate only.
 - [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)
-  (accepted, `bitty-ai-docs`): local-surface concepts the sidecar
-  discovery posture composes with.
+  (accepted, `bitty-ai-docs`): local-surface concepts; the inbound
+  external IPC socket stays separate from the outbound component path.
+- [DIR-030](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md) and the
+  [Native Component Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/native-component-boundary.md)
+  (accepted direction, `bitty-docs`): native components are
+  independently installed stdio coprocesses that Core resolves
+  without `PATH`, verifies by digest, spawns, and grants. LI-4 and
+  LI-5 follow it.
 - [ADR 0008 — Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)
   (accepted): any remote use of an L1 extension sits behind that
   gate; this record does not reopen it.
@@ -132,26 +137,26 @@ Out of scope and owned elsewhere (pointers, not content):
 
 ## Terminology
 
-| Term                   | Meaning in this document                                                                                         |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| L0 Core                | The minimal stable core with no network and no AI runtime.                                                       |
-| L1 extension           | A host-side Rust capability (network, AI, and their peers) installed alongside or behind the core.               |
-| L2 plugin              | A Lua plugin carrying behavior, policy, and user experience; never a network or AI implementation.               |
-| Feature                | A compile-time option of an L1 crate; every network and AI feature defaults to off.                              |
-| Distribution package   | An operating-system or installer unit (as distinct from a compile feature or a plugin package).                  |
-| Sidecar                | An optional out-of-process L1 service (`networkd`, `ai-service` as candidate names) reached over IPC.            |
-| IPC discovery          | The host finding a running sidecar over the accepted local IPC surface, with authentication owned by successors. |
-| Capability declaration | A plugin's declared L1 need: a list-form entry in `[capabilities]` plus its per-capability allow table.          |
-| Network allow table    | The `[network]` table scoping a declared network entry to named hosts (and, where admitted, ports).              |
-| Limit tier             | One of `tiny`, `normal`, `heavy`, `system`: the default resource budget a plugin runs under.                     |
-| Install-time resolve   | Checking a plugin's capability declarations against the installed L1 set when the plugin is installed.           |
-| Load-time re-check     | Repeating that check on every plugin load, because the L1 set may have changed since install.                    |
-| Fail-closed            | Refusing to load or serve the plugin when declarations are unmet, with an actionable error.                      |
-| Consent-gated install  | Offering to fetch a missing L1 package only with explicit user consent, never silently.                          |
-| Cached resolution      | Reusing the last successful resolution record while offline instead of fetching.                                 |
+| Term                   | Meaning in this document                                                                                                                              |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L0 Core                | The minimal stable core with no network and no AI runtime.                                                                                            |
+| L1 extension           | A host-side Rust capability (network, AI, and their peers) installed alongside or behind the core.                                                    |
+| L2 plugin              | A Lua plugin carrying behavior, policy, and user experience; never a network or AI implementation.                                                    |
+| Feature                | A compile-time option of an L1 crate; every network and AI feature defaults to off.                                                                   |
+| Distribution package   | An operating-system or installer unit (as distinct from a compile feature or a plugin package).                                                       |
+| Native component       | An independently installed out-of-process L1 executable (`bitty-net` for network, `bitty-ai` for AI) that Core spawns as a stdio coprocess (DIR-030). |
+| Component resolution   | Core locating a native component in its install root (never `PATH`) and verifying its descriptor and digest before spawn.                             |
+| Capability declaration | A plugin's declared L1 need: a list-form entry in `[capabilities]` plus its per-capability allow table.                                               |
+| Network allow table    | The `[network]` table scoping a declared network entry to named hosts (and, where admitted, ports).                                                   |
+| Limit tier             | One of `tiny`, `normal`, `heavy`, `system`: the default resource budget a plugin runs under.                                                          |
+| Install-time resolve   | Checking a plugin's capability declarations against the installed L1 set when the plugin is installed.                                                |
+| Load-time re-check     | Repeating that check on every plugin load, because the L1 set may have changed since install.                                                         |
+| Fail-closed            | Refusing to load or serve the plugin when declarations are unmet, with an actionable error.                                                           |
+| Consent-gated install  | Offering to fetch a missing L1 package only with explicit user consent, never silently.                                                               |
+| Cached resolution      | Reusing the last successful resolution record while offline instead of fetching.                                                                      |
 
 Command spellings (`bitty ext list`, `bitty ext install`,
-`bitty doctor`), sidecar names (`networkd`, `ai-service`), package
+`bitty doctor`), package
 names, manifest keys, and error shapes below are
 illustrative-only candidate spelling.
 
@@ -193,52 +198,56 @@ command family, illustrative spelling:
 
 - `bitty ext list` shows which L1 extensions are installed, which
   version and feature set each carries, and whether each was resolved
-  from package install or sidecar discovery.
+  from a package or a native component install.
 - `bitty ext install <name>` resolves the named extension through
   the system channel with explicit consent (see RQ-5 for the plugin
   side of the same consent rule).
 - `bitty doctor` gains L1 categories: it reports the installed L1
-  set, the active backend per extension (embedded or sidecar),
+  set, the native component per extension and its availability,
   version and feature mismatches against installed plugins, and stale
   cached resolutions (see RQ-6). Doctor output stays diagnostic; it
   never mutates the L1 set.
 
-**Candidate.** These spellings are stable across the embedded and
-sidecar phases: the same commands report an embedded backend today
-and a discovered sidecar tomorrow, so user documentation and scripts
-do not branch on deployment shape.
+**Candidate.** These spellings are stable regardless of how an
+extension is deployed, so user documentation and scripts do not
+branch on deployment shape.
 
-## LI-4 Sidecars later with IPC discovery (Candidate)
+## LI-4 Native component coprocesses (Accepted direction, DIR-030)
 
-**Candidate.** Moving an L1 implementation out of process is a later
-deployment change, not a user-facing break. A future `networkd` and
-a future `ai-service` expose the same capability already offered by
-the embedded backend, and the host finds them through IPC discovery
-over the accepted local surface. Consumers — including
-already-shipped plugins — observe no API change across the move,
-matching the Service Bridge posture of the parent network
-direction.
+**Accepted direction.** L1 implementations run out of process from
+the start as native components, per [DIR-030](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md). The
+network extension is the component `net` (executable `bitty-net`):
+Core resolves it from its component install root (never `PATH`),
+verifies its descriptor and SHA-256 digest before every spawn,
+starts it on first use as a stdin/stdout coprocess, and stops it when
+idle. The earlier `networkd` socket sidecar with IPC discovery is
+superseded. Consumers — including already-shipped plugins — observe
+the stable consumer API, not the deployment shape. The process,
+install, and authority model is defined in the
+[Native Component Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/native-component-boundary.md).
 
-**Candidate.** Discovery never weakens authentication: the IPC
-shape, credential handling, and sandboxing of any sidecar belong to
-a deployment successor with security-corpus review, and no sidecar
-is implicitly trusted because it is local. A missing, unreachable,
-or unauthenticated sidecar resolves exactly like a missing package:
-fail-closed with an actionable error (see RQ-4).
+**Accepted direction.** Core stays the policy authority: it issues
+the per-request grant, and the component only re-checks it and never
+widens it. A component is never trusted because it is local. A
+missing component or one that fails digest verification resolves
+exactly like a missing package: fail-closed with an actionable error
+(see RQ-4). Per-platform sandboxing of components is a follow-up with
+security-corpus review.
 
 ## LI-5 bitty-ai install shape (Candidate)
 
-**Candidate.** The AI extension follows the same two-phase shape as
-the network extension: feature-first, service-later. In the first
-phase, AI capability (provider access through the L1 network path,
-local runtime behavior owned by the AI corpus) ships as default-off
-features of the host-side extension surface. In the later phase, an
-`ai-service` sidecar may move that implementation out of process
-behind unchanged consumer-facing behavior.
+**Candidate.** The AI extension follows the same native component
+model as the network extension: under DIR-030 the AI host is the
+component `ai` (executable `bitty-ai`), independently installed and
+paired with a Lua front-end plugin; the earlier `ai-service` sidecar
+name is superseded. Provider access goes through the L1 network path
+under a Core-issued grant; local runtime behavior stays owned by the
+AI corpus.
 
-**Candidate.** The AI runtime holds no network stack of its own at
-either phase: it consumes the L1 network extension through the same
-API and capability path as every other consumer, preserving the
+**Candidate.** The AI runtime holds no network policy of its own: it
+may link the bitty-network crates in-process, but only under a
+Core-issued network capability grant that it never widens, and it
+uses the same API and capability path as every other consumer, preserving the
 core-not-equal-network-not-equal-AI boundary of the parent
 direction.
 
@@ -318,7 +327,7 @@ extending the accepted v1 `[compat]` install-time behavior (where
 a plugin whose declarations are unmet does not install as usable.
 At load time, the host re-checks the same declarations on every
 load, because the L1 set may have changed since install (package
-removed, sidecar stopped, host upgraded).
+removed, component missing or failing verification, host upgraded).
 
 **Candidate.** The install-time check is advisory-because-explicit:
 it produces the same fail-closed error shape as the load-time check
@@ -381,11 +390,11 @@ that distinguishes "unmet declaration" from "cannot check right
 now", and `bitty doctor` reports the cached record and its staleness.
 
 **Candidate.** The cache stores resolution inputs (declared tables,
-installed L1 versions and features, host version, sidecar presence)
+installed L1 versions and features, host version, component presence)
 so a stale hit is detectable. A cache entry never grants capability
 the installed set no longer provides: if the L1 set changed while
 offline in a way the host can observe locally (package removed,
-sidecar unreachable), the load-time re-check still fails closed
+component missing or unavailable), the load-time re-check still fails closed
 without network access.
 
 ## Built versus not built
@@ -395,20 +404,20 @@ plugin contract. `Implemented` below means the item exists in the
 cited owner; nothing below is `Verified`, and nothing authorizes
 shipped or compatibility-guaranteed behavior.
 
-| #   | Claim                                                                                        | State            | Evidence                                                                                              |
-| --- | -------------------------------------------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
-| 1   | The network crates live in an independent repository under a defined owner                   | Implemented-only | `bitty-network` holds `bitty-network-api` plus `bitty-network`; owner `bitty-core`; transplant merged |
-| 2   | The `bitty-ai` workspace is a library-only skeleton with no service binary                   | Implemented-only | runtime and slice crates only, standard library only, no binary and no provider network use           |
-| 3   | The v1 manifest resolves `[compat]` ranges at install time                                   | Accepted         | accepted plugin contract: host-resolved `bitty` plus `plugin-api` ranges                              |
-| 4   | The v1 manifest enforces dotted-key `[capabilities]` deny-by-default with no allow-all       | Accepted         | accepted plugin contract: every grant explicit, no wildcard                                           |
-| 5   | List-form network entries or `[network]` and `[limits]` tables exist                         | NOT built        | no network list entries, no host allow tables, and no limit tiers exist in the accepted contract      |
-| 6   | A single `bitty` binary with default-off L1 features ships                                   | NOT built        | no L1 feature set or default-off install model exists in the terminal implementation                  |
-| 7   | A distribution package split for L1 extensions exists                                        | NOT built        | no separate network or AI distribution packages                                                       |
-| 8   | Stable `ext list` and `ext install` commands exist                                           | NOT built        | no `ext` command family; only the accepted `doctor` diagnostics entry point exists                    |
-| 9   | L1-aware `doctor` categories exist                                                           | NOT built        | accepted `doctor` covers its current diagnostics; no L1 set, backend, or stale-cache categories       |
-| 10  | A `networkd` or `ai-service` sidecar with IPC discovery exists                               | NOT built        | no sidecar process, no discovery wiring; the embedded-to-sidecar move is direction only               |
-| 11  | Install-time declaration resolution with load-time re-check exists                           | NOT built        | no declaration resolver at install or load; only the accepted `[compat]` check runs                   |
-| 12  | Consent-gated auto-install with pinned source and hash, and offline cached resolution, exist | NOT built        | no consent prompt, no pinned fetch, no resolution cache, no typed offline error                       |
+| #   | Claim                                                                                        | State            | Evidence                                                                                                                                                                            |
+| --- | -------------------------------------------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | The network crates live in an independent repository under a defined owner                   | Implemented-only | `bitty-network` holds `bitty-network-api` plus `bitty-network`; owner `bitty-core`; transplant merged                                                                               |
+| 2   | The `bitty-ai` workspace is a library-only skeleton with no service binary                   | Implemented-only | runtime and slice crates only, standard library only, no binary and no provider network use                                                                                         |
+| 3   | The v1 manifest resolves `[compat]` ranges at install time                                   | Accepted         | accepted plugin contract: host-resolved `bitty` plus `plugin-api` ranges                                                                                                            |
+| 4   | The v1 manifest enforces dotted-key `[capabilities]` deny-by-default with no allow-all       | Accepted         | accepted plugin contract: every grant explicit, no wildcard                                                                                                                         |
+| 5   | List-form network entries or `[network]` and `[limits]` tables exist                         | NOT built        | no network list entries, no host allow tables, and no limit tiers exist in the accepted contract                                                                                    |
+| 6   | A single `bitty` binary with default-off L1 features ships                                   | NOT built        | no L1 feature set or default-off install model exists in the terminal implementation                                                                                                |
+| 7   | A distribution package split for L1 extensions exists                                        | NOT built        | no separate network or AI distribution packages                                                                                                                                     |
+| 8   | Stable `ext list` and `ext install` commands exist                                           | NOT built        | no `ext` command family; only the accepted `doctor` diagnostics entry point exists                                                                                                  |
+| 9   | L1-aware `doctor` categories exist                                                           | NOT built        | accepted `doctor` covers its current diagnostics; no L1 set, backend, or stale-cache categories                                                                                     |
+| 10  | A `bitty-net` or `bitty-ai` native component with Core component resolution exists           | NOT built        | no Core component broker; the `bitty-net` binary lands in the bitty-network repository; no `bitty-ai` component; the `networkd` and `ai-service` sidecars are superseded by DIR-030 |
+| 11  | Install-time declaration resolution with load-time re-check exists                           | NOT built        | no declaration resolver at install or load; only the accepted `[compat]` check runs                                                                                                 |
+| 12  | Consent-gated auto-install with pinned source and hash, and offline cached resolution, exist | NOT built        | no consent prompt, no pinned fetch, no resolution cache, no typed offline error                                                                                                     |
 
 Rows 5–12 are the gap this candidate exists to name. Any future RFC
 that claims to close a row must cite implementation evidence in the
@@ -425,16 +434,17 @@ listen, HTTP is not raw TCP, a named host is not any host),
 fail-closed load behavior that never falls back to ambient access,
 consent-gated fetching with pinned source and verified hash and no
 silent downloads, offline behavior that reuses a detectable cached
-record instead of retry-storming, sidecar discovery that inherits
-IPC authentication instead of trusting locality, limit tiers that
+record instead of retry-storming, native component resolution that
+never reads `PATH` and verifies the executable digest before every
+spawn instead of trusting locality, limit tiers that
 bound memory, tasks, and connections by default, and audit entries
 tying each grant to the plugin, declaration, and L1 version that
 satisfied it. A future implementation RFC will need its own security
 review covering the manifest parser hardening, allow-list grammar
 and port rules, the consent record shape and retention, credential
 handling for authenticated extension channels, timeout and retry
-ceilings, cache integrity and redaction, and the sidecar IPC
-authentication and sandboxing; that review is an acceptance gate for
+ceilings, cache integrity and redaction, and native component
+sandboxing; that review is an acceptance gate for
 the successor, not for this note.
 
 ## Verification plan
@@ -499,7 +509,7 @@ the successor, not for this note.
   enforces them.
 - **Defining the full manifest amendment here.** Rejected: the verb
   vocabulary, allow-list grammar with port rules, tier bounds,
-  consent-record detail, cache format, and sidecar protocol belong
+  consent-record detail, cache format, and component wire protocol belong
   to successor RFCs with implementation evidence and
   security-corpus review. This note fixes only the install and
   declaration shape those documents assume.
@@ -538,9 +548,9 @@ not retroactively normativize it.
    channels — owned by the distribution successor, not decided here.
 5. The `ext` command surface detail and the `doctor` category codes
    — owned by the CLI successor, not decided here.
-6. The sidecar IPC shape, authentication, and admission bar for ever
-   building `networkd` or `ai-service` — owned by the deployment
-   successor with security-corpus review, not decided here.
+6. Native component registry install source and per-platform
+   sandboxing — DIR-030 follow-ups with security-corpus review; the
+   component process model itself is settled by DIR-030.
 7. The consent-record shape, pin and hash algorithms, and audit
    retention and redaction policy — owned by the package successor
    with security-reviewer sign-off.
@@ -558,10 +568,11 @@ not retroactively normativize it.
    fixing package names as contract.
 4. LI-3 states the `ext list`, `ext install`, and `doctor` surface
    as illustrative-only stable spelling.
-5. LI-4 states the later sidecar phase with IPC discovery and stable
-   user commands across phases.
-6. LI-5 states the `bitty-ai` feature-first, service-later shape
-   with no AI-owned network stack.
+5. LI-4 states the DIR-030 native component coprocess model
+   (`bitty-net`, no `PATH`, digest-verified spawn) with stable user
+   commands, and the `networkd` sidecar as superseded.
+6. LI-5 states the `bitty-ai` install shape as the `ai` native
+   component with no AI-owned network policy.
 7. RQ-1 states list-form network entries in `[capabilities]` plus
    `[network]` allow tables with the client-versus-listen,
    HTTP-versus-TCP, and named-host-versus-arbitrary-host
@@ -589,7 +600,7 @@ not retroactively normativize it.
 Not applicable: no security boundary, capability, resource ceiling,
 or trust decision changes. The security review above records that
 disposition, including the deny-by-default, fail-closed,
-consent-gated, pinned-fetch, offline-cache, sidecar-authentication,
+consent-gated, pinned-fetch, offline-cache, component-integrity,
 limit-tier, and audit questions flagged for the successor RFCs.
 Those successors will require owner and security-reviewer sign-off
 before acceptance.
@@ -617,8 +628,11 @@ before acceptance.
   (`Accepted`, `bitty-plugins-docs`) — package integrity posture the
   pinned fetch composes with.
 - [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)
-  (`Accepted`, `bitty-ai-docs`) — local-surface concepts the sidecar
-  discovery posture composes with.
+  (`Accepted`, `bitty-ai-docs`) — local-surface concepts; the inbound
+  IPC socket stays separate from the component path.
+- [Native Component Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/native-component-boundary.md)
+  (accepted direction DIR-030, `bitty-docs`) — the native component
+  model LI-4 and LI-5 follow.
 - [Open-question register, OQ-012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)
   (`bitty-docs`) — the manifest and permission-model question this
   note follows up as candidate.
