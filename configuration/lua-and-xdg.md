@@ -1065,6 +1065,36 @@ Notes on the candidate mapping:
 - macOS has no separate state role: sessions, layouts, and history live under
   Application Support alongside data; only cache splits out.
 
+### Environment variables and path overrides
+
+Configuration and runtime paths are controllable through explicit environment variables alongside CLI flags:
+
+| Variable                      | Target and semantics                   | Precedence and scope                                                                   |
+| ----------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------- |
+| `BITTY_CONFIG`                | Explicit configuration file path       | `--config <PATH>` > `BITTY_CONFIG` > probed defaults; fails closed (exit 2) if missing |
+| `BITTY_PROFILE`               | Named configuration profile            | `--profile <NAME>` > `BITTY_PROFILE` > unprofiled base; loads `profiles/<name>.lua`    |
+| `BITTY_SOCKET`                | IPC socket or named pipe path override | Overrides platform-default runtime socket / named pipe path                            |
+| `BITTY_PLUGIN_DIR`            | Plugin search and load root override   | Local plugin testing and staging                                                       |
+| `BITTY_LOG` / `BITTY_VERBOSE` | Logging filter and verbosity           | `--log-level` > `--verbose`/`BITTY_VERBOSE=1` > `BITTY_LOG` > default quiet            |
+| `BITTY_FAIL_LOUD`             | Abort immediately on startup fault     | Turns shell or IPC startup errors into fatal aborts (exit 1)                           |
+
+Precedence order for the configuration file is strict:
+
+1. CLI flag `--config <path>` (highest precedence, explicit).
+2. Environment variable `BITTY_CONFIG` (honored when `--config` is absent).
+3. System default probe: `$XDG_CONFIG_HOME/bitty/init.lua` > `%APPDATA%\bitty\init.lua` > `$HOME/.config/bitty/init.lua` > `%LOCALAPPDATA%\bitty\init.lua`.
+
+When `--config` or `BITTY_CONFIG` is explicitly specified, the target file must exist. If it is missing, Bitty exits immediately with error code 2; it never silently falls back to the default configuration.
+
+### Environment isolation and the PTY boundary
+
+Bitty enforces strict process and memory boundaries between the terminal host and child PTY processes:
+
+- **Config VM isolation:** Lua configuration code cannot call `os.getenv` (denied fail-closed with `E_ENV_DENIED`, [ADR 0006](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0006-os-env-policy.md)). Configuration reads environment variables solely through the mediated `bitty.env.get(name)` host bridge under an allowlisted key set.
+- **PTY child-to-parent boundary:** In Unix process models, environment mutations in child processes (`export FOO=bar` in bash/zsh or `set -x FOO bar` in fish) exist only within the child shell's memory space and its descendants. A child process cannot mutate parent process environment variables.
+- **Immutable VM snapshot:** Bitty captures the allowed environment snapshot once at VM construction time. Environment changes in the host process or child PTYs do not retroactively alter a running Config VM or plugin VM, protecting against Confused Deputy attacks.
+- **Dynamic control:** Terminal settings (such as themes, layouts, or font sizes) are modified dynamically via authenticated IPC commands (`bitty ctl theme set <name>`), never through ambient environment pollution.
+
 Candidate discovery commands include:
 
 ```sh
