@@ -31,12 +31,12 @@ note) and `bitty/Cargo.toml`; current state lives in
 Directly routed architecture documents. Each declares its own status; accepted
 boundaries remain authoritative over candidate material.
 
-| Document                                                | Status   | Purpose                                                                           |
-| ------------------------------------------------------- | -------- | --------------------------------------------------------------------------------- |
-| [Architecture Overview](overview.md)                    | Draft    | System context, invariants, logical components, data flows, and evolution.        |
-| [Core and Plugin Boundaries](core-boundaries.md)        | Accepted | Core versus plugin ownership and the normative P0 security gates.                 |
-| [Future Boundaries](future-boundaries.md)               | Draft    | Candidate boundary decision rules and pending decisions.                          |
-| [Graphics and Appearance Model](graphics-appearance.md) | Draft    | Candidate graphics, composition, opacity/blur ownership, and small-core guidance. |
+| Document                                                | Status   | Purpose                                                                                               |
+| ------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
+| [Architecture Overview](overview.md)                    | Draft    | System context, invariants, logical components, data flows, and evolution.                            |
+| [Core and Plugin Boundaries](core-boundaries.md)        | Accepted | Core versus plugin ownership, the decided extraction boundaries, and the normative P0 security gates. |
+| [Future Boundaries](future-boundaries.md)               | Draft    | Candidate boundary decision rules and pending decisions.                                              |
+| [Graphics and Appearance Model](graphics-appearance.md) | Draft    | Candidate graphics, composition, opacity/blur ownership, and small-core guidance.                     |
 
 ## Architecture Diagram Hub
 

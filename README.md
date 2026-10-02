@@ -44,11 +44,20 @@ Cross-project contracts and registers are linked, never copied.
 Bitty keeps a small Core: Core owns terminal mechanism (PTY ownership,
 VT parsing, rendering, input encoding, platform gates, and security policy)
 and ships zero network and zero AI code. Capabilities a terminal does not
-itself need live one layer out, in independent L1 Rust extension repositories
-— [bitty-ipc](https://github.com/bitty-terminal/bitty-ipc),
-[bitty-network](https://github.com/bitty-terminal/bitty-network), and the
-planned `bitty-agent` and `bitty-observability` extraction targets — that
-Core links by pinned Git revision rather than embedding. Native capabilities
+itself need live one layer out, in independent L1 Rust extension repositories:
+[bitty-ipc](https://github.com/bitty-terminal/bitty-ipc) and
+[bitty-network](https://github.com/bitty-terminal/bitty-network) are linked by
+pinned Git revision rather than embedded, while
+[bitty-agent](https://github.com/bitty-terminal/bitty-agent) and
+[bitty-observability](https://github.com/bitty-terminal/bitty-observability)
+exist as independent repositories that Core does not link yet.
+The small-core extraction boundaries and the retained Core mechanisms are
+decided as direction in
+[ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
+and
+[ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)
+with focused contracts `W-71` through `W-75`; repository existence is not
+evidence that Core has adopted a boundary, and no extraction is claimed. Native capabilities
 beyond those pinned libraries, starting with the network stack, run as
 independently installed stdio coprocesses that Core resolves without `PATH`,
 verifies by digest, spawns on first use, and grants through its component

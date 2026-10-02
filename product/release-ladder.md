@@ -79,6 +79,20 @@ sidebar_order: 21
   companion evidence is at `d4d75e9` (`5bdcdbd`/`0afc94d`/`d4d75e9`, Issues
   #137/#138/#139) per `project-state.json` and remains `Mitigated` (not
   `Verified`).
+- Decided extraction boundaries (direction only, no implementation): the
+  small-core boundaries are decided by
+  [ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
+  and
+  [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)
+  with focused contracts `W-71` through `W-75`. This decision status does not
+  change any row below: no extraction, migration, or relocation is implemented,
+  and `W-75`'s contract that externalizes `bitty-compat-lab` and `bitty-perf` is
+  not yet executed (`W-105`). The affected implementation-status candidates
+  ([`compat-lab.md`](compat-lab.md), [`compat-matrix.md`](compat-matrix.md),
+  [`perf-baseline.md`](perf-baseline.md), [`perf-evidence.md`](perf-evidence.md),
+  and the [terminal compatibility matrix](../reference/compatibility-matrix.md))
+  stay candidate. See the
+  [small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
 
 ## Revision-pinned implementation state at 491c567 (historical)
 

@@ -29,6 +29,13 @@ sidebar_order: 20
   defines the M1 protocol set. This matrix is evidence for that set and for the
   later M2→M7 hardening work; it does not change scope, accept a milestone, or
   weaken the security corpus.
+- Extraction status: this page keeps its candidate status. The accepted
+  [`W-75` validation-suite ownership](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/validation-suite-ownership.md)
+  contract decides that the `bitty-compat-lab` suites relocate to an independent
+  validation repository that pins the production revision, while the
+  runtime-owned M1 suites stay in `bitty` and every required gate remains
+  binding; execution is `W-105`. No relocation is implemented, and the citations
+  above describe the current location only.
 - Machine-readable source of truth: `compat_report` emits `schema_version: 1`
   JSON with `areas`, `rows` (status, method, evidence), an environment probe,
   and a status summary. The table below mirrors that output.

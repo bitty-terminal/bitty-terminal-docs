@@ -34,6 +34,7 @@ sidebar_order: 49
   not hard CI gates (see RFC Cross-cutting rules). This scaffold does not close
   that open item, does not claim budget compliance, and does not weaken normative
   security controls in `bitty-docs/docs/security/`.
+- Extraction status: this page keeps its candidate status. The accepted [`W-75` validation-suite ownership](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/validation-suite-ownership.md) contract decides that `bitty-perf` relocates to an independent validation repository that pins the production revision, with the benchmark and parser-throughput gates preserved; execution is `W-105`. No relocation or benchmark migration is implemented, and no performance number reflects the relocation.
 
 ## Budgets (accepted targets, from `performance-budget-rfc.md#budgets`)
 

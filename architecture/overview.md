@@ -242,9 +242,15 @@ successor direction recorded in [ADR 0012](https://github.com/bitty-terminal/bit
 still on `piccolo` 0.3.3), and the tail crate `bitty-rich` (OQ-008/015/016) is
 `Implemented` but not yet `Verified`. The out-of-process IPC (`bitty-ipc`),
 shared networking (`bitty-network`), agent protocol layer (`bitty-agent`), and
-observability infrastructure (`bitty-observability`) have been externalized into
-dedicated L1 Rust Core Extension repositories, preserving Core as a lean,
-resilient terminal platform. Current revision and milestone evidence lives in
+observability infrastructure (`bitty-observability`) exist as dedicated L1 Rust
+Core Extension repositories; their existence is current-location evidence, not
+acceptance that Core has adopted an extracted boundary. The small-core
+extraction boundaries and retained Core mechanisms are decided as direction by
+[ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
+and
+[ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md),
+with focused contracts `W-71` through `W-75`; no extraction or migration is
+claimed. Current revision and milestone evidence lives in
 [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
 ## Candidate UI layering

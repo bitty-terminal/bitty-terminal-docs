@@ -21,6 +21,22 @@ shipped, stable, or compatibility-guaranteed behavior.
 Provenance: extracted from `core-boundaries.md` by CTX-0007 so that each
 document carries one truthful machine-readable status.
 
+## Guiding principle and decided boundaries
+
+Core keeps only terminal-emulator mechanisms and security boundaries; every
+other capability is an extension (a Rust-level component or a Lua plugin) using
+the same public, capability-gated interfaces, with no private first-party
+bypass. The boundary decisions and retained Core mechanisms are now recorded in
+[ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
+and
+[ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)
+and their focused contracts `W-71` through `W-75`; the accepted ownership summary
+lives in [Core and Plugin Boundaries](core-boundaries.md#decided-extraction-boundaries),
+and the dependency order lives in the
+[small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
+Those decisions fix direction and ownership only; this page remains candidate
+about mechanisms, and none of the decided boundaries is implemented.
+
 ## Candidate decision rule
 
 To decide whether a capability belongs in Core, first ask:
@@ -139,7 +155,12 @@ terminal: `bitty` runs without git, curl, or network access.
 install` / `update` / `search`, future self-update, AI provider HTTP APIs,
   and OAuth / remote / cloud live in an isolated adapter layer:
   `bitty-package` / `bitty-plugin-manager` owns package management and
-  providers own their HTTP.
+  providers own their HTTP. The accepted
+  [`W-72` package-manager boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/package-manager-boundary.md)
+  fixes this split and the Core-never-network invariant: Core retains only
+  read-only startup validation, and the external `bitty-plugin-manager` is the
+  only package actor that may reach the network. `W-72` is decided; the
+  extraction it contracts (`W-101`) is not implemented.
 - **Later native HTTP.** When Git cannot serve a need, native HTTP uses
   `reqwest + rustls` (`default-features = false`), isolated in `bitty-net` /
   provider crates and feature-gated so `cargo build --no-default-features`
@@ -233,7 +254,11 @@ this refinement adds no new mechanism.
 - The minimum Command, Event, UI, and Service set for the first Plugin API
   version.
 - The manifest format and dependency resolution; the current candidate is
-  `bitty-plugin.toml`.
+  `bitty-plugin.toml`. The accepted
+  [`W-72` package-manager boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/package-manager-boundary.md)
+  fixes the operation ownership and the read-only startup validation while
+  parking the concrete manifest, lock, and `[components]`/`[[network.egress]]`
+  schemas to `W-10` and the `bitty-plugin-manager` task.
 - The implementation mechanism for per-plugin VMs, asynchronous callbacks, and
   resource-budget thresholds and enforcement. The VM bridge, lifecycle, source
   staging, and host-service wiring are defined by the accepted
@@ -247,9 +272,25 @@ this refinement adds no new mechanism.
   ownership).
 - Whether the precise `MUST NOT initiate` invariant (DIR-017, refining the
   CTX-0201 wording) is accepted, and how the dependency-DAG enforcement test
-  is owned.
+  is owned. The accepted
+  [`W-72` package-manager boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/package-manager-boundary.md)
+  carries the Core-never-network invariant for the package path and makes
+  Core's network-free dependency-DAG gate an implementation requirement; the
+  broader candidate invariant above is not reopened by it.
 
-- The default bundled-plugin set and disabling behavior.
-- Observation-event batching, dropping, and backpressure semantics.
+- The default bundled-plugin set and disabling behavior. The accepted
+  [`W-74` legacy-chrome retirement](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/legacy-chrome-retirement.md)
+  contract and
+  [ADR 0017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0017-tabs-alias-shell-integration-retirement.md)
+  retire the bundled `bitty-terminal.workspace`, `bitty-terminal.tabs`, and
+  `bitty-terminal.shell-integration` manifests at a `>= v0.2.0` floor, leaving
+  the bundled first-party catalog empty; which independent first-party packages
+  enter an enabled-by-default set stays with the accepted Default Distribution
+  RFC and the `W-40` bar review.
+- Observation-event batching, dropping, and backpressure semantics. The
+  boundary decision (`W-71`, accepted in direction) retains only the minimal
+  read-only observation seam plus the authorization, redaction, and bounded-buffer
+  rules; the optional implementation and all observation policy move out, and the
+  exact bounds and semantics remain parked to `W-100` and `W-110`.
 - Which user actions allow interception and the default behavior after a
   timeout.
