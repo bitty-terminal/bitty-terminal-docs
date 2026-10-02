@@ -1,6 +1,6 @@
 ---
 title: Release Ladder
-description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (21 crates c6db24d, 54 OQs Accepted, release v0.0.21) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
+description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (18 crates 310bf87, 54 OQs Accepted, release v0.0.21) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
 category: product
 audience: maintainer
 document_type: overview
@@ -14,9 +14,11 @@ sidebar_order: 21
 ## Status and provenance
 
 - Stage: **Pre-alpha / Engineering Milestones M1-M8** at the canonical snapshot of
-  `2026-09-27` (`bitty` synchronized revision `c6db24d`, canonical
-  `previous_revision` `679f12f`, baseline `de134ec`, 21 crates, 54 OQs `Accepted`
-  with 46 open, release `v0.0.21`). The
+  `2026-10-02` (`bitty` synchronized revision `310bf87`, canonical
+  `previous_revision` `2cb49af`, baseline `de134ec`, 18 crates, 54 OQs `Accepted`
+  with 46 open, release `v0.0.21`). Earlier snapshots — `c6db24d` (`2026-09-27`,
+  21 crates, `previous_revision` `679f12f`) and `799f743` before it — are
+  retained as provenance in this paragraph and the dated status note below. The
   [revision-pinned implementation state](#revision-pinned-implementation-state-at-491c567-historical)
   below is historical evidence pinned to `491c567` after pivot-wave #1200-1213;
   `491c567` and `c6db24d` are separate rewritten histories with distinct root
@@ -39,11 +41,11 @@ sidebar_order: 21
   maturity remains `Pre-alpha` (not `Verified`/`Compatible`/`Release-ready`).
   Canonical snapshot:
   [`docs/project/project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
-  (synchronized `c6db24d`, `2026-09-27`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
+  (synchronized `310bf87`, `2026-10-02`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
   `Open`, `R-005`/`R-006`/`R-007` `Mitigated`, experimental `c0aadd2`/`7e3104d`/`a8735d0`
   `Implemented` not `Verified`, release `v0.0.21`) validated by `bun .github/scripts/check-state.mjs`.
 
-> **Status note (2026-10-02, `bitty` `main`@`799f7433`).** The `21 crates`
+> **Status note (2026-10-02, `bitty` `main`@`310bf87`).** The `21 crates`
 > figure above is stale: `bitty-core` and `bitty-panels` are retired and
 > `bitty-agent`/`bitty-ipc` were extracted to independent repositories
 > (CTX-0918, CTX-0906), leaving an 18-crate workspace. Core now links
@@ -108,7 +110,7 @@ section is a historical record, not a description of the `c6db24d` tree.
   `Verified`/`Compatible` claims. At the pinned `491c567` the workspace still
   carries `workspace.package.version 0.0.20` and `[Unreleased]` was synced with
   the pivot-wave merges (#1213); the version bump to `v0.0.21` recorded in the
-  canonical snapshot landed later, and the synchronized revision `c6db24d`
+  canonical snapshot landed later, and the synchronized revision `310bf87`
   carries `workspace.package.version 0.0.21`.
 - **Accepted**: the open questions accepted at that revision via 17 RFCs and 8
   ADRs, enumerated below over the OQ-001..OQ-045 range. The current `Accepted`
@@ -170,7 +172,7 @@ section is a historical record, not a description of the `c6db24d` tree.
 `bittyd` and remote UI are post-v1.0 candidates (OQ-020 deferred per ADR 0008).
 
 The status column reports the revision-pinned `491c567` evidence recorded in the
-historical section above; it is not re-derived at the synchronized `c6db24d`. No
+historical section above; it is not re-derived at the synchronized `310bf87`. No
 row in this ladder claims `Verified`, `Compatible`, or `Release-ready`.
 
 ## Verification gates
@@ -182,8 +184,8 @@ row in this ladder claims `Verified`, `Compatible`, or `Release-ready`.
 - `cargo check --workspace --all-targets --locked` and
   `cargo check --target x86_64-pc-windows-gnu` pass at the synchronized
   `bitty` revision per that repository's CI (merge gates green through
-  `679f12f`; the synchronized head `c6db24d` adds only a docs-submodule pin
-  bump).
+  `679f12f`; the synchronized head `310bf87` carries only post-`679f12f`
+  documentation and internal cleanup changes, not new public contracts).
 - `cargo test --workspace --all-targets --locked` soak passes
   (`Implemented`); `cargo clippy -- -D warnings` 0 warnings; `cargo fmt --check` clean.
 - Publish order verified via `cargo publish --dry-run` (leaves
