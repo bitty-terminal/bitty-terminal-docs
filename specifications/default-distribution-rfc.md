@@ -349,6 +349,12 @@ and `bitty-terminal.workspace` (table above). Core keeps mechanism only
 (Unix-style minimal Core); the removed entries are deleted from Core, not
 moved to a new bundled location, and enable nothing implicitly.
 
+> **Status note (2026-10-02, `bitty` `main`@`799f7433`).** The `bitty-panels`
+> crate named below has since been fully retired from the `bitty` workspace
+> (18-crate roster, CTX-0918), not merely emptied of the `ai_panel`/`mail_panel`
+> modules; the row below is retained as the historical realization record
+> for the 2026-09-30 removal.
+
 | Removed plugin ID              | Removed Core realization                              | Disposition                                                    |
 | ------------------------------ | ----------------------------------------------------- | -------------------------------------------------------------- |
 | `bitty-terminal.ai-panel`      | `bitty-panels` module `ai_panel`                      | AI surfaces move to the separate optional `bitty-ai` extension |

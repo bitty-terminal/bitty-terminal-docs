@@ -42,6 +42,17 @@ sidebar_order: 21
   (synchronized `c6db24d`, `2026-09-27`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
   `Open`, `R-005`/`R-006`/`R-007` `Mitigated`, experimental `c0aadd2`/`7e3104d`/`a8735d0`
   `Implemented` not `Verified`, release `v0.0.21`) validated by `bun .github/scripts/check-state.mjs`.
+
+> **Status note (2026-10-02, `bitty` `main`@`799f7433`).** The `21 crates`
+> figure above is stale: `bitty-core` and `bitty-panels` are retired and
+> `bitty-agent`/`bitty-ipc` were extracted to independent repositories
+> (CTX-0918, CTX-0906), leaving an 18-crate workspace. Core now links
+> `bitty-ipc` only as a git dependency (pin `e9714e7`), not as a workspace
+> member. This note updates the current-state crate count only; the
+> canonical synchronized snapshot in
+> [`docs/project/project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
+> is updated separately and remains the authoritative source.
+
 - Lifecycle: `Draft -> Experimental Implementation -> Accepted -> Verified -> Compatible -> Release-ready`
   (spec) and `Specified -> Accepted -> Implemented -> Verified -> Compatible -> Release-ready`
   (crate) per the [Risk Evidence RFC](../specifications/risk-evidence-rfc.md).

@@ -61,6 +61,17 @@ the `bitty-ipc` row above ("bounded IPC/MCP stub") is a CTX-0051 descriptor
 that predates the Phase-A protocol surface and the CTX-0419 publishable
 bridge boundary.
 
+> **Status note (2026-10-02, `bitty` `main`@`799f7433`).** Neither the
+> CTX-0051 sixteen-member snapshot above nor the nineteen-member roster
+> cited above still matches the tree: `bitty-core` and `bitty-panels`
+> are retired and the workspace carries 18 members (CTX-0918). The
+> `bitty-agent` row is also stale: `bitty-agent` has been extracted to
+> an independent repository and is not linked by Core. The current
+> roster lives in
+> [Release Ladder v0.1-v1.0](release-mechanics.md#crate-inventory-nineteen-members-as-of-2026-09-16),
+> which carries its own CTX-0082 status note; this file is retained as
+> a historical snapshot and is not updated further.
+>
 > `bitty-core` scaffold note: `crates/bitty-core/src/lib.rs` is a one-line
 > scaffold (`Compilation target for the pre-implementation Bitty workspace`).
 > Do not mistake the member-list row above for a functional crate; it is a

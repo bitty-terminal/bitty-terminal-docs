@@ -112,6 +112,16 @@ pinned `vttest` captures and reference dumps in the evidence area.
 
 ## Crate inventory (nineteen members as of 2026-09-16)
 
+> **Status note (2026-10-02, `bitty` `main`@`799f7433`).** This section is
+> a dated snapshot (2026-09-16) and no longer matches the tree: `bitty-core`
+> and `bitty-panels` are retired, the workspace carries 18 members
+> (CTX-0918), and `bitty-agent` has been extracted to an independent
+> repository and is not linked by Core (so the `bitty-agent` row below and
+> the `v0.9` ladder row's `bitty-agent` reference above are stale). The
+> rows below are retained as a historical snapshot and are not updated to
+> match the current roster; consult `bitty` `Cargo.toml` for the current
+> member list.
+
 Sixteen members at CTX-0043 (`bitty/Cargo.toml`, head `7b215a2` / `3bfe386`
 base); nineteen members on `bitty` `origin/main` at `e8dc9e5` (2026-09-16).
 The three later additions are `bitty-compat-lab` (CTX-0078), `bitty-perf`
