@@ -269,6 +269,28 @@ not accept the rest of the tree or its other subtrees.
   aliases, no dynamic plugin namespace, and no plugin completion integration —
   those stay candidate contract above.
 
+## Shipped slice: `bitty dev` build features
+
+Status: **implemented build gating** (read-only from `bitty` `main`@`5670d9a`,
+2026-10-02; `crates/bitty-terminal/Cargo.toml` `[features]`,
+`crates/bitty-terminal/README.md`, and `CHANGELOG.md`). This section records
+how the developer verbs are compiled; it does not accept the candidate `dev`
+subtree, its output schemas, or its exit codes beyond what is listed here.
+
+- `bitty dev capture|synthesize|dump|overlay` are compiled only with the
+  non-default `dev-tools` cargo feature of `bitty-terminal`.
+- `bitty dev trace startup|latency` is compiled only with the non-default
+  `dev-perf` cargo feature, which also links the `bitty-perf` crate.
+- Both features are off by default (`default = []`), so release and default
+  builds carry neither surface.
+- Without the feature, arguments are still validated (usage errors exit `2`);
+  a valid request then fails with exit `1` and
+  `bitty dev <verb>: built without dev-tools feature` or
+  `bitty dev trace: built without dev-perf feature`, followed by a rebuild
+  hint (`cargo build -p bitty-terminal --features dev-tools` or
+  `--features dev-perf`). For the `dev-tools` verbs, `--format json|jsonl`
+  returns an `ok:false` envelope.
+
 ## Introspection
 
 Status: **candidate contract.**
