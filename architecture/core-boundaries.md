@@ -32,6 +32,11 @@ and
 with the focused contracts `W-71` through `W-75`; no extraction, migration, or
 implementation is claimed. See "Decided extraction boundaries" below and the
 [small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
+The terminal-platform disposition, the required validation commands, the
+no-plugin baseline, and the deprecation links for both boundaries are collected
+in the candidate
+[Legacy Chrome and Validation Suite Disposition](../specifications/legacy-chrome-and-validation-disposition.md)
+(`W-83`/`W-84`).
 The `bitty-lua` tail crate keeps a generic-runtime boundary today; its current
 `piccolo` 0.3.3 runtime is unchanged by the accepted successor direction
 (Phodopus, recorded in
