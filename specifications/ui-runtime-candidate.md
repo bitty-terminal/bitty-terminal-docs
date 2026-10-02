@@ -567,12 +567,17 @@ Terminal-side conclusions, composed with the existing corpus:
 - Annotation layers obey the accepted bounded overlay rules, are
   presentation-only, and never mutate Terminal Truth or grant capability.
 
-**Open.** Core mechanism naming (`TargetEngine`/`AnnotationEngine` versus
-`BeaconCore`); the `TargetRef` variant set and generation scheme; snapshot
-bounds and refresh triggers; label policy schema and overflow behavior; the
-provider registration API and capability implications; the session state
-machine; and how the P7 candidate text is retired from the Semantic Terminal
-RFC.
+The Core mechanism names `TargetEngine` and `AnnotationEngine` and the
+mechanism/policy split are accepted by bitty-docs
+[ADR 0018](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0018-beacon-mechanism-policy-split.md);
+the terminal-side mechanism contract is the
+[Beacon Core Mechanism Contract](beacon-core-mechanism-contract.md). No Rust
+type of either name is claimed to exist.
+
+**Open.** The `TargetRef` variant set and generation scheme; snapshot bounds
+and refresh triggers; label policy schema and overflow behavior; the provider
+registration API and capability implications; the session state machine; and
+how the P7 candidate text is retired from the Semantic Terminal RFC.
 
 ## U-9 Owner-pending convergence roadmap (Candidate, owner-pending)
 
@@ -641,7 +646,7 @@ supersedes that page, and no replacement vision exists yet.
 | U-5 gesture transaction        | Candidate extending PW-1/PW-7/PW-8 and the accepted interaction atomicity; `Mod` spelling Open (OQ-052)         | [Workspace Compositor](workspace-compositor.md) (Accepted), [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md)                                                                    |
 | U-6 motion and budgets         | Tiers 1-2 restate Accepted controls; motion tree, UI/GPU tier, and display lists Candidate                      | [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md) (Accepted), [Performance Budget RFC](performance-budget-rfc.md) (Accepted) |
 | U-7 state axes and rehydration | Lifecycle/presentation/focus Accepted; attention, interaction, activity, and rehydration Candidate (`RFC-OQ-9`) | [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted), [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md)                                                                          |
-| U-8 Beacon core engine         | Candidate; generic Rust mechanisms terminal-side, plugin-side specification owner-pending; P7 decoupling Open   | [Semantic Terminal RFC](semantic-terminal-rfc.md) (Draft), [bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs) (owner-pending)                                                                  |
+| U-8 Beacon core engine         | Candidate; names and split accepted by ADR 0018, contract published; P7 decoupling Open                         | [Beacon Core Mechanism Contract](beacon-core-mechanism-contract.md) (Draft), [Semantic Terminal RFC](semantic-terminal-rfc.md) (Draft), plugin side owner-pending                                                      |
 | U-9 convergence roadmap        | Owner-pending; no RFC or vision page is created or edited here                                                  | [bitty-docs](https://github.com/bitty-terminal/bitty-docs) (owner-pending)                                                                                                                                             |
 
 ## Open items (not global open questions)
@@ -672,8 +677,10 @@ or Beacon reconciliation settles them:
 - attention ownership, the final state-axis set, persistence content and
   format, and rehydration ordering and migration (U-7), with `RFC-OQ-9` as
   the persistence decision;
-- Beacon core naming, `TargetRef` scheme, snapshot bounds, label policy,
-  provider API, session state machine, and P7 retirement (U-8);
+- Beacon `TargetRef` scheme, snapshot bounds, label policy, provider API, and
+  session state machine, and P7 retirement (U-8), with the mechanism names and
+  split decided by ADR 0018 and recorded in the
+  [Beacon Core Mechanism Contract](beacon-core-mechanism-contract.md);
 - the five-RFC convergence schedule and the Vision v2 retirement decision
   (U-9), both owner-pending in `bitty-docs`.
 
@@ -697,6 +704,9 @@ or Beacon reconciliation settles them:
   and dispatch priority contract.
 - [Semantic Terminal RFC](semantic-terminal-rfc.md) — draft P1-P5
   implemented-only slices and the candidate P7 Beacon subsection.
+- [Beacon Core Mechanism Contract](beacon-core-mechanism-contract.md) — draft
+  terminal-side mechanism contract for the accepted `TargetEngine` and
+  `AnnotationEngine` names and the mechanism/policy split.
 - [Panel and Workspace Interaction (Candidate)](panel-workspace-interaction-candidate.md) —
   candidate gesture, Bar, identity, and persistence directions.
 - [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md) — point-in-time

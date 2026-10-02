@@ -276,6 +276,16 @@ proposal-only.
 > the direction is provenance, not evidence. Tracked as
 > [OQ-089](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 
+The mechanism/policy split and the Core mechanism names `TargetEngine` and
+`AnnotationEngine` are decided by bitty-docs
+[ADR 0018](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0018-beacon-mechanism-policy-split.md),
+which resolves the OQ-089 naming and extraction scope: policy moves to the
+optional plugin and the mechanism stays in Core for the 0.1.0 scope. The
+terminal-side mechanism is defined by the
+[Beacon Core Mechanism Contract](beacon-core-mechanism-contract.md); this P7
+subsection stays candidate for the plugin-side direction and the remaining
+open points.
+
 P3 labels addressable targets inside the visible grid; P6 generalizes target
 registration. The candidate P7 direction applies the same engine to the whole
 tiled workspace ([Workspace Compositor](workspace-compositor.md)): pressing
@@ -317,7 +327,8 @@ typing a label performs the associated action.
   [Panel Runtime Pre-Study](panel-runtime-pre-study.md); they mutate no
   Terminal Truth and grant no capability.
 
-Open until OQ-089 resolves: the exact action taxonomy, whether focus routing
+Open (the OQ-089 naming and extraction questions are decided by ADR 0018; the
+remaining points stay open): the exact action taxonomy, whether focus routing
 covers only Bitty-owned controls or also terminal content, the label pool and
 handoff rules, the script-dispatch authority model, and the configuration
 surface next to the OQ-088 Leader strategy.
