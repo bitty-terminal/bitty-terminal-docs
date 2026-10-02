@@ -255,7 +255,9 @@ emergency, overlay, and terminal-fallthrough ordering around it.
   through the same keymap registry. Tracked as OQ-088; the Beacon engine that
   consumes this namespace is recorded in the
   [Semantic Terminal RFC](semantic-terminal-rfc.md#p7-bitty-beacon-spatial-action-engine-candidate)
-  (P7, OQ-089).
+  (P7) and the
+  [Beacon Core Mechanism Contract](beacon-core-mechanism-contract.md), whose
+  mechanism/policy split and Core mechanism names are decided by ADR 0018.
 - **Which-key help**: after the Leader prefix, a floating overlay lists the
   available next keys and narrows per keystroke, so the Help panel doubles
   as a which-key menu. Dismissal is `Esc` or the same shortcut; the overlay
