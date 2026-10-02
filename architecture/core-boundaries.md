@@ -22,8 +22,16 @@ ownership tables and P0 gates below are `Accepted` via the Plugin Platform RFC
 Lua ADRs (OQ-030/031/032); tail crate `bitty-rich` is `Implemented` but not yet
 `Verified`. Out-of-process IPC (`bitty-ipc`), shared networking
 (`bitty-network`), agent protocol queues (`bitty-agent`), and observability
-(`bitty-observability`) have been extracted into dedicated L1 Rust Core
-Extension repositories to preserve the small-core Unix baseline.
+(`bitty-observability`) exist as independent L1 Rust Core Extension
+repositories. Their existence is current-location evidence, not acceptance that
+Core has adopted an extracted boundary. The small-core extraction boundaries and
+the retained Core mechanisms are now decided as direction by
+[ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
+and
+[ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md),
+with the focused contracts `W-71` through `W-75`; no extraction, migration, or
+implementation is claimed. See "Decided extraction boundaries" below and the
+[small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
 The `bitty-lua` tail crate keeps a generic-runtime boundary today; its current
 `piccolo` 0.3.3 runtime is unchanged by the accepted successor direction
 (Phodopus, recorded in
@@ -75,6 +83,43 @@ gate.
 - The debug protocol sits inside the core boundary. DevTools and MCP consume it
   from outside that boundary (DevTools RFC OQ-019; IPC/Agent RFC OQ-018).
 
+## Decided extraction boundaries
+
+The small-core direction is now decided at the boundary level. Core keeps only
+the terminal-emulator mechanisms and security boundaries it cannot delegate:
+Terminal Truth, the PTY and process/permission/resource enforcement, identity and
+generation fencing, bounded protocol intake, renderer validation, the safe
+startup path, package integrity validation, the accessibility baseline, plugin
+isolation, and the public host APIs. Everything else is an extension — a
+Rust-level component or a Lua plugin — delivered through the same public,
+capability-gated interfaces; first-party extensions receive no private bypass.
+
+The decisions below are direction and ownership only. They authorize focused
+contracts and later, separately tracked implementation and migration tasks; they
+authorize no code by themselves, and this page claims no extraction or migration
+is done. The accepted boundary decisions are
+[ADR 0015 - Small-Core Extraction Boundaries](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
+(`W-70`) and
+[ADR 0016 - Execution, Graphics, Accessibility, Storage, and Platform-Service Boundaries](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)
+(`W-130`).
+
+| Boundary                           | Retained Core mechanism                                                                                                                                                                     | Focused contract and decision                                                                                                                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Observability                      | Minimal, read-only observation seam plus the default-deny authorization gate, redaction, and bounded buffers                                                                                | [`W-71` observability boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md) (draft); aligned by `W-110`             |
+| Package manager and runtime loader | Startup validation of installed-plugin integrity, compatibility, and capability grants; no network path in Core                                                                             | [`W-72` package-manager boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/package-manager-boundary.md) (accepted); executed by `W-101`     |
+| Beacon                             | `TargetEngine` and `AnnotationEngine` targeting and annotation, plus target safety; policy moves to the `beacon` plugin                                                                     | [ADR 0018](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0018-beacon-mechanism-policy-split.md) / `W-03`; host API `W-29`, SDK `W-120`    |
+| Composer                           | Terminal Truth, the input pipeline, paste inspection, and process/temp-file permission control                                                                                              | [`W-73` composer boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/composer-boundary.md) (accepted); gated on `W-01`, `W-82`, `W-103`      |
+| Legacy chrome                      | Workspace lifecycle and state, panel and layout primitives, the generic chrome mechanism, and the scratchpad slot                                                                           | [`W-74` legacy-chrome retirement](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/legacy-chrome-retirement.md) (accepted); `W-104`, ADR 0017       |
+| Validation suites                  | None for the two relocated suites; the runtime-owned M1 suites (`m1_mode_input`, `m1_color_title`, `m1_shell_coverage`) and the `bitty-test-support`/`bitty-test-vm` members remain in Core | [`W-75` validation-suite ownership](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/validation-suite-ownership.md) (accepted); executed by `W-105` |
+
+The `W-130`/ADR 0016 set (execution supervisor, graphics decode, platform
+accessibility, restricted storage, and platform services) follows the same
+retained-mechanism rule and is not repeated here. `W-71` through `W-75` fix
+ownership and security boundaries; the corresponding implementation, extraction,
+and migration tasks remain gated on their contracts and are not claimed as done.
+The cross-repository execution map and dependency order are recorded in the
+[small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
+
 ## Normative security constraints
 
 The authoritative security requirements are the
@@ -109,10 +154,18 @@ capability or protocol belongs in the first milestone. Crate presence follows
 and is `Implemented` but not yet `Verified`; `bitty-package`
 lifecycle and integrity model is `Accepted` (OQ-021) with signatures
 still draft, `bitty-lua` `Accepted` (OQ-009/030-032), and `bitty-rich`
-is `Implemented`. IPC, networking, agent protocols, and observability
-are partitioned into dedicated L1 Rust Core Extensions (`bitty-ipc`,
-`bitty-network`, `bitty-agent`, `bitty-observability`), decoupling them from
-Core terminal platform dependencies. Current revision and milestone evidence lives in
+is `Implemented`. Under the accepted
+[`W-72` package-manager boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/package-manager-boundary.md),
+`bitty-package`'s retained Core role narrows to the shared manifest/lock schema,
+the bounded parser, and the integrity primitives Core links for read-only
+startup validation; install-time package management is contracted to the
+external `bitty-plugin-manager`, and Core keeps no network path. IPC,
+networking, and agent protocols are partitioned into dedicated L1 Rust Core
+Extensions (`bitty-ipc`, `bitty-network`, `bitty-agent`), decoupling them from
+Core terminal platform dependencies; `bitty-observability` is an independent
+extension repository, and Core's adoption of an observation seam is a decided
+direction (`W-71`) that is not yet accepted or implemented. Current revision and
+milestone evidence lives in
 [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
 | Domain               | Core mechanisms and invariants                                                                       |
@@ -189,7 +242,14 @@ Current state: Core still draws a transitional text workspaceline in a
 reserved band (`workspace.show_bar`, `workspace.bar.edge`), and the bundled
 `bitty-terminal.workspace` manifest still exists without plugin code. Both
 retire after a first-party presentation plugin covers the workspaceline, per
-the migration in the Chrome Surface API and ADR 0014.
+the migration in the Chrome Surface API and ADR 0014. The accepted
+[`W-74` legacy-chrome retirement](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/legacy-chrome-retirement.md)
+contract and
+[ADR 0017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0017-tabs-alias-shell-integration-retirement.md)
+assign every legacy path an owner and disposition, retire the
+`bitty-terminal.tabs` compatibility alias and the bundled
+`bitty-terminal.shell-integration` manifest at a `>= v0.2.0` floor with a
+stored-grant migration, and retain the Core mechanism; execution is `W-104`.
 
 ### L1 Core Extensions and Programmability
 
@@ -206,7 +266,14 @@ provides two distinct extension tiers:
    - `bitty-agent`: AI agent protocol layer (`bitty-agent-api`, `bitty-agent`),
      default-off.
    - `bitty-observability`: Zero-dependency tracing and metrics definitions
-     (`bitty-observability-api`).
+     (`bitty-observability-api`). It is an independent extension repository:
+     Core has not adopted an observation seam yet, and the decided direction
+     (`W-71`) retains only a minimal read-only observation mechanism plus the
+     authorization, redaction, and bound rules in Core; the `W-71` contract is
+     still a draft.
+   - `bitty-plugin-manager`: The external package manager that owns install-time
+     package management under the accepted `W-72` boundary; Core keeps only
+     read-only startup validation and no network path.
 2. **L2 Plugins (Lua Runtime)**: Lightweight, sandboxed user-facing extensions
    running on the embedded Lua VM (`bitty-lua` / `phodopus`). All window chrome
    (workspace bars, statuslines, unified bars) and auxiliary tools (file

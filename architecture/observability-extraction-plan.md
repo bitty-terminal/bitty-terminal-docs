@@ -15,6 +15,31 @@ sidebar_order: 99
 > **Created:** 2024-10-02  
 > **Purpose:** Define the architecture and migration path for extracting debug/observability functionality from bitty Core into an independent `bitty-observability` component.
 
+## Status and authority
+
+This plan is a candidate architecture sketch. It describes a possible migration
+path and does not authorize, schedule, or claim any extraction: every
+implemented claim, line count, and size figure below is a candidate estimate,
+not evidence.
+
+The observability boundary is now decided in direction by
+[ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
+(Boundary 1), with a focused contract in
+[`W-71` observability boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md)
+(draft) and alignment carried by `W-110`. Under that direction Core retains a
+minimal, read-only observation seam plus a default-deny authorization gate,
+redaction at emission, and bounded buffers; the optional debug and trace
+implementation and all observation policy move to `bitty-observability`. Nothing
+in that boundary is accepted or implemented, and the extraction this plan
+sketches must not start before the `W-71` contract is accepted and its removal
+gates are met. The accepted ownership summary lives in
+[Core and Plugin Boundaries](core-boundaries.md#decided-extraction-boundaries),
+and the dependency order is recorded in the
+[small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
+The `bitty-observability` repository already exists with API and partial
+implementation crates; its existence is not evidence that Core has adopted the
+seam, and no part of this plan is a Core-integration claim.
+
 ## Executive Summary
 
 This document outlines a 3-phase plan to extract ~5000 lines of debug/observability code from bitty Core into an independent `bitty-observability` component, following the successful pattern established by `bitty-network`.
@@ -429,11 +454,13 @@ v1.0.0: Phase 3 (extraction complete)
 
 - [DevTools RFC](../specifications/devtools-rfc.md) - Accepted debug protocol
 - [bitty-network Candidate](../specifications/bitty-network-candidate.md) - Component pattern
-- [Core Boundaries](core-boundaries.md) - Mechanism vs policy separation
-- Phase 1 Implementation Guide: `/tmp/bitty/phase1-implementation-guide.md` (working draft)
+- [Core Boundaries](core-boundaries.md) - Mechanism vs policy separation and the decided extraction boundaries
+- [`W-71` observability boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md), [ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md), and the [small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md)
 
 ---
 
 ## Changelog
 
 - **2024-10-02:** Initial draft (Phase 1 planning)
+- **2026-10-03:** Added the status-and-authority note linking the decided
+  `W-71`/ADR 0015 boundary; no migration claim changed.

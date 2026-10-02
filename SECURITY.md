@@ -23,6 +23,43 @@ RFC](specifications/panel-runtime-rfc.md#implementation-status)
 implementation-status table and the [Risk Evidence
 RFC](specifications/risk-evidence-rfc.md) evidence lifecycle.
 
+## Extraction boundaries and P0 controls
+
+The small-core extraction boundaries are decided as direction, and every
+focused contract preserves the P0 trust boundaries that the canonical
+[bitty-docs security corpus](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)
+governs. Decision records:
+[ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
+and
+[ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md).
+
+The focused contracts that define this platform's trust surface, and that must
+not weaken a P0 control, are (the `W-71` observability contract is still a
+draft; the rest are accepted):
+
+- [Observability Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md)
+  (`W-71`, draft): read-only observation, default-deny authorization, redaction,
+  and bounded buffers stay in Core.
+- [Package Manager and Runtime Loader Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/package-manager-boundary.md)
+  (`W-72`): `P0-AC-027` through `P0-AC-030` and Core's read-only startup
+  validation are preserved; Core stays network-free.
+- [Composer Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/composer-boundary.md)
+  (`W-73`): input capture, paste inspection, and `argv`-first process and
+  temp-file controls stay Core-gated.
+- [Legacy Chrome Retirement](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/legacy-chrome-retirement.md)
+  (`W-74`) and
+  [ADR 0017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0017-tabs-alias-shell-integration-retirement.md):
+  retirement preserves the capability, grant, and safe-mode enforcement points.
+- [Validation Suite Ownership](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/validation-suite-ownership.md)
+  (`W-75`): validation tooling gains no product authority; `P0-AC-002` and
+  `P0-AC-034` remain gating.
+
+Reconciling these pages changes no control; where a control or threshold appears
+to need change it is recorded as an open point in the owning contract, never
+downgraded here. The dependency order and the retained-mechanism summary are in
+the
+[small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
+
 ## Reporting a Vulnerability
 
 To report a security vulnerability, open a private
