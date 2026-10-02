@@ -35,7 +35,10 @@ sidebar_order: 20
   validation repository that pins the production revision, while the
   runtime-owned M1 suites stay in `bitty` and every required gate remains
   binding; execution is `W-105`. No relocation is implemented, and the citations
-  above describe the current location only.
+  above describe the current location only. The required commands, floors, pin
+  discipline, and evidence ownership are collected in the candidate
+  [Legacy Chrome and Validation Suite Disposition](../specifications/legacy-chrome-and-validation-disposition.md)
+  (`W-83`/`W-84`).
 - Machine-readable source of truth: `compat_report` emits `schema_version: 1`
   JSON with `areas`, `rows` (status, method, evidence), an environment probe,
   and a status summary. The table below mirrors that output.
