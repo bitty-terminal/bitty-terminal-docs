@@ -204,6 +204,13 @@ headless in `crates/bitty-rich/src/composer.rs`. This note records current
 behavior only; it changes no proposal above and claims no
 `Verified`/`Compatible` status.
 
+Superseding current-state note (2026-10-03): the Core-internal Composer is now
+wired through a Core-owned modal above the user keymap, beyond the revision the
+note above cites. It remains `Implemented-only` and is not the public
+focusable-overlay host API. The reviewed terminal-side architecture and newer
+implementation status are recorded in the
+[Composer Architecture and Host API](composer-architecture.md).
+
 ### P5: External editor (Implemented-only)
 
 > Implemented-only in `bitty` CTX-0227 (PR #394, commit
@@ -242,6 +249,13 @@ its editor spawn (current-state note, 2026-09-16). The app does spawn an
 editor on a separate, wired path: `bitty config edit` uses `bitty-app`'s own
 `resolve_editor()` (`crates/bitty-app/src/config_cli.rs`; `$VISUAL`, then
 `$EDITOR`, then `vi`) to run an editor on the config file.
+
+Superseding current-state note (2026-10-03): the external-editor path is now
+wired through a Core-internal panel-hosted editor leaf, beyond the revision the
+note above cites. It remains `Implemented-only` and is not the public
+focusable-overlay host API. The reviewed terminal-side architecture and newer
+implementation status are recorded in the
+[Composer Architecture and Host API](composer-architecture.md).
 
 ### P6: Cross-panel Hint API (proposal-only)
 
