@@ -39,11 +39,12 @@ sidebar_order: 21
   maturity remains `Pre-alpha` (not `Verified`/`Compatible`/`Release-ready`).
   Canonical snapshot:
   [`docs/project/project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
-  (synchronized `c6db24d`, `2026-09-27`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
+  (synchronized `310bf87`, `2026-10-02`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
   `Open`, `R-005`/`R-006`/`R-007` `Mitigated`, experimental `c0aadd2`/`7e3104d`/`a8735d0`
-  `Implemented` not `Verified`, release `v0.0.21`) validated by `bun .github/scripts/check-state.mjs`.
+  `Implemented` not `Verified`, release `v0.0.21`) validated by `bun .github/scripts/check-state.mjs`; the
+  `c6db24d` figures in the historical section below are unchanged.
 
-> **Status note (2026-10-02, `bitty` `main`@`799f7433`).** The `21 crates`
+> **Status note (2026-10-02, `bitty` `main`@`310bf87`).** The `21 crates`
 > figure above is stale: `bitty-core` and `bitty-panels` are retired and
 > `bitty-agent`/`bitty-ipc` were extracted to independent repositories
 > (CTX-0918, CTX-0906), leaving an 18-crate workspace. Core now links
