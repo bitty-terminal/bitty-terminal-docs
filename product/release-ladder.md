@@ -1,6 +1,6 @@
 ---
 title: Release Ladder
-description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (21 crates c6db24d, 54 OQs Accepted, release v0.0.21) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
+description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (18 crates 310bf87, 54 OQs Accepted, release v0.0.21) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
 category: product
 audience: maintainer
 document_type: overview
@@ -14,9 +14,11 @@ sidebar_order: 21
 ## Status and provenance
 
 - Stage: **Pre-alpha / Engineering Milestones M1-M8** at the canonical snapshot of
-  `2026-09-27` (`bitty` synchronized revision `c6db24d`, canonical
-  `previous_revision` `679f12f`, baseline `de134ec`, 21 crates, 54 OQs `Accepted`
-  with 46 open, release `v0.0.21`). The
+  `2026-10-02` (`bitty` synchronized revision `310bf87`, canonical
+  `previous_revision` `2cb49af`, baseline `de134ec`, 18 crates, 54 OQs `Accepted`
+  with 46 open, release `v0.0.21`). Earlier snapshots — `c6db24d` (`2026-09-27`,
+  21 crates, `previous_revision` `679f12f`) and `799f743` before it — are
+  retained only as provenance in the dated status note below. The
   [revision-pinned implementation state](#revision-pinned-implementation-state-at-491c567-historical)
   below is historical evidence pinned to `491c567` after pivot-wave #1200-1213;
   `491c567` and `c6db24d` are separate rewritten histories with distinct root
@@ -41,8 +43,7 @@ sidebar_order: 21
   [`docs/project/project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
   (synchronized `310bf87`, `2026-10-02`, `Pre-alpha / Engineering Milestones M1-M8`, `R-004`
   `Open`, `R-005`/`R-006`/`R-007` `Mitigated`, experimental `c0aadd2`/`7e3104d`/`a8735d0`
-  `Implemented` not `Verified`, release `v0.0.21`) validated by `bun .github/scripts/check-state.mjs`; the
-  `c6db24d` figures in the historical section below are unchanged.
+  `Implemented` not `Verified`, release `v0.0.21`) validated by `bun .github/scripts/check-state.mjs`.
 
 > **Status note (2026-10-02, `bitty` `main`@`310bf87`).** The `21 crates`
 > figure above is stale: `bitty-core` and `bitty-panels` are retired and
