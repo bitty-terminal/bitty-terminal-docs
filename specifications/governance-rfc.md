@@ -530,6 +530,10 @@ pinned `bitty-docs` tag, never a floating `main` branch.
 - `CRATES_TOKEN` remains unused until a future decision explicitly
   authorizes `crates.io` publication in a workflow; `publish = false`
   on `bitty-core` and `bitty-app` stays the default until that ADR.
+  (Status note, 2026-10-02: the `bitty-core` crate is retired from the
+  `bitty` workspace as of `bitty` `main`@`799f7433`, CTX-0918; `bitty-app`
+  remains `publish = false`. This note updates the current-state
+  reference only and does not reopen the `CRATES_TOKEN` policy.)
 - Release notes live in `CHANGELOG.md` (Keep a Changelog 1.1.0) and
   `docs/releases/` where present, and cite the carried ADR, RFC, and
   OQ closures. Deleting available published material without a reviewed

@@ -121,6 +121,12 @@ needs no SQLite at all. The dependency decision itself stays with the ADR-0004
 owners; this record only freezes the direction that history is not the reason
 to take that dependency.
 
+> **Status note (2026-10-02).** `bitty-core` here names the Core
+> boundary generically, not a crate: the `bitty-core` scaffold crate is
+> retired from the `bitty` workspace (`bitty` `main`@`799f7433`,
+> CTX-0918). The candidate rule applies to whichever crate hosts the
+> Core event/storage-capability API today.
+
 ### PH-4 Append-only segmented log as the canonical store
 
 **Candidate** (all numbers illustrative-only). Terminal history is almost purely

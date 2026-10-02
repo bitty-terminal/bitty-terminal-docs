@@ -39,6 +39,30 @@ This repository does not own:
 
 Cross-project contracts and registers are linked, never copied.
 
+## Architecture at a glance
+
+Bitty keeps a small Core: Core owns terminal mechanism (PTY ownership,
+VT parsing, rendering, input encoding, platform gates, and security policy)
+and ships zero network and zero AI code. Capabilities a terminal does not
+itself need live one layer out, in independent L1 Rust extension repositories
+— [bitty-ipc](https://github.com/bitty-terminal/bitty-ipc),
+[bitty-network](https://github.com/bitty-terminal/bitty-network), and the
+planned `bitty-agent` and `bitty-observability` extraction targets — that
+Core links by pinned Git revision rather than embedding. Native capabilities
+beyond those pinned libraries, starting with the network stack, run as
+independently installed stdio coprocesses that Core resolves without `PATH`,
+verifies by digest, spawns on first use, and grants through its component
+broker, per the accepted
+[DIR-030](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)
+direction and the
+[Native Component Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/native-component-boundary.md).
+User-facing behavior, policy, and composition stay out of Core as Lua
+plugins running on the [Phodopus](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md)
+successor runtime, per the
+[Core and Plugin Boundaries](https://github.com/bitty-terminal/bitty-terminal-docs/blob/main/architecture/core-boundaries.md). See the
+[documentation map](https://github.com/bitty-terminal/bitty-terminal-docs/blob/main/docs/README.md) for the canonical specification and
+architecture trees.
+
 ## Composition
 
 The repository is mounted at `bitty/docs` as a Git submodule so platform
