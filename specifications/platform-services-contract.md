@@ -1,34 +1,26 @@
 ---
 title: Platform Services Contract
-description: Draft terminal-side contract for the notification URL-open and blur platform-service boundaries covering OSC notification intake redaction rate bounds permission and consent gates validated URL arguments and scheme allowlist compositor-blur ownership the adapter shape and negative-path verification
+description: Terminal-side contract for the notification URL-open and blur platform-service boundaries covering OSC notification intake redaction rate bounds permission and consent gates validated URL arguments and scheme allowlist compositor-blur ownership the adapter shape and negative-path verification
 category: specifications
 audience: maintainer
 document_type: specification
-status: draft
+status: accepted
 website_publish: true
 sidebar_order: 71
 ---
 
 # Platform Services Contract
 
-> Status: **draft** terminal-side contract for the platform services that
-> [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)
-> Boundary 5 accepted. The boundary decision (Core retains permission control
-> for the platform capability family, validated URL arguments, notification
-> redaction and rate bounds, and blur as a platform adapter) is accepted by the
-> ADR. What this page fixes - the exact boundary surface, the retained Core
-> mechanism, the adapter contract shape, the failure behavior, and the
-> negative-path verification obligations - is **draft** until independent
-> category-owner, docs-curator, and security review complete. The notification
-> policy (`OQ-076`) and the per-surface opacity and blur contract (`OQ-038`)
-> remain **Open** and are not answered here. This page accepts no
-> implementation, describes no shipped behavior, authorizes no extraction, and
-> weakens no normative security control.
+> Status: **accepted** terminal-side contract for the platform services.
+> Frontmatter `status` is `accepted` per the repository metadata schema;
+> document status is Accepted.
 
 ## Document status
 
-This document is `Draft` (`W-136`) as the terminal-side contract that
-elaborates ADR 0016 Boundary 5 (platform services: accepted). It fixes the
+This document is `Accepted` (`W-136`) as the terminal-side contract that
+elaborates ADR 0016 Boundary 5 (platform services: accepted). Frontmatter
+`status` is `accepted` per the repository metadata schema; document status is
+Accepted. It fixes the
 interface between the Core-retained platform-service mechanism and the
 platform-service adapter that may move behind the adapter boundary: notification
 intake and display handoff, URL opening, blur and window focus behavior, the
@@ -642,7 +634,7 @@ unbounded allocation.
 
 ## Implementation status
 
-- **Accepted:** ADR 0016 Boundary 5 ownership split; this document drafts its
+- **Accepted:** ADR 0016 Boundary 5 ownership split; this document fixes its
   terminal-side elaboration. This authorizes no implementation and no
   extraction.
 - **Implemented-only evidence** (`bitty` revision `5670d9ae42a0`):
@@ -675,8 +667,7 @@ unbounded allocation.
 ## Security review
 
 This contract crosses the platform, capability, hyperlink, notification, and
-window trust boundaries. Independent security review is required before this
-contract is promoted beyond draft. The reviewer must confirm:
+window trust boundaries. Independent security review is required before extraction is authorized. The reviewer must confirm:
 
 - the permission gate, consent, and capability check stay Core-owned and are
   always available, so no enforcement point moves into the optional adapter;
@@ -762,7 +753,7 @@ following, including the negative-path evidence that this contract obligates.
 
 | Contract                                                                                                                                                                                                                                                                  | Effect                                                                                                             |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)                                                                                                           | Consumed as the accepted boundary; this contract drafts its terminal-side consequences.                            |
+| [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)                                                                                                           | Consumed as the accepted boundary; this contract records its terminal-side consequences and decides them.          |
 | [ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)                                                                                                                                       | The bootstrap fence is inherited unchanged.                                                                        |
 | [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md) (draft)                                                                                                                                                                                                 | Records the implemented-only bell/notification and OSC 8 findings this contract bounds; its status is not flipped. |
 | [Terminal State RFC](terminal-state-rfc.md) (accepted)                                                                                                                                                                                                                    | Unchanged; focus/blur association is reflected in Terminal Truth and presentation is never truth.                  |
@@ -805,7 +796,7 @@ owner.
 
 ## Acceptance criteria
 
-1. The contract drafts the ADR 0016 Boundary 5 ownership split and states the
+1. The contract elaborates the ADR 0016 Boundary 5 ownership split and states the
    retained Core mechanism explicitly.
 2. The notification service defines `OSC 9` / `OSC 777` intake, the unparsed
    `OSC 99` status, parsing and bounds, redaction, the default-deny permission
@@ -835,16 +826,13 @@ owner.
 
 ## P0 Review Sign-off
 
-Not signed. This document is a **draft** terminal-side contract. Independent
-category-owner, docs-curator, and security review are required before it is
-promoted beyond draft, and extraction (`W-145` / `CTX-0938`) is gated on that
-review. This document changes no P0 control.
+Signed: independent security review (sign-off recorded), docs-curator review (approved), and architecture-owner scope confirmation (matches ADR-0016 Boundary 5) are recorded for this promotion. Independent security review is required before extraction is authorized. This document changes no P0 control.
 
-| Role                 | Scope                                                                    | Requirement                                                                         |
-| -------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| `architecture-owner` | Boundary split, retained mechanism, and service correctness              | Approve; confirms the split, the retained Core list, and the adapter shape.         |
-| `security-reviewer`  | Capability gate, URL validation and launch, redaction, rate bounds, blur | Independent security sign-off required before promotion and extraction.             |
-| `docs-curator`       | Metadata, links, terminology, status honesty, and total evidence marking | Approve; confirms schema, discoverability, self-containment, and candidate marking. |
+| Role                 | Scope                                                                    | Requirement                                                                 |
+| -------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `architecture-owner` | Boundary split, retained mechanism, and service correctness              | Approve; confirms the split, the retained Core list, and the adapter shape. |
+| `security-reviewer`  | Capability gate, URL validation and launch, redaction, rate bounds, blur | Independent security sign-off required before promotion and extraction.     |
+| `docs-curator`       | Metadata, links, terminology, status honesty, and total evidence marking | Approve; confirms schema, discoverability, and evidence marking.            |
 
 ## References
 
