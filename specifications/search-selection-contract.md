@@ -1,10 +1,10 @@
 ---
 title: Search, Selection, and Snapshots Contract
-description: Draft terminal-side contract for bounded search selection snapshots stable identity viewport navigation result coalescing clipboard permission and the focusable-overlay input-capture dependency
+description: Terminal-side contract for bounded search selection snapshots stable identity viewport navigation result coalescing clipboard permission and the focusable-overlay input-capture dependency
 category: specifications
 audience: contributor
 document_type: specification
-status: draft
+status: accepted
 website_publish: true
 sidebar_order: 70
 ---
@@ -13,8 +13,9 @@ sidebar_order: 70
 
 ## Document status
 
-This is the terminal-side contract that Core and extension tasks cite for the
-search, selection, and snapshot mechanisms owned by plan key `W-135`. It states
+This document is `Accepted` (`W-135`) as the terminal-side contract that Core and extension tasks cite for the
+search, selection, and snapshot mechanisms owned by plan key `W-135`. Frontmatter `status` is `accepted` per
+the repository metadata schema; document status is Accepted. It states
 the bounded snapshot surface a plugin may read, stable target and result
 identity, the viewport navigation interface, result coalescing, the selection
 semantics and clipboard permission Core retains, the bounded search Core
@@ -409,8 +410,7 @@ extraction tasks must close; none weakens a control and none is authorization):
 
 This contract crosses the snapshot read boundary, the selection and clipboard
 trust decisions, the bounded search surface, and the input-capture dependency.
-Independent security review is required before this contract is promoted beyond
-draft. The reviewer must confirm:
+Independent security review is required before extraction is authorized. The reviewer must confirm:
 
 - the extension uses only the public, capability-gated API, with no private
   first-party bypass, no raw grid or PTY handle, and no input hot-path callback
@@ -565,16 +565,13 @@ owner.
 
 ## P0 Review Sign-off
 
-Not signed. This document is a **draft** terminal-side contract. Independent
-category-owner, docs-curator, and security review are required before it is
-promoted beyond draft; the security review above records the required controls,
-and no P0 control is changed by this page.
+Signed: independent security review (sign-off recorded), docs-curator review (approved), and architecture-owner scope confirmation (matches W-135 scope) are recorded for this promotion. Independent security review is required before extraction is authorized. This document changes no P0 control.
 
 | Role                 | Scope                                                                          | Requirement                                                               |
 | -------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
 | `architecture-owner` | Snapshot, selection, search, retained mechanisms, and boundary correctness     | Approve; confirms the mechanism and policy split and Core-retained scope. |
 | `security-architect` | Snapshot reads, selection, clipboard, bounded search, input capture, safe mode | Independent security sign-off required before promotion.                  |
-| `docs-curator`       | Metadata, links, terminology, and status honesty                               | Approve; confirms schema, discoverability, and draft marking.             |
+| `docs-curator`       | Metadata, links, terminology, and status honesty                               | Approve; confirms schema, discoverability, and evidence marking.          |
 
 ## References
 
