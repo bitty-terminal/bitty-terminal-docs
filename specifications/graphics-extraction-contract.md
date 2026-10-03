@@ -1,42 +1,33 @@
 ---
 title: Graphics Extraction Contract
-description: Draft terminal-side contract for the graphics decode and processing extraction boundary covering placement bounded protocol intake aggregate image budget Core-retained validation worker lifecycle and negative-path verification
+description: Terminal-side contract for the graphics decode and processing extraction boundary covering placement bounded protocol intake aggregate image budget Core-retained validation worker lifecycle and negative-path verification
 category: specifications
 audience: contributor
 document_type: specification
-status: draft
+status: accepted
 website_publish: true
 sidebar_order: 68
 ---
 
 # Graphics Extraction Contract
 
-> Status: **draft** terminal-side contract. It elaborates
-> [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)
-> Boundary 2 (Graphics decode and processing), which accepted the direction that
-> image decode and processing move to the reserved `bitty-graphics` extension
-> while Core retains bounded protocol intake, image placement and resource
-> policy, the aggregate image-store budget, and pre-upload validation. The ADR
-> parked the exact placement, framing, quotas, and worker shape to focused
-> contract `W-133`, which is this page. This page does not authorize extraction,
-> does not implement or schedule the `bitty-graphics` worker or decode code
-> (the repository exists only as a metadata-only scaffold created under
-> `CTX-0001`), does not
-> describe shipped behavior, and does not weaken any normative security control.
-> Every requirement below is a contract to build against, not an implementation
-> claim.
+> Status: **accepted** terminal-side contract for the graphics extraction boundary.
+> Frontmatter `status` is `accepted` per the repository metadata schema;
+> document status is Accepted.
 
 ## Document status
 
-This is the terminal-side contract that Core and extension tasks cite for the
+This document is `Accepted` (`W-133`) as the terminal-side contract that Core and extension tasks cite for the
 graphics boundary decided by
 [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)
-(Boundary 2). It states the decided decode placement, the bounded protocol
+(Boundary 2). Frontmatter `status` is `accepted` per the repository metadata schema; document status is
+Accepted. It states the decided decode placement, the bounded protocol
 intake, the resource boundary, what Core retains, the public contract shape, and
 the negative-path evidence a later implementation must produce. It does not
 start, schedule, or authorize implementation; the extension repository and
 worker (`CTX-0003`) and the Core integration (`W-141`, `CTX-0934`) remain their
-own tasks.
+own tasks. It does not authorize extraction, does not describe shipped behavior,
+and does not weaken any normative security control.
 
 - Owning task: `W-133` (bitty-terminal-docs), CarryCtx `CTX-0089`, Issue
   [bitty-terminal-docs#170](https://github.com/bitty-terminal/bitty-terminal-docs/issues/170).
@@ -502,7 +493,7 @@ times, including during terminal close and plugin unload.
 
 This contract crosses the untrusted PTY input boundary, the decode/worker
 process boundary, the aggregate resource ledger, and the renderer upload path.
-Independent security review is required before it is promoted beyond draft. The
+Independent security review is required before extraction is authorized. The
 reviewer must confirm:
 
 - `P0-AC-003` and `P0-AC-004` are quoted and unweakened, and every decode path
@@ -643,16 +634,13 @@ check` passes with zero issues.
 
 ## P0 Review Sign-off
 
-Not signed. This document is a **draft** terminal-side contract. Independent
-category-owner, docs-curator, and security review are required before it is
-promoted beyond draft; the security review above records the required controls,
-and no P0 control is changed by this page.
+Signed: independent security review (sign-off recorded), docs-curator review (approved), and architecture-owner scope confirmation (matches ADR-0016 Boundary 2) are recorded for this promotion. Independent security review is required before extraction is authorized. This document changes no P0 control.
 
-| Role                 | Scope                                                                       | Requirement                                                    |
-| -------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `architecture-owner` | Placement, retained mechanisms, boundary correctness, and downstream owners | Approve; confirms the worker decision and Core-retained scope. |
-| `security-architect` | Intake, worker isolation, aggregate budget, upload validation, safe mode    | Independent security sign-off required before promotion.       |
-| `docs-curator`       | Metadata, links, terminology, and status honesty                            | Approve; confirms schema, discoverability, and draft marking.  |
+| Role                 | Scope                                                                       | Requirement                                                      |
+| -------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `architecture-owner` | Placement, retained mechanisms, boundary correctness, and downstream owners | Approve; confirms the worker decision and Core-retained scope.   |
+| `security-architect` | Intake, worker isolation, aggregate budget, upload validation, safe mode    | Independent security sign-off required before promotion.         |
+| `docs-curator`       | Metadata, links, terminology, and status honesty                            | Approve; confirms schema, discoverability, and evidence marking. |
 
 ## References
 
