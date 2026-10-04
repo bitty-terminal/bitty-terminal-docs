@@ -112,49 +112,54 @@ pinned `vttest` captures and reference dumps in the evidence area.
 
 ## Crate inventory (nineteen members as of 2026-09-16)
 
-> **Status note (2026-10-02, `bitty` `main`@`799f7433`).** This section is
+> **Status note (2026-10-05, `bitty` `origin/main` `03bfda5c`).** This section is
 > a dated snapshot (2026-09-16) and no longer matches the tree: `bitty-core`
-> and `bitty-panels` are retired, the workspace carries 18 members
-> (CTX-0918), and `bitty-agent` has been extracted to an independent
+> and `bitty-panels` are retired, `bitty-agent` has been extracted to an independent
 > repository and is not linked by Core (so the `bitty-agent` row below and
-> the `v0.9` ladder row's `bitty-agent` reference above are stale). The
+> the `v0.9` ladder row's `bitty-agent` reference above are stale), and `W-105`
+> relocated `bitty-compat-lab` and `bitty-perf` out of the workspace
+> (`bitty#1684` `03bfda5c`; now 16 members, pinned externally via
+> `validation-pins.env`). The
 > rows below are retained as a historical snapshot and are not updated to
 > match the current roster; consult `bitty` `Cargo.toml` for the current
 > member list.
 
 Sixteen members at CTX-0043 (`bitty/Cargo.toml`, head `7b215a2` / `3bfe386`
 base); nineteen members on `bitty` `origin/main` at `e8dc9e5` (2026-09-16).
-The three later additions are `bitty-compat-lab` (CTX-0078), `bitty-perf`
+The three later additions were `bitty-compat-lab` (CTX-0078), `bitty-perf`
 (CTX-0076), and `bitty-test-support` (CTX-0267), all workspace harnesses with
-`publish = false`. Rows below record the current roster and direct normal
+`publish = false` at the time. `W-105` relocated `bitty-compat-lab` and
+`bitty-perf` out of the workspace (`bitty#1684` `03bfda5c`; now 16 members;
+suites live in standalone repositories pinned via `validation-pins.env`),
+so only `bitty-test-support` remains a workspace harness. Rows below record the historical roster and direct normal
 workspace dependencies; dev-only edges are named in the role text. Two rows
 differ from the CTX-0043 record: `bitty-ipc` was promoted to `publish = true`
 (CTX-0419, `#709`) and `bitty-config` gained a `bitty-lua` edge (CTX-0148).
-`bitty-compat-lab`, `bitty-perf`, and `bitty-test-support` are not yet covered
+`bitty-compat-lab`, `bitty-perf`, and `bitty-test-support` are not covered
 by
 [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md).
 
-| Crate                | Publish | Workspace deps                                                                                                 | Role                                                                                                                                                                                                                      |
-| -------------------- | ------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bitty-vt`           | true    | none                                                                                                           | VT parser -> `TerminalAction` (`vte 0.15`)                                                                                                                                                                                |
-| `bitty-pty`          | true    | none                                                                                                           | PTY lifecycle/backpressure (`portable-pty 0.9`); dev-only `bitty-test-support` edge                                                                                                                                       |
-| `bitty-platform`     | true    | none                                                                                                           | winit 0.30 + `raw-window-handle 0.6.2` SurfaceTarget                                                                                                                                                                      |
-| `bitty-config`       | true    | `bitty-lua`                                                                                                    | `ConfigPlan` typed pipeline; the `bitty-lua` path edge (CTX-0148) has no `version` pin yet                                                                                                                                |
-| `bitty-package`      | true    | none                                                                                                           | manifest/lockfile/integrity/lifecycle (OQ-021 accepted; signatures draft)                                                                                                                                                 |
-| `bitty-lua`          | true    | none                                                                                                           | `piccolo 0.3.3` deterministic VM budgets RC-1/RC-2                                                                                                                                                                        |
-| `bitty-term-state`   | true    | `bitty-vt`                                                                                                     | Terminal Truth grid/damage/snapshot                                                                                                                                                                                       |
-| `bitty-ui`           | true    | `bitty-term-state`                                                                                             | View/LayoutNode primitives                                                                                                                                                                                                |
-| `bitty-render`       | true    | `bitty-term-state`, `bitty-platform`, `bitty-config`                                                           | wgpu 26.0 + crossfont 0.9 snapshot pipeline; theme presets from `bitty-config` (CTX-0147)                                                                                                                                 |
-| `bitty-ipc`          | true    | none                                                                                                           | Generic out-of-process IPC bridge boundary: bounded framing/channels, wire envelope, scopes and consent, peer-credential auth, DevTools JSON-RPC, snapshot and execution services (OQ-018 accepted; promoted in CTX-0419) |
-| `bitty-plugin-host`  | false   | `bitty-term-state`, `bitty-config`, `bitty-package`                                                            | Plugin registry/capability/event queue (draft, OQ-014)                                                                                                                                                                    |
-| `bitty-rich`         | false   | `bitty-term-state`, `bitty-vt`, `bitty-platform`, `bitty-ipc`                                                  | Rich presentation helpers (draft, OQ-015/016); Kitty decode/placement and the image store shipped                                                                                                                         |
-| `bitty-agent`        | false   | none                                                                                                           | Bounded Agent stub (draft, OQ-018/019)                                                                                                                                                                                    |
-| `bitty-runtime`      | false   | `vt`, `term-state`, `pty`, `render`, `platform`, `ui`, `lua`, `plugin-host`, `agent`, `ipc`, `package`, `rich` | Orchestration (cold-path queue); twelve-edge fan-in (was seven at CTX-0043)                                                                                                                                               |
-| `bitty-app`          | false   | `config`, `ipc`, `perf`, `platform`, `plugin-host`, `runtime`, `render`, `term-state`                          | Thin binary composition root                                                                                                                                                                                              |
-| `bitty-core`         | false   | none                                                                                                           | Bootstrap seed to be retired                                                                                                                                                                                              |
-| `bitty-compat-lab`   | false   | `bitty-vt`, `bitty-term-state` (dev: `bitty-pty`)                                                              | Headless bounded `vttest`/differential compat harness (CTX-0078; added after CTX-0043)                                                                                                                                    |
-| `bitty-perf`         | false   | `vt`, `term-state`, `render`, `platform`, `pty`, `runtime`, `config`, `ui`                                     | Performance baseline bench harness (CTX-0076; added after CTX-0043)                                                                                                                                                       |
-| `bitty-test-support` | false   | none                                                                                                           | Shared test-harness helpers, live-PTY gating (CTX-0267; added after CTX-0043)                                                                                                                                             |
+| Crate                | Publish | Workspace deps                                                                                                 | Role                                                                                                                                                                                                                       |
+| -------------------- | ------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bitty-vt`           | true    | none                                                                                                           | VT parser -> `TerminalAction` (`vte 0.15`)                                                                                                                                                                                 |
+| `bitty-pty`          | true    | none                                                                                                           | PTY lifecycle/backpressure (`portable-pty 0.9`); dev-only `bitty-test-support` edge                                                                                                                                        |
+| `bitty-platform`     | true    | none                                                                                                           | winit 0.30 + `raw-window-handle 0.6.2` SurfaceTarget                                                                                                                                                                       |
+| `bitty-config`       | true    | `bitty-lua`                                                                                                    | `ConfigPlan` typed pipeline; the `bitty-lua` path edge (CTX-0148) has no `version` pin yet                                                                                                                                 |
+| `bitty-package`      | true    | none                                                                                                           | manifest/lockfile/integrity/lifecycle (OQ-021 accepted; signatures draft)                                                                                                                                                  |
+| `bitty-lua`          | true    | none                                                                                                           | `piccolo 0.3.3` deterministic VM budgets RC-1/RC-2                                                                                                                                                                         |
+| `bitty-term-state`   | true    | `bitty-vt`                                                                                                     | Terminal Truth grid/damage/snapshot                                                                                                                                                                                        |
+| `bitty-ui`           | true    | `bitty-term-state`                                                                                             | View/LayoutNode primitives                                                                                                                                                                                                 |
+| `bitty-render`       | true    | `bitty-term-state`, `bitty-platform`, `bitty-config`                                                           | wgpu 26.0 + crossfont 0.9 snapshot pipeline; theme presets from `bitty-config` (CTX-0147)                                                                                                                                  |
+| `bitty-ipc`          | true    | none                                                                                                           | Generic out-of-process IPC bridge boundary: bounded framing/channels, wire envelope, scopes and consent, peer-credential auth, DevTools JSON-RPC, snapshot and execution services (OQ-018 accepted; promoted in CTX-0419)  |
+| `bitty-plugin-host`  | false   | `bitty-term-state`, `bitty-config`, `bitty-package`                                                            | Plugin registry/capability/event queue (draft, OQ-014)                                                                                                                                                                     |
+| `bitty-rich`         | false   | `bitty-term-state`, `bitty-vt`, `bitty-platform`, `bitty-ipc`                                                  | Rich presentation helpers (draft, OQ-015/016); Kitty decode/placement and the image store shipped                                                                                                                          |
+| `bitty-agent`        | false   | none                                                                                                           | Bounded Agent stub (draft, OQ-018/019)                                                                                                                                                                                     |
+| `bitty-runtime`      | false   | `vt`, `term-state`, `pty`, `render`, `platform`, `ui`, `lua`, `plugin-host`, `agent`, `ipc`, `package`, `rich` | Orchestration (cold-path queue); twelve-edge fan-in (was seven at CTX-0043)                                                                                                                                                |
+| `bitty-app`          | false   | `config`, `ipc`, `platform`, `plugin-host`, `runtime`, `render`, `term-state` (`perf` edge removed by `W-105`) | Thin binary composition root                                                                                                                                                                                               |
+| `bitty-core`         | false   | none                                                                                                           | Bootstrap seed to be retired                                                                                                                                                                                               |
+| `bitty-compat-lab`   | false   | relocated-external (was `bitty-vt`, `bitty-term-state` + dev `bitty-pty`)                                      | Relocated out of workspace by `W-105` (`bitty#1684` `03bfda5c`); standalone repo pinned via `validation-pins.env`; headless bounded `vttest`/differential compat harness (CTX-0078) — historical row, not a current member |
+| `bitty-perf`         | false   | relocated-external (was `vt`, `term-state`, `render`, `platform`, `pty`, `runtime`, `config`, `ui`)            | Relocated out of workspace by `W-105` (`bitty#1684` `03bfda5c`); standalone repo pinned via `validation-pins.env`; performance baseline bench harness (CTX-0076) — historical row, not a current member                    |
+| `bitty-test-support` | false   | none                                                                                                           | Shared test-harness helpers, live-PTY gating (CTX-0267; added after CTX-0043)                                                                                                                                              |
 
 Ten members set `publish = true` (the nine CTX-0043 publishable crates plus
 `bitty-ipc`); nine remain `publish = false` until their RFC is accepted and
@@ -250,17 +255,20 @@ none is `cargo publish`ed at `0.0.1`:
 - `bitty-core` — seed to be retired; never published.
 
 Workspace harnesses (added after CTX-0043; all `publish = false` and never
-`cargo publish`ed):
+`cargo publish`ed; `bitty-compat-lab` and `bitty-perf` relocated external by `W-105`):
 
-- `bitty-compat-lab` (CTX-0078) — headless bounded `vttest`/differential
-  compat harness; depends on `bitty-vt` and `bitty-term-state`, with
-  `bitty-pty` as a dev-only edge.
+- `bitty-compat-lab` (CTX-0078) — relocated-external by `W-105` (`bitty#1684`
+  `03bfda5c`; standalone repo pinned via `validation-pins.env`); was headless
+  bounded `vttest`/differential compat harness depending on `bitty-vt` and
+  `bitty-term-state`, with `bitty-pty` as a dev-only edge.
 - `bitty-perf` (CTX-0076; real-window measurement upgrade in CTX-0100) —
-  performance baseline bench owner; depends on `vt`, `term-state`, `render`,
-  `platform`, `pty`, `runtime`, `config`, and `ui`.
+  relocated-external by `W-105` (`bitty#1684` `03bfda5c`; standalone repo
+  pinned via `validation-pins.env`); was performance baseline bench owner
+  depending on `vt`, `term-state`, `render`, `platform`, `pty`, `runtime`,
+  `config`, and `ui`.
 - `bitty-test-support` (CTX-0267) — shared test-harness helpers for live-PTY
   gating; no workspace dependency; consumed as a dev edge by `pty`, `rich`,
-  `runtime`, and `app`.
+  `runtime`, and `app`; remains a workspace member.
 
 Future revision of this ladder will promote the draft tail crates (not the
 workspace harnesses) to `publish = true` in DAG order (host before runtime,
