@@ -138,8 +138,51 @@ nodes:
     kind: crate
     shape: rect
     level: L1
-    description: Bootstrap seed to be retired — migration target bitty-vt, term-state, pty
+    description: Retired bootstrap seed library (retired bitty#1603)
     crate_path: crates/bitty-core
+  - id: bitty-winjob
+    label: bitty-winjob
+    kind: crate
+    shape: rect
+    level: L1
+    description: Windows Job Object process isolation adapter (CTX-0903 / DEC-0083)
+    crate_path: crates/bitty-winjob
+  - id: bitty-execution
+    label: bitty-execution
+    kind: repository
+    shape: rect
+    level: L1
+    description: Independent execution supervisor — process tree, cgroups v2, timeouts (ADR 0016)
+  - id: bitty-graphics
+    label: bitty-graphics
+    kind: repository
+    shape: rect
+    level: L1
+    description: Independent graphics decode and image processing repository (ADR 0016)
+  - id: bitty-storage
+    label: bitty-storage
+    kind: repository
+    shape: rect
+    level: L1
+    description: Independent restricted storage repository — transcripts, history log (ADR 0016)
+  - id: bitty-a11y
+    label: bitty-a11y
+    kind: repository
+    shape: rect
+    level: L1
+    description: Independent platform accessibility adapter — AT-SPI, VoiceOver (ADR 0016)
+  - id: bitty-observability
+    label: bitty-observability
+    kind: repository
+    shape: rect
+    level: L1
+    description: Independent observability repository — structured tracing, metrics (ADR 0015)
+  - id: bitty-plugin-manager
+    label: bitty-plugin-manager
+    kind: tool
+    shape: rect
+    level: L1
+    description: Independent plugin package manager CLI — transactional lifecycle (ADR 0015)
   - id: bitty-compat-lab
     label: bitty-compat-lab
     kind: crate

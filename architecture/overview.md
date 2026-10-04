@@ -36,37 +36,41 @@ which this document links to instead of duplicating.
 ## Overall model
 
 ```text
-                         bitty app
-                             |
-                     runtime orchestration
-             command / event / service / lifecycle
-                             |
-        +--------------------+--------------------+
-        |                    |                    |
-        v                    v                    v
-   UI model             Terminal core         Platform
- view/layout/focus      VT/grid/image          window/input
-        |                    |                    |
-        +----------+---------+---------+----------+
-                   |                   |
-                   v                   v
-                Renderer              PTY
-              font / GPU          Unix / ConPTY
+                         bitty app (CLI / Entry)
+                                   |
+                         bitty runtime (Small Core)
+             orchestration / security capability firewall / events
+                                   |
+         +-------------------------+-------------------------+
+         |                         |                         |
+         v                         v                         v
+    bitty-ui              bitty-term-state (Truth)      bitty-platform
+view/layout/focus            grid / damage / modes        window / input
+         |                         |                         |
+         +------------+------------+------------+------------+
+                      |                         |
+                      v                         v
+                 bitty-render               bitty-pty
+               wgpu / HarfBuzz            Unix / ConPTY
+                                                |
+                                                v
+                                         bitty-winjob (Win)
 
-     init.lua candidate                 Lua plugins
-             |                              |
-             v                              v
-         ConfigPlan                 Extension API
-             +-------------+----------------+
-                           v
-                     bitty runtime
+    Sandboxed Plugins (Lua)             Extracted Subsystems (ADR-0015/0016)
+  (Workspace / Composer / UI)          (Execution / Graphics / Storage / Obs)
+              |                                         |
+              v                                         v
+      bitty-plugin-host                        Typed Capability Hooks
+              \                                         /
+               +-------------------+-------------------+
+                                   v
+                             bitty runtime
 
-               debug instrumentation
-                           |
-                           v
-                  debug protocol / IPC
-                     /       |       \
-               DevTools     CLI      MCP adapter
+                         External IPC Boundary
+                                   |
+                               bitty-ipc
+                              /    |    \
+                        DevTools  MCP  bitty-agent
 ```
 
 > [!TIP]
