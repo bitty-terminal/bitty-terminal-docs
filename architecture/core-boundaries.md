@@ -243,18 +243,20 @@ Every piece of chrome is a plugin composition on generic Core mechanisms, so
 the Tabs, Workspace bar, and Status line rows above own presentation
 entirely.
 
-Current state: Core still draws a transitional text workspaceline in a
-reserved band (`workspace.show_bar`, `workspace.bar.edge`), and the bundled
-`bitty-terminal.workspace` manifest still exists without plugin code. Both
-retire after a first-party presentation plugin covers the workspaceline, per
-the migration in the Chrome Surface API and ADR 0014. The accepted
+Retired state (`W-104`, `bitty#1677` `c246e52`, `bitty#1680` `34b6d83`):
+Core draws no workspaceline, bar, tab strip, or status line — consistent
+with the zero-plugin baseline above, including in `bitty --safe`.
+Workspace and status presentation is owned by the first-party bar
+presentation plugin (for example `bitty-plugins/plugins/bar`, which renders
+what the retired Core workspaceline drew); Core retains only the workspace
+lifecycle, state, and generic chrome-band mechanisms. The accepted
 [`W-74` legacy-chrome retirement](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/legacy-chrome-retirement.md)
 contract and
 [ADR 0017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0017-tabs-alias-shell-integration-retirement.md)
 assign every legacy path an owner and disposition, retire the
 `bitty-terminal.tabs` compatibility alias and the bundled
 `bitty-terminal.shell-integration` manifest at a `>= v0.2.0` floor with a
-stored-grant migration, and retain the Core mechanism; execution is `W-104`.
+stored-grant migration, and retain the Core mechanism; execution was `W-104`.
 
 ### L1 Core Extensions and Programmability
 
