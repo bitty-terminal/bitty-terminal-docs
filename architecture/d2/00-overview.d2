@@ -6,175 +6,196 @@
 
 direction: down
 
-# --- Trust boundaries (dashed sandbox) ---
+# --- Untrusted Isolation Domains (dashed sandbox) ---
 pty_boundary: {
   label: "PTY Child Process — Untrusted (IR-D1)"
   style.stroke-dash: 4
   style.fill: "#fefce8"
-  near: pty-master
+  shell: {
+    label: "Shell / CLI Child"
+    shape: rectangle
+    style.fill: "#fef9c3"
+  }
 }
+
 plugin_boundary: {
   label: "Per-Plugin VM — Untrusted (IR-D2)"
   style.stroke-dash: 4
   style.fill: "#eff6ff"
+  plugin: {
+    label: "Lua Plugins\n(Workspace / Composer / UI)"
+    shape: rectangle
+    style.border-radius: 8
+    style.fill: "#dbeafe"
+  }
 }
+
 ipc_boundary: {
-  label: "IPC / MCP — Untrusted (IR-D3)"
+  label: "IPC / External Boundary — Untrusted (IR-D3)"
   style.stroke-dash: 4
   style.fill: "#fdf2f8"
+  bitty_ipc: {
+    label: "bitty-ipc (repo)\nFraming / Channels"
+    shape: rectangle
+  }
+  bitty_agent: {
+    label: "bitty-agent (repo)\nBounded Agent Messages"
+    shape: rectangle
+  }
+  mcp: {
+    label: "MCP / DevTools\nExternal Tools"
+    shape: rectangle
+    style.border-radius: 8
+  }
 }
 
-# --- Core crates and domains (rect = module/crate) ---
-bitty_app: {
-  label: "bitty-app\nCLI / startup / safe-mode"
-  shape: rectangle
-  style.fill: "#ffffff"
-}
-bitty_runtime: {
-  label: "bitty-runtime\nCommand / Event / Service"
-  shape: rectangle
-  style.fill: "#ffffff"
-}
-bitty_config: {
-  label: "bitty-config\nConfigPlan / validation"
-  shape: rectangle
-}
-bitty_platform: {
-  label: "bitty-platform\nWindow / input / DPI"
-  shape: rectangle
-}
-bitty_pty: {
-  label: "bitty-pty\nUnix PTY / ConPTY"
-  shape: rectangle
-}
-bitty_vt: {
-  label: "bitty-vt\nParser -> TerminalAction"
-  shape: rectangle
-}
-bitty_term_state: {
-  label: "bitty-term-state\nGrid / damage / ImageStore"
-  shape: rectangle
-}
-bitty_render: {
-  label: "bitty-render\nSnapshot / GPU / glyph cache"
-  shape: rectangle
-}
-bitty_ui: {
-  label: "bitty-ui\nView / LayoutNode / Focus"
-  shape: rectangle
-}
-bitty_plugin_host: {
-  label: "bitty-plugin-host\nRegistry / lifecycle"
-  shape: rectangle
-}
-bitty_lua: {
-  label: "bitty-lua\npiccolo 0.3.3 Fuel"
-  shape: rectangle
-}
-bitty_ipc: {
-  label: "bitty-ipc\nFraming / channels"
-  shape: rectangle
-}
-bitty_agent: {
-  label: "bitty-agent\nBounded messages"
-  shape: rectangle
-}
-bitty_package: {
-  label: "bitty-package\nPackage lifecycle / store"
-  shape: rectangle
-}
-
-# --- Flows and presentation ---
-shell: {
-  label: "Shell child"
-  shape: rectangle
-  style.fill: "#fef9c3"
-}
-damage: {
-  label: "Damage"
-  shape: rectangle
-  style.border-radius: 8
-}
-snapshot: {
-  label: "Render Snapshot"
-  shape: rectangle
-  style.border-radius: 8
-}
-plugin: {
-  label: "Plugin (Lua)"
-  shape: rectangle
-  style.border-radius: 8
-  style.fill: "#eff6ff"
-}
-debug_protocol: {
-  label: "Debug Protocol\nversioned, inside Core"
-  shape: rectangle
-}
-mcp: {
-  label: "MCP Adapter"
-  shape: rectangle
-  style.border-radius: 8
-}
-
-# --- L0 edges (solid = call/depends, dashed = event/async) ---
-shell -> bitty_pty: "bytes" {
-  style.stroke: "#000000"
-}
-bitty_pty -> bitty_vt: "byte batch" {
-  style.stroke: "#000000"
-}
-bitty_vt -> bitty_term_state: "TerminalAction" {
-  style.stroke: "#000000"
-}
-bitty_term_state -> damage: "damage" {
-  style.stroke: "#000000"
-}
-damage -> snapshot: ""
-bitty_term_state -> snapshot: "damage"
-snapshot -> bitty_render: ""
-bitty_platform -> bitty_render: "SurfaceTarget"
-bitty_platform -> bitty_app: "owns Window" {
-  style.stroke-dash: 3
-}
-
-# Cold-path event side queue (dashed = event/async)
-bitty_term_state -> bitty_plugin_host: "cold-path event\nbounded queue" {
-  style.stroke-dash: 3
-}
-bitty_plugin_host -> plugin: "publish" {
-  style.stroke-dash: 3
-}
-plugin -> bitty_plugin_host: "command" {
-  style.stroke-dash: 3
-}
-bitty_plugin_host -> bitty_runtime: "command queue"
-bitty_package -> bitty_plugin_host: "package store"
-bitty_runtime -> bitty_package: ""
-bitty_runtime -> bitty_term_state: "orchestration"
-bitty_runtime -> bitty_ui: ""
-bitty_runtime -> bitty_render: ""
-bitty_runtime -> bitty_platform: ""
-bitty_runtime -> bitty_pty: ""
-
-# Configuration path (solid)
-bitty_config -> bitty_runtime: "RuntimeConfig\nvalidated ConfigPlan"
-bitty_app -> bitty_config: "startup: init.lua"
-
-# IPC and debug (dashed)
-debug_protocol -> mcp: "observation only" {
-  style.stroke-dash: 3
-}
-debug_protocol -> bitty_ipc: "" {
-  style.stroke-dash: 3
-}
-bitty_ipc -> bitty_runtime: "scope-checked request"
-bitty_agent -> bitty_ipc: "read-only default"
-
-# Annotation
-note: {
-  label: "Invariants: Parser never mutates renderer. Lua never on hot path.\nBoundaries: PTY, plugin VM, IPC/MCP are untrusted until policy grant.\nSee glossary.yaml for node/edge source and architecture/overview.md for full model."
-  shape: rectangle
+# --- Bitty Small Core Engine ---
+core: {
+  label: "Bitty Small Core Engine (DIR-001, #![forbid(unsafe_code)])"
   style.fill: "#f8fafc"
+  style.stroke: "#0284c7"
+  style.stroke-width: 2
+
+  bitty_app: {
+    label: "bitty-app\nCLI / Composition Root"
+    shape: rectangle
+    style.fill: "#ffffff"
+  }
+  bitty_runtime: {
+    label: "bitty-runtime\nOrchestration / Capability Firewall"
+    shape: rectangle
+    style.fill: "#ffffff"
+    style.stroke-width: 2
+  }
+  bitty_config: {
+    label: "bitty-config\nConfigPlan / Validation"
+    shape: rectangle
+  }
+  bitty_platform: {
+    label: "bitty-platform\nWindow / Input / DPI"
+    shape: rectangle
+  }
+  bitty_pty: {
+    label: "bitty-pty\nLocal Unix PTY / ConPTY"
+    shape: rectangle
+  }
+  bitty_vt: {
+    label: "bitty-vt\nParser -> TerminalAction"
+    shape: rectangle
+  }
+  bitty_term_state: {
+    label: "bitty-term-state\nTerminal Truth / Grid / Damage"
+    shape: rectangle
+  }
+  bitty_render: {
+    label: "bitty-render\nSnapshot / GPU Atlas (wgpu)"
+    shape: rectangle
+  }
+  bitty_plugin_host: {
+    label: "bitty-plugin-host\nRegistry / Sandbox Host"
+    shape: rectangle
+  }
+  bitty_lua: {
+    label: "bitty-lua\npiccolo VM Fuel Engine"
+    shape: rectangle
+  }
+}
+
+# --- Extracted Subsystems (ADR-0015 / ADR-0016) ---
+extracted: {
+  label: "Extracted Subsystems & Services (ADR-0015 / ADR-0016)"
+  style.stroke-dash: 3
+  style.fill: "#f1f5f9"
+
+  bitty_observability: {
+    label: "bitty-observability (repo)\nStructured Tracing & Metrics (W-71)"
+    shape: rectangle
+    style.fill: "#ffffff"
+  }
+  bitty_plugin_manager: {
+    label: "bitty-plugin-manager (CLI)\nTransactional Packages (W-72)"
+    shape: rectangle
+    style.fill: "#ffffff"
+  }
+  bitty_execution: {
+    label: "bitty-execution (repo)\nProcess Tree / cgroups / Timeouts (W-132)"
+    shape: rectangle
+    style.fill: "#ffffff"
+  }
+  bitty_graphics: {
+    label: "bitty-graphics (repo)\nIsolated Image Decoders (W-133)"
+    shape: rectangle
+    style.fill: "#ffffff"
+  }
+  bitty_storage: {
+    label: "bitty-storage (repo)\nSegmented History & KV (W-137)"
+    shape: rectangle
+    style.fill: "#ffffff"
+  }
+  bitty_a11y: {
+    label: "bitty-a11y (repo)\nAT-SPI / VoiceOver Adapter (W-134)"
+    shape: rectangle
+    style.fill: "#ffffff"
+  }
+}
+
+# --- Flows & Connections (solid = call/depends, dashed = event/async) ---
+pty_boundary.shell -> core.bitty_pty: "bytes" {
+  style.stroke: "#000000"
+}
+core.bitty_pty -> core.bitty_vt: "byte stream" {
+  style.stroke: "#000000"
+}
+core.bitty_vt -> core.bitty_term_state: "TerminalAction" {
+  style.stroke: "#000000"
+}
+core.bitty_term_state -> core.bitty_render: "Damage Snapshot" {
+  style.stroke: "#000000"
+}
+core.bitty_platform -> core.bitty_render: "SurfaceTarget"
+core.bitty_platform -> core.bitty_app: "Window Handle"
+
+# Plugins & Host
+core.bitty_term_state -> core.bitty_plugin_host: "cold-path events\n(bounded queue)" {
+  style.stroke-dash: 3
+}
+core.bitty_plugin_host -> plugin_boundary.plugin: "publish" {
+  style.stroke-dash: 3
+}
+plugin_boundary.plugin -> core.bitty_plugin_host: "request via capabilities" {
+  style.stroke-dash: 3
+}
+core.bitty_plugin_host -> core.bitty_runtime: "authorized commands"
+
+# Runtime orchestration
+core.bitty_runtime -> core.bitty_term_state: "orchestration"
+core.bitty_runtime -> core.bitty_render: "present"
+core.bitty_runtime -> core.bitty_platform: "events"
+core.bitty_runtime -> core.bitty_pty: "signals / lifecycle"
+core.bitty_config -> core.bitty_runtime: "Validated ConfigPlan"
+core.bitty_app -> core.bitty_config: "startup"
+
+# Extracted services connections
+core.bitty_runtime -> extracted.bitty_execution: "supervisor handle"
+core.bitty_term_state -> extracted.bitty_graphics: "delegate decode"
+core.bitty_runtime -> extracted.bitty_storage: "history logs (opt-in)"
+core.bitty_term_state -> extracted.bitty_a11y: "semantic projection"
+core.bitty_runtime -> extracted.bitty_observability: "redacted telemetry"
+extracted.bitty_plugin_manager -> core.bitty_plugin_host: "installed bundles (read-only)"
+
+# IPC boundary connections
+ipc_boundary.bitty_agent -> ipc_boundary.bitty_ipc: "protocol messages"
+ipc_boundary.mcp -> ipc_boundary.bitty_ipc: "tool calls"
+ipc_boundary.bitty_ipc -> core.bitty_runtime: "scope-checked requests" {
+  style.stroke-dash: 3
+}
+
+# Invariants Note
+note: {
+  label: "Architecture Invariants:\n1. Small Core: Parser never mutates renderer. Core retains Terminal Truth & Capability Firewall.\n2. DIR-017: Core never initiates network connections. Safe mode (bitty --safe) works with zero plugins.\n3. ADR-0015/0016: Subsystems (Execution, Graphics, Storage, A11y, Obs) are strictly decoupled."
+  shape: rectangle
+  style.fill: "#fffbeb"
+  style.stroke: "#d97706"
   style.stroke-dash: 2
 }
-note -> bitty_runtime: ""
+note -> core: ""

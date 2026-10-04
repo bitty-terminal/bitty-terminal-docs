@@ -1,13 +1,13 @@
 # docs/projects/bitty/architecture/d2/01-core.d2 — L1 subsystem: core crate DAG
 # Source of truth: ../glossary.yaml
 # Visual rules: rect=module/crate, rounded=panel/capability, dashed=boundary/sandbox, solid=call/depends
-# Levels: L1 subsystem — strict DAG per ADR 0003
+# Levels: L1 subsystem — strict DAG per ADR 0003, ADR 0015, and ADR 0016
 # To regenerate SVG: d2 01-core.d2 ../final/01-core.svg
 
 direction: down
 
 title: {
-  label: "Core Workspace Topology — 19 Crates (Spine Complete)"
+  label: "Core Workspace Topology & Extracted Subsystems (ADR-0003 / ADR-0015 / ADR-0016)"
   shape: rectangle
   style.fill: "#f1f5f9"
   style.stroke: "#64748b"
@@ -34,27 +34,18 @@ foundation: {
     label: "bitty-config\nConfigPlan"
     shape: rectangle
   }
+  winjob: {
+    label: "bitty-winjob\nWindows Job Object (CTX-0903)"
+    shape: rectangle
+  }
   package: {
-    label: "bitty-package\nlifecycle / integrity"
+    label: "bitty-package\ntransitioning to plugin-manager (W-72)"
     shape: rectangle
-  }
-  ipc: {
-    label: "bitty-ipc\nframing"
-    shape: rectangle
-  }
-  agent: {
-    label: "bitty-agent\nmessages"
-    shape: rectangle
+    style.stroke-dash: 2
   }
   lua: {
     label: "bitty-lua\npiccolo 0.3.3"
     shape: rectangle
-  }
-  core: {
-    label: "bitty-core\nseed (to retire)"
-    shape: rectangle
-    style.fill: "#e5e7eb"
-    style.stroke-dash: 2
   }
 }
 
@@ -75,7 +66,7 @@ presentation: {
   style.stroke-dash: 3
   style.fill: "#eff6ff"
   render: {
-    label: "bitty-render\nwgpu 26 / crossfont 0.9"
+    label: "bitty-render\nwgpu 26 (crossfont -> HarfBuzz)"
     shape: rectangle
   }
   ui: {
@@ -83,7 +74,7 @@ presentation: {
     shape: rectangle
   }
   rich: {
-    label: "bitty-rich\nplaceholders"
+    label: "bitty-rich\nplaceholders / DTOs"
     shape: rectangle
   }
 }
@@ -101,7 +92,7 @@ host: {
 
 # --- Layer: orchestration ---
 runtime: {
-  label: "bitty-runtime\norchestration"
+  label: "bitty-runtime\norchestration & security firewall"
   shape: rectangle
   style.fill: "#ffffff"
   style.stroke-width: 2
@@ -113,9 +104,32 @@ app: {
   style.stroke-width: 2
 }
 
-# --- Harness (lab) ---
+# --- Independent Extracted Repositories ---
+external_repos: {
+  label: "Independent Repositories (Extracted from Core)"
+  style.stroke-dash: 4
+  style.fill: "#f3e8ff"
+  ipc_repo: {
+    label: "bitty-ipc (repo)\nframing / channels"
+    shape: rectangle
+  }
+  agent_repo: {
+    label: "bitty-agent (repo)\nagent protocol vocabulary"
+    shape: rectangle
+  }
+  obs_repo: {
+    label: "bitty-observability (repo)\ntracing & audit logging"
+    shape: rectangle
+  }
+  net_repo: {
+    label: "bitty-network (repo)\nshared network policy (DIR-017)"
+    shape: rectangle
+  }
+}
+
+# --- Harness (lab & test) ---
 harness: {
-  label: "Harness — not product topology"
+  label: "Harness & Validation — not product topology"
   style.stroke-dash: 4
   style.fill: "#f8fafc"
   compat_lab: {
@@ -133,6 +147,11 @@ harness: {
     shape: rectangle
     style.border-radius: 8
   }
+  test_vm: {
+    label: "bitty-test-vm\nVM-tier integration harness"
+    shape: rectangle
+    style.border-radius: 8
+  }
 }
 
 # --- Edges (solid = depends) ---
@@ -144,7 +163,7 @@ presentation.ui -> state.term_state
 presentation.rich -> state.term_state
 presentation.rich -> foundation.vt
 presentation.rich -> foundation.platform: "clipboard"
-presentation.rich -> foundation.ipc: "fragment DTOs"
+presentation.rich -> external_repos.ipc_repo: "fragment DTOs"
 host.plugin_host -> state.term_state
 host.plugin_host -> foundation.config
 host.plugin_host -> foundation.package
@@ -158,25 +177,21 @@ runtime -> host.plugin_host
 runtime -> foundation.config
 runtime -> foundation.package
 runtime -> foundation.lua
-runtime -> foundation.ipc
-runtime -> foundation.agent
+runtime -> external_repos.ipc_repo
 runtime -> presentation.rich
-runtime -> harness.test_support {
-  style.stroke-dash: 3
-}
+runtime -> external_repos.obs_repo: "trace hook"
+
+foundation.pty -> foundation.winjob: "Windows Job Object"
+
 app -> runtime
 app -> foundation.platform
 app -> foundation.config
-app -> foundation.ipc
+app -> external_repos.ipc_repo
 app -> host.plugin_host
 app -> presentation.render
 app -> state.term_state
-app -> harness.perf {
-  style.stroke-dash: 3
-}
-app -> harness.test_support {
-  style.stroke-dash: 3
-}
+
+# Harness edges
 harness.compat_lab -> foundation.vt {
   style.stroke-dash: 3
 }
@@ -201,7 +216,7 @@ harness.perf -> runtime {
 
 # Annotation
 rules: {
-  label: "Rules: Strict DAG, no cycles. Lower layers never depend on higher. Renderer reads snapshot only. Plugin-host never holds GPU/PTY fd. See ADR 0003 and glossary.yaml."
+  label: "Rules: Strict DAG, no cycles. Lower layers never depend on higher. Renderer reads snapshot only.\nCore retains Terminal Truth & Capability gate. bitty-core & bitty-panels retired (bitty#1603, bitty#1604).\nbitty-agent, bitty-ipc, bitty-observability, bitty-network extracted to independent repositories."
   shape: rectangle
   style.fill: "#fffbeb"
   style.stroke-dash: 2
