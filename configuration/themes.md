@@ -57,27 +57,81 @@ return {
 
 Accepted identifiers:
 
-- **`appearance.theme = "<name>"`** — canonical selection key. Matching is
-  case-insensitive and surrounding whitespace is trimmed.
+- **`appearance.theme = "<name>"`** — canonical single selection key. Matching
+  is case-insensitive and surrounding whitespace is trimmed.
+- **`appearance.theme = "light:<name>,dark:<name>"`** — canonical dual
+  selection key for OS appearance switching (shipped in `bitty` CTX-0951,
+  PR #1687). Either order, whitespace around every token ignored, side keys
+  case-insensitive, both halves required. See
+  [dual light/dark selection](#dual-lightdark-selection-shipped).
 - **`theme = "<name>"`** — top-level alias for `appearance.theme`. It loses to
-  `appearance.theme` when both are set.
+  `appearance.theme` when both are set, and accepts the same single and dual
+  shapes.
 - **`dark`** — convenience alias for the default preset `bitty-dark`.
 
-Resolution rules (shipped behavior):
+Resolution rules (shipped behavior, `bitty` `crates/bitty-config/src/types.rs`
+`AppearanceConfig::validate`, CTX-0951):
 
-| Input                            | Result                                                |
-| -------------------------------- | ----------------------------------------------------- |
-| `appearance.theme` unset / empty | designed default preset `bitty-dark`                  |
-| known name or alias              | that preset's exact values                            |
-| unknown name                     | fall back to `bitty-dark` and log a warning to stderr |
+| Input                                 | Result                                                             |
+| ------------------------------------- | ------------------------------------------------------------------ |
+| `appearance.theme` unset / empty      | designed default preset `bitty-dark`                               |
+| known single name or alias            | that preset's exact values                                         |
+| known dual `light:<name>,dark:<name>` | active half per OS appearance (dark-first when unknown; see below) |
+| unknown single name or unknown half   | fail-closed validation error naming the offender and the valid set |
+| malformed dual shape                  | fail-closed validation error naming the expected shape             |
 
 `appearance.theme` is declared reload class `Live` in the config layer
 (CTX-0295), so a valid change is diffed and reconciled in the effective
 configuration rather than rejected as restart-required; the running-app
-theme/font hot-swap path is still a tracked follow-up. Unknown names never fail
-the process; they fall back to the default with a visible warning, so a typo is
-not silent. A `#RRGGBB`/`#RRGGBBAA` color value is never accepted here — only a
-preset name or alias.
+theme/font hot-swap path is still a tracked follow-up. Unknown names fail
+closed at load and reload validation with a diagnostic naming the valid preset
+set (run `bitty list themes` for the catalog); they never silently fall back.
+The compiled-in `resolve_theme` fallback to `bitty-dark` with a stderr warning
+remains only as runtime last-resort for values that bypass validation. A
+`#RRGGBB`/`#RRGGBBAA` color value is never accepted here — only a preset name,
+alias, or dual pair.
+
+### Dual light/dark selection (shipped)
+
+A dual value selects one preset per OS appearance with a single string
+(`bitty` `crates/bitty-config/src/theme.rs` `parse_theme_selection`,
+ghostty-compatible):
+
+```lua
+return {
+    appearance = {
+        theme = "light:catppuccin-latte,dark:catppuccin-mocha",
+    },
+}
+```
+
+Rules:
+
+- Either order is accepted (`dark:<name>,light:<name>` works); whitespace
+  around the whole value, around commas, around side keys, and around names is
+  ignored, and side keys and names are case-insensitive (names are stored
+  normalized).
+- Both `light:<name>` and `dark:<name>` halves are required. A lone
+  `light:<name>`, an empty half, a duplicate side, or a non-`light`/`dark`
+  side key is malformed and fails closed.
+- Both halves must name known presets or aliases. An unknown half fails closed
+  with the same valid-set diagnostic as an unknown single name, even when that
+  half is not the currently active one, so a later OS toggle cannot silently
+  land on a fallback.
+- The runtime resolves the half matching the OS appearance
+  (`EffectiveConfig::effective_theme_for`): `Light` selects the `light:` half,
+  `Dark` or `Unknown` selects the `dark:` half (dark-first default). Startup
+  queries the OS via `bitty-platform` `query_system_appearance`, which degrades
+  to `Unknown` on every platform in this slice (no native portal, AppKit, or
+  registry seam yet), so startup stays dark-first; live `ThemeChanged` events
+  swap the palette via `Runtime::apply_system_appearance` where the backend
+  emits them (natively on macOS and Windows; backends without OS theme support
+  never emit, so Linux Wayland and X11 stay on the dark half). Config reload
+  keeps the last live appearance event when one was recorded.
+- Single selections ignore the OS signal.
+
+`bitty config check` reports the startup-active half under the same dark-first
+rule.
 
 ## Built-in preset catalog (shipped)
 
@@ -170,7 +224,7 @@ Custom and user-supplied themes are **not supported**. There is no theme file
 format, no `$XDG_DATA_HOME/bitty/themes/` or `$XDG_CONFIG_HOME/bitty/themes/`
 loading path, and no plugin theme contribution contract today. The `themes/`
 directory is reserved in the [XDG data layout](lua-and-xdg.md#data-state-cache-and-runtime-layouts)
-but is inert. Selecting an unknown name falls back to `bitty-dark`; it does not
+but is inert. Selecting an unknown name fails closed at validation; it does not
 load a file.
 
 Whether user themes, a file schema, or plugin-supplied themes enter scope is an
@@ -190,8 +244,12 @@ open questions and are registered rather than decided in this page:
   documentation metadata only?
 - **OQ-047 — custom themes.** Are user-authored or third-party theme files
   supported, and if so what is the schema, load path, and trust model?
-- **OQ-048 — automatic light/dark switching.** Is following the OS appearance
-  or a schedule in scope, and which key or mechanism owns it?
+- **OQ-048 — automatic light/dark switching (partially shipped).** Dual
+  `light:<name>,dark:<name>` OS-appearance switching shipped in `bitty`
+  CTX-0951 (PR #1687): the key is the `appearance.theme` dual string and the
+  mechanism is the OS appearance event with a dark-first default. Open
+  remainder: schedule-based switching, and the native cold-path OS query seams
+  (portal, AppKit, registry) behind the current `Unknown` degradation.
 
 See the [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) for the
 authoritative state. The catalog is `stable` reference data because the shipped
