@@ -587,27 +587,32 @@ blur remain `Open`). The accepted animation contract is the
 [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md)
 (accepted; OQ-040 closed 2026-09-12 and shipped in `3c5878e` CTX-0341).
 
-| Key                         | Default                        | Range or values                         |
-| --------------------------- | ------------------------------ | --------------------------------------- |
-| `appearance.theme`          | `bitty-dark` (alias `dark`)    | preset name; unknown falls back         |
-| `theme` (alias)             | unset                          | `appearance.theme` wins                 |
-| `appearance.colors.*`       | unset                          | complete inline palette, `#RRGGBB`-only |
-| `font.family`               | `JetBrainsMono Nerd Font`      | non-empty, `<= 128` bytes               |
-| `font.size`                 | `12.0`                         | `(0, 128]`                              |
-| `font.line_height`          | `1.375`                        | `[1.0, 2.0]`                            |
-| `font.letter_spacing`       | `2.0`                          | `[0.0, 8.0]`                            |
-| `window.opacity`            | `1.0`                          | `[0.0, 1.0]` whole window               |
-| `window.padding`            | `8`                            | `0..=64` logical px                     |
-| `window.radius_px`          | `0`                            | `0..=24` physical px (no-op S0)         |
-| `layout.gaps_in`/`gaps_out` | `0`/`0`                        | `0..=16` cells                          |
-| `decoration.*`              | see decoration reference above | logical px                              |
-| `scrollbar.mode`/`width`    | `hidden`/`8`                   | `hidden`/`always`/`auto`, `1..=32`      |
+| Key                         | Default                        | Range or values                                                             |
+| --------------------------- | ------------------------------ | --------------------------------------------------------------------------- |
+| `appearance.theme`          | `bitty-dark` (alias `dark`)    | preset name, alias, or dual `light:<name>,dark:<name>`; unknown fail closed |
+| `theme` (alias)             | unset                          | `appearance.theme` wins                                                     |
+| `appearance.colors.*`       | unset                          | complete inline palette, `#RRGGBB`-only                                     |
+| `font.family`               | `JetBrainsMono Nerd Font`      | non-empty, `<= 128` bytes                                                   |
+| `font.size`                 | `12.0`                         | `(0, 128]`                                                                  |
+| `font.line_height`          | `1.375`                        | `[1.0, 2.0]`                                                                |
+| `font.letter_spacing`       | `2.0`                          | `[0.0, 8.0]`                                                                |
+| `window.opacity`            | `1.0`                          | `[0.0, 1.0]` whole window                                                   |
+| `window.padding`            | `8`                            | `0..=64` logical px                                                         |
+| `window.radius_px`          | `0`                            | `0..=24` physical px (no-op S0)                                             |
+| `layout.gaps_in`/`gaps_out` | `0`/`0`                        | `0..=16` cells                                                              |
+| `layout.resize_step`        | `0.05`                         | `0.01..=0.20` split-ratio delta per keypress, fail-closed, live             |
+| `decoration.*`              | see decoration reference above | logical px                                                                  |
+| `scrollbar.mode`/`width`    | `hidden`/`8`                   | `hidden`/`always`/`auto`, `1..=32`                                          |
 
 The built-in preset names, aliases, and dark/light categories are listed in the
 [theme preset catalog](themes.md); the full 30-preset catalog resolves today.
 `appearance.theme` matches a name or alias case-insensitively with surrounding
-whitespace trimmed; an unknown name falls back to the default preset and logs a
-warning to stderr instead of failing the process.
+whitespace trimmed; it also accepts a dual `light:<name>,dark:<name>` pair
+(either order, same trimming rules) that resolves per OS appearance
+(dark-first on unknown). Unknown single names, either unknown dual half, and
+malformed dual values fail closed at validation with a diagnostic naming the
+valid set (CTX-0951, `bitty` #1687; closes
+[bitty-terminal-docs#190](https://github.com/bitty-terminal/bitty-terminal-docs/issues/190).
 
 - Inline custom palette (CTX-0392; read-only from `bitty` `origin/main` at
   `c64dd1e`): `appearance.colors` carries `background`, `foreground`,
@@ -637,17 +642,28 @@ warning to stderr instead of failing the process.
   | `appearance.animations.easing.*`       | see below   | `linear`/`ease_in`/`ease_out`/`ease_in_out`/`spring` | live   |
 
   `duration_ms` and `easing` are per-transition tables over the closed set
-  `open`, `close`, `focus`, `workspace`. Shipped defaults:
+  `open`, `close`, `focus`, `workspace`, `move`, `resize`, `drag`
+  (CTX-0967 adds the last three). Shipped defaults:
 
   ```lua
-  duration_ms = { open = 150, close = 120, focus = 100, workspace = 200 }
+  duration_ms = { open = 150, close = 120, focus = 100, workspace = 200, move = 150, resize = 120, drag = 150 }
   easing = {
       open = "ease_out",
       close = "ease_in",
       focus = "ease_in_out",
       workspace = "ease_in_out",
+      move = "ease_in_out",
+      resize = "ease_in_out",
+      drag = "ease_out",
   }
   ```
+
+  Move/resize/drag are Hyprland-style geometry gestures (CTX-0967, `bitty`
+  #1696): the layout commits immediately and only Core-owned chrome fades,
+  so they share the `0..=500` ms bound, the closed easing enum, and the
+  reduced-motion contract with the RFC-0002 set. Triggers are Alt-drag
+  float move, border-drag divider, keyboard resize step, and
+  reparent/cross-workspace/auto-create paths.
 
   `spring` is accepted but reserved: its
   parameters are deferred, so it resolves to `ease_in_out` until a follow-up
@@ -699,9 +715,12 @@ warning to stderr instead of failing the process.
 ## Shipped keymaps and Mod key
 
 Status: **shipped defaults** (read-only from `bitty` `origin/main`, CTX-0236,
-CTX-0257, CTX-0258, CTX-0259, CTX-0262, CTX-0263, CTX-0264, CTX-0265; merged
+CTX-0257, CTX-0258, CTX-0259, CTX-0262, CTX-0263, CTX-0264, CTX-0265, CTX-0962,
+CTX-0963; merged
 to `bitty` origin `main` at commits `2a5e451`, `227ca3a`, `6e662a2`,
-`1ea2f66`, `8b987a0`, `bc1fbba`, `11d9bec`, `c8faa52`, all verified read-only
+`1ea2f66`, `8b987a0`, `bc1fbba`, `11d9bec`, `c8faa52`, plus
+`0c473b05` (CTX-0962 floating toggle) and `e0ea7638` (CTX-0963 resize
+step), all verified read-only
 via `merge-base --is-ancestor`; the `leader_key`, `leader_timeout_ms`, and
 `close_confirm` rows are read-only from `origin/main` at `c64dd1e`
 (CTX-0715, CTX-0370), same verification). This section is the shipped reference for the
@@ -713,14 +732,16 @@ the input-side dispatch evidence stays in the
 Shipped schema:
 
 ```lua
--- Shipped schema (CTX-0236/CTX-0257; leader override CTX-0715; close safety CTX-0370).
+-- Shipped schema (CTX-0236/CTX-0257; leader override CTX-0715; close safety CTX-0370; floating toggle CTX-0962; resize step CTX-0963).
 return {
     mod_key = "alt", -- "alt" (default; opt/option) or "super" (meta/cmd/win)
     leader_key = "ctrl+q", -- leader chord override; default Alt+Space (Ctrl+Space on Windows)
     leader_timeout_ms = 1500, -- leader fail-open timeout in ms, 100..=60000 (default 1000)
     close_confirm = "when_busy", -- "always" | "when_busy" (default) | "never"
+    layout = { resize_step = 0.05 }, -- tiled resize delta per keypress, 0.01..=0.20, fail-closed, live (CTX-0963)
     keymaps = {
         { chord = "alt+h", action = "goto_split:left", context = "global" },
+        { chord = "alt+a", action = "toggle_floating", context = "global" },
     },
 }
 ```
@@ -732,8 +753,21 @@ return {
   keep their exact spelling and overlay by `context + chord` identity.
 - `keymaps` is set-by-identifier: a user entry with the same `context + chord`
   replaces the shipped entry, anything else appends. The shipped set is
-  82 entries, all context `global`; unknown chords, actions, or contexts
+  94 entries, all context `global`; unknown chords, actions, or contexts
   fail closed, and single-character keys require at least one modifier.
+- `layout.resize_step` is the tiled resize granularity (CTX-0963, `bitty`
+  #1697): `0.05` default, `0.01..=0.20` split-ratio delta per
+  `resize_split` keypress, fail-closed (NaN, infinite, and out-of-range
+  rejected, never clamped), `Live` reload read at keypress time. Lua
+  accepts int or float (`layout = { resize_step = 0.05 }`); omitted
+  inherits the default so existing `layout = { ... }` tables keep working.
+- Floating toggle (CTX-0962, `bitty` #1695): `toggle_floating` (alias
+  `floating_toggle`) flips the focused panel tiled/floating. Shipped on
+  Mod-aware `alt+a` (`super+a` under `mod_key = "super"`); bare `a`
+  stays shell input and `alt+v` stays deliberately free because fish
+  reserves `alt+v` for `$EDITOR`. Zoom restores before the toggle;
+  `Fullscreen`/`Scratchpad` fail closed with a warning and no state
+  change. User-overridable by `context + chord` identity.
 - `leader_key` is a fully-optional top-level scalar (CTX-0715, resolved at
   startup per CTX-0723; read-only from `bitty` `origin/main` at `c64dd1e`).
   When present it must be a chord spelling in the shared chord grammar
@@ -744,14 +778,15 @@ return {
   leader fail-open timeout. When present it must be `100..=60000`
   (default `1000`); anything else fails closed with the `leader_timeout_ms`
   field path.
-- Shipped groups (canonical Alt spelling): new panel `alt+n`, workspace
+- Shipped groups (canonical Alt spelling): new panel `alt+n`, floating
+  toggle `alt+a` (CTX-0962; `alt+v` deliberately free for fish), workspace
   `alt+t` / `alt+1..9` /
   `alt+-` / `alt+=` / `alt+tab` / `alt+w` (CTX-0257, DEC-0034) plus
   `shift+alt+1..9` move-to-workspace (CTX-0259); spatial focus
   `alt+h/j/k/l`, `alt+arrows`, `ctrl+alt+arrows`; split
   `shift+alt+h/j/k/l`, `shift+alt+arrows`; resize `shift+ctrl+h/j/k/l`,
   `shift+ctrl+arrows`, `ctrl+shift+alt+h/j/k/l`, `ctrl+shift+alt+arrows`
-  (CTX-0258/CTX-0262); page `alt+u`/`alt+i`; zoom
+  (CTX-0258/CTX-0262, step `layout.resize_step` CTX-0963); page `alt+u`/`alt+i`; zoom
   `alt+z`/`alt+m`/`alt+f`; focus cycle `ctrl+tab`/`ctrl+shift+tab`; clipboard
   `ctrl+shift+c`/`ctrl+shift+v`; per-window font size
   `ctrl+=`/`ctrl+plus`/`ctrl+-`/`ctrl+0` with shifted spellings (CTX-0263);
@@ -833,13 +868,15 @@ Shipped leaf inventory:
 | `selection.auto_copy`                                                                        | restart  | built-in default     |
 | `close_confirm`                                                                              | restart  | built-in default     |
 | `layout.gaps_in`, `layout.gaps_out`                                                          | restart  | built-in default     |
+| `layout.resize_step`                                                                         | live     | built-in default     |
 | `scrollbar.mode`, `scrollbar.width`                                                          | restart  | built-in default     |
 | `mouse.focus_follows_mouse`, `mouse.focus_follows_mouse_delay_ms`                            | restart  | built-in default     |
 | `plugins[].id`, `plugins[].enabled`                                                          | restart  | built-in default     |
 | unknown or undeclared key                                                                    | rejected | n/a                  |
 
 - `duration_ms` and `easing` are per-transition tables over the closed set
-  `open`, `close`, `focus`, `workspace`; `.*` abbreviates the four leaves.
+  `open`, `close`, `focus`, `workspace`, `move`, `resize`, `drag`;
+  `.*` abbreviates the seven leaves (CTX-0967 adds the last three).
 - The `bitty --safe` column records the pinned value where `--safe` forces one.
   "built-in default" means the key is not force-pinned beyond normal core
   defaults, but every external layer is skipped entirely (`fallback_builtin`,

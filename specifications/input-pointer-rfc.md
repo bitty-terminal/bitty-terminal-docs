@@ -284,9 +284,11 @@ above, does not close OQ-004/OQ-007, and does not promote this RFC beyond
 registry-driven plugin discovery remain unimplemented candidates.
 
 1. **Keymap registry with a configurable Mod slot** (`bitty` #411 `2a5e451`,
-   CTX-0236; extended through `bitty` #433/#435/#437/#439/#455/#457/#461).
+   CTX-0236; extended through `bitty` #433/#435/#437/#439/#455/#457/#461,
+   plus CTX-0952 prompt chords, CTX-0962 floating toggle, and W-144
+   retirements to 94 entries at `fceb9bbb`).
    `mod_key` is a scalar (`"alt"` default, `"super"` opt-in, `ctrl`/`shift`
-   fail closed) and the 79-entry shipped set is rendered against it, so a
+   fail closed) and the 94-entry shipped set is rendered against it, so a
    mod flip rebinds every `alt`-bearing default while `ctrl`-fixed chords
    pass through. Explicit user entries overlay by `context + chord` identity.
    Chords, actions, and contexts fail closed; single-character keys require a
@@ -337,6 +339,43 @@ the #784 Esc-routing matrix; the shipped defaults are also recorded in the
 [Configuration Model RFC](configuration-model-rfc.md) snapshot and the
 [Lua and XDG configuration](../configuration/lua-and-xdg.md) reference. All
 status remains `Implemented` (experimental), not `Verified`/`Compatible`.
+
+1. **Floating toggle default** (`bitty` #1704 `0c473b05`, CTX-0962, closes
+   `bitty` #1695): `toggle_floating` (alias `floating_toggle`) ships on
+   Mod-aware `alt+a` (`super+a` under `mod_key = "super"`); bare `a` stays
+   shell input and `alt+v` stays deliberately free because fish reserves
+   `alt+v` for `$EDITOR`. The shipped set grows to 94 entries. Zoom
+   restores before the toggle; `Fullscreen`/`Scratchpad` fail closed with
+   a warning and no state change.
+
+### Pointer drag move and border-drag resize (implementation evidence)
+
+Status: **experimental review evidence only.** This subsection records what
+merged into `bitty` `origin/main`; it does not accept the candidate sections
+above and claims no `Verified`/`Compatible` status.
+
+- **Mod+drag tiled move** (`bitty` #1707 `c0fa9b1f`, CTX-0966, closes `bitty`
+  #1694): Mod (Alt/Super) + left-drag grabs the tiled leaf under the cursor
+  via `DragMoveSession`; motion tracks the advisory preview live without
+  mutating the tree. Release re-parents with nearest-edge docking and
+  position-based sizing (ratio from drop position, clamped to `0.10`/`0.90`;
+  ties to horizontal/first; self/background no-op). Focus follows the
+  dragged panel. Dispatch order is release (thumb, alt, border, tiled) then
+  press (alt-float, tiled, border) with consuming guards; leave cancels and
+  mid-drag close fails soft. `Super`+border is gated to plain-only like Alt
+  to avoid Mod conflict. Evidence:
+  `crates/bitty-ui/src/drag.rs`,
+  `crates/bitty-runtime/src/runtime/input.rs`,
+  `crates/bitty-runtime/tests/tiled_drag_move.rs` (8 pins).
+- **Border-drag resize** (UX-02, `bitty-ui::drag`): edge/corner detection
+  via `detect_resize_edge` with a `1`-cell hit area
+  (`RESIZE_HANDLE_CELLS`); tiled leaves adjust the adjacent split ratio
+  through `resize_split_by_drag` (clamped to `[MIN_RATIO, MAX_RATIO]`,
+  routed via `bitty.workspace:drag-resize` with `DragHistory` undo);
+  floating leaves adjust their rect via `resize_floating_rect` (clamped to
+  `View` minima and the container). A release also ends a border-drag
+  resize; an active border drag consumes motion without breaking selection
+  or app pointer ownership.
 
 ### Platform clipboard over-limit semantics (implementation evidence)
 

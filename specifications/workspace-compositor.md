@@ -496,10 +496,61 @@ What merged, exactly:
      exits cleanly (`ShellExitOutcome::ExitApp`).
    - Evidence: `crates/bitty-ui/src/provider.rs` unit tests, `crates/bitty-terminal/src/terminal_app.rs`
      lifecycle tests.
+9. **Bisect-largest panel split mode** (`bitty` #1703 `4eee8eba`,
+   CTX-0964, closes `bitty` #1698, DEC-0099): `PanelLayoutMode::BisectLargest`
+   splits the largest-area leaf instead of the focused pane. Helpers
+   `bisect_split_axis` (raw cell aspect, `width >= height` splits
+   right else down, square ties break side-by-side, no `CELL_ASPECT_RATIO`
+   correction), `largest_area_leaf` (area `width * height`, ties break to
+   first in solver order), and `bisect_choice` (pair plus empty-tree
+   fallback). Move-to-workspace defaults to bisect-largest placement;
+   explicit `new_split:<dir>` keeps focused-leaf semantics. An empty
+   destination is populated directly.
+10. **Keyboard floating toggle** (`bitty` #1704 `0c473b05`, CTX-0962,
+    closes `bitty` #1695): Mod-aware `alt+a` (`super+a` under
+    `mod_key = "super"`) flips the focused panel tiled/floating via
+    `bitty.workspace:floating-toggle`
+    (`bitty-ui::presentation::toggle_floating`); `alt+v` stays deliberately
+    free because fish reserves it for `$EDITOR`. Zoom restores before the
+    toggle; `Fullscreen`/`Scratchpad` fail closed with a warning and no
+    state change; leaf count and focus stay stable with exact round-trip.
+    Evidence: `crates/bitty-config/src/keymap.rs`,
+    `crates/bitty-terminal/src/chrome_keys.rs`.
+11. **Configurable tiled resize step plus overlay base-drain tombstone**
+    (`bitty` #1708 `e0ea7638`, CTX-0963/CTX-0965, closes `bitty` #1697 and
+    #1699, DEC-0099): `layout.resize_step` is the split-ratio delta per
+    `resize_split` keypress (`0.05` default, `0.01..=0.20`, fail-closed,
+    `Live` reload read at keypress). `LayoutNode::remove_leaf` no longer
+    promotes the overlay subtree when the base drains; it keeps the
+    `Overlay` with an empty-base tombstone so the float keeps bounds/tier
+    (G1 float-stays-float, Hyprland behavior). Overlay-drain still
+    collapses to base. Evidence: `crates/bitty-config/src/types.rs`,
+    `crates/bitty-ui/src/layout.rs`,
+    `crates/bitty-terminal/src/chrome_keys.rs`.
+12. **Mod+drag tiled move with Hyprland-like drop** (`bitty` #1707
+    `c0fa9b1f`, CTX-0966, closes `bitty` #1694): Mod (Alt/Super) +
+    left-drag grabs the tiled leaf under the cursor via `DragMoveSession`;
+    motion tracks the advisory preview live without mutating the tree.
+    Release re-parents with nearest-edge docking and position-based sizing
+    (ratio from drop position, clamped to `0.10`/`0.90`; ties to
+    horizontal/first; self/background no-op). Focus follows the dragged
+    panel. Dispatch order is release then press with consuming guards;
+    leave cancels and mid-drag close fails soft.
+13. **Panel move/resize/drag animations** (`bitty` #1709 `fceb9bbb`,
+    CTX-0967, closes `bitty` #1696): `AnimationKind` gains
+    move/resize/drag with 7-slot policy, bounded `0..=500` ms durations
+    (`move 150`, `resize 120`, `drag 150`) and closed easing leaves
+    (`move ease_in_out`, `resize ease_in_out`, `drag ease_out`) under
+    `appearance.animations`. Layout commits immediately; only Core-owned
+    chrome ring fades. Reduced-motion, safe-mode, and disabled suppress
+    all three; zero-wakeup-when-idle preserved.
 
 Explicit non-claims: the `LayoutProvider` plugin algorithms, drag/resize
 interactions, and scratchpad retention in this specification are not
-implemented in the slice. Live present-path px decoration painting is no longer
+implemented in the slice except for entries 9-13 above, which are the
+shipped panel interaction slice (bisect-largest, floating toggle,
+resize step, Mod+drag move, border-drag resize, move/resize/drag
+animations, and the G1 float-stays-float tombstone). Live present-path px decoration painting is no longer
 a non-claim (`bitty` PR #519 CTX-0294 and PR #533 CTX-0311 shipped it; the
 single-window path also still paints the cell-unit `layout.*` gaps). The
 `smart_split` constructor and the `overlay_tiered`/`overlay_stack`
@@ -507,6 +558,31 @@ constructors above are opt-in `bitty-ui` primitives recorded as evidence, not
 live compositor wiring. The `OverlayTier` ordering itself is consumed at
 runtime: the present path paints frames in tier order, and hit testing
 resolves the topmost tier (entry 7).
+
+### Shipped close, move, restore, and zoom rules (implementation evidence)
+
+Status: **experimental implementation evidence.** These rules are shipped in
+`bitty` `origin/main` and refine the interaction table above; they do not
+amend the accepted contract and claim no `Verified`/`Compatible` status.
+
+- **Sibling absorbs 100%, ratio discarded.** Closing a leaf promotes its
+  sibling to the full parent rect; the split `ratio` does not survive.
+  Evidence: `close_focused_leaf` in
+  `crates/bitty-terminal/src/chrome_keys.rs`; `remove_leaf` split-collapse
+  in `crates/bitty-ui/src/layout.rs`.
+- **Intentional Hyprland divergences (DEC-0099):**
+  - last-panel refusal: closing the last leaf is refused so the layout is
+    never stranded empty; closing the last workspace resets to a fresh idle
+    leaf instead.
+  - fresh-leaf-on-move: moving the only leaf of a source workspace leaves a
+    fresh leaf behind so the never-empty invariant holds; the moved `ViewId`
+    and session appear in exactly one slot.
+  - zoom-restore-before-mutate: tree-mutating actions restore a zoomed layout
+    first (`restore_zoom` / `restore_for_mutation`) so the mutation applies
+    to the real tree, not the single-leaf zoom view.
+  - G1 float-stays-float: draining the tiled base keeps the `Overlay` with
+    an empty-base tombstone so the float keeps bounds/tier (Hyprland keeps
+    floats floating); draining the overlay still collapses to base.
 
 ## Layout algorithms as plugin via LayoutProvider
 

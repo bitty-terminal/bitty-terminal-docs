@@ -114,6 +114,7 @@ effective config (decoration `0/0/1/0/0`, opaque outline pair, animations
 | `close_confirm`       | string  | `when_busy`                                                 | `always` \| `when_busy` \| `never` (exact lowercase)                                                                                                             | reject layer / reject reload | restart |
 | `layout.gaps_in`      | integer | `0`                                                         | `[0, 16]` cells                                                                                                                                                  | reject layer / reject reload | restart |
 | `layout.gaps_out`     | integer | `0`                                                         | `[0, 16]` cells                                                                                                                                                  | reject layer / reject reload | restart |
+| `layout.resize_step`  | float   | `0.05`                                                      | finite, `[0.01, 0.20]` split-ratio delta per `resize_split` keypress (CTX-0963, `bitty` #1697; out-of-range, NaN, and infinite rejected, never clamped)          | reject layer / reject reload | live    |
 | `workspace.layout`    | string  | unset (current tree preserved via the built-in no-op tiler) | well-formed provider name (bare `dwindle`, `spiral`, `master`, `grid` or qualified `owner.name:algorithm`); membership enforced at apply by the runtime registry | reject layer / reject reload | restart |
 
 `close_confirm` must not be declared by project layers: a
@@ -181,24 +182,30 @@ their owning open question accepts them; unknown fields fail closed.
 
 ### `appearance` (theme, custom palette, animations)
 
-| Key path                                        | Type                | Default               | Valid range                                                                                                                                                         | Fail-closed                  | Reload |
-| ----------------------------------------------- | ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------ |
-| `appearance.theme` (or top-level `theme` alias) | string              | `bitty-dark`          | known preset name or alias (trimmed, at most 64 bytes); unknown names fall back to the default with a log line                                                      | never fails (fallback)       | live   |
-| `appearance.colors.background`                  | string              | unset (preset value)  | `#RRGGBB` exactly (no alpha, no shorthand, no names); the `colors` table must be complete (4 chrome colors plus exactly 16 `ansi` entries) or the layer is rejected | reject layer / reject reload | live   |
-| `appearance.colors.foreground`                  | string              | unset (preset value)  | `#RRGGBB` exactly                                                                                                                                                   | reject layer / reject reload | live   |
-| `appearance.colors.cursor`                      | string              | unset (preset value)  | `#RRGGBB` exactly                                                                                                                                                   | reject layer / reject reload | live   |
-| `appearance.colors.selection`                   | string              | unset (preset value)  | `#RRGGBB` exactly                                                                                                                                                   | reject layer / reject reload | live   |
-| `appearance.colors.ansi`                        | array of 16 strings | unset (preset values) | exactly 16 `#RRGGBB` entries                                                                                                                                        | reject layer / reject reload | live   |
-| `appearance.animations.enabled`                 | boolean             | `true`                | `true` \| `false` (`false` equals `0` ms)                                                                                                                           | reject layer / reject reload | live   |
-| `appearance.animations.reduced_motion`          | string              | `auto`                | `auto` \| `always` \| `never`                                                                                                                                       | reject layer / reject reload | live   |
-| `appearance.animations.duration_ms.open`        | integer             | `150`                 | `[0, 500]` ms                                                                                                                                                       | reject layer / reject reload | live   |
-| `appearance.animations.duration_ms.close`       | integer             | `120`                 | `[0, 500]` ms                                                                                                                                                       | reject layer / reject reload | live   |
-| `appearance.animations.duration_ms.focus`       | integer             | `100`                 | `[0, 500]` ms                                                                                                                                                       | reject layer / reject reload | live   |
-| `appearance.animations.duration_ms.workspace`   | integer             | `200`                 | `[0, 500]` ms                                                                                                                                                       | reject layer / reject reload | live   |
-| `appearance.animations.easing.open`             | string              | `ease_out`            | `linear` \| `ease_in` \| `ease_out` \| `ease_in_out` \| `spring` (`spring` resolves to `ease_in_out`; parameters deferred)                                          | reject layer / reject reload | live   |
-| `appearance.animations.easing.close`            | string              | `ease_in`             | same enum                                                                                                                                                           | reject layer / reject reload | live   |
-| `appearance.animations.easing.focus`            | string              | `ease_in_out`         | same enum                                                                                                                                                           | reject layer / reject reload | live   |
-| `appearance.animations.easing.workspace`        | string              | `ease_in_out`         | same enum                                                                                                                                                           | reject layer / reject reload | live   |
+| Key path                                        | Type                | Default               | Valid range                                                                                                                                                                                                                                                                           | Fail-closed                  | Reload |
+| ----------------------------------------------- | ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------ |
+| `appearance.theme` (or top-level `theme` alias) | string              | `bitty-dark`          | known preset name or alias (trimmed, at most 64 bytes), or dual `light:<name>,dark:<name>` (either order, case-insensitive, whitespace-tolerant; CTX-0951); unknown single names, either unknown dual half, and malformed dual values rejected with a diagnostic naming the valid set | reject layer / reject reload | live   |
+| `appearance.colors.background`                  | string              | unset (preset value)  | `#RRGGBB` exactly (no alpha, no shorthand, no names); the `colors` table must be complete (4 chrome colors plus exactly 16 `ansi` entries) or the layer is rejected                                                                                                                   | reject layer / reject reload | live   |
+| `appearance.colors.foreground`                  | string              | unset (preset value)  | `#RRGGBB` exactly                                                                                                                                                                                                                                                                     | reject layer / reject reload | live   |
+| `appearance.colors.cursor`                      | string              | unset (preset value)  | `#RRGGBB` exactly                                                                                                                                                                                                                                                                     | reject layer / reject reload | live   |
+| `appearance.colors.selection`                   | string              | unset (preset value)  | `#RRGGBB` exactly                                                                                                                                                                                                                                                                     | reject layer / reject reload | live   |
+| `appearance.colors.ansi`                        | array of 16 strings | unset (preset values) | exactly 16 `#RRGGBB` entries                                                                                                                                                                                                                                                          | reject layer / reject reload | live   |
+| `appearance.animations.enabled`                 | boolean             | `true`                | `true` \| `false` (`false` equals `0` ms)                                                                                                                                                                                                                                             | reject layer / reject reload | live   |
+| `appearance.animations.reduced_motion`          | string              | `auto`                | `auto` \| `always` \| `never`                                                                                                                                                                                                                                                         | reject layer / reject reload | live   |
+| `appearance.animations.duration_ms.open`        | integer             | `150`                 | `[0, 500]` ms                                                                                                                                                                                                                                                                         | reject layer / reject reload | live   |
+| `appearance.animations.duration_ms.close`       | integer             | `120`                 | `[0, 500]` ms                                                                                                                                                                                                                                                                         | reject layer / reject reload | live   |
+| `appearance.animations.duration_ms.focus`       | integer             | `100`                 | `[0, 500]` ms                                                                                                                                                                                                                                                                         | reject layer / reject reload | live   |
+| `appearance.animations.duration_ms.workspace`   | integer             | `200`                 | `[0, 500]` ms                                                                                                                                                                                                                                                                         | reject layer / reject reload | live   |
+| `appearance.animations.duration_ms.move`        | integer             | `150`                 | `[0, 500]` ms (CTX-0967 panel move; Hyprland-style reposition, layout commits immediately, only Core chrome fades)                                                                                                                                                                    | reject layer / reject reload | live   |
+| `appearance.animations.duration_ms.resize`      | integer             | `120`                 | `[0, 500]` ms (CTX-0967 panel resize; divider/keyboard step, same presentation-only rule)                                                                                                                                                                                             | reject layer / reject reload | live   |
+| `appearance.animations.duration_ms.drag`        | integer             | `150`                 | `[0, 500]` ms (CTX-0967 panel drag; Alt+drag float move, same presentation-only rule)                                                                                                                                                                                                 | reject layer / reject reload | live   |
+| `appearance.animations.easing.open`             | string              | `ease_out`            | `linear` \| `ease_in` \| `ease_out` \| `ease_in_out` \| `spring` (`spring` resolves to `ease_in_out`; parameters deferred)                                                                                                                                                            | reject layer / reject reload | live   |
+| `appearance.animations.easing.close`            | string              | `ease_in`             | same enum                                                                                                                                                                                                                                                                             | reject layer / reject reload | live   |
+| `appearance.animations.easing.focus`            | string              | `ease_in_out`         | same enum                                                                                                                                                                                                                                                                             | reject layer / reject reload | live   |
+| `appearance.animations.easing.workspace`        | string              | `ease_in_out`         | same enum                                                                                                                                                                                                                                                                             | reject layer / reject reload | live   |
+| `appearance.animations.easing.move`             | string              | `ease_in_out`         | same enum (CTX-0967)                                                                                                                                                                                                                                                                  | reject layer / reject reload | live   |
+| `appearance.animations.easing.resize`           | string              | `ease_in_out`         | same enum (CTX-0967)                                                                                                                                                                                                                                                                  | reject layer / reject reload | live   |
+| `appearance.animations.easing.drag`             | string              | `ease_out`            | same enum (CTX-0967)                                                                                                                                                                                                                                                                  | reject layer / reject reload | live   |
 
 Safe mode and `reduced_motion = "always"` (or `auto` with a platform
 reduced-motion signal) force `0` ms. There is no theme-file path: `colors`
@@ -211,7 +218,7 @@ is inline only.
 | `mod_key`           | string                                | `alt`                                                    | `alt` (`opt`/`option`) \| `super` (`meta`/`cmd`/`command`/`win`/`windows`), trimmed, case-insensitive, at most 32 bytes; `ctrl`/`shift` rejected (they would steal shell typing)                                                                                                                                      | reject layer / reject reload | live    |
 | `leader_key`        | string                                | unset (`alt+space`; `ctrl+space` on Windows)             | shared chord grammar (see keymap rules)                                                                                                                                                                                                                                                                               | reject layer / reject reload | live    |
 | `leader_timeout_ms` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms                                                                                                                                                                                                                                                                                                     | reject layer / reject reload | live    |
-| `keymaps[]`         | array of `{ chord, action, context }` | 81 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                          | reject layer / reject reload | live    |
+| `keymaps[]`         | array of `{ chord, action, context }` | 94 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                          | reject layer / reject reload | live    |
 | `plugins[]`         | gap                                   | empty                                                    | **No Lua declaration path exists**: a top-level `plugins` key is rejected as undeclared ([bitty#1325](https://github.com/bitty-terminal/bitty/issues/1325)). `PluginSpec { id, enabled }` exists in the effective config (id at most 128 bytes, merge by id, at most 1024 entries) but no file layer can populate it. | reject layer (as undeclared) | restart |
 
 `schema_version` current is `1` (absent assumes `0` and migrates; newer
@@ -229,8 +236,9 @@ ASCII character. A bound chord is consumed by chrome and never reaches
 the PTY; unbound keys always go to the shell.
 
 Bindable actions: `goto_split:<left|right|up|down>`,
-`new_split:<left|right|up|down>`, `resize_split:<left|right|up|down>`,
-`close_view`, `toggle_zoom`, `focus_next`, `focus_prev`,
+`new_split:<left|right|up|down>`, `new_panel`, `resize_split:<left|right|up|down>`,
+`close_view`, `toggle_zoom`, `toggle_floating` (alias `floating_toggle`; CTX-0962),
+`focus_next`, `focus_prev`,
 `focus:<1..=256>`, `copy_to_clipboard`, `paste_from_clipboard`,
 `scroll_page_up`, `scroll_page_down`, `increase_font_size`,
 `decrease_font_size`, `reset_font_size`, `toggle_help`,
@@ -238,11 +246,23 @@ Bindable actions: `goto_split:<left|right|up|down>`,
 `fold_collapse` (manual bind only), `workspace_new`,
 `workspace_close`, `workspace_prev`, `workspace_next`,
 `workspace_last`, `workspace_focus:<1..=16>`,
-`workspace_move:<1..=16>`, `enter_copy_mode`, `open_search`. The last
+`workspace_move:<1..=16>`, `workspace_swap:<1..=16>`,
+`jump_to_prompt:<prev|next>`, `select_command_output`,
+`toggle_palette`, `enter_copy_mode`, `open_search`. The last
 two are shipped defaults missing from the code module docs
 ([bitty#1327](https://github.com/bitty-terminal/bitty/issues/1327)).
 
-Shipped defaults (81 bindings, Alt spelling; `mod_key = "super"`
+`toggle_floating` flips the focused panel between tiled and floating
+through the `bitty.workspace:floating-toggle` primitive
+(`bitty-ui::presentation::toggle_floating`). The shipped default is
+Mod-aware `alt+a` (rebinds to `super+a` under `mod_key = "super"`);
+bare `a` stays shell input and `alt+v` stays deliberately free because
+fish reserves `alt+v` for `$EDITOR`. Zoom restores before the toggle;
+`Fullscreen`/`Scratchpad` transitions fail closed with a warning and no
+state change. User entries replace the shipped chord by
+`context + chord` identity.
+
+Shipped defaults (94 bindings, Alt spelling; `mod_key = "super"`
 rebinds every `alt`-bearing chord, `alt`-free chords pass through):
 
 - Navigate: `alt+h/j/k/l` and `alt+arrows`, `ctrl+alt+arrows`;
@@ -252,7 +272,9 @@ rebinds every `alt`-bearing chord, `alt`-free chords pass through):
   jump, `shift+alt+1..9` move window.
 - Splits: `shift+alt+h/j/k/l` and `shift+alt+arrows` create;
   `shift+ctrl+h/j/k/l` (+arrows) and `ctrl+shift+alt+h/j/k/l`
-  (+arrows) resize.
+  (+arrows) resize by `layout.resize_step` per keypress (default `0.05`).
+- Floating: `alt+a` toggles the focused panel tiled/floating (`super+a`
+  under `mod_key = "super"`); `alt+v` stays free for fish.
 - Zoom/scroll/clipboard: `alt+z` / `alt+m` / `alt+f` zoom,
   `alt+u` / `alt+i` page up/down, `ctrl+shift+c` / `ctrl+shift+v`
   copy/paste.
@@ -266,6 +288,13 @@ rebinds every `alt`-bearing chord, `alt`-free chords pass through):
 30 built-in presets selected by `appearance.theme` (or the top-level
 `theme` alias), with per-preset Bitty-owned outline tokens derived so
 the contrast contract holds. Aliases are accepted alternate spellings.
+Single names match case-insensitively with whitespace trimmed; dual
+`light:<name>,dark:<name>` pairs (either order, same trimming rules)
+resolve per OS appearance, dark-first on unknown (CTX-0951, bitty PR 1687).
+Unknown single names, either unknown dual half, and malformed
+dual values fail closed at validation with a diagnostic naming the
+valid set; see [Theme presets](../configuration/themes.md). This closes
+[bitty-terminal-docs#190](https://github.com/bitty-terminal/bitty-terminal-docs/issues/190).
 
 | Preset                 | Alias(es)                       | Category |
 | ---------------------- | ------------------------------- | -------- |
