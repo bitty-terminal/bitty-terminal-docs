@@ -182,7 +182,11 @@ scope as direction: capability-sandboxed filesystem access
 (`bitty.fs.open/append/read/list`) mapped by the host under the plugin state
 directory (for example `$XDG_STATE_HOME/bitty/plugins/history/`), with upward
 traversal denied, evolving later toward `bitty.storage.kv()` and
-`bitty.storage.blob()`. The sandbox ceiling stays with the accepted Plugin
+`bitty.storage.blob()`. The `open/append/read/list` verb set stays
+direction-only: a future RFC must reconcile it with the accepted
+`fs.read:PATTERN`/`fs.write:PATTERN` split (now draft
+[Filesystem Host Surface RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0005-filesystem-host-surface.md),
+targeting OQ-056). The sandbox ceiling stays with the accepted Plugin
 Platform, Lua Runtime, and Isolation Resource RFCs.
 
 ### PH-7 Granularity tiers: commands, output, replay

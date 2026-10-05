@@ -235,7 +235,9 @@ Topics are illustrative qualified `owner.name:topic` strings bounded `<= 64`
 bytes; payloads obey `PR-5..PR-9` (`8 KiB` per event, `32`/`8 KiB` batch,
 `DropOldest` with coalescing for observation topics). Capabilities obey the
 closed grammar from the Plugin Platform RFC; families not listed are not
-implied.
+implied. Every `panel.*` sketch below is a deferred candidate pending the
+panel-provider contract (`bitty-docs` `CTX-0181`, OQ-058); no `panel.*`
+is granted or mounted until that contract lands.
 
 ### Primary candidates requested in CTX-0107
 
@@ -313,6 +315,10 @@ incomplete and the plugin must not ship until the family is promoted via a
 reviewed RFC — no private channel, no first-party bypass.
 
 ## Capability and isolation sketch per candidate
+
+Every `panel.*` entry below is a deferred candidate pending the
+panel-provider contract (`bitty-docs` `CTX-0181`, OQ-058); nothing here
+grants or mounts a panel.
 
 | Plugin                                             | Closed capability families (candidate)                                                                                                                                | Data source                                                                                                                                                                                                                    | Budget host                                                                                                   | Isolation check                                                                                                                                                                                                                                                                   |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
