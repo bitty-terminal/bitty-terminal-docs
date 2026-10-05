@@ -163,9 +163,30 @@ whether geometry previews during the drag with commit on release, whether each
 step commits immediately, and how undo composes with the accepted
 every-interaction-is-undoable rule.
 
+**Shipped evidence (does not accept this candidate).** `bitty` `origin/main`
+ships Mod+drag tiled move with Hyprland-like drop (CTX-0966, `bitty` #1707)
+and border-drag resize (UX-02, `bitty-ui::drag`): Mod (Alt/Super) +
+left-drag grabs the tiled leaf via `DragMoveSession`, motion tracks the
+advisory preview without mutating the tree, and release re-parents with
+nearest-edge docking and position-based sizing (ratio from drop position,
+clamped to `0.10`/`0.90`; ties to horizontal/first; self/background
+no-op). Border-drag uses a `1`-cell edge/corner hit area
+(`RESIZE_HANDLE_CELLS`): tiled leaves adjust the adjacent split ratio
+through `resize_split_by_drag` (clamped to `[MIN_RATIO, MAX_RATIO]`),
+floating leaves adjust their rect via `resize_floating_rect` (clamped to
+`View` minima and the container). Every mutating step validates a
+registered workspace command (`bitty.workspace:drag-move`,
+`bitty.workspace:drag-resize`, `bitty.workspace:drop`) before touching
+the tree and fails with the tree untouched otherwise. Keyboard resize
+uses `layout.resize_step` per keypress (`0.05` default, `0.01..=0.20`,
+fail-closed, live). See the
+[Workspace Compositor shipped slice](workspace-compositor.md#shipped-slice-implementation-evidence).
+
 ## PW-2 Floating mode (Candidate)
 
-**Candidate.** `Mod`+V toggles the focused Panel between tiled and floating. A
+**Candidate.** `Mod`+A toggles the focused Panel between tiled and floating
+(the shipped default; `Mod`+V stays deliberately free because fish reserves
+`Alt+V` for `$EDITOR`). A
 floating Panel overlays other Panels but cannot leave the Bitty surface.
 
 Terminal-side conclusions:
@@ -196,6 +217,16 @@ geometry is free or anchored are undecided; the accepted mode-transition
 contract stays
 [`RFC-OQ-9`](panel-runtime-rfc.md#open-questions) territory.
 
+**Shipped evidence (does not accept this candidate).** `bitty` `origin/main`
+ships the keyboard floating toggle on Mod-aware `alt+a` (`super+a` under
+`mod_key = "super"`) via `toggle_floating` / `floating_toggle`
+(CTX-0962, `bitty` #1704, `bitty.workspace:floating-toggle`); bare `a`
+stays shell input and `alt+v` stays free for fish. Zoom restores before
+the toggle; `Fullscreen`/`Scratchpad` fail closed with a warning and no
+state change. Draining the tiled base keeps the `Overlay` with an
+empty-base tombstone so the float keeps bounds/tier (G1
+float-stays-float, CTX-0965, DEC-0099).
+
 ## PW-3 Animations (Candidate)
 
 **Candidate.** Panel open, close, move, resize, workspace switch, and
@@ -224,6 +255,15 @@ and easing defaults, whether float-toggle reuses the accepted open/close curves,
 and how the candidate per-Panel animation overrides (OQ-043, candidate and
 narrowed) compose with Bar and Panel transitions are undecided. No new leaf or
 key is defined here.
+
+**Shipped evidence (does not accept this candidate).** `bitty` `origin/main`
+ships move/resize/drag animation leaves (CTX-0967, `bitty` #1709):
+`appearance.animations.duration_ms.move = 150`,
+`resize = 120`, `drag = 150` with easing `move ease_in_out`,
+`resize ease_in_out`, `drag ease_out` under the same `0..=500` ms bound
+and closed easing enum. Layout commits immediately; only Core-owned
+chrome fades. See
+[Lua and XDG](../configuration/lua-and-xdg.md#appearance-knobs-supported-reference).
 
 ## PW-4 Bar configurability (Candidate)
 

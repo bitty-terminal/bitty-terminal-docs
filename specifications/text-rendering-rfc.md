@@ -462,6 +462,61 @@ Candidate contract — per-run shaping that preserves the grid:
    heap never escapes the per-frame arena; no run allocates outside the frame
    budget.
 
+#### HarfBuzz shaped-stack phases (implementation evidence)
+
+Status: **experimental review evidence only.** This subsection records what
+merged into `bitty` `origin/main` (`bitty-render` shaped stack); it does not
+accept the candidate sections above and claims no `Verified`/`Compatible`
+status. Grid truth is untouched in every phase (snapshots by shared ref;
+every live test asserts equality).
+
+- **Phase A additive landing** (CTX-0957, `bitty` #1685, part of #1666):
+  `harfrust` + `swash` + `fontdb` wired as an opt-in shaping path behind
+  the existing `GlyphRasterizer` seam; production default stays `crossfont`
+  with zero behavior change. Crossfont parity baseline checked in
+  (`crossfont_baseline.json`, 124 rows); `shaped_parity` compares the
+  shaped path against it with divergences allowlisted to the exact
+  `KNOWN_DIVERGENT` set. `font.features` / `font.disable_ligatures`
+  config surface added with typed defaults (ligatures on unless disabled);
+  Lua/CLI wiring is an explicit follow-up.
+- **Phase B run shaping plus ligature spans plus cursor policy** (CTX-0958,
+  `bitty` #1690): run/shape-plan caches plus shaped glyph LRU,
+  cluster-to-cell mapping with ligature N-cell spans, CJK epsilon,
+  zerowidth folding, cursor un-shaping from cache, and the grid
+  `render_shaped` path with atlas shaped slots. Error policy: shape
+  failure degrades the run to unshaped, raster failure to tofu, CJK
+  epsilon mismatch to unshaped plus the `shaping_misaligned` counter;
+  never a frame error.
+- **Dynamic fallback plus CJK parity** (CTX-0961, `bitty` #1700): pinned
+  CJK tail per OS (`Noto Sans CJK SC` on Linux, `PingFang SC` on macOS,
+  `Microsoft YaHei` on Windows) inserted into `FONT_FALLBACK_CHAIN` ahead
+  of symbols/emoji tails, restoring pinned-chain Han coverage
+  (`U+6F22`/`U+5B57`) on the shaped path. Bounded dynamic `fontdb` scan
+  beyond the pinned chain (`SwashSingle::dynamic_face_for`,
+  `MAX_DYNAMIC_FALLBACK_FACES = 16`, per-scalar hit/miss cache,
+  deterministic family/post-script/index order, fail-closed tofu on
+  exhausted bound or non-finite size). `FallbackRasterizer::resolve`
+  grants one dynamic chance after the pinned walk; the crossfont backend
+  answers `None` so its behavior is preserved exactly.
+- **Phase C hardening** (CTX-0959, `bitty` #1706, closes #1666 final
+  phase): partial-damage wide-span repaint via emitted-union backgrounds
+  (`union_span`, full-row runs emit at span origin); multi-glyph-per-cluster
+  grouping by `byte_offset` (`cluster_group_end`, non-monotonic degrades
+  wide, never panics); GPOS mark offsets via `x_offset_px`
+  (`shaped_dest_x`, NaN saturates, never panics); invisible-attribute
+  suppression on both paths (no glyph, tofu, or fallback; backgrounds stay
+  painted); negative and fuzz fail-closed (`InvalidInput` on non-finite
+  size, `UnknownFontHandle` on empty chain); 2048-slot atlas occupancy
+  probe; `LigaturePolicy::Always` kill-switch parity with the unshaped
+  path. `FallbackRasterizer` retained, no code change.
+- **Removal replay still pending.** HarfBuzz removal replay is excluded:
+  no `crossfont_backend` delete, no `AnyRasterizer` rewire, no deny
+  `dwrote` revoke, no lock regen. Replay stays tracked in `bitty` #1691
+  (Lua wiring for `font.features` plus `disable_ligatures`), #1692
+  (`fontdb` 0.24 adoption), and #1693 (runtime idle-test handoff),
+  pending Windows and macOS live evidence (CJK tails plus `fontdb`
+  discovery there have zero live runs).
+
 ### Color emoji
 
 Candidate contract — emoji presentation as typed, width-aware glyphs:
