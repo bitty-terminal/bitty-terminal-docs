@@ -571,6 +571,23 @@ CTX-0241).
 
 Open: whether a CLI flag set grows to cover `decoration.*`.
 
+### Workspace bar settings (bar-plugin-owned input)
+
+Status: **shipped input** (read-only from `bitty` `origin/main`,
+[bitty#1572](https://github.com/bitty-terminal/bitty/issues/1572)
+implementer decision, CTX-0979 `bitty` #1721). `workspace.show_bar` and
+`workspace.bar.edge` are RETAINED as `bar`-plugin-owned input
+(`bitty-terminal.bar`); Core parses but consumes neither for drawing — Core
+draws no workspace presentation chrome, including in `bitty --safe`. No
+`workspace.bar.colors` or `workspace.bar.pill_align` keys were introduced.
+
+```lua
+-- Shipped input (CTX-0979, bitty #1721; bar-plugin-owned, Core draws nothing).
+return {
+    workspace = { show_bar = true, bar = { edge = "bottom" } },
+}
+```
+
 ## Appearance knobs (supported reference)
 
 Status: **implementation reference** read-only from `bitty` `origin/main`

@@ -60,6 +60,16 @@ sidebar_order: 52
   `bitty-terminal.workspace` no longer owns presentation and is retiring from
   the bundled catalog; rows below that describe it as owning the
   workspaceline are the dated record.
+- Workspaceline retirement (2026-10-06,
+  [bitty#1572](https://github.com/bitty-terminal/bitty/issues/1572); merged
+  `bitty` #1677 CTX-0956, #1680 CTX-0930, #1721 CTX-0979): the `bitty`
+  removal landed. The bundled catalog is `bitty-terminal.shell-integration`
+  only. Workspace presentation is owned by the first-party `bar` plugin
+  (`bitty-terminal.bar`, Waybar-like consolidated bar covering workspaces,
+  statusline, and tabs); Core draws no workspace presentation chrome,
+  including in `bitty --safe`. Rows below that describe
+  `bitty-terminal.workspace` as owning the workspaceline remain the dated
+  record.
 
 ## Scope
 
