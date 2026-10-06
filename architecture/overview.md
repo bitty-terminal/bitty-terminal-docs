@@ -290,11 +290,14 @@ clipboard, fonts, colors, and themes, keymaps, typed configuration, and splits
 and workspaces as Core primitives reachable through commands and key bindings.
 It draws no chrome: no bar, no tab strip, and no status line.
 
-Current state: Core still draws a transitional text workspaceline in a
-reserved band (`workspace.show_bar`, `workspace.bar.edge`); mounted plugin
-trees are stored but not yet rendered. The workspaceline and the bundled
-`bitty-terminal.workspace` manifest retire once a first-party presentation
-plugin covers it.
+Retired state (`W-104`, `bitty#1721` `819f286`): Core draws and reserves
+nothing — no workspaceline, no band reservation, no bar — consistent with
+the zero-plugin baseline above, including in `bitty --safe`. Workspace and
+status presentation is owned by the first-party bar presentation plugin (for
+example `bitty-plugins/plugins/bar`, which renders what the retired Core
+workspaceline drew). Core retains only the workspace lifecycle, state,
+query commands, and generic chrome-band mechanisms. Mounted plugin trees
+are stored but not yet rendered.
 
 ## Candidate execution-domain model
 

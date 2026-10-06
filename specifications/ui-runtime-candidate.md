@@ -329,8 +329,8 @@ Terminal-side conclusions, composed with the accepted contracts:
   scrollback.
 - The Bar contract today is the draft Status System's single bottom-anchored
   bar, which the Chrome Surface API reframes as a plugin-mounted surface; the
-  Core text workspaceline shipped today is transitional and retires after
-  plugin migration. Extended edge placement, colors, hiding, and animation are candidate
+  Core text workspaceline is retired (`W-104`, `bitty#1721` `819f286`), with
+  presentation owned by the bar plugin. Extended edge placement, colors, hiding, and animation are candidate
   in [PW-4](panel-workspace-interaction-candidate.md). The rail drop-target
   and `+` creation target extend the candidate
   [PW-8 drag-to-Bar semantics](panel-workspace-interaction-candidate.md) as

@@ -428,7 +428,9 @@ What merged, exactly:
    workspaceline overlay string, and a presented overlay banner. Per
    [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md) the slots are the Core workspace mechanism, while the
    workspaceline is transitional presentation that retires once a plugin
-   covers it. Keys:
+   covers it (retired under `W-104`, `bitty#1721` `819f286`: Core draws and
+   reserves nothing; presentation is bar-plugin owned, query commands
+   retained). Keys:
    `Alt+N` new, `Alt+1..9` focus, `Alt+-`/`Alt+=` previous/next, `Alt+Tab`
    last-used, `Alt+W` close. Close never kills silently: a live workspace
    arms a pending confirm, repeating the chord confirms, `Esc` cancels, and

@@ -99,11 +99,13 @@ and `statusline` plugin implementations (plugin repositories).
 These facts describe the `bitty` main branch at the time of writing; nothing
 else in this record is implemented.
 
-- Core reserves a band: the layout container is the window minus the band,
-  `workspace.show_bar` toggles it, `workspace.bar.edge` selects `top` or
-  `bottom`, and both reload live.
-- Core paints an inverse text workspaceline (for example `1:ws1* 2:ws2 (2)`)
-  into that band.
+- Core reserves no band and paints no workspaceline: the layout container is
+  the full window (`W-104`, `bitty#1721` `819f286`). `workspace.show_bar`
+  and `workspace.bar.edge` (`top` or `bottom`) are bar-plugin keys —
+  `bitty-config` still parses them for the bar plugin while the Core runtime
+  mapping is deleted.
+- The workspace query path is retained: the lifecycle, state, and `ctl`
+  workspace commands keep working, with no workspaceline string attached.
 - `bitty.ui.mount(slot, tree)` and `bitty.ui.update(handle, tree)` exist behind
   `ui.rich`, with the closed slot set, the `Text`/`Row`/`Column`/`List` nodes,
   and the limits `UI_MAX_DEPTH = 16`, `UI_MAX_NODES = 2048`, and
@@ -191,10 +193,7 @@ else in this record is implemented.
 ### Reserved slots
 
 `tabline` stays an exclusive claim reserved for PW-10 panel tabs. It is not a
-band surface and hosts no workspace bar. The shipped claim grammar
-canonicalizes the deprecated `tabline` claim alias to `workspaceline`; that
-alias rides its dated removal path and does not make `tabline` a workspace
-surface.
+band surface and hosts no workspace bar.
 
 ## L1 Domain data
 
@@ -290,11 +289,13 @@ bounds; this record fixes only the shape.
 2. **Plugins migrate next.** The existing `statusline` plugin adopts L0 and the
    workspace-segment L2 module; a new first-party `workspacebar` plugin
    repository provides the workspace bar. Both are optional and independent.
-3. **Core workspaceline retires last.** The Core text workspaceline is removed
-   once a first-party plugin covers it. Until then it stays as shipped. The
-   bundled `bitty-terminal.workspace` manifest, its `bitty-terminal.tabs`
-   alias, and the `workspaceline` claim are removed in the same step
-   (ADR 0014).
+3. **Core workspaceline retired.** The Core text workspaceline was removed
+   under `W-104` (`bitty#1721` `819f286`); `bitty-config` still parses
+   `workspace.show_bar` and `workspace.bar.edge` for the bar plugin while the
+   Core runtime mapping is deleted. The `bitty-terminal.tabs` alias was
+   purged earlier (`bitty#1717` `471b3f9`). The bundled
+   `bitty-terminal.workspace` manifest and `workspaceline` claim remainder
+   stays open under `bitty#1572` (ADR 0014).
 4. **Key mapping.** `workspace.show_bar` and `workspace.bar.edge` either map to
    `workspacebar` plugin settings (enable state and preferred edge) with a
    deprecation window, or are removed with the Core workspaceline; the choice
