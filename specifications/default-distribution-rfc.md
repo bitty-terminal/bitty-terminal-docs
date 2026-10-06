@@ -595,9 +595,9 @@ hostile third-party plugins as noted in [Configuration Model RFC](configuration-
   record is reused. Revocation (`bitty plugin revoke`) is orthogonal and
   takes effect at the next dispatch boundary.
 - **Service and claim release.** Disabling releases reserved commands, event
-  subscriptions, claims (`workspaceline`, or the deprecated `tabline` alias,
-  and protocol handlers), and service provisions atomically with generation
-  disposal, so the resolver can admit a replacement provider exactly once.
+  subscriptions, claims (the `workspaceline` claim and protocol handlers),
+  and service provisions atomically with generation disposal, so the
+  resolver can admit a replacement provider exactly once.
 - **Budget reclaim.** Disabling reclaims instruction, memory, task, timer,
   and queue budgets (RC-1, RC-2, RC-4, RC-5) and their attribution. Post-
   disable RSS after forced GC must return within 15% of the pre-enable

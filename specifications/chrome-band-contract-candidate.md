@@ -251,12 +251,12 @@ usable = container inset by gaps_out and the accepted decoration insets,
 
 ## Candidate configuration keys
 
-| Key                    | Values                                                    | Default (candidate)                             |
-| ---------------------- | --------------------------------------------------------- | ----------------------------------------------- |
-| `workspace.show_bar`   | Boolean (existing key, retained)                          | `true`                                          |
-| `workspace.bar.edge`   | `top` or `bottom`                                         | `bottom`                                        |
-| `workspace.bar.size`   | Thickness in logical px or rows                           | One row of the chrome font                      |
-| `workspace.bar.colors` | `active` and `inactive` pill colors, as theme token names | `chrome.bar.active` and `chrome.bar.foreground` |
+| Key                    | Values                                                               | Default (candidate)                             |
+| ---------------------- | -------------------------------------------------------------------- | ----------------------------------------------- |
+| `workspace.show_bar`   | Boolean (bar-plugin key; Core runtime mapping deleted, `bitty#1721`) | `true` (bar-plugin default)                     |
+| `workspace.bar.edge`   | `top` or `bottom` (bar-plugin key; Core runtime mapping deleted)     | `bottom` (bar-plugin default)                   |
+| `workspace.bar.size`   | Thickness in logical px or rows                                      | One row of the chrome font                      |
+| `workspace.bar.colors` | `active` and `inactive` pill colors, as theme token names            | `chrome.bar.active` and `chrome.bar.foreground` |
 
 1. The keys are candidate spellings validated through `ConfigPlan`; unknown
    edges and out-of-range sizes fail validation with source-attributed
@@ -267,8 +267,10 @@ usable = container inset by gaps_out and the accepted decoration insets,
 3. `workspace.bar.colors` (and the unmerged `workspace.bar.pill_align`) is
    superseded and will not be introduced; plugin surfaces use theme token
    style attributes under the
-   [Chrome Surface API](chrome-surface-api-candidate.md). The fate of
-   `workspace.show_bar` and `workspace.bar.edge` is an open point there.
+   [Chrome Surface API](chrome-surface-api-candidate.md). `workspace.show_bar`
+   and `workspace.bar.edge` are bar-plugin keys: `bitty-config` still parses
+   them for the bar plugin while the Core runtime mapping was deleted
+   (`bitty#1721` `819f286`); the candidate defaults above carry over.
 4. Changes to `edge`, `size`, and `show_bar` are live-reconcilable and take
    effect through the reflow above.
 
