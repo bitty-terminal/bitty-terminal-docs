@@ -78,6 +78,17 @@ sidebar_order: 20
 > independent optional package and is not enabled by default. Rows and
 > examples below that name `bitty-terminal.workspace` remain the dated
 > catalog record until that removal lands.
+>
+> Workspaceline retirement (2026-10-06,
+> [bitty#1572](https://github.com/bitty-terminal/bitty/issues/1572); merged
+> `bitty` #1677 CTX-0956, #1680 CTX-0930, #1721 CTX-0979): the `bitty`
+> removal landed. The bundled catalog is `bitty-terminal.shell-integration`
+> only. Workspace presentation is owned by the first-party `bar` plugin
+> (`bitty-terminal.bar`, Waybar-like consolidated bar covering workspaces,
+> statusline, and tabs); Core draws no workspace presentation chrome,
+> including in `bitty --safe`. Rows and examples below that name
+> `bitty-terminal.workspace` as owning the workspaceline remain the dated
+> catalog record.
 
 ## Purpose and scope
 
@@ -262,11 +273,11 @@ version, checksum, plugin-api = "^1.0", compat.bitty }` and is validated
 
 ### Bundled set for v1 (staged, not enabled)
 
-| Plugin ID                          | Stage purpose                                                                         | Default                                                     | Capability sketch (illustrative)                          |
-| ---------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------- |
-| `bitty-terminal.shell-integration` | OSC 7/133 semantic zones, cwd/title, fail-closed fallback when absent                 | bundled, **disabled**                                       | `terminal.semantic-read` (read-only)                      |
-| `bitty-terminal.workspace`         | retiring (ADR 0014); manifest only, workspace commands run in Core                    | bundled, disabled                                           | `ui.rich` or status-component slot, `workspaceline` claim |
-| `bitty-terminal.tabs`              | **deprecated alias** of `bitty-terminal.workspace`; legacy tabline claim and commands | deprecated alias, not separately staged (removal >= v0.2.0) | legacy `tabline` claim (deprecated)                       |
+| Plugin ID                          | Stage purpose                                                                                         | Default                                                                   | Capability sketch (illustrative)                                          |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `bitty-terminal.shell-integration` | OSC 7/133 semantic zones, cwd/title, fail-closed fallback when absent                                 | bundled, **disabled**                                                     | `terminal.semantic-read` (read-only)                                      |
+| `bitty-terminal.workspace`         | retired (bitty#1572; #1677/#1680/#1721); removed from bundled catalog, workspace commands run in Core | removed (dated record below); current catalog is `shell-integration` only | `workspaceline` claim removed; presentation owned by `bitty-terminal.bar` |
+| `bitty-terminal.tabs`              | **deprecated alias** of `bitty-terminal.workspace`; legacy tabline claim and commands                 | deprecated alias, not separately staged (removal >= v0.2.0)               | legacy `tabline` claim (deprecated)                                       |
 
 Revision (2026-09-13, CTX-0170): the **accepted** staged set as of
 2026-08-29 recorded five plugins including `bitty-terminal.tabs`. The owning
@@ -302,16 +313,18 @@ eight-plugin catalog once #680 merges; the
 | `bitty-terminal.palette`    | [`bitty-terminal/palette`](https://github.com/bitty-terminal/palette)       | package PR [#2](https://github.com/bitty-terminal/palette/pull/2) squash `3497c70ac5b22e52826304b801af302da454d262`; registry `bitty-plugins` PR [#6](https://github.com/bitty-terminal/bitty-plugins/pull/6) squash `d38e8ff3ad2a1538512fd212fba55422b6dbaf65` (`registry/official/palette.toml`, `plugins/palette` pin); bundled-entry removal `bitty` PR [#678](https://github.com/bitty-terminal/bitty/pull/678) squash `dd46c7a287fa7a8ab83783816b37877d634e5f3a`                                       |
 | `bitty-terminal.statusline` | [`bitty-terminal/statusline`](https://github.com/bitty-terminal/statusline) | package PR [#2](https://github.com/bitty-terminal/statusline/pull/2) squash `3eab0f44b9bf76fc8c01a029176a9bd885f91d07`; registry `bitty-plugins` PR [#9](https://github.com/bitty-terminal/bitty-plugins/pull/9) squash `1d203e67146b02edc8c483a61a7c82b9b6e84753` (`registry/official/statusline.toml`, `plugins/statusline` pin); bundled-entry removal `bitty` PR [#680](https://github.com/bitty-terminal/bitty/pull/680) rebased head `5591216fa7eb15f7fed59b10a6ec4f15e0e2d773` (open, awaiting merge) |
 
-The workspace core stays bundled: the **workspaceline claim** (ordering,
-exclusive claim, close policy) and workspace lifecycle remain Core behavior;
-only statusline presentation moved. Shell integration stays bundled and
+The workspace lifecycle stays Core and the `workspaceline` claim is removed:
+workspace presentation is owned by the first-party `bar` plugin
+(`bitty-terminal.bar`) and Core draws no chrome, including in `bitty --safe`
+(bitty#1572; #1677/#1680/#1721). Shell integration stays bundled and
 remains the upstream OSC 7/133 semantic-zone provider.
 
-> Note (2026-09-30, CTX-0076): the owner direction recorded in the draft
+> Note (2026-09-30, CTX-0076; retired 2026-10-06 per bitty#1572
+> #1677/#1680/#1721): the owner direction recorded in the draft
 > [Chrome Surface API (Candidate)](chrome-surface-api-candidate.md) makes all
 > workspace bar presentation plugin-owned. Workspace lifecycle stays Core; the
-> Core text workspaceline is transitional and retires once a first-party
-> plugin covers it. This note changes no accepted decision in this RFC.
+> Core text workspaceline retired once the `bar` plugin covered workspace
+> presentation. This note changes no accepted decision in this RFC.
 
 **Capability and behavior deltas.** These are implementation-status facts, not
 contract changes; they are recorded so the accepted corpus reflects reality.
