@@ -230,10 +230,15 @@ is `global`; single-character keys require a modifier; every named key from
 `workspace_last`, `workspace_focus:<1..=16>`, `workspace_move:<1..=16>`,
 `toggle_help`, `increase_font_size`, `decrease_font_size`, and
 `reset_font_size` to `goto_split`, `new_split`, `resize_split` (each
-`<left|right|up|down>`), `close_view`, `toggle_zoom`, `focus_next`,
-`focus_prev`, `focus:<1..=256>`, `copy_to_clipboard`, `paste_from_clipboard`,
-`scroll_page_up`, and `scroll_page_down`. `alt+w` and `alt+1..9` previously
-drove pane `close_view` / `focus:<n>`; those actions stay parseable and
+`<left|right|up|down>`), `close_view` (aliases `close_surface`, `close_panel`,
+`exit_panel`, `close_focused_panel`), `toggle_zoom` (aliases `toggle_split_zoom`,
+`suspend_panel`, `detach_panel`, `suspend_focused_panel`, `detach_focused_panel`),
+`focus_next`, `focus_prev`, `focus:<1..=256>`, `copy_to_clipboard`,
+`paste_from_clipboard`, `scroll_page_up`, and `scroll_page_down`. `alt+q`
+binds `close_view` by default (with confirmation gating via `close_confirm` or
+active processes, and revoking overlay capture on modal overlays); `alt+z` binds
+`toggle_zoom` (and temporarily releases overlay capture). `alt+w` and `alt+1..9`
+previously drove pane `close_view` / `focus:<n>`; those actions stay parseable and
 user-bindable but are no longer bound by default (workspace numbers won the
 Alt slot per the owner spec, panes navigate spatially).
 
