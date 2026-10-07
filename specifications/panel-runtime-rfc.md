@@ -434,9 +434,14 @@ Rules:
 ## Capability isolation
 
 1. Closed families: panel capabilities close under a dedicated `panel.*` family
-   `panel.provider`, `panel.create`, `panel.focus`, `panel.overlay`. Plugins
-   cannot invent families; a `PanelType` contributed without the matching
-   `panel.*` grant fails at registration.
+   in the Core capability seed: `panel.provider`, `panel.create`,
+   `panel.focus`, `panel.overlay`. Plugins cannot invent families; a
+   `PanelType` contributed without the matching `panel.*` grant fails at
+   registration. The Core seed is AI-free: `agent.*`, `mcp.*`, and `ai.*`
+   are not Core capabilities and validate only through an explicitly
+   extended catalog, when the `ai` extension contributes them at extension
+   load. Core keeps the shape rules and the enforcement math; capability
+   vocabulary lives in extensions.
 2. `LayoutProvider` retains `layout.provider`, `Browser` retains `browser.embed`,
    `Rich` retains `ui.rich`, and `ui.overlay` gates palette/modal surfaces;
    `panel.*` does not subsume those gates and does not grant them implicitly.
