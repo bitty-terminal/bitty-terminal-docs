@@ -12,7 +12,7 @@ sidebar_order: 57
 # Kitty Family Scope Decision
 
 > Status: **draft decision record** — a recorded recommendation, not an
-> accepted contract. It addresses the M1-24 question (backlog item `M1-24`,
+> accepted contract. Implementation note (Implemented-only, `bitty#1762` via `#1772`): pointer shapes via OSC 22 are implemented (VT parse plus platform cursor icons plus runtime pointer stack); text sizing and file transfer stay deferred per this record. `OQ-077` stays Open. It addresses the M1-24 question (backlog item `M1-24`,
 > [bitty#1150](https://github.com/bitty-terminal/bitty/issues/1150)) and the
 > Kitty-extension question `OQ-077`, which stays **Open**. It changes no
 > accepted document, closes no open question, and weakens no normative

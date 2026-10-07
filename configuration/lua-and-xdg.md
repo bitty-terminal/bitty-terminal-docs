@@ -752,8 +752,9 @@ Shipped schema:
 -- Shipped schema (CTX-0236/CTX-0257; leader override CTX-0715; close safety CTX-0370; floating toggle CTX-0962; resize step CTX-0963).
 return {
     mod_key = "alt", -- "alt" (default; opt/option) or "super" (meta/cmd/win)
-    leader_key = "ctrl+q", -- leader chord override; default Alt+Space (Ctrl+Space on Windows)
-    leader_timeout_ms = 1500, -- leader fail-open timeout in ms, 100..=60000 (default 1000)
+    leader_key = "ctrl+q", -- legacy leader chord override; default Alt+Space (Ctrl+Space on Windows)
+    leader_timeout_ms = 1500, -- legacy leader fail-open timeout in ms, 100..=60000 (default 1000)
+    input = { leader = "ctrl+b", timeout_len = 1000 }, -- canonical leader surface (bitty#1650): wins over legacy keys when both are present
     close_confirm = "when_busy", -- "always" | "when_busy" (default) | "never"
     layout = { resize_step = 0.05 }, -- tiled resize delta per keypress, 0.01..=0.20, fail-closed, live (CTX-0963)
     keymaps = {
@@ -795,6 +796,7 @@ return {
   leader fail-open timeout. When present it must be `100..=60000`
   (default `1000`); anything else fails closed with the `leader_timeout_ms`
   field path.
+- `input.leader` / `input.timeout_len` is the canonical leader surface (`bitty#1650` via `#1748`, two-step `<Leader> <second>` only with multi-step deferred fail-closed). Each wins over its legacy alias when both are present; chord and timeout override independently.
 - Shipped groups (canonical Alt spelling): new panel `alt+n`, floating
   toggle `alt+a` (CTX-0962; `alt+v` deliberately free for fish), workspace
   `alt+t` / `alt+1..9` /

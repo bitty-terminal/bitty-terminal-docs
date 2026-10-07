@@ -552,12 +552,7 @@ owning session lifetime):
 > Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515 (`c9b386f`)): bearer
 > tokens are 128 bits from the platform CSPRNG, and each bearer is bound to
 > one session, principal, consent generation, terminal, and method family; a
-> consent change or session end voids it. The connection-bound issuer is not
-> reachable from any production path yet: the explicit local-user consent
-> gesture in item 1 is not implemented, and a connection's scopes (operator
-> ceiling) are not treated as consent. Item 4's revocation surface is
-> likewise not wired to a user-facing action. This note claims no Verified
-> status.
+> consent change or session end voids it. The consent gesture in item 1 is Implemented-only via `bitty#1520` (`#1747`): explicit local-user consent grants one of five scopes (`debug.inspect`, `debug.trace`, `debug.control`, `terminal.inspect`, `terminal.input`) with a capped TTL (`AUTOMATION_BEARER_TTL_MS = 600_000`, 10 minutes); revocation reuses the session-consent lifecycle (`revoke_scope`, `revoke_session`, `consent grant` / `consent revoke-session` verbs). This note claims no Verified status.
 >
 > Implementation note (Implemented-only, `bitty` CTX-0855, PR #1523
 > (`0f7134f9`)): the authority-less `ServeContext` constructors and the

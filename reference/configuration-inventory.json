@@ -776,6 +776,30 @@
       "type": "integer"
     },
     {
+      "default": "unset (same platform default as leader_key)",
+      "fail_closed": "reject layer / reject reload",
+      "key": "input.leader",
+      "range": "shared chord grammar; wins over leader_key",
+      "reload": "live",
+      "since": "pre-0.0.22 (implemented-only, bitty#1650)",
+      "source": "bitty-config/src/keymap.rs",
+      "status": "implemented-only",
+      "surface": "lua",
+      "type": "string"
+    },
+    {
+      "default": "unset (1000)",
+      "fail_closed": "reject layer / reject reload",
+      "key": "input.timeout_len",
+      "range": "[100, 60000] ms; wins over leader_timeout_ms",
+      "reload": "live",
+      "since": "pre-0.0.22 (implemented-only, bitty#1650)",
+      "source": "bitty-config/src/keymap.rs",
+      "status": "implemented-only",
+      "surface": "lua",
+      "type": "integer"
+    },
+    {
       "default": "81 shipped bindings (Alt-as-Mod map)",
       "fail_closed": "reject layer / reject reload",
       "key": "keymaps[]",
