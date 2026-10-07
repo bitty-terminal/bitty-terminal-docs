@@ -218,7 +218,7 @@ is inline only.
 | `mod_key`           | string                                | `alt`                                                    | `alt` (`opt`/`option`) \| `super` (`meta`/`cmd`/`command`/`win`/`windows`), trimmed, case-insensitive, at most 32 bytes; `ctrl`/`shift` rejected (they would steal shell typing)                                                                                                                                      | reject layer / reject reload | live    |
 | `leader_key`        | string                                | unset (`alt+space`; `ctrl+space` on Windows)             | shared chord grammar (see keymap rules)                                                                                                                                                                                                                                                                               | reject layer / reject reload | live    |
 | `leader_timeout_ms` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms                                                                                                                                                                                                                                                                                                     | reject layer / reject reload | live    |
-| `keymaps[]`         | array of `{ chord, action, context }` | 94 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                          | reject layer / reject reload | live    |
+| `keymaps[]`         | array of `{ chord, action, context }` | 95 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                          | reject layer / reject reload | live    |
 | `plugins[]`         | gap                                   | empty                                                    | **No Lua declaration path exists**: a top-level `plugins` key is rejected as undeclared ([bitty#1325](https://github.com/bitty-terminal/bitty/issues/1325)). `PluginSpec { id, enabled }` exists in the effective config (id at most 128 bytes, merge by id, at most 1024 entries) but no file layer can populate it. | reject layer (as undeclared) | restart |
 
 `schema_version` current is `1` (absent assumes `0` and migrates; newer
@@ -237,7 +237,9 @@ the PTY; unbound keys always go to the shell.
 
 Bindable actions: `goto_split:<left|right|up|down>`,
 `new_split:<left|right|up|down>`, `new_panel`, `resize_split:<left|right|up|down>`,
-`close_view`, `toggle_zoom`, `toggle_floating` (alias `floating_toggle`; CTX-0962),
+`close_view` (aliases `close_surface`, `close_panel`, `exit_panel`, `close_focused_panel`),
+`toggle_zoom` (aliases `toggle_split_zoom`, `suspend_panel`, `detach_panel`, `suspend_focused_panel`, `detach_focused_panel`),
+`toggle_floating` (alias `floating_toggle`; CTX-0962),
 `focus_next`, `focus_prev`,
 `focus:<1..=256>`, `copy_to_clipboard`, `paste_from_clipboard`,
 `scroll_page_up`, `scroll_page_down`, `increase_font_size`,
@@ -262,7 +264,7 @@ fish reserves `alt+v` for `$EDITOR`. Zoom restores before the toggle;
 state change. User entries replace the shipped chord by
 `context + chord` identity.
 
-Shipped defaults (94 bindings, Alt spelling; `mod_key = "super"`
+Shipped defaults (95 bindings, Alt spelling; `mod_key = "super"`
 rebinds every `alt`-bearing chord, `alt`-free chords pass through):
 
 - Navigate: `alt+h/j/k/l` and `alt+arrows`, `ctrl+alt+arrows`;
@@ -273,11 +275,15 @@ rebinds every `alt`-bearing chord, `alt`-free chords pass through):
 - Splits: `shift+alt+h/j/k/l` and `shift+alt+arrows` create;
   `shift+ctrl+h/j/k/l` (+arrows) and `ctrl+shift+alt+h/j/k/l`
   (+arrows) resize by `layout.resize_step` per keypress (default `0.05`).
-- Floating: `alt+a` toggles the focused panel tiled/floating (`super+a`
-  under `mod_key = "super"`); `alt+v` stays free for fish.
-- Zoom/scroll/clipboard: `alt+z` / `alt+m` / `alt+f` zoom,
-  `alt+u` / `alt+i` page up/down, `ctrl+shift+c` / `ctrl+shift+v`
-  copy/paste.
+- Panels and Views: `alt+q` (`close_view`, aliases `close_panel`,
+  `exit_panel`) requests view close with confirmation gating (`close_confirm` or
+  running process; revokes overlay capture if modal capture is active);
+  `alt+a` toggles the focused panel tiled/floating (`super+a` under
+  `mod_key = "super"`); `alt+v` stays free for fish.
+- Zoom and Suspend: `alt+z` / `alt+m` / `alt+f` zoom (and temporarily
+  suspends/releases active overlay capture, aliases `suspend_panel`,
+  `detach_panel`), `alt+u` / `alt+i` page up/down,
+  `ctrl+shift+c` / `ctrl+shift+v` copy/paste.
 - Font zoom: `ctrl+equal` / `ctrl+plus` (+shifted spellings) larger,
   `ctrl+minus` (+shifted) smaller, `ctrl+0` reset.
 - Help: ``alt+` ``, `alt+?`, `alt+shift+?`, `alt+shift+/`.
