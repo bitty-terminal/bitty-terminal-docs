@@ -420,13 +420,7 @@ promote this RFC beyond `draft`.
 
 Candidate contract — per-run shaping that preserves the grid:
 
-1. **Shaper adoption.** The accepted ADR 0004 wrapping decision points to
-   `crossfont@0.9` for rasterization; the shaper is candidate
-   `harfbuzz` (via `harfbuzz-sys` or `swash` + `harfbuzz` bridge) as the
-   shaping engine. A lighter `swash`-only shaper is the fallback candidate if
-   `harfbuzz` lifecycle forces `unsafe` beyond a reviewed budget. No shaper
-   runs on the VT or State hot path; shaping is a **render-cold-path** stage
-   inside `GridRenderer::place` after `SnapshotDamage` planning.
+1. **Shaper adoption.** Shipped under Issue [#1666](https://github.com/bitty-terminal/bitty/issues/1666) (Task `CTX-0952`, PR [#1685](https://github.com/bitty-terminal/bitty/pull/1685), [#1690](https://github.com/bitty-terminal/bitty/pull/1690), [#1706](https://github.com/bitty-terminal/bitty/pull/1706)): the shaping engine adopts the pure-Rust HarfBuzz port **`harfrust`** together with **`swash`** and **`fontdb`**, preserving the `#![forbid(unsafe_code)]` supply-chain invariant. `crossfont` is retained as an unshaped fallback/baseline path. Shaping runs strictly on the **render-cold-path** inside `GridRenderer` after damage planning and never mutates terminal state.
 2. **Runs, not per-cell calls.** Scalars of one `FramePlan` damage region are
    partitioned into shaping runs: maximal contiguous scalars of one script
    (Unicode `Script` property), one bidi level + direction, and one resolved
