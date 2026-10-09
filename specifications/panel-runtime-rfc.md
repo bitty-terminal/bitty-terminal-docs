@@ -728,9 +728,16 @@ accepted contract governs and the status document is stale.
 
 Recorded for traceability as a Panel, Activity, and the Native UI Boundary
 direction (2026-09-16). This is a captured design conclusion, not an
-accepted amendment to this RFC: none of it is implemented in `bitty`, none of
-the [open questions](#open-questions) is resolved, and no `Implemented`,
-`Verified`, or `Compatible` status is claimed.
+accepted amendment to this RFC: none of the [open questions](#open-questions)
+is resolved, and no `Verified` or `Compatible` status is claimed. The push/pop
+slice is `Implemented`-only (never `Verified`): candidate `ActivityStack`
+exists in `bitty` at `crates/bitty-ui/src/workspace_scene.rs:613`
+(`ActivityStack::new`/`push`/`pop`/`replace`, `MAX_ACTIVITY_DEPTH` 32,
+`SceneError::ActivityOverflow`), with unit tests
+`activity_stack_push_pop_replace` (:850) and
+`activity_stack_overflow_fails_closed` (:871) plus integration coverage in
+`crates/bitty-ui/tests/u1_u2_model.rs`. Activity generalization beyond
+push/pop stays Open for the owning RFC.
 
 - **`Panel is not Activity`.** An activity stack (push/pop) keeps a host's
   session alive across presented-content changes while `TerminalRegistry`
