@@ -84,6 +84,18 @@ verification process.
   as a deliberate sprite-scale step) rather than by the terminal grid. It
   belongs on a floating panel surface rather than the terminal image protocol.
 
+## Shipped CLI slice
+
+Separately from the pixel-art direction above, `bitty` ships an ASCII-only
+first-run splash with `--mascot` and `--no-splash` flags (`bitty` CTX-0729,
+issue #1318): one vendored ASCII asset
+(`crates/bitty-terminal/assets/mascot.txt`, at most 32 lines by 80 columns
+with the width bound asserted by unit test), a marker file for once-only
+display, and pipe-safe fallback text on narrow windows. This slice is
+Implemented-only evidence from the terminal-core repository; it changes no
+direction, reference, constraint, or provenance above, and owner art still
+replaces the placeholder asset.
+
 ## Provenance
 
 The direction and constraints above are recorded from the project initiator's
