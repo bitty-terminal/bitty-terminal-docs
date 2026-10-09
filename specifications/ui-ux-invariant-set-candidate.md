@@ -83,14 +83,14 @@ accessibility (draft, [Accessibility Baseline (Candidate)](accessibility-baselin
 | UX-INV-6  | A layout or move interaction is all-or-nothing: on validation failure both source and destination remain unchanged and a diagnostic is emitted.                                   | Workspace Compositor (accepted)                                           | Accepted — Covered             |
 | UX-INV-7  | No UI surface leaks an OS window handle: the `LayoutTree` carries no window identity and no Lua value exposes one.                                                                | Workspace Compositor (accepted)                                           | Accepted — Covered             |
 | UX-INV-8  | A gesture mutates layout only through the command registry as a validated update; no direct pointer write exists.                                                                 | Workspace Compositor (accepted)                                           | Accepted — Covered             |
-| UX-INV-9  | A tab is a projection of a panel: reordering tabs never renames or reorders an identity.                                                                                          | Panel Placement Decision (draft)                                          | Candidate — Uncovered (F-UX-1) |
-| UX-INV-10 | Exactly one modal authority exists per `Window`; a second modal request fails with `OverlayBusy` and leaves the first unchanged.                                                  | Overlay Ownership Reconciliation (draft)                                  | Candidate — Uncovered (F-UX-2) |
-| UX-INV-11 | Overlay paint order is a pure function of `(tier, construction order)`; no pass depends on insertion order.                                                                       | Overlay Ownership Reconciliation (draft)                                  | Candidate — Uncovered (F-UX-2) |
-| UX-INV-12 | Motion never delays the committed state: layout, content, and focus are final before an animation starts, so disabled, interrupted, and completed animations show the same state. | UI Motion and Budget (draft)                                              | Candidate — Uncovered (F-UX-3) |
-| UX-INV-13 | Motion never interpolates terminal content, cursor, selection, or scrollback.                                                                                                     | RFC-0002 (accepted)                                                       | Accepted — Uncovered (F-UX-3)  |
-| UX-INV-14 | No chrome segment is recomputed per keystroke or per PTY read; a revision or an active animation is the only wakeup source for chrome.                                            | Chrome Surface Contract (draft)                                           | Candidate — Uncovered (F-UX-4) |
+| UX-INV-9  | A tab is a projection of a panel: reordering tabs never renames or reorders an identity.                                                                                          | Panel Placement Decision (draft)                                          | Candidate — Covered (F-UX-1)   |
+| UX-INV-10 | Exactly one modal authority exists per `Window`; a second modal request fails with `OverlayBusy` and leaves the first unchanged.                                                  | Overlay Ownership Reconciliation (draft)                                  | Candidate — Covered (F-UX-2)   |
+| UX-INV-11 | Overlay paint order is a pure function of `(tier, construction order)`; no pass depends on insertion order.                                                                       | Overlay Ownership Reconciliation (draft)                                  | Candidate — Covered (F-UX-2)   |
+| UX-INV-12 | Motion never delays the committed state: layout, content, and focus are final before an animation starts, so disabled, interrupted, and completed animations show the same state. | UI Motion and Budget (draft)                                              | Candidate — Covered (F-UX-3)   |
+| UX-INV-13 | Motion never interpolates terminal content, cursor, selection, or scrollback.                                                                                                     | RFC-0002 (accepted)                                                       | Accepted — Covered (F-UX-3)    |
+| UX-INV-14 | No chrome segment is recomputed per keystroke or per PTY read; a revision or an active animation is the only wakeup source for chrome.                                            | Chrome Surface Contract (draft)                                           | Candidate — Covered (F-UX-4)   |
 | UX-INV-15 | A scene-backed leaf presents through the Scene path or the grid snapshot path, never both, and its accessibility projection is derived and read-only.                             | Panel Content Scene Path Decision (draft), Accessibility Baseline (draft) | Candidate — Uncovered (F-UX-5) |
-| UX-INV-16 | Budget overflow fails closed: admission refusal or reported degradation, never silent substitution or partial application.                                                        | UI Motion and Budget (draft)                                              | Candidate — Uncovered (F-UX-3) |
+| UX-INV-16 | Budget overflow fails closed: admission refusal or reported degradation, never silent substitution or partial application.                                                        | UI Motion and Budget (draft)                                              | Candidate — Covered (F-UX-3)   |
 | UX-INV-17 | Session restore rehydrates layout, attachment, focus, and scrollback before the first frame; no incremental plugin-side rebuild and no flash.                                     | TerminalRegistry and View Lifecycle Contract (accepted)                   | Accepted — Covered             |
 | UX-INV-18 | Every `SceneNode` kind presented has a mapped accessibility role; an unmapped kind fails closed at validation.                                                                    | Accessibility Baseline (draft)                                            | Candidate — Uncovered (F-UX-5) |
 
@@ -103,6 +103,28 @@ accessibility (draft, [Accessibility Baseline (Candidate)](accessibility-baselin
 | F-UX-3    | UX-INV-12, -13, -16  | Motion tests: final-state equality across disabled/interrupted/completed; interpolation prohibition; budget refusal with intact prior state. |
 | F-UX-4    | UX-INV-14            | A chrome cadence test asserting no per-keystroke segment recomputation and no periodic timer.                                                |
 | F-UX-5    | UX-INV-15, UX-INV-18 | A scene-path test asserting single-path presentation and a semantics mapping for every presented node kind.                                  |
+
+### Coverage evidence (CTX-0613)
+
+The F-UX-1 through F-UX-4 checks are Implemented-only evidence from the
+terminal-core repository (`bitty` CTX-0613, issue #1182, backlog item
+UX-41): guard tests in `crates/bitty-ui/tests/ux_invariant_guards.rs`,
+green on Linux x86_64 (10 passed, 0 failed), plus three golden artifacts
+produced headlessly from declared scenarios with exact-byte comparison
+(regenerate with `UX_GUARDS_UPDATE_GOLDENS=1`).
+
+| Follow-up | Guard tests                                                                                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F-UX-1    | `ux_inv_9_tab_reorder_preserves_identity_and_content`                                                                                                                           |
+| F-UX-2    | `ux_inv_10_second_modal_fails_and_leaves_first_unchanged`, `ux_inv_11_tier_paint_order_is_pure_function_of_tier_and_construction_order`                                         |
+| F-UX-3    | `ux_inv_12_committed_state_identical_across_animation_modes`, `ux_inv_13_terminal_content_never_interpolated`, `ux_inv_16_budget_overflow_fails_closed_with_prior_state_intact` |
+| F-UX-4    | `ux_inv_14_chrome_ignores_keystroke_stream`, `ux_inv_14_cadence_contract_only_revision_or_animation_recomputes`                                                                 |
+
+Golden artifacts beside the tests in
+`crates/bitty-ui/tests/testdata/ux-evidence/`: `frame-leaf-exact.txt`
+(`leaf-text-exact`, leaf scope), `frame-window-exact.txt`
+(`window-tiling-exact`, window scope), `behavior-modal-focus-order.txt`
+(`modal-focus-order`, window scope).
 
 An invariant may only move from `Uncovered` to `Covered` with a named,
 reviewable check. An invariant with no check may not be frozen as accepted; the

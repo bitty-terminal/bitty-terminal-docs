@@ -178,8 +178,16 @@ independent reviewer sign-off:
   derives the umbrella root from `$BITTY_WORKSPACE` instead of a hardcoded
   absolute checkout path and drops the `tmp/` mirror, because `tmp/` is
   process scratch rather than durable evidence.
+- `bitty` CTX-0617 (issue #1138, M1-12): narrowed independent-reviewer
+  sign-off for the M1-03..M1-11 evidence slice only — nine closed items with
+  committed artifacts (compat-lab goldens, oracle corpus, fuzz targets with
+  retained seeds, Tier 1 matrix wiring, committed throughput baseline),
+  re-verified green locally (65 tests plus the matrix-driver fixture on
+  Linux x86_64). Full-milestone completion is explicitly withheld: 13
+  sibling M1 sub-issues remain open, recurring fuzz has no CI wiring, and
+  the Tier 1 legs beyond Linux rest on the CI `m1-matrix` aggregate.
 
-All four are `Implemented`, not `Verified`; they change no M1 requirement,
+All five are `Implemented`, not `Verified`; they change no M1 requirement,
 no evidence threshold, and no normative control.
 
 ## Affected contracts

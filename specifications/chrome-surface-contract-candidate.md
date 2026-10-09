@@ -144,6 +144,39 @@ is accepted by [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main
     Whether a rail plugin replaces or composes beside a bar plugin remains
     open (U-4); sharing configuration keys does not merge the contracts.
 
+## Slot envelopes and fragment composition (candidate, CTX-0429)
+
+The per-slot envelopes and fragment rules below are candidate, except where
+a shipped or accepted basis is cited. They consolidate the `bitty` CTX-0429
+design record (issue #688) so the candidate text has one canonical home;
+`OQ-056` owns which dimensions get contracts and in which API version, and
+`OQ-082` owns streaming. No `mount` implementation is claimed: the host Lua
+bridge has no mount path yet (CTX-0428, ready, not started).
+
+| Slot                                         | Envelope                                                                                                                                                                                                                            | Conflict resolution                                                                                                                                         |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `statusline`                                 | Candidate generic envelope (formerly shipped; the Core helper was removed in CTX-0922 and the envelope now lives in the Lua `statusline` plugin): at most 8 fragments, each at most 64 chars, 128 chars total, joined with `&#124;` | Overflow truncates at fragment boundary from the tail; one invalid fragment fails that mount or update only (`E_UI_COMPONENT_INVALID`), never the whole bar |
+| `overlay`                                    | Shipped: text truncated at char boundary to 128; at most 4 non-modal plus 1 modal per window (`4+1`)                                                                                                                                | Shipped fail-closed typed errors (`OverlayBusy`, `TooManyOverlays`); no silent eviction, no last-wins replacement                                           |
+| `tabline`                                    | Shipped claim semantics: the canonical workspace claim is `workspaceline`; `tabline` survives only as a deprecated alias (removal at or after v0.2.0)                                                                               | A second claimant is rejected fail-closed with a diagnostic; the incumbent keeps the slot                                                                   |
+| `terminal`, `top`, `bottom`, `left`, `right` | Scene bounds only (`SCN-2` depth 32, accepted Rich Presentation bound); no plugin-set geometry                                                                                                                                      | Host layout owns placement and decoration; geometry conflicts are impossible by construction                                                                |
+| `palette` (effective, via `overlay`)         | Candidate (formerly shipped; now in the Lua `palette` plugin): per-panel command bound 32, query and entry text within the 128-char overlay bound, duplicates rejected; at most one effective picker per invocation                 | A second concurrent picker invocation is rejected or queued behind the active one; overlay exhaustion still fails closed per the `4+1` rule                 |
+
+Fragment composition (candidate): one mount per fragment; render order is
+ascending mount sequence (`update` preserves position, remount appends at
+the tail); separators and decoration are host-owned; overflow truncates
+from the tail at fragment boundaries; failure is isolated per fragment
+(one misbehaving contributor never blanks the bar); fragments update on
+committed-state observations only, never on hot-path signals; continuous
+high-frequency updates are excluded (`OQ-082` stays open); mounted fragments
+never claim focus, never receive input routing, and never graduate into
+panels (accepted `LUA-OQ-11` boundary restated).
+
+A future `StatusProvider` compiles to one `statusline`-slot mount per
+fragment under the rules above; a `left` / `center` / `right` vocabulary, if
+ever adopted, describes host-owned intra-bar regions, never additional mount
+slots. The provider interface name, version, metadata, and filtering
+protocol stay open behind a capability-gated host surface when defined.
+
 ## Chrome-side consequences of the candidate UI runtime
 
 - U-4's chrome keys, Panel Rule grammar, cascade, and safety-policy rank are
