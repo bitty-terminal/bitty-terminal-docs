@@ -469,6 +469,58 @@ Shell completion should target Bash, Zsh, Fish, PowerShell, and Nushell. Dynamic
 plugin completion comes from static package manifests and should update when
 the installed plugin set changes, without starting every plugin runtime.
 
+## Shipped slice: `bitty shell-init` shell integration
+
+Status: **implemented local-class slice** (read-only from `bitty`
+`origin/main`, CTX-1054, `bitty` #1813, merged as `c9392355` via PR #1852,
+verified read-only via `merge-base --is-ancestor`). This section records the
+implemented shell-integration subtree; it does not accept the rest of the
+candidate tree or its other subtrees.
+
+- Shape: `bitty shell-init <shell>`, where `<shell>` is one of
+  `bash|zsh|fish|powershell|nushell` (case-insensitive and trimmed; `pwsh`
+  accepted for PowerShell, `nu` for Nushell). The shell table is shared with
+  `bitty completion`, so the two commands never disagree on names. The script
+  prints to stdout, exit `0`.
+- Class: local only — no instance, no config load, no plugin VM, safe-mode
+  clean. Each script is static: per-shell prompt hooks (OSC 7 cwd report plus
+  OSC 133 prompt-start `A` and command-done-with-status `D` marks,
+  observation only) followed by one eval line wiring the matching
+  `bitty completion <shell>` output, so Tab completion works after init.
+  Nushell instead inlines the completion definitions, because Nushell parses
+  `source` paths before `save -f` runs and a save-then-source roundtrip of a
+  just-written file cannot load.
+- Wiring is opt-in eval; the command never edits rc files:
+  - bash: `eval "$(bitty shell-init bash)"` in `~/.bashrc`;
+  - zsh: `eval "$(bitty shell-init zsh)"` in `~/.zshrc` (after compinit, so
+    `compdef` can register Tab completion);
+  - fish: `bitty shell-init fish | source` in `config.fish`;
+  - powershell: `bitty shell-init powershell | Out-String | Invoke-Expression`
+    in `$PROFILE`;
+  - nushell: `bitty shell-init nushell | save -f
+~/.config/nushell/bitty-shell-init.nu`, then `source` that file from
+    `config.nu` (see the script header).
+- Verified behaviors: the bash hook is prepended to `PROMPT_COMMAND` so it runs
+  first and captures the previous command's status (string- and array-valued
+  `PROMPT_COMMAND` are both preserved); zsh registers `compdef _bitty bitty`
+  without auto-compinit; PowerShell prefers the native exit code (`$LASTEXITCODE`)
+  and chains the previous `prompt`; double-sourcing is idempotent in all five
+  shells via a per-shell guard variable.
+- `bitty init` prints the shell-init hint on success, so a fresh shell gets
+  working Tab completion plus cwd/status prompt marks after init.
+- Flags: `--format` and `--no-color` are accepted and ignored (shell-init
+  emits a script, never the output envelope and never color);
+  `--socket`/`--instance` fail closed (exit `2`): they select a runtime target
+  this command never uses. Missing/unknown shell, extra positionals, unknown
+  flags, and stray `--` fail closed (exit `2`, stderr only, no stdout
+  script).
+- Exit codes: `0` success; `2` usage error.
+- Deliberate non-goals in this slice: no rc-file auto-editing; no `bitty x`
+  execution or plugin completion integration. Deferred (do not treat as
+  available): OSC 7 percent-encoding of cwd paths (`bitty` #1855),
+  session-local Nushell double-source guard (`bitty` #1856), B/C span zones,
+  and per-float styling.
+
 ## Deferred candidates
 
 An interactive `bitty shell` could expose the registry as a remote-control
