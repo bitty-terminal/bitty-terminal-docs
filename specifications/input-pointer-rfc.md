@@ -376,6 +376,12 @@ above and claims no `Verified`/`Compatible` status.
   `View` minima and the container). A release also ends a border-drag
   resize; an active border drag consumes motion without breaking selection
   or app pointer ownership.
+- **Float-first hit-test** (CTX-1058 P1 `bitty` #1873 merged, P2 #1875 in
+  review): click, pre-focus, and hover resolve topmost-first in present
+  paint order, so a visible float wins over the tiled leaf it covers;
+  `Alt`+drag grabs mode-floating leaves; tiled drag stays in solver order
+  with a mode-aware float guard; depth-first focus order is kept (no
+  re-parent on toggle).
 
 ### Platform clipboard over-limit semantics (implementation evidence)
 

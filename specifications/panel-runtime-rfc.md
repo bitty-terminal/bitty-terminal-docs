@@ -761,6 +761,22 @@ push/pop stays Open for the owning RFC.
   open, and the candidate [Panel Extensibility Vision](../product/panel-vision.md)
   is the related draft direction.
 
+### Recorded direction — floating present tier (CTX-1058)
+
+Recorded for traceability as the CTX-1058 floating-contract direction
+(P1 `bitty` #1873 merged, P2 `bitty` #1875 in review). This is implemented
+evidence, not an accepted amendment to this RFC: none of it is `Verified`
+or `Compatible`, and no open question is closed.
+
+- The present tier of a leaf is the structural tier combined with the leaf
+  mode: structural-`None` plus leaf-mode `Some(Float)` presents as the
+  `Float` tier (`structural.or(mode)`).
+- The structural tier wins: structural overlay tiers (for example `Popup`)
+  take precedence over the mode stamp.
+- A stable sort lifts floats above the tiled base and paints them last, so
+  present paint order is tiled base leaves first, floating leaves after,
+  with structural overlays outermost.
+
 ## Alternatives considered
 
 | Alternative                                                              | Trade-off                                                                       | Disposition                                                                                                                   |

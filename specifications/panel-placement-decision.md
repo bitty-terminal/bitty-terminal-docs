@@ -191,6 +191,16 @@ View/Panel -> keymap/overlay -> encoder -> PTY (if terminal-backed)`, with
   retirement gap ([follow-up F-1](workspace-panel-invariants.md#uncovered-and-follow-ups)),
   which this direction does not close.
 
+### Floating panels and split fan-out
+
+- Quadrant and split fan-out counts are tiled-only: a panel in `Floating`
+  mode keeps its `LayoutTree` slot so toggling back restores it, but the
+  slot is excluded from split fan-out while the panel floats.
+- The tiling solver ignores `PresentationMode`, so the stored tiled geometry
+  is unaffected by floating and restore is byte-identical (implemented-only,
+  CTX-1058 P1, `bitty` #1873; the candidate status of this record is
+  unchanged).
+
 ### Security
 
 - Placement changes no capability, budget, or trust boundary. A panel still
