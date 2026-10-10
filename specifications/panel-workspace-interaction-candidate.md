@@ -210,12 +210,35 @@ Terminal-side conclusions:
 - Mode transitions route through the command registry as validated compositor
   updates and never mutate terminal state.
 
-**Open.** Which transition gate lifts `Floating` to live, whether a floating
-Panel remembers its tiled slot and restores it on toggle-off, how focus and
-input routing prioritize overlapping floating Panels, and whether floating
-geometry is free or anchored are undecided; the accepted mode-transition
+**Floating contract (Implemented-only, CTX-1058 P1/P2).** The shipped
+floating slice implements this contract; it does not accept the candidate
+above:
+
+- Anchored overlay: float geometry is a deterministic centered inset of
+  roughly 80% of the container, clamped to the container and owned by one
+  `bitty-ui` helper (`float_frame`). Overlap between floats is allowed. The
+  tiling solver ignores `PresentationMode`, so a float keeps its tree slot
+  and toggling back restores it byte-identical.
+- Tier: the present tier is structural-`None` plus leaf-mode `Some(Float)`
+  mapping to the `Float` tier; a stable sort lifts floats above the tiled
+  base and paints them last, while structural overlay tiers (for example
+  `Popup`) win over the mode stamp. The full rule lives in the
+  [Panel Runtime RFC](panel-runtime-rfc.md); this document states no second
+  copy.
+- Chrome: a floating leaf draws a `+1` elevated border with a grown content
+  inset keyed on `Floating` mode; the content origin is clamped inside
+  degenerate frames.
+- Distinct from scratchpad: `Floating` and `Scratchpad` stay distinct modes;
+  the toggle fails closed on `Fullscreen` and `Scratchpad` with a warning
+  and no state change.
+
+**Open.** Which further transition gates generalize floating beyond the
+shipped toggle path, and whether floating geometry ever gains free placement
+beyond the anchored inset, are undecided; the accepted mode-transition
 contract stays
-[`RFC-OQ-9`](panel-runtime-rfc.md#open-questions) territory.
+[`RFC-OQ-9`](panel-runtime-rfc.md#open-questions) territory. Slot restore,
+float-first focus and input routing, and anchored geometry are
+implemented-only (see below), not accepted.
 
 **Shipped evidence (does not accept this candidate).** `bitty` `origin/main`
 ships the keyboard floating toggle on Mod-aware `alt+a` (`super+a` under
@@ -225,7 +248,15 @@ stays shell input and `alt+v` stays free for fish. Zoom restores before
 the toggle; `Fullscreen`/`Scratchpad` fail closed with a warning and no
 state change. Draining the tiled base keeps the `Overlay` with an
 empty-base tombstone so the float keeps bounds/tier (G1
-float-stays-float, CTX-0965, DEC-0099).
+float-stays-float, CTX-0965, DEC-0099). The anchored-geometry, tier,
+chrome, and pointer slice lands as CTX-1058 P1 (`bitty` #1873, merged)
+with the P2 remainder in review (`bitty` #1875): `float_frame` owns the
+centered inset, the solver ignores `PresentationMode` (slot restore
+byte-identical), the present tier lifts floats above the base with
+structural overlays winning, and pointer handling resolves float-first in
+present paint order (see the [Panel Runtime RFC](panel-runtime-rfc.md)
+present-tier note and the
+[Input and Pointer Contract](input-pointer-rfc.md) drag evidence).
 
 ## PW-3 Animations (Candidate)
 
