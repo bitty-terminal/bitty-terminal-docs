@@ -37,6 +37,7 @@ boundaries remain authoritative over candidate material.
 | [Core and Plugin Boundaries](core-boundaries.md)        | Accepted | Core versus plugin ownership, the decided extraction boundaries, and the normative P0 security gates. |
 | [Future Boundaries](future-boundaries.md)               | Draft    | Candidate boundary decision rules and pending decisions.                                              |
 | [Graphics and Appearance Model](graphics-appearance.md) | Draft    | Candidate graphics, composition, opacity/blur ownership, and small-core guidance.                     |
+| [Directory Semantics](directory-semantics.md)           | Draft    | Upstream `extensions/` versus downstream `plugins/` versus reserved `components/` directory meanings. |
 
 ## Architecture Diagram Hub
 
@@ -107,6 +108,7 @@ architecture/
 ├── glossary.yaml             # single node and edge data dictionary
 ├── overview.md               # system context, invariants, data flows
 ├── core-boundaries.md        # accepted core vs plugin ownership and P0 gates
+├── directory-semantics.md     # draft extensions/ vs plugins/ vs reserved components/
 ├── future-boundaries.md      # draft candidate rules and pending decisions
 ├── graphics-appearance.md    # draft graphics, composition, and appearance model
 ├── interactive/              # interactive HTML visualization suite
