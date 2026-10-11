@@ -45,11 +45,12 @@ Out of scope (owned elsewhere):
 This document is `draft`. The directory meanings below record a decided
 direction (tracked in
 [bitty#1945](https://github.com/bitty-terminal/bitty/issues/1945)); the
-migration handling for installs created under the old name stays open
-(tracked in
+migration handling for installs created under the old name is decided
+as a clean break with no compatibility shim (decided in closed
 [bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949)).
-Draft text does not authorize shipped, stable, normative, or
-compatibility-guaranteed behavior.
+The one-line 0.0.23 release note carrying that instruction is still to
+be written at release time. Draft text does not authorize shipped,
+stable, normative, or compatibility-guaranteed behavior.
 
 ## Normative sources this specification must not weaken
 
@@ -208,10 +209,11 @@ The rule going forward: no new directory, key, field, or documented path
 uses the `components/` name. Follow-up renames of the CLI verbs and
 field names are tracked with the owning implementation work, not here.
 The migration handling for installs created under the old directory name
-(clean break versus compatibility shim) is decided explicitly in
-[bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949) before
-the code rename lands; until that decision, this page documents the
-target names and the open migration point together.
+is decided as a clean break with no compatibility shim in closed
+[bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949):
+remove the old directory and re-seed under the new name. The one-line
+0.0.23 release note carrying that instruction is still to be written at
+release time.
 
 ## How the split maps to the accepted boundary
 
@@ -270,11 +272,11 @@ Core (mechanisms) ──typed seam── extensions/ (L1, upstream prebuilt, opt
   Rejected: it merges two trust and lifecycle domains (host-side
   processes versus sandboxed Lua) into one directory and one audit
   story.
-- Migrate old installs silently with a compatibility shim. Deferred to
-  the explicit migration decision in
+- Migrate old installs silently with a compatibility shim. Rejected by
+  owner decision in closed
   [bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949):
-  the pre-release user base favors a clean break with a one-line
-  migration note, but the decision is recorded there, not assumed here.
+  the pre-0.0.23 user base is tiny, so no shim code ships; migration is
+  a one-line release note (remove the old directory, re-seed).
 
 ## Affected contracts
 
@@ -293,12 +295,12 @@ Core (mechanisms) ──typed seam── extensions/ (L1, upstream prebuilt, opt
 
 ## Open points
 
-1. Migration decision for installs created under the old `components/`
-   directory name: clean break (documented removal plus a one-line
-   migration note) versus compatibility shim (migrate-on-seed). Owner:
-   `bitty` maintainers; decided explicitly in
-   [bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949)
-   before the code rename lands.
+1. One-line 0.0.23 release note for installs created under the old
+   `components/` directory name (remove the old directory, re-seed).
+   The migration itself is decided as a clean break with no
+   compatibility shim in closed
+   [bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949);
+   only the release-note line is still to be written at release time.
 2. CLI and field renames (`bitty component ...` verbs,
    `components_dir` / `system_components_dir` fields) to the
    `extension` vocabulary: follow-up implementation work, not this
@@ -321,9 +323,10 @@ Core (mechanisms) ──typed seam── extensions/ (L1, upstream prebuilt, opt
   [Core and Plugin Boundaries](core-boundaries.md) and the owning
   `bitty` implementation sources cited in Verification; no claim
   exceeds `draft`.
-- The migration question points at
-  [bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949)
-  without pre-answering it.
+- The migration handling states the decided clean break with no shim
+  per closed
+  [bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949),
+  with the 0.0.23 release-note line recorded as the remaining follow-up.
 
 ## P0 Review Sign-off
 
@@ -345,5 +348,6 @@ touches a trust transition.
   rename decision context: upstream prebuilts are extensions by
   composition-versus-augmentation.
 - [bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949) —
-  open migration decision context: clean break versus compatibility
-  shim, decided before code.
+  closed migration decision: clean break with no compatibility shim
+  (remove the old directory, re-seed); the release-note line lands at
+  0.0.23 time.
