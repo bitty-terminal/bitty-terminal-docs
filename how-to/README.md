@@ -11,12 +11,19 @@ sidebar_order: 10
 
 # How-to guides
 
-No product how-to guide is currently admissible. Experimental code and
+## Guides
+
+- [Review Extension Source and Consent](review-extension-source-and-consent.md) —
+  Draft guide (commands verified read-only against merged `bitty` `main`,
+  `Implemented`-only, never `Verified`): list installed plugins and
+  extensions, inspect and revoke grants, verify pinned bytes with
+  `show-source`, preview updates, and recover from refused spawns.
+
+No other product how-to guide is currently admissible. Experimental code and
 pre-alpha releases exist (latest `v0.0.20`), but no stable or supported public
 contract is claimed: no command set or workflow is `Verified`, `Compatible`,
 or `Release-ready`, so this directory records only the category contract and
-empty state. Nothing here may present an experimental command as a supported
-procedure.
+the guide above.
 
 ## Admission criteria
 
