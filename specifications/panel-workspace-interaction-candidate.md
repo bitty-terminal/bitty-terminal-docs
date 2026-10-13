@@ -238,7 +238,14 @@ beyond the anchored inset, are undecided; the accepted mode-transition
 contract stays
 [`RFC-OQ-9`](panel-runtime-rfc.md#open-questions) territory. Slot restore,
 float-first focus and input routing, and anchored geometry are
-implemented-only (see below), not accepted.
+implemented-only (see below), not accepted. Overlapping-float
+priority is partly evidenced but still open as contract: topmost-first
+hit-test order (`bitty` #2032, CTX-1164) and per-leaf glyph plus cursor
+occlusion under higher floats (`bitty` #2033/#2035, CTX-1165/CTX-1173) are
+recorded as implementation evidence in the
+[Input and Pointer Contract](input-pointer-rfc.md) and the
+[Panel Runtime RFC](panel-runtime-rfc.md); this candidate claims none of
+them.
 
 **Shipped evidence (does not accept this candidate).** `bitty` `origin/main`
 ships the keyboard floating toggle on Mod-aware `alt+a` (`super+a` under
@@ -257,6 +264,15 @@ structural overlays winning, and pointer handling resolves float-first in
 present paint order (see the [Panel Runtime RFC](panel-runtime-rfc.md)
 present-tier note and the
 [Input and Pointer Contract](input-pointer-rfc.md) drag evidence).
+Stacked floats additionally carry
+`Implemented`-only occlusion evidence that this candidate does not accept:
+topmost-first hit-test in reverse pin/detach order (`bitty` #2032
+`f6a0a3b2`, CTX-1164), per-leaf glyph occlusion versus higher `Float`
+frames in retained and fresh paths (`bitty` #2033 `a5bafc22`, CTX-1165),
+and focused cursor plus IME caret hidden under higher floats via the
+shared occluder table (`bitty` #2035 `2c3c5753`, CTX-1173); the owned
+record lives in the [Input and Pointer Contract](input-pointer-rfc.md) and
+the [Panel Runtime RFC](panel-runtime-rfc.md).
 
 ## PW-3 Animations (Candidate)
 

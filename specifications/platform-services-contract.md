@@ -318,21 +318,31 @@ admitted notification and hands it to the installed notification sink. The
 handoff is best-effort, non-blocking, and counted; the adapter never receives
 the raw, unbounded terminal string.
 
-- The OS backends the current evidence uses are invoked by absolute path with
-  arguments only - Linux `notify-send` and macOS `osascript` - never through a
-  shell, and never through `PATH` discovery.
+- The OS backends the current evidence uses are the real
+  `bitty-platform-services` backends selected by `platform_backend()`
+  (Linux D-Bus, macOS native) behind the `NotificationBridge` single
+  rate/dispatch path — never through a shell, and never through `PATH`
+  discovery. The `NoopBackend` fail-closed default keeps headless runs
+  OS-free; delivery uses the virtual clock (`notify_parsed_at`), so one
+  rate/dispatch path remains.
 - Delivery is reported as a typed outcome (delivered, skipped for a missing
-  backend, or failed with a diagnostic); the OS may still drop a delivered
+  backend or the bridge defensive cap, or failed with a diagnostic); the OS may still drop a delivered
   request, which no synchronous API observes without blocking.
 - The in-grid banner remains available independently of the OS sink, so the
   notification is still shown when no adapter or backend exists.
 
-Implemented-only evidence (`5670d9ae42a0`):
-`DesktopNotification`, `NotificationSink`, `OsNotificationSink`,
-`OsDeliveryOutcome`, and `OsDeliverySkip` in
-`crates/bitty-platform/src/notification.rs`; the runtime
+Implemented-only evidence (`bitty` `da7c99cf`, 2026-10-13, PR #2040,
+CTX-1178, closes #1998; supersedes `5670d9ae42a0` for this subsection):
+`OsNotificationSink`, `notify-send`, and `osascript` are retired from
+`crates/bitty-platform/src/notification.rs` (that module now owns only the
+audible-bell primitive); desktop delivery flows through
+`bitty_platform_services::NotificationBridge` (`platform_backend()`,
+`NoopBackend`, `notify_parsed` / `notify_parsed_at`,
+`DeliveryOutcome` / `SkipReason`) with the runtime
 `deliver_notification_to_os` path counted by `notifications_os_delivered` /
-`notifications_os_undelivered` in `crates/bitty-runtime/src/runtime.rs`.
+`notifications_os_undelivered` plus the bridge defensive-cap counters in
+`crates/bitty-runtime/src/runtime.rs`. Real runs install the platform
+backend; headless and test-mode runs stay OS-free.
 
 ### Notification failure behavior
 
@@ -648,13 +658,29 @@ unbounded allocation.
     `authorize_file_url_activation` revalidation, and the refusal counters.
   - `bitty-platform`: `validate_url` / `ValidatedUrl` (`URL_MAX_LEN = 4096`,
     scheme allowlist, forbidden-metacharacter and percent-decode checks),
-    `validate_file_url`, the crate-private `open_url` hand-off, the absolute-path
-    no-shell `OsNotificationSink`, `DesktopNotification` clamping, and the
+    `validate_file_url`, the crate-private `open_url` hand-off, and the
     `blur_radius` / `apply_blur` window attribute with `min(128)`.
+    `OsNotificationSink`, `notify-send`, and `osascript` are retired (see
+    the display-handoff evidence above); desktop delivery is owned by the
+    `bitty-platform-services` backends behind `NotificationBridge`.
   - `WindowEventKind::Focused(bool)` and `set_focused` terminal-state
     association (IME preedit cleanup, drag teardown, mode `1004` emission).
     These are not `Accepted`, not `Verified`, and not wired to an accepted
     adapter.
+- **Implemented-only evidence** (`bitty` revision `da7c99cf`, 2026-10-13,
+  PR #2040, CTX-1178, closes #1998): `OsNotificationSink` retired onto the
+  real `bitty-platform-services` backends; single rate/dispatch path via
+  `NotificationBridge` (virtual clock, `NoopBackend` fail-closed default,
+  `platform_backend()` for Linux D-Bus and macOS native); headless and
+  test-mode runs stay OS-free; behavior delta pinned (banner paints, OS
+  skipped over ceiling). Evidence in
+  `crates/bitty-platform/src/notification.rs`,
+  `crates/bitty-platform/src/lib.rs`,
+  `crates/bitty-runtime/src/runtime.rs`, `crates/bitty-terminal/src/main.rs`,
+  and `crates/bitty-runtime/tests/m1_bell_os_delivery.rs` plus
+  `plugin_notifications_1827.rs`. This retires the `notify-send` /
+  `osascript` hand-off stated at `5670d9ae42a0`; the accepted adapter
+  placement (`CTX-0003`) is still not decided here.
 - **Decided direction, not in code:** the platform-service adapter and its
   contract shape, capability declarations and discovery, platform permission
   discovery, and the exact crate-versus-module-versus-repository placement.

@@ -724,6 +724,37 @@ they are evidence of what exists, not a conformance claim against this RFC.
 Where this RFC and a draft implementation-status document disagree, this RFC's
 accepted contract governs and the status document is stale.
 
+### Stacked-float occlusion (implementation status)
+
+Experimental `Implemented`-only evidence at `bitty` `a5bafc22`
+(2026-10-13, PR #2033, CTX-1165, closes #1993) plus `2c3c5753`
+(2026-10-13, PR #2035, CTX-1173, closes #2031), recorded here so the
+accepted contract above is not confused with shipped behavior. None of it
+promotes any claim to **Verified** or **Compatible**.
+
+- Per-leaf glyph occlusion versus higher `Float` frames in the retained and
+  fresh present paths (`glyph_occluded_by_floats` in
+  `crates/bitty-runtime/src/runtime/present.rs`): a lower leaf glyph whose
+  bitmap bounds share positive area with a higher float frame is dropped so
+  the upper opaque fill owns the overlap alone. `Float`-tier occluders only
+  (the tiled baseline and higher tiers are unchanged), empty-safe, bounded
+  to one intersection test per higher float; straddling glyphs drop whole
+  (safe over-drop direction). The retained store keeps the full leaf, so a
+  moved upper float never strands a filtered reuse; only the combined frame
+  drops occluded glyphs.
+- Focused cursor plus IME caret hidden under higher floats via the shared
+  occluder table (`cursor_occluded_by_floats`): the full cursor cell rect is
+  tested, so partial coverage still hides fail-closed; the IME caret stays
+  hidden with the cursor because it arms from the drained paint below. An
+  empty occluder table skips the probe, and the retained store is unaffected
+  because the cursor is never retained.
+- Headless evidence: `crates/bitty-runtime/tests/float_stacked_occlusion.rs`
+  (4 tests, 3 failing pre-fix) and
+  `crates/bitty-runtime/tests/float_cursor_occlusion.rs` (3 tests, the
+  hidden case failing pre-fix). Hit-test order among stacked floats is owned
+  by the [Input and Pointer Contract](input-pointer-rfc.md) implementation
+  evidence (`bitty` #2032, CTX-1164).
+
 ### Recorded direction — Panel, Activity, and the ActivityStack
 
 Recorded for traceability as a Panel, Activity, and the Native UI Boundary
