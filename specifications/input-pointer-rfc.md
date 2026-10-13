@@ -810,6 +810,49 @@ Known residuals, tracked in `bitty` #1484:
 - A selection clipped to a single visible cell is not painted while a grid is
   taller than its frame.
 
+### Stacked-float topmost-first hit-test (implementation evidence)
+
+Status: **experimental review evidence only.** This subsection records what
+merged into `bitty` `origin/main`; it does not accept the candidate sections
+above and claims no `Verified`/`Compatible` status.
+
+- **Topmost-first among stacked floats** (`bitty` #2032 `f6a0a3b2`,
+  CTX-1164, closes `bitty` #1992): `present_cell_in` in
+  `crates/bitty-runtime/src/runtime/layout_focus.rs` resolves a pointer hit
+  among stacked `Float`-tier frames topmost-painted-first per the present
+  composite order — window-global pins in reverse pin order
+  (pinned-above-float precedent), then workspace-detached floats in reverse
+  detach order — with slice-order fallback for unknown ids. Only frames
+  already containing the point compete; empty frames never win
+  (fail-closed, no new authority). The `Popup`/`Messages` above `Float`
+  above tiled tier order is preserved, and there is no focus-driven store
+  reorder (cascade anchors stay stable).
+- Headless evidence: `crates/bitty-runtime/tests/floating_present.rs`
+  (3 regression tests: focus upper, lower-only, post-focus topmost;
+  reversed order; pin precedent). Each fails on the commit before its fix.
+  Status stays `Implemented` (experimental), not `Verified`.
+
+### Cursor and IME caret under-float occlusion (implementation evidence)
+
+Status: **experimental review evidence only.** This subsection records what
+merged into `bitty` `origin/main`; it does not accept the candidate sections
+above and claims no `Verified`/`Compatible` status.
+
+- **Cursor occluded under higher floats** (`bitty` #2035 `2c3c5753`,
+  CTX-1173, closes `bitty` #2031, residual of #1993): the focused
+  `built.cursor` is filtered through the same higher-`Float` occluder table
+  as the glyph path (shared `glyph_occluded_by_floats` intersection test via
+  `cursor_occluded_by_floats` in
+  `crates/bitty-runtime/src/runtime/present.rs`). The full cursor cell rect
+  is tested, so partial coverage still hides fail-closed; the IME caret
+  stays hidden with the cursor because it arms from the drained paint
+  below. An empty occluder table skips the probe so the common path pays
+  nothing, and the retained store is unaffected because the cursor is never
+  retained.
+- Headless evidence: `crates/bitty-runtime/tests/float_cursor_occlusion.rs`
+  (3 tests; the hidden case fails pre-fix with the cursor-leak color).
+  Status stays `Implemented` (experimental), not `Verified`.
+
 ### Copy
 
 - Copy produces `clipboard.write` via the platform primitive. The write is
@@ -1100,6 +1143,14 @@ pointer consumers address the View under the pointer, and copy mode and
 search are View-bound. The capture rule now re-evaluates on the same press
 that moves focus instead of "on the next event". The residual defects are
 recorded in [bitty#1484](https://github.com/bitty-terminal/bitty/issues/1484).
+The stacked-float hit-test and cursor-occlusion subsections were synchronized
+against `bitty` `f6a0a3b2` (2026-10-13, PR #2032, CTX-1164, closes #1992) and
+`2c3c5753` (2026-10-13, PR #2035, CTX-1173, closes #2031): reverse
+pin/detach topmost-first resolution with slice fallback, and cursor plus IME
+caret hidden under higher floats via the shared occluder table. Per-leaf
+glyph occlusion itself is owned by the
+[Panel Runtime RFC](panel-runtime-rfc.md) implementation status
+(`bitty` #2033, CTX-1165).
 The [Terminal compatibility matrix](../reference/compatibility-matrix.md)
 records live IME composition as an uncovered `gap` because the compat lab
 replays bytes and cannot drive an input method; that gap is unaffected by this

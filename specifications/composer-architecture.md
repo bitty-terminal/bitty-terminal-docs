@@ -555,6 +555,22 @@ repository and is the behavior the extraction would later replace; it is not
   effects, single-session cleanup, round trip), consistent with the limits
   above. Passing tests are parity evidence for the mechanic, not acceptance of
   this contract.
+- Host overlay scene chrome (`bitty` `cb8b8e37`, 2026-10-13, PR #2034,
+  CTX-1170, host half of `bitty` #1972): a titled `List`/`Column` overlay
+  scene paints one pill row per child — the title row plus the input/item
+  rows — instead of one flattened pill, so the modal reads as a titled
+  command line (never a bare pill). The row stack centers on the middle
+  row, per-row width clips to the frame in display cells (wide glyphs
+  count 2), rows past the frame bottom clip away, single-line scenes stay
+  byte-identical, and empty text still paints its one-cell pill chrome.
+  Evidence in `crates/bitty-runtime/src/runtime/present.rs`
+  (`overlay_scene_rows`), `crates/bitty-terminal/src/tests.rs`, and
+  `crates/bitty-runtime/tests/overlay_capture_api.rs`. This uses the
+  accepted v1 node set (`Text`, `Row`, `Column`, `List`) under the v1
+  scene budgets; it is `Implemented`-only host chrome, not the extension,
+  not the `W-01` host API, and not acceptance of this contract. The
+  companion input-availability pump (`overlay.input.available`) is owned
+  by `W-01` and the plugin-ecosystem contracts, not here.
 
 Contract versus the reviewed Core-internal behavior (gaps a host-API and
 extraction task must close; none weakens a control, and none is authorization):
