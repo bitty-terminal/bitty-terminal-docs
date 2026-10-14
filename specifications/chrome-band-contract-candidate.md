@@ -249,6 +249,28 @@ usable = container inset by gaps_out and the accepted decoration insets,
    ([OQ-056](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md));
    this record defines the command-registry path only.
 
+### Wheel scroll routing
+
+1. **Scroll.** A wheel tick over a band row whose flattened span binds
+   `on_scroll` queues a `BandScrollRequest` (owner, command verb, declared
+   args, host-computed `delta`) and consumes the tick: Core chrome wins,
+   mirroring band presses. Resolution is `Hit` (queue the owner's command),
+   `NoClaim` (route nothing), or `Denied` (foreign qualifier or empty verb,
+   denied loudly). Unbound rows fall through to the viewport, capture, and
+   alternate-screen paths unchanged.
+2. **Coalescing.** Consecutive ticks for one target coalesce with saturating
+   `i32` math into the trailing queued request, so a burst drains as one
+   dispatch through the normal `PluginRuntime::dispatch_command` path with
+   its registration and capability gates.
+3. **Drain contract.** The scroll drain queue holds at most
+   `BAND_SCROLL_QUEUE_MAX` (`8`) requests; overflow drops the newest request
+   fail-closed. Counters: `scrolls_routed`, `scrolls_coalesced`,
+   `scrolls_denied`, `scrolls_unclaimed`, and `scroll_queue_drops`.
+4. **Overlay-capture parity.** Wheel capture merges trailing ticks by
+   saturating sum bounded by `UI_SCROLL_DELTA_SATURATE` (`4096.0`), counted
+   in `wheel_coalesced`. Malformed payloads fail closed to an opaque append:
+   kept, never merged.
+
 ## Candidate configuration keys
 
 | Key                    | Values                                                               | Default (candidate)                             |
@@ -305,7 +327,11 @@ influence band thickness or edge.
    workspace), capacity bound, and undo.
 7. A budget test asserting a mounted subtree above `BAND_MAX_NODES_PER_FRAME`
    truncates with a diagnostic and the frame still presents.
-8. `just check` passes for this document and every linked update.
+8. A scroll test asserting a wheel over a bound row queues one
+   `BandScrollRequest` with the host `delta`, a burst coalesces into one
+   dispatch, overflow past `BAND_SCROLL_QUEUE_MAX` drops the newest and
+   counts it, and unbound rows fall through to the viewport path.
+9. `just check` passes for this document and every linked update.
 
 ## Alternatives considered
 

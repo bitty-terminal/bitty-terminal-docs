@@ -588,6 +588,18 @@ return {
 }
 ```
 
+Per-plugin user files (CTX-1195, `bitty` #2057): the bar plugin declares
+its settings (`show`, `edge`, `show_single`, `name_max_chars`, plus a
+`modules` string array defaulting to `{"workspaces", "clock"}`) in its
+manifest `[settings]`, and a user file at
+`<config-dir>/plugins/<owner>.<name>.toml` overrides the shipped defaults
+through the same source that serves `bitty.settings.get`. Values are the
+user's, authority is the system's: no value grants anything, and settings
+declarations stay out of the manifest hash. The full file grammar, bounds,
+precedence, and read gate live in the
+[Configuration Model RFC](../specifications/configuration-model-rfc.md#plugin-settings-plane)
+and the [configuration options reference](../reference/configuration-options.md#per-plugin-user-files-pluginstoml).
+
 ## Appearance knobs (supported reference)
 
 Status: **implementation reference** read-only from `bitty` `origin/main`

@@ -78,6 +78,29 @@ deep-merge, keymaps merge by `context + chord` identity, plugins merge by
 effective config (decoration `0/0/1/0/0`, opaque outline pair, animations
 `0` ms, `views` dropped).
 
+## Per-plugin user files (`plugins/<owner>.<name>.toml`)
+
+Optional TOML-subset files beside the Lua layers override a plugin's
+shipped manifest `[settings]` defaults through the same source that serves
+`bitty.settings.get` (`bitty` #2057). One file per plugin at
+`<config-dir>/plugins/<owner>.<name>.toml`, where `<config-dir>` is the
+env-derived config dir (XDG/APPDATA/HOME, never hardcoded) and each id
+segment is at most 64 bytes. Files are data, never code: flat scalars
+plus string arrays only.
+
+| Bound                        | Value                                                  | Fail-closed                               |
+| ---------------------------- | ------------------------------------------------------ | ----------------------------------------- |
+| File size / lines / line len | at most 16 KiB / 512 lines / 1024 bytes per line       | malformed file falls back wholesale       |
+| Keys per file                | at most 64; duplicates rejected                        | malformed file falls back wholesale       |
+| String values                | at most 512 bytes, no NUL                              | fail to default for that key              |
+| String arrays                | at most 32 items, each at most 128 bytes, strings only | fail to default for that key              |
+| Type agreement               | strict, no coercion; undeclared keys unreadable        | fail to default / `E_SETTINGS_UNDECLARED` |
+
+Precedence per declared key: shipped default < shared host source < user
+file. A wrong-typed value fails to the default for that key; a malformed
+file falls back wholesale to the lower layers with a diagnostic and never
+aborts startup. `bitty-plugins.toml` stays machine-only.
+
 ## Core options (`init.lua` top level and tables)
 
 ### `font`
@@ -342,29 +365,35 @@ valid set; see [Theme presets](../configuration/themes.md). This closes
 Manifest ceiling 256 KiB, UTF-8, duplicate keys rejected. Unknown
 sections, sub-tables, and numeric values fail closed.
 
-| Key path                             | Type                      | Required                          | Valid range                                                                                                                                                                                                       | Fail-closed     |
-| ------------------------------------ | ------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| `[plugin] id`                        | string                    | yes                               | owner-qualified, at most 128 bytes                                                                                                                                                                                | reject manifest |
-| `[plugin] name`                      | string                    | yes                               | non-empty, at most 128 bytes, no NUL/ESC                                                                                                                                                                          | reject manifest |
-| `[plugin] version`                   | string                    | yes                               | SemVer 2                                                                                                                                                                                                          | reject manifest |
-| `[plugin] description`               | string                    | no                                | at most 1024 bytes, no NUL/ESC                                                                                                                                                                                    | reject manifest |
-| `[plugin] license`                   | string                    | no                                | non-empty when present, at most 256 bytes (SPDX)                                                                                                                                                                  | reject manifest |
-| `[compat] bitty`                     | string                    | no                                | version-range syntax                                                                                                                                                                                              | reject manifest |
-| `[compat] plugin-api`                | string                    | no                                | version-range syntax                                                                                                                                                                                              | reject manifest |
-| `[capabilities] <id>`                | boolean                   | no                                | ids known to the active capability catalog only (Core seed by default; see families below); `true` requests, `false` is ignored; filesystem authority must use `[[capabilities.filesystem]]`, never a boolean key | reject manifest |
-| `[[capabilities.filesystem]] access` | string                    | yes (per entry)                   | `read` \| `write`                                                                                                                                                                                                 | reject manifest |
-| `[[capabilities.filesystem]] paths`  | array of strings          | yes (per entry)                   | at most 32 patterns per kind, 8 KiB total pattern text                                                                                                                                                            | reject manifest |
-| `[lazy] commands`                    | array of strings          | no                                | at most 128 qualified names                                                                                                                                                                                       | reject manifest |
-| `[lazy] events`                      | array of strings          | no                                | at most 256 event types, 1..128 bytes each, no NUL/space                                                                                                                                                          | reject manifest |
-| `[lazy] claims`                      | array of strings          | no                                | 1..64 bytes each                                                                                                                                                                                                  | reject manifest |
-| `[tools.git] required`               | boolean                   | yes (when the section is present) | `true` \| `false` (raising to `true` changes the manifest hash and re-confirms grants)                                                                                                                            | reject manifest |
-| `[tools.git] version`                | string                    | yes (when the section is present) | version-requirement syntax, at most 128 bytes                                                                                                                                                                     | reject manifest |
-| dependencies / services              | gap in this reader subset | —                                 | full manifest model additionally bounds dependencies (at most 8) and provided/required services (at most 16 each, dot-separated interface names)                                                                  | reject manifest |
+| Key path                             | Type                      | Required                          | Valid range                                                                                                                                                                                                                         | Fail-closed     |
+| ------------------------------------ | ------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `[plugin] id`                        | string                    | yes                               | owner-qualified, at most 128 bytes                                                                                                                                                                                                  | reject manifest |
+| `[plugin] name`                      | string                    | yes                               | non-empty, at most 128 bytes, no NUL/ESC                                                                                                                                                                                            | reject manifest |
+| `[plugin] version`                   | string                    | yes                               | SemVer 2                                                                                                                                                                                                                            | reject manifest |
+| `[plugin] description`               | string                    | no                                | at most 1024 bytes, no NUL/ESC                                                                                                                                                                                                      | reject manifest |
+| `[plugin] license`                   | string                    | no                                | non-empty when present, at most 256 bytes (SPDX)                                                                                                                                                                                    | reject manifest |
+| `[compat] bitty`                     | string                    | no                                | version-range syntax                                                                                                                                                                                                                | reject manifest |
+| `[compat] plugin-api`                | string                    | no                                | version-range syntax                                                                                                                                                                                                                | reject manifest |
+| `[capabilities] <id>`                | boolean                   | no                                | ids known to the active capability catalog only (Core seed by default; see families below); `true` requests, `false` is ignored; filesystem authority must use `[[capabilities.filesystem]]`, never a boolean key                   | reject manifest |
+| `[[capabilities.filesystem]] access` | string                    | yes (per entry)                   | `read` \| `write`                                                                                                                                                                                                                   | reject manifest |
+| `[[capabilities.filesystem]] paths`  | array of strings          | yes (per entry)                   | at most 32 patterns per kind, 8 KiB total pattern text                                                                                                                                                                              | reject manifest |
+| `[lazy] commands`                    | array of strings          | no                                | at most 128 qualified names                                                                                                                                                                                                         | reject manifest |
+| `[lazy] events`                      | array of strings          | no                                | at most 256 event types, 1..128 bytes each, no NUL/space                                                                                                                                                                            | reject manifest |
+| `[lazy] claims`                      | array of strings          | no                                | 1..64 bytes each                                                                                                                                                                                                                    | reject manifest |
+| `[tools.git] required`               | boolean                   | yes (when the section is present) | `true` \| `false` (raising to `true` changes the manifest hash and re-confirms grants)                                                                                                                                              | reject manifest |
+| `[tools.git] version`                | string                    | yes (when the section is present) | version-requirement syntax, at most 128 bytes                                                                                                                                                                                       | reject manifest |
+| `[settings] <key>`                   | declaration               | no                                | key `^[a-z][a-z0-9_]*$`, 1..=64 bytes, at most 32 keys per manifest; kind `bool` \| `int` \| `string` \| `string-array` with a shipped default agreeing in kind and bound; undeclared keys are unreadable (`E_SETTINGS_UNDECLARED`) | reject manifest |
+| dependencies / services              | gap in this reader subset | —                                 | full manifest model additionally bounds dependencies (at most 8) and provided/required services (at most 16 each, dot-separated interface names)                                                                                    | reject manifest |
 
 There are no `[network]` and no `[limits]` manifest sections: network
 authority is requested through capability ids, and bounds are
 host constants, not manifest keys
 ([bitty#1326](https://github.com/bitty-terminal/bitty/issues/1326)).
+
+Settings declarations stay out of `canonical_bytes`: declaring or changing
+a value never invalidates the grant pins bound to the manifest hash
+(`bitty` #2057). Values are the user's, authority is the system's —
+no config value grants anything.
 
 Capability families in the Core seed (deny-by-default; absent means
 denied; no wildcards; unknown identifiers rejected): `terminal`

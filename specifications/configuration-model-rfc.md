@@ -302,6 +302,49 @@ stabilizes; the shipped inventory is the implementation reference in
 whether the CLI appearance flag set or the shipped keymap set grows; and
 middle-click paste acceptance, deferred under CTX-0158.
 
+## Plugin settings plane
+
+Status: **shipped mechanics** (read-only from `bitty` `origin/main`,
+CTX-1195, `bitty` #2057 closing #2010). Optional per-plugin user files
+override shipped manifest defaults through the same settings source that
+serves `bitty.settings.get`. Values are the user's, authority is the
+system's (non-delegable): no config value grants anything — grants still
+come only from manifest declaration plus consent bound to the manifest
+hash, and settings declarations intentionally stay out of
+`canonical_bytes`, so value declarations never invalidate grant pins.
+
+1. **Declarations.** The manifest `[settings]` section declares at most
+   `MAX_SETTINGS_KEYS` (`32`) keys, each `^[a-z][a-z0-9_]*$` of
+   `1..=MAX_SETTING_KEY_LEN` (`64`) bytes, with one closed type (`bool`,
+   `int`, `string`, `string-array`) and a shipped default that agrees in
+   kind and bound. Unknown types, type/default disagreement, quota or
+   duplicate violations, and out-of-bound defaults fail manifest validation
+   closed.
+2. **Files.** One TOML-subset file per plugin at
+   `<config-dir>/plugins/<owner>.<name>.toml` (env-derived config dir:
+   XDG/APPDATA/HOME, never hardcoded). Files are data, never code: flat
+   scalars plus string arrays only, no exec/include/shell. File bounds are
+   `16` KiB / `512` lines / `1024` bytes per line / `64` keys / `512`-byte
+   strings / `32` string items of `128` bytes each; duplicate keys fail.
+3. **Precedence and failure.** Per declared key: shipped default, then the
+   shared host source, then the user file — each step gated on strict type
+   agreement with no coercion, wrong-typed values failing to the default
+   for that key. A malformed file falls back wholesale to the lower layers
+   with a diagnostic, never aborting startup.
+4. **Read gate.** `bitty.settings.get` reads only the generation's declared
+   set; an undeclared key fails closed with `E_SETTINGS_UNDECLARED`, so
+   settings are never a side channel between plugins. Each generation holds
+   its own resolved map; cross-plugin reads fail closed structurally and at
+   the gate. Tables are deferred: table values fail to the default for that
+   key.
+5. **`bitty-plugins.toml` is untouched**: it stays machine-only. Symlinked
+   user files are followed as standard XDG config behavior; values stay
+   typed per declaration.
+
+The bar plugin is the first customer, wired end-to-end as proof with its
+declaration (`show`, `edge`, `show_single`, `name_max_chars` plus a
+`modules` string array); its Lua `read_settings` pattern runs unchanged.
+
 ## Reload classification
 
 Status: **accepted framework**; an implementation inventory now exists in
