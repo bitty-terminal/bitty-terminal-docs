@@ -91,7 +91,7 @@ and `statusline` plugin implementations (plugin repositories).
 | Stacking order     | The deterministic order in which several surfaces on one edge are placed from the window edge inward.             |
 | Domain             | A Core-owned model a plugin may observe, such as workspaces, panels, terminal status, or plugins.                 |
 | Snapshot read      | A bounded, copy-out read of a domain's identity-level state; never a live reference.                              |
-| Bound command      | An `on_click` binding naming a registered command plus bounded arguments.                                         |
+| Bound command      | An `on_click` or `on_scroll` binding naming a registered command plus bounded arguments.                          |
 | Composition module | A plain Lua module shipped in the plugin SDK and loaded inside each importing plugin's own VM.                    |
 
 ## Current state (implemented facts only)
@@ -114,6 +114,13 @@ else in this record is implemented.
 - No Lua workspace read API and no workspace events exist.
 - A Core pill renderer with `workspace.bar.colors` and `workspace.bar.pill_align`
   was attempted and not merged; it is dropped by this record.
+- Every `UiNode` variant (`Text | Row | Column | List`) carries an optional
+  `on_scroll` binding reusing the `ClickCommand` `{ command, args }` shape
+  (`bitty` #2008, PR #2054): a wheel over a bound node invokes the declared
+  command with the declared args plus a host-computed `delta` number (signed
+  lines, positive for wheel-up), overwriting a declared entry of the same
+  name. Parse reserves one arg slot for the injected delta so dispatch can
+  never exceed `UI_CLICK_MAX_ARGS`.
 
 ## L0 Surfaces
 
@@ -189,6 +196,33 @@ else in this record is implemented.
    registry exactly as a keybinding would, with the same validation and undo.
 5. Chrome is never a focus target: clicks never move keyboard or IME focus
    into a band, and a pointer event inside a band never reaches the grid.
+
+### Scroll bindings
+
+1. `UiNode` gains an optional `on_scroll` binding on every node variant
+   (`Text | Row | Column | List`), reusing the `ClickCommand`
+   `{ command = "<registered command id>", args = { ... } }` shape
+   (`bitty` #2008, PR #2054). There are no Lua function values in a tree
+   and no plugin code runs on the input path; scroll dispatch reuses the
+   command path exactly as clicks do.
+2. At dispatch the host merges the declared args with a host-computed
+   `delta` number (signed lines, positive for wheel-up), carried under the
+   `delta` arg name and overwriting a declared entry of the same name, so a
+   scroll carries one named table (for example `run({ id = 3, delta = 1 })`)
+   with declaration order preserved and `delta` merged last. Parse reserves
+   one arg slot for the injected delta so dispatch can never exceed
+   `UI_CLICK_MAX_ARGS` (`16`).
+3. The click allowlist rule applies unchanged: the command must be in the
+   mounting plugin's command allowlist or the mount is rejected. No new
+   capability head is introduced; the binding reuses the command path and
+   its registration and capability gates.
+4. Scroll inheritance follows the band flattening: `on_scroll` applies to
+   descendant spans that do not declare their own binding.
+5. Burst policy: consecutive wheel ticks for one target coalesce with
+   saturating `i32` math into a single queued request, and the drain queue
+   holds at most `BAND_SCROLL_QUEUE_MAX` (`8`) requests, dropping the
+   newest past the cap. Routing, the drain contract, and the counters live
+   in the [Chrome Band Contract](chrome-band-contract-candidate.md).
 
 ### Reserved slots
 
@@ -341,9 +375,13 @@ bounds; this record fixes only the shape.
    `workspace.control`.
 6. Bound tests: snapshot size and field lengths stay within Core constants at
    the workspace capacity bound.
-7. Migration test: with the Core workspaceline retired and no plugin enabled,
+7. Scroll tests: a wheel over a bound node dispatches its command with the
+   declared args plus the host-computed `delta`; a burst of ticks drains as
+   one request with a saturated delta; unbound rows fall through to the
+   viewport path unchanged.
+8. Migration test: with the Core workspaceline retired and no plugin enabled,
    workspace keybindings still switch, create, and close workspaces.
-8. `just check` passes for this document and every linked update.
+9. `just check` passes for this document and every linked update.
 
 ## Alternatives considered
 
@@ -398,7 +436,8 @@ bounds; this record fixes only the shape.
 ## P0 Review Sign-off
 
 Pending. This record adds capabilities (`workspace.read`,
-`workspace.control`) and a new input-to-command path (`on_click`), so
+`workspace.control`) and a new input-to-command path (`on_click`, extended
+by `on_scroll` reusing the same command path with no new authority), so
 acceptance requires owner and security-reviewer sign-off recorded here.
 
 ## References
