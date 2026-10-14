@@ -31,13 +31,14 @@ note) and `bitty/Cargo.toml`; current state lives in
 Directly routed architecture documents. Each declares its own status; accepted
 boundaries remain authoritative over candidate material.
 
-| Document                                                | Status   | Purpose                                                                                               |
-| ------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
-| [Architecture Overview](overview.md)                    | Draft    | System context, invariants, logical components, data flows, and evolution.                            |
-| [Core and Plugin Boundaries](core-boundaries.md)        | Accepted | Core versus plugin ownership, the decided extraction boundaries, and the normative P0 security gates. |
-| [Future Boundaries](future-boundaries.md)               | Draft    | Candidate boundary decision rules and pending decisions.                                              |
-| [Graphics and Appearance Model](graphics-appearance.md) | Draft    | Candidate graphics, composition, opacity/blur ownership, and small-core guidance.                     |
-| [Directory Semantics](directory-semantics.md)           | Draft    | Upstream `extensions/` versus downstream `plugins/` versus reserved `components/` directory meanings. |
+| Document                                                          | Status   | Purpose                                                                                               |
+| ----------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
+| [Architecture Overview](overview.md)                              | Draft    | System context, invariants, logical components, data flows, and evolution.                            |
+| [Core and Plugin Boundaries](core-boundaries.md)                  | Accepted | Core versus plugin ownership, the decided extraction boundaries, and the normative P0 security gates. |
+| [Future Boundaries](future-boundaries.md)                         | Draft    | Candidate boundary decision rules and pending decisions.                                              |
+| [Graphics and Appearance Model](graphics-appearance.md)           | Draft    | Candidate graphics, composition, opacity/blur ownership, and small-core guidance.                     |
+| [Directory Semantics](directory-semantics.md)                     | Draft    | Upstream `extensions/` versus downstream `plugins/` versus reserved `components/` directory meanings. |
+| [Extension Execution Mediation](extension-execution-mediation.md) | Draft    | Threat model for extension execution mediation: enforced-today gates versus planned 0.2.0 hardening.  |
 
 ## Architecture Diagram Hub
 
@@ -109,6 +110,7 @@ architecture/
 ├── overview.md               # system context, invariants, data flows
 ├── core-boundaries.md        # accepted core vs plugin ownership and P0 gates
 ├── directory-semantics.md     # draft extensions/ vs plugins/ vs reserved components/
+├── extension-execution-mediation.md # draft execution mediation threat model (enforced vs planned)
 ├── future-boundaries.md      # draft candidate rules and pending decisions
 ├── graphics-appearance.md    # draft graphics, composition, and appearance model
 ├── interactive/              # interactive HTML visualization suite
