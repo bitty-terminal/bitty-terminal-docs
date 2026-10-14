@@ -155,9 +155,11 @@ Smuggling vectors fail closed at validation time, before any spawn:
 ### Bounded argv and payload budgets `[Enforced]`
 
 Every spawn carries accepted bounds: at most 32 args, 256 bytes per
-arg, 8 KiB total argv, 8 KiB observation payload. Args beyond the
-per-entry cap are counted in `args_omitted`, never silently dropped,
-so truncation is visible to the requester and to audit.
+arg, 8 KiB total argv, 8 KiB observation payload
+(implementation-measured in `bitty-plugin-host/src/tools.rs`; pending
+independent re-verification, not an accepted normative limit). Args
+beyond the per-entry cap are counted in `args_omitted`, never silently
+dropped, so truncation is visible to the requester and to audit.
 
 ### Environment scrubbing `[Enforced]`
 
@@ -194,8 +196,9 @@ fresh approval through the grant path above.
 
 ### Bounded work and quotas `[Enforced]`
 
-Spawns are DoS-bounded: tracked outcomes cap at 64 with burst
-overflow failing closed as `LimitExceeded`; cancel grace periods
+Spawns are DoS-bounded: tracked outcomes cap at 64
+(implementation-measured; pending independent re-verification) with
+burst overflow failing closed as `LimitExceeded`; cancel grace periods
 clamp to a policy maximum; every stored outcome is accounted rather
 than silently evicted. Queue, task, callback, and per-plugin VM
 budgets (CPU, instructions, memory) apply on the plugin side per the
@@ -225,7 +228,8 @@ carry no allowlist path around the gate.
 Every filesystem authorization decision — allow, deny, and
 consent-required — is recorded in the bounded drop-oldest
 `FsAuditLedger` (1,024 entries, 8 paths per entry with the remainder
-counted). Consent grants and revocations audit too, so the ledger
+counted; implementation-measured, pending independent re-verification).
+Consent grants and revocations audit too, so the ledger
 shows not only what was decided but which grant made an allow
 possible. Tool-spawn outcomes are tracked with bounded in-memory
 entries, but there is no spawn audit ledger matching `FsAuditLedger`
@@ -299,6 +303,34 @@ and no planned item fully does either.
    `[Enforced]` item above is implementation evidence only. This
    page makes no absolute claims — no zero-ambient-authority, no
    verified-confinement, no audit-passed language.
+
+## Security review
+
+This page states the security assessment for the trust boundary it
+describes (extension and tool execution mediation), as required by the
+specification spine.
+
+- **Boundary.** The mediated operation is an extension or tool spawn
+  crossing from plugin-declared intent into host execution. The gate
+  is the request path described above; deny-by-default is the posture
+  whenever no narrow grant applies.
+- **Enforced posture.** Every `[Enforced]` item bounds blast radius at
+  the request gate with fail-closed verdicts. None of them confines a
+  compromised child process; that window is the central residual risk
+  above and the reason OS inheritance (`bitty#2067`) is the
+  highest-value planned item.
+- **Residual risk.** The five residual risks above are not mitigated
+  by any enforced or planned gate. Prompt-injection defense belongs to
+  the AI lane and is not claimed here.
+- **Evidence status.** The audit program
+  ([bitty#975](https://github.com/bitty-terminal/bitty/issues/975)) is
+  open. Until independent P0 acceptance evidence lands, every
+  `[Enforced]` item is implementation evidence only; this page makes
+  no absolute confinement or audit-passed claim.
+- **Numeric bounds.** The argv and payload bounds, the tracked-outcome
+  cap, and the `FsAuditLedger` sizes are implementation-measured
+  values pending independent re-verification; treat them as current
+  implementation status, not accepted normative limits.
 
 ## Verification plan
 
