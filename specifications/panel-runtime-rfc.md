@@ -755,6 +755,27 @@ promotes any claim to **Verified** or **Compatible**.
   by the [Input and Pointer Contract](input-pointer-rfc.md) implementation
   evidence (`bitty` #2032, CTX-1164).
 
+### Panel claims verification (implementation status)
+
+Experimental `Implemented`-only evidence, recorded here as pointers to the
+owning `bitty` suites rather than prose copies. None of it promotes any
+claim to **Verified** or **Compatible**.
+
+- Panel-claims headless matrix (`bitty` #2075, CTX-1203, closing #2060):
+  `crates/bitty-runtime/tests/panel_claims.rs` (14 headless proofs for the
+  4 Panel claims: zero-PTY panels, the snapshot-read path with bus
+  arbitration, fuel and heap fault isolation with neighbor-unaffected and
+  zero-frame-drop proxy, and scale-to-zero no-tick assertions). Headed
+  complements are staged but not run.
+- `panel.create` backend (`bitty` #2088, CTX-1214, closing #2085): the
+  `panel.create` host seam behind the `panel.create` grant
+  (`crates/bitty-runtime/src/plugin_runtime/services.rs`,
+  `crates/bitty-runtime/tests/plugin_panel_create.rs`) — synchronous
+  handler captured at activation, fail-closed `E_CAPABILITY_DENIED`
+  ungranted and `E_NOT_IMPLEMENTED` unwired, zero-PTY type policy
+  (terminal rejected). The headless harness proves granted
+  create, mount, and focus end to end with zero PTY terminals.
+
 ### Recorded direction — Panel, Activity, and the ActivityStack
 
 Recorded for traceability as a Panel, Activity, and the Native UI Boundary

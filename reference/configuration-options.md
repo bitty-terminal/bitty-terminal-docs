@@ -289,6 +289,16 @@ fish reserves `alt+v` for `$EDITOR`. Zoom restores before the toggle;
 state change. User entries replace the shipped chord by
 `context + chord` identity.
 
+`bitty.workspace:scratchpad-toggle` (spelled
+`command:bitty.workspace:scratchpad-toggle` on the chrome key path) toggles
+the window scratchpad slot for the core-owned keymap command (bitty issue
+2091, CTX-1241; `crates/bitty-terminal/src/chrome_keys.rs`). The command
+routes past the plugin runtime straight to the core runtime
+(`Runtime::scratchpad_toggle`), validated on the live tree before any state
+change: a refused toggle parks nothing and leaves zoom and occupancy
+untouched. It carries no shipped default chord; bind it through a user
+`keymaps` entry by `context + chord` identity like any other action.
+
 Shipped defaults (95 bindings, Alt spelling; `mod_key = "super"`
 rebinds every `alt`-bearing chord, `alt`-free chords pass through):
 
