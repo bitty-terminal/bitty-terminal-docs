@@ -224,6 +224,52 @@ else in this record is implemented.
    newest past the cap. Routing, the drain contract, and the counters live
    in the [Chrome Band Contract](chrome-band-contract-candidate.md).
 
+### Overlay input pump and modifier channel
+
+1. A plugin that mounted a block into the focusable `overlay` slot claims
+   exclusive keyboard focus for one bounded interaction through the Core-owned
+   capture switch (`bitty` CTX-0941, W-28; `crates/bitty-runtime/src/plugin_runtime/overlay.rs`).
+   Core owns the switch, the permission, and the queue; the plugin never
+   captures input directly and never registers a synchronous callback on the
+   input path. At most one capture is active; a second `acquire` fails closed
+   and the queue drops the oldest past its cap with a count.
+2. The application delivers at most one `overlay.input.available` observation
+   per tick from the `input_available()` snapshot (live owner plus queued
+   count, `None` when no owner or nothing queued), so tick cost stays O(1).
+   The owner drains through `poll` on its own cold path; `enqueue` never calls
+   into a VM.
+3. The flat key event carries only produced text, so the chord rides alongside
+   as `data` (`{ key, ctrl, alt, shift, super }`) with the shared keymap
+   spelling (`KeyName::canonical`, for example `"enter"`) plus the live
+   modifier bits (`bitty` #2098, CTX-1236). It is present only when at least
+   one modifier is held; unmodified input marshals byte-identical to before.
+4. Shift-Char rule (`bitty` #2104, CTX-1240): a shift-only `Char` produces
+   text, not a chord, so it queues flat and inserts (`Shift+A`, `!`, and
+   shifted symbols stay literals). Named keys keep all modifiers
+   (`Shift+Enter` stays a chord); `Char` with `ctrl`, `alt`, or `super` keeps
+   its chord (real chord intent).
+
+### Terminal submit bridge
+
+1. `bitty.terminal.submit(text)` submits the accepted buffer to the focused
+   panel's PTY through the capability-gated terminal input API (`bitty`
+   #2101, CTX-1239; `crates/bitty-runtime/src/plugin_runtime/services.rs`,
+   `crates/bitty-runtime/src/runtime/submit_host.rs`). The extension passes
+   raw text; the byte-exact bracketed-paste frame (`ESC[200~` content
+   `ESC[201~` `CR`) stays host-side.
+2. Grant `terminal.input.submit` from the activation snapshot; the Lua key is
+   present only while the generation holds both the grant and a wired submit
+   queue, otherwise the call fails closed with `E_CAPABILITY_DENIED` (grant)
+   or `E_NOT_IMPLEMENTED` (unwired). A legacy host without the bridge probes
+   absent.
+3. Caps are host-owned and fail-closed: content at most `COMPOSER_MAX_BYTES`
+   (`64 KiB`, `too-large` past the cap); per-generation window
+   `TERMINAL_SUBMIT_WINDOW_BYTES` (`1 MiB`, `budget-exceeded` when exhausted,
+   charged only on enqueue success); shared queue saturated reports
+   `queue-full` with nothing charged (newest dropped, counted). The outcome is
+   a table: accepted (`{ status = "accepted", bytes }`) or denied
+   (`{ status = "denied", deny }` naming the rule, never the payload).
+
 ### Reserved slots
 
 `tabline` stays an exclusive claim reserved for PW-10 panel tabs. It is not a
@@ -379,9 +425,15 @@ bounds; this record fixes only the shape.
    declared args plus the host-computed `delta`; a burst of ticks drains as
    one request with a saturated delta; unbound rows fall through to the
    viewport path unchanged.
-8. Migration test: with the Core workspaceline retired and no plugin enabled,
-   workspace keybindings still switch, create, and close workspaces.
-9. `just check` passes for this document and every linked update.
+8. Overlay pump tests: `overlay.input.available` reports the live owner plus
+   queued count only; a shift-only `Char` queues flat while `Shift+Enter`
+   and `ctrl`/`alt`/`super` `Char` keep their chord.
+9. Submit tests: `bitty.terminal.submit` without the grant fails closed;
+   over-cap, budget-exhausted, and queue-full intents deny with the rule
+   name and leave the buffer and modal session intact.
+10. Migration test: with the Core workspaceline retired and no plugin enabled,
+    workspace keybindings still switch, create, and close workspaces.
+11. `just check` passes for this document and every linked update.
 
 ## Alternatives considered
 

@@ -193,6 +193,49 @@ one machine, not a cross-platform claim; budgets stay arch constraints until
 Tier 1 reference hardware is pinned (PERF-01/OQ-100). This doc still changes
 no budget and claims no `Verified` gate.
 
+### Headed idle RSS baseline CTX-1211d and render optimization log
+
+Candidate headed measurements plus the merged render optimizations since
+`terminal-docs` #218. Budgets are unchanged; none of this is a compliance
+claim.
+
+Baseline (`bitty` #2087, CTX-1211d, main `2f34490d`, release, idle 30 s,
+same-protocol headed runs; evidence
+`recording/headed/runs/ctx-1211d-20261014T1955Z/` in `bitty`, local only):
+
+| Run                    | VmRSS   | Anon | RssFile | Shmem |
+| ---------------------- | ------- | ---- | ------- | ----- |
+| Oct-9 mem run          | 132.8MB | 25MB | 88MB    | 19MB  |
+| CTX-1211d (post-#2083) | 178MB   | 42MB | 118MB   | 19MB  |
+
+RssFile remains the top driver (66%). The +45MB gap bisects into
+driver-resident pages, not `bitty`-owned memory (`bitty` CTX-1216, #2090):
+a driver upgrade alone (615.71.09 to 615.78.08) moves about +35MB of
+driver-resident RSS for the same binary, post-device faulting varies about
+50MB run to run for identical launches, and the `bitty`-linked owned set is
+flat near 28MB in every sample. Two headed runs compare only when the driver
+version and settle age match; `scripts/mem-measure.sh` now records
+`driver.txt` and splits pmap RSS into `DRIVER_RSS_KB`, `ANON_RSS_KB`, and
+`OWNED_OTHER_KB` in `summary.txt`. The interim headed gate stays idle
+single-panel main-process RSS at or below 250MB toward the 150MB budget.
+
+Optimization log (all merged in `bitty`, headless-tested; headed numbers
+remain open):
+
+| Optimization                                      | `bitty` ref             | Effect (headless-proven)                                                                                                                                               |
+| ------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scroll region-copy plus damage-only repaint       | #2080 (CTX-1207, #2077) | Retained grid primitives shift by the motion; only the exposed band plus companion damage repaints; byte-equal to a forced full render while examining far fewer cells |
+| Fail-closed scroll fast path on companion damage  | #2083 (CTX-1207)        | Out-of-band companion overwrite declines the fast path to a full leaf render                                                                                           |
+| Occupancy-gated atlas growth plus coverage policy | #2078 (CTX-1206)        | Atlas growth gated on occupancy; hollow glyph bitmaps fall past to real tail coverage (#2086, CTX-1213)                                                                |
+| ASCII fast path past HarfBuzz shaping             | #2095 (CTX-1230, #2092) | Printable ASCII runs (`0x20..=0x7E`, byte-to-cell parity, unshaped features) skip shaping; mixed runs still shape                                                      |
+| Present-latest coalescing for burst frames        | #2094 (CTX-1231)        | Dirty ticks faster than the present cadence present only the latest state with damage retained; cross-tick scroll motions sum and region-copy once                     |
+| Full box-drawing run pin                          | #2097 (CTX-1234, #2096) | Regression pin after a verify scare; no behavior change                                                                                                                |
+
+Open (no merged evidence yet): headed scroll-CPU numbers, cold startup
+against Alacritty and Kitty on the same box, and the CTX-1211d companion
+checks (idle CPU 0.3% toward zero-submit verify, per-panel RSS slope). These
+stay acceptance criteria in `bitty` #2087, not measurements claimed here.
+
 ## Verification
 
 ```text

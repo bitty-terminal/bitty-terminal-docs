@@ -16,10 +16,11 @@ sidebar_order: 20
 > identities, versions, backing heads, rate ceilings, and stale policy for
 > the Core-owned provider families that bar modules consume. It copies no
 > rustdoc; field shapes and parser detail stay in the owning `bitty`
-> modules. The interface-plus-contract slices are merged in `bitty`, but
-> live host publication and the Lua `get()` bridge methods are pending
-> follow-ups per issue, so no stable or supported provider contract is
-> claimed.
+> modules. The interface-plus-contract slices are merged in `bitty`, and the
+> live host publication plus the Lua `get()` bridge methods are shipped
+> (`bitty` #2072 / #2074 / #2071 / #2102, see Activation below), so bar
+> modules consume through the broker; no stable or supported public contract
+> is claimed beyond that shipped wiring.
 
 ## Shared conventions
 
@@ -42,6 +43,10 @@ Every family below follows the frozen dynapi rules unchanged:
 
 Source: `bitty` #2055 (CTX-1193; `crates/bitty-runtime/src/plugin_runtime/system_sensors/`).
 Short interfaces served by native component `bitty-terminal.sensors`.
+Live publication plus the Lua `get()` bridge shipped in `bitty` #2072
+(CTX-1199) and the runtime broker path in #2102 (CTX-1238): the runtime owns
+a sensor host shared at activation and dispatches through
+`PluginServices::service_call`; ungranted stays absent and fail-closed.
 
 | Interface        | Method | Backing head            | Ceiling |
 | ---------------- | ------ | ----------------------- | ------- |
@@ -66,7 +71,12 @@ Short interfaces served by native component `bitty-terminal.sensors`.
 
 Source: `bitty` #2056 (CTX-1197; `crates/bitty-platform/src/providers.rs`,
 `network_state.rs`, `bluetooth_state.rs`, `backlight_state.rs`). Core owner
-`bitty`; one batch version for all eight interfaces.
+`bitty`; one batch version for all eight interfaces. Live host wiring
+shipped in `bitty` #2074 (CTX-1201) with the runtime broker path in #2102
+(CTX-1238): native device component `bitty-terminal.devices` serves the
+eight interfaces at `1.0.0` with deny-by-default grant translation, live
+sysfs adapters for link counters and backlight, and fail-closed stubs for
+NM, BlueZ, and Wayland inhibit.
 
 | Interface           | Methods     | Backing head                  |
 | ------------------- | ----------- | ----------------------------- |
@@ -79,24 +89,31 @@ Source: `bitty` #2056 (CTX-1197; `crates/bitty-platform/src/providers.rs`,
 | `idle.state`        | `get`       | `platform.idle.read`          |
 | `idle.control`      | `set`       | `platform.idle.control`       |
 
-- The eight head names are **proposed closed-set additions** for the host
-  task to register in `bitty-package`/`bitty-plugin-host`; until then the
-  samplers gate on the injected deny-by-default grant snapshot only.
+- The eight head names are registered in the closed capability tables
+  (`bitty-package`/`bitty-plugin-host`); the samplers gate on the injected
+  deny-by-default grant snapshot taken at activation.
 - Network is read-only by construction (no control method, no control
   head); ESSID is a separately-granted read because it is
-  location-adjacent (ungranted is byte-identical to NM-less). Bandwidth
+  location-adjacent (ungranted is byte-identical to NM-less). The broker
+  head for ESSID is `platform.essid.read`: the registry spelling
+  `platform.network.essid.read` carries four dot segments and cannot enter
+  the closed `family.resource.scope` set, so the bridge maps the alias with
+  no authority change. Bandwidth
   rates are wrap-aware: counter wrap re-baselines with unknown rates that
   tick, never a spike.
 - Bluetooth read is bounded at 16 entries with a true total plus an
   explicit truncated flag; `set_power` without the control head fails
   closed (`E_NOT_PERMITTED`) with the backend untouched.
 - Backlight `set_step` attempts only when permitted (`E_NOT_PERMITTED`
-  otherwise, never escalates); idle-inhibit toggle lives on its own head.
+  otherwise, never escalates, never setuid per `DEC-0115`); idle-inhibit toggle lives on its own head.
   Every snapshot carries `stale_age_ms`.
 
 ## Audio (`audio.*@1.0.0`)
 
 Source: `bitty` #2058 (CTX-1196; `crates/bitty-plugin-host/src/audio.rs`).
+Live monitor binding plus the Lua bridge shipped in `bitty` #2071
+(CTX-1200) with the runtime broker path in #2102 (CTX-1238); the pre-init
+poll gate is bounded with a regression test in #2063 (CTX-1198).
 Manifest allowlist is permission only; the rate contract below is the rate
 answer. Scope travels with the host call, never as a grant parameter.
 
@@ -114,33 +131,47 @@ answer. Scope travels with the host call, never as a grant parameter.
 
 - Over-poll coalesces to last-good (a 5 Hz bar renders steadily, never
   blinks on phase drift); spectrum hides past a 2000 ms grace, state past
-  10 s. Wheel-burst safety composes through a saturating control gate (one
+  10 s. Pre-init polls are bounded by the same gate and never storm.
+  Wheel-burst safety composes through a saturating control gate (one
   step per 100 ms window) with the `on_scroll` delta from the
   [Chrome Surface API](../specifications/chrome-surface-api-candidate.md).
+  Control spawn is bounded (`pactl` fixed argv with a kill deadline; step
+  at most 10; over-bound deltas denied, never clamped).
 - Scope is cava-lite: a 4–5 fps block-glyph Text meter with Lua-side glyphs
   and pause/falloff/peak-hold; 60 fps is explicitly out. The Lua shapes and
   the Text-meter recipe live in the
   [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
   and the SDK `bitty.d.lua`.
 
+## Activation
+
+Gating is evaluated from the grant snapshot taken at activation; an absent
+grant fails closed and never touches the source. Per generation the
+application wires the runtime-owned hosts once before the generation's
+`init.lua` runs: the sensor host, the device host, and the audio host are
+shared at activation, and the broker dispatches provider calls in
+`PluginServices::service_call`. Handles pin the activation generation
+epoch, so a handle from a prior generation cannot cross into the next;
+re-activation after revoke starts clean. The manifest declares the heads;
+activation rejects unbacked provisions. Settings values never grant
+anything (see the settings plane in the configuration model RFC):
+`services.required`, heads, and settings stay separate lanes.
+
 ## Open points
 
-- Live publication of the descriptors into the `ServiceDirectory` plus the
-  Lua `get()` bridge methods (broker-compat is proven with equivalent
-  records, not live wiring).
-- Live UPower D-Bus transport behind the source seam; production audio
-  monitor binding and the sandbox decision.
-- Registration of the eight platform heads in the closed capability
-  tables (`bitty-package`/`bitty-plugin-host`).
+- Live UPower D-Bus transport behind the source seam; the sandbox decision
+  for the production audio monitor.
 - Bar-side modules in `bitty-plugins` consuming these interfaces
   (negotiate-poll-render-hide).
 
 ## References
 
 - `bitty` #2019 / #2011 / #2016 (system sensors), #2012 / #2017 / #2020
-  (platform providers), #2009 / #2013 (audio) — bar-render and host/sandbox
+  (platform providers), #2009 / #2013 (audio) — bar-render and sandbox
   acceptances remain open there; this record claims only the
-  interface-plus-contract slice.
+  interface-plus-contract slice plus the shipped host publication
+  (#2072 / #2074 / #2071 / #2102) and the bounded pre-init audio gate
+  (#2062).
 - [Chrome Surface API (Candidate)](../specifications/chrome-surface-api-candidate.md) —
   `on_scroll` bindings that compose with audio control stepping.
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
