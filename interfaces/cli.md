@@ -169,17 +169,14 @@ config.inspect    config.modify
 
 The exact names and authorization flow are open.
 
-### Current list behavior and proposed diagnostics
+### Current list behavior and CTX-1269 candidate diagnostics
 
 Status: **implemented experimental list behavior; candidate, not stable.**
 
 The current `bitty` `main` source implements `core.terminal.list` and
-`core.workspace.list`, but does not implement the diagnostic fields proposed
-below. The current terminal-list result contains `terminals` rows with an `id`
-and `has_pane_session`; the current workspace-list result contains workspace
-identities, names, active position and identity, and a count. These are
-implementation details recorded for the current experimental slice, not a
-stable or compatibility-guaranteed CLI schema.
+`core.workspace.list`. The diagnostic fields described below were merged into
+`bitty` `main` by bitty #2183; they remain experimental, not stable, and not a
+compatibility-guaranteed CLI schema.
 
 `terminal.list` is derived from the active layout: it lists the terminal IDs
 corresponding to the active layout leaves and reports whether each leaf has a
@@ -188,35 +185,158 @@ terminals retained in hidden or inactive workspaces. `workspace.list` reports
 workspace identity and active state; it does not currently provide memory
 accounting for retained workspaces.
 
-#### Proposed diagnostics (unimplemented)
+The candidate retains the existing read scopes: `core.terminal.list` requires
+`terminal.inspect`, and `core.workspace.list` requires `view.inspect`. The
+diagnostic fields add no permission, terminal-content access, or control
+operation; both reports remain read-only.
 
-Status: **proposed design material; unimplemented in `bitty` `main`.**
+#### CTX-1269 candidate diagnostics
 
-A candidate worktree explores extending `core.terminal.list` with a bounded
-`diagnostics` array aligned with `terminals`, including terminal and view
-identifiers, session presence, retained scrollback line count, retained
-terminal heap bytes, and optional child PID and observed child state. The
-candidate also explores `total` and `truncated` semantics: an exact count when
-the bounded active-layout walk completes, and a lower-bound sentinel when the
-walk stops early. These fields are absent from the owning `bitty` `main`
-source and must not be treated as available output.
+Status: **implemented and merged into `bitty` `main` (bitty #2183);
+experimental and not stable.**
 
-The same candidate worktree explores a `memory` object on
-`core.workspace.list`: a bounded report over retained workspace slots,
-including hidden or inactive workspaces, with per-workspace rows (`seq`,
-`active`, `leaf_views`, `owned_views`, `pane_sessions`, `primary_state`, and
-`owned_bytes`) plus an `aggregate` of retained workspace, leaf, session,
-ownership, and byte totals, including unattributed bytes and orphaned session
-counts. It is intended to avoid terminal text, cwd, host paths, and PIDs,
-charge shared runtime state once, and bound workspace, layout-leaf, and
-pane-session walks.
+The candidate extends `core.terminal.list` with a bounded `diagnostics` array
+aligned one-for-one with the returned `terminals` array. Each diagnostic has:
 
-These proposed fields are not implemented, versioned, or stable. If adopted,
-the active-layout versus retained-workspace distinction should remain explicit:
-`terminal.list` would describe currently laid-out terminals, while workspace
-memory diagnostics would account for retained hidden state. The broader
-workspace lifecycle and ownership contract remains in the
+- `terminal_id` and `view_id`, using the current one-to-one `t:N`/`v:N`
+  mapping;
+- `has_session`, `scrollback_lines`, and `retained_heap_bytes`;
+- `child_pid`, which is either the recorded direct-child PID or `null`; and
+- `child_state`, one of `unreaped`, `reaped`, or `absent`.
+
+`unreaped` means that the PTY handle still owns an unconsumed child status; it
+does not assert that the child is currently running because this read-only
+query does not poll. `reaped` means the status was consumed while the pane
+session remains attached. `absent` has no session and no PID. The diagnostic
+contains no command, cwd, host path, or terminal text.
+
+The candidate terminal envelope is therefore shaped as follows:
+
+```json
+{
+  "terminals": [{ "id": "t:7", "has_pane_session": true }],
+  "diagnostics": [
+    {
+      "terminal_id": "t:7",
+      "view_id": "v:7",
+      "has_session": true,
+      "scrollback_lines": 200,
+      "retained_heap_bytes": 65536,
+      "child_pid": 1234,
+      "child_state": "unreaped"
+    }
+  ],
+  "total_lower_bound": 1,
+  "truncated": false
+}
+```
+
+`child_state` is an ownership state, not a process-status probe:
+
+| State      | Meaning                                                                |
+| ---------- | ---------------------------------------------------------------------- |
+| `unreaped` | The attached PTY handle still owns an unconsumed child status.         |
+| `reaped`   | The child status was consumed while the pane session remains attached. |
+| `absent`   | No pane session is attached; `child_pid` is `null`.                    |
+
+The query performs no poll, wait, kill, or reap operation. A non-null PID and
+`unreaped` state must not be read as proof that the child is currently alive.
+
+The terminal result is bounded to the active-layout prefix, at most
+`MAX_TERMINALS` entries (`64` in the candidate runtime). `terminals` and
+`diagnostics` are truncated together and remain aligned. `truncated` is true
+when the bounded walk stops before all active-layout leaves are visited.
+`total_lower_bound` is the number of returned entries: it is exact when
+`truncated` is false and is only a lower bound when `truncated` is true. The
+candidate does not scan retained inactive workspaces for this command.
+
+The same candidate adds a `memory` object to `core.workspace.list`. Its
+`workspaces` array covers retained workspace slots in slot order, including
+hidden or inactive workspaces, with rows containing:
+
+- `seq`, `active`, `leaf_views`, and `layout_truncated`;
+- `detached_floats_total`, `detached_floats_reported`,
+  `detached_floats_omitted`, and `detached_floats_truncated`;
+- `owned_views`, `pane_sessions`, `primary_state`, and `owned_bytes`.
+
+The candidate workspace envelope retains the existing identity fields and adds
+the versioned memory report:
+
+```json
+{
+  "workspaces": ["ws:1"],
+  "names": ["ws1"],
+  "active": 1,
+  "active_id": "ws:1",
+  "count": 1,
+  "memory": {
+    "v": 1,
+    "workspaces": [
+      {
+        "seq": 1,
+        "active": true,
+        "leaf_views": 1,
+        "layout_truncated": false,
+        "detached_floats_total": 0,
+        "detached_floats_reported": 0,
+        "detached_floats_omitted": 0,
+        "detached_floats_truncated": false,
+        "owned_views": 1,
+        "pane_sessions": 0,
+        "primary_state": true,
+        "owned_bytes": 65536
+      }
+    ],
+    "aggregate": {
+      "workspaces": 1,
+      "leaf_views": 1,
+      "pane_sessions": 0,
+      "orphaned_pane_sessions": 0,
+      "primary_states": 1,
+      "owned_views": 1,
+      "unique_owned_bytes": 65536,
+      "unattributed_bytes": 0
+    }
+  }
+}
+```
+
+The workspace walk reports at most `MAX_WORKSPACES` rows (`16`), visits at
+most `MAX_VIEWS_PER_WORKSPACE` layout leaves (`32`) per row, and examines at
+most `MAX_SESSION_PANES_TOTAL` pane-session owners (`128`) in the aggregate.
+The layout depth guard is `64`. Detached floats are materialized only when the
+complete detached-float set fits in the row's remaining leaf budget; otherwise
+none of that set is materialized and all are reported as omitted. Their total,
+reported, omitted, and truncation fields remain explicit.
+`layout_truncated` records a depth/leaf-prefix stop.
+These bounds describe the diagnostic report and do not change the active
+layout or the existing `terminal.list` result.
+
+The workspace `aggregate` reports bounded workspace, leaf, pane-session,
+orphaned-session, primary-state, and ownership counts, together with
+`unique_owned_bytes` and `unattributed_bytes`. A pane owner is charged once by
+`ViewId`; the runtime-global primary state is charged once by its primary-owner
+marker. Shared or duplicate references are therefore visible in leaf counts
+but not double-counted in ownership or byte totals. Orphaned global owners are
+aggregate-only and contribute to `unattributed_bytes`.
+
+Both candidate reports are read-only. Workspace memory output omits terminal
+text, cwd, host paths, and PIDs. It makes no claim about process RSS, RSS
+reduction, or post-close reclaim. The active-layout versus retained-workspace
+distinction remains explicit: `terminal.list` describes currently laid-out
+terminals, while workspace memory diagnostics account for retained hidden
+state. The broader workspace lifecycle and ownership contract remains in the
 [Workspace Compositor Specification](../specifications/workspace-compositor.md).
+
+Workspace close has a separate control lifecycle and is not encoded as a
+memory-report field. An idle target transitions directly to `Closed`; a live
+target first returns `Pending` and arms a kill confirmation without tearing
+down sessions. Repeating close for that same target returns `Closed` and tears
+down its sessions. `Esc` or the explicit cancel path returns to the ordinary
+state without closing. A pending arm is replaced when another workspace is
+armed, and unknown workspace indices fail closed. These are candidate
+control-plane semantics pending the CTX-1269 merge and independent
+verification.
 
 ## Instance targeting and environment
 

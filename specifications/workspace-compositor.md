@@ -438,6 +438,24 @@ What merged, exactly:
    `view.inspect`; `workspace new|focus|move` ride `view.manage`;
    `workspace close ws:N` requires the elevated `terminal.manage` scope
    because it kills live sessions.
+   CTX-1269 extends the experimental `core.workspace.list` result with a
+   pending candidate `memory` object. It reports retained workspace slots,
+   including inactive slots, without changing the active-layout query
+   semantics of `core.terminal.list`. The candidate is documented in the
+   [CLI reference](../interfaces/cli.md); it is not a stable or
+   compatibility-guaranteed schema until the implementation branch merges and
+   receives independent verification.
+
+   The candidate memory object is versioned as `memory.v: 1`. Its rows are
+   bounded to `16` retained slots and report at most `32` layout leaves per
+   row, with a `64` layout-depth guard. Detached-float totals distinguish the
+   exact total from the reported and omitted prefix. The aggregate examines
+   at most `128` pane-session owners and charges shared `ViewId` owners and
+   the singleton primary state once. `layout_truncated` and
+   `detached_floats_truncated` describe the bounded read only; they do not
+   alter layout, attachment, or close behavior. The report is implemented and
+   merged into `bitty` `main` (bitty #2183); experimental and not stable.
+
 3. **Move focused window across workspaces** (`bitty` #457 `8b987a0`,
    CTX-0259): `Mod+Shift+Number` and `ctl workspace move ws:N` reparent the
    focused leaf with its pane session untouched; same-workspace is a no-op

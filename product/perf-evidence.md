@@ -230,6 +230,24 @@ headed budget result, memory reduction, release gate, or cross-machine claim
 is made. The accepted PB-2 budget remains owned by the performance budget RFC
 and is unchanged by this document.
 
+#### Measurement cleanup identity and early-exit contract
+
+The headed probe's cleanup is part of measurement validity and applies on
+success, refusal, and every early exit after launch. At launch it records only
+a bounded process tree, including the window identity and every PID eligible
+for cleanup. Cleanup closes the still-present window by its recorded identity,
+then processes recorded descendants before the recorded root. Before acting
+on each surviving recorded member, it independently revalidates the
+executable identity, process start time, and `BITTY_INSTANCE_ID`. A missing or
+zombie member is skipped. Cleanup never discovers replacement processes after
+launch and has no basename, `pid`/`comm`, or other fallback discovery. The
+prior workspace focus is restored as the final idempotent cleanup step.
+
+The probe must therefore not claim that cleanup, PID absence, or a successful
+capture proves an RSS reduction. These identity and early-exit guarantees
+describe the candidate measurement method and do not promote its numeric
+captures to verified evidence.
+
 Optimization log (all merged in `bitty`, headless-tested; headed numbers
 remain open):
 
