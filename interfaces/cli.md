@@ -169,6 +169,55 @@ config.inspect    config.modify
 
 The exact names and authorization flow are open.
 
+### Current list behavior and proposed diagnostics
+
+Status: **implemented experimental list behavior; candidate, not stable.**
+
+The current `bitty` `main` source implements `core.terminal.list` and
+`core.workspace.list`, but does not implement the diagnostic fields proposed
+below. The current terminal-list result contains `terminals` rows with an `id`
+and `has_pane_session`; the current workspace-list result contains workspace
+identities, names, active position and identity, and a count. These are
+implementation details recorded for the current experimental slice, not a
+stable or compatibility-guaranteed CLI schema.
+
+`terminal.list` is derived from the active layout: it lists the terminal IDs
+corresponding to the active layout leaves and reports whether each leaf has a
+pane session. It is not a process-wide inventory and does not include
+terminals retained in hidden or inactive workspaces. `workspace.list` reports
+workspace identity and active state; it does not currently provide memory
+accounting for retained workspaces.
+
+#### Proposed diagnostics (unimplemented)
+
+Status: **proposed design material; unimplemented in `bitty` `main`.**
+
+A candidate worktree explores extending `core.terminal.list` with a bounded
+`diagnostics` array aligned with `terminals`, including terminal and view
+identifiers, session presence, retained scrollback line count, retained
+terminal heap bytes, and optional child PID and observed child state. The
+candidate also explores `total` and `truncated` semantics: an exact count when
+the bounded active-layout walk completes, and a lower-bound sentinel when the
+walk stops early. These fields are absent from the owning `bitty` `main`
+source and must not be treated as available output.
+
+The same candidate worktree explores a `memory` object on
+`core.workspace.list`: a bounded report over retained workspace slots,
+including hidden or inactive workspaces, with per-workspace rows (`seq`,
+`active`, `leaf_views`, `owned_views`, `pane_sessions`, `primary_state`, and
+`owned_bytes`) plus an `aggregate` of retained workspace, leaf, session,
+ownership, and byte totals, including unattributed bytes and orphaned session
+counts. It is intended to avoid terminal text, cwd, host paths, and PIDs,
+charge shared runtime state once, and bound workspace, layout-leaf, and
+pane-session walks.
+
+These proposed fields are not implemented, versioned, or stable. If adopted,
+the active-layout versus retained-workspace distinction should remain explicit:
+`terminal.list` would describe currently laid-out terminals, while workspace
+memory diagnostics would account for retained hidden state. The broader
+workspace lifecycle and ownership contract remains in the
+[Workspace Compositor Specification](../specifications/workspace-compositor.md).
+
 ## Instance targeting and environment
 
 Status: **candidate contract.**
