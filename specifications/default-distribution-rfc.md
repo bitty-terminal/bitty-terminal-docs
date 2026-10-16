@@ -85,8 +85,10 @@ sidebar_order: 20
 > removal landed. The bundled catalog is `bitty-terminal.shell-integration`
 > only. Workspace presentation is owned by the first-party `bar` plugin
 > (`bitty-terminal.bar`, Waybar-like consolidated bar covering workspaces,
-> statusline, and tabs); Core draws no workspace presentation chrome,
-> including in `bitty --safe`. Rows and examples below that name
+> statusline, and tabs); Core owns workspace state and semantics and retains
+> the default workspace strip as the fallback presentation. The bar may
+> replace that strip only through read-only workspace observations and Core
+> commands; absence or failure returns to the fallback. Rows and examples below that name
 > `bitty-terminal.workspace` as owning the workspaceline remain the dated
 > catalog record.
 

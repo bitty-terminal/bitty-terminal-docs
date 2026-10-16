@@ -237,19 +237,24 @@ whose spellings stay candidate.
 With no plugin enabled, Bitty is a plain terminal window comparable to
 Alacritty: a shell, the grid, scrollback, selection and clipboard, fonts,
 colors, and themes, keymaps, typed configuration, and splits and workspaces as
-Core primitives reachable through commands and key bindings. It draws no
-chrome: no bar, no tab strip, and no status line, including in `bitty --safe`.
+Core primitives reachable through commands and key bindings. Core owns the
+workspace state and semantics, and its default workspace strip is the fallback
+presentation. A bar or other plugin may replace that strip with read-only
+workspace observations; it never owns workspace truth or mutates terminal
+state. If the replacement is unavailable or fails, Core falls back to the
+default strip so workspace state and commands remain usable. Other optional
+chrome, including tab and status surfaces, remains plugin presentation.
 Every piece of chrome is a plugin composition on generic Core mechanisms, so
 the Tabs, Workspace bar, and Status line rows above own presentation
 entirely.
 
 Retired state (`W-104`, `bitty#1677` `c246e52`, `bitty#1680` `34b6d83`):
-Core draws no workspaceline, bar, tab strip, or status line — consistent
-with the zero-plugin baseline above, including in `bitty --safe`.
-Workspace and status presentation is owned by the first-party bar
-presentation plugin (for example `bitty-plugins/plugins/bar`, which renders
-what the retired Core workspaceline drew); Core retains only the workspace
-lifecycle, state, and generic chrome-band mechanisms. The accepted
+the retired Core workspaceline, tab strip, and status-line presentation are no
+longer the replacement surface. The default workspace strip remains the Core
+fallback described above, including in `bitty --safe`; the first-party bar
+presentation plugin may replace it with read-only observations. Core retains
+workspace lifecycle, state, query commands, and generic chrome-band
+mechanisms. The accepted
 [`W-74` legacy-chrome retirement](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/legacy-chrome-retirement.md)
 contract and
 [ADR 0017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0017-tabs-alias-shell-integration-retirement.md)

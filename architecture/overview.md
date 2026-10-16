@@ -288,16 +288,18 @@ pattern serves every domain, so no API is specific to workspaces.
 window comparable to Alacritty: a shell, the grid, scrollback, selection and
 clipboard, fonts, colors, and themes, keymaps, typed configuration, and splits
 and workspaces as Core primitives reachable through commands and key bindings.
-It draws no chrome: no bar, no tab strip, and no status line.
+Core owns workspace state and semantics and provides the default workspace
+strip as a fallback. A bar/plugin may replace that strip using read-only
+workspace observations and existing Core commands; absence, denial, malformed
+updates, or failure returns to the Core strip. Tab and status surfaces remain
+optional plugin presentation.
 
-Retired state (`W-104`, `bitty#1721` `819f286`): Core draws and reserves
-nothing — no workspaceline, no band reservation, no bar — consistent with
-the zero-plugin baseline above, including in `bitty --safe`. Workspace and
-status presentation is owned by the first-party bar presentation plugin (for
-example `bitty-plugins/plugins/bar`, which renders what the retired Core
-workspaceline drew). Core retains only the workspace lifecycle, state,
-query commands, and generic chrome-band mechanisms. Mounted plugin trees
-are stored but not yet rendered.
+Retired state (`W-104`, `bitty#1721` `819f286`): the Core workspaceline and
+its transitional band reservation were removed. The default workspace strip
+is the fallback described above, including in `bitty --safe`; the first-party
+bar presentation plugin may replace it with read-only observations. Core
+retains workspace lifecycle, state, query commands, and generic chrome-band
+mechanisms. Mounted plugin trees are stored but not yet rendered.
 
 ## Candidate execution-domain model
 

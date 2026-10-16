@@ -265,9 +265,35 @@ not accept the rest of the tree or its other subtrees.
   consent or post-approval filesystem failure, `2` usage error, `4` plugin
   error (unknown/non-bundled id, invalid or corrupt manifest, pin mismatch,
   uncovered grant, blocked capability increase).
+- Post-install guidance (implemented-only, `bitty` #2144, PR #2154): a
+  successful `plugin install` or `plugin enable` prints the enable command,
+  package location, per-plugin configuration path and declared setting
+  defaults, manifest-provided next-step hints, and an `info` command pointer.
+  The hints are bounded display-only text: they do not grant authority, run
+  plugin code, or enter the grant-binding manifest hash. The same guidance is
+  printed for bundled and local-source installs, with platform-neutral path
+  rendering.
 - Deliberate non-goals in this slice: no `bitty x` execution, no top-level
   aliases, no dynamic plugin namespace, and no plugin completion integration —
   those stay candidate contract above.
+
+### `bitty init` and startup presentation
+
+Status: **implemented-only evidence** from `bitty` PR #2153 and PR #2157
+(0.0.24); this does not make the broader CLI candidate contract stable.
+
+- The interactive TTY wizard uses single-keypress navigation for option
+  pickers. Arrow keys and `j`/`k` move immediately, Enter selects the current
+  entry, and the bounded escape-sequence reader preserves a lone Escape as
+  cancel without treating a partial CSI/SS3 sequence as a separate answer.
+  Non-TTY input keeps the line-oriented path.
+- The ASCII mascot greeting and `--mascot` flag were removed. `--no-splash`
+  remains the one-launch suppression for the normal first-run splash; machine
+  flows such as `--headless` and `--test-mode` remain splash-free. `bitty init`
+  now starts with the setup prompt and no mascot output.
+- The wizard still writes only the documented configuration surface and keeps
+  its bounded-attempt and fail-closed behavior. These are implementation
+  observations, not an acceptance of the candidate CLI grammar.
 
 ## Shipped slice: `bitty dev` build features
 
