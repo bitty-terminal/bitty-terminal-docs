@@ -182,6 +182,27 @@ After each applied action, terminal state satisfies all of:
 Invariant checking: a debug-only validator can recompute all invariants from the
 grid after any action batch; CI runs it behind every corpus replay.
 
+### Alternate-screen scrollback implementation evidence
+
+Status: **experimental review evidence only.** The accepted invariants above
+remain authoritative; this subsection records merged `bitty` PR #2159
+(`3073a419`, 2026-10-16) and does not claim `Verified`/`Compatible` status.
+
+The alternate screen owns no scrollback. When a scroll region reaches the
+bottom while alternate-screen mode is active, rows that leave the region are
+discarded rather than appended to the primary screen's scrollback. This
+applies both to normal full-region TUI indexing and explicit scroll-up
+actions. Entering and leaving `DECSET 1049` therefore preserves the primary
+scrollback length and content; TUI padding and stale alternate-screen rows do
+not leak into history after exit.
+
+Headless evidence is `bitty-term-state`'s
+`alt_screen_scroll_never_captures_scrollback` plus the btop-shaped runtime
+cycle in `tui_exit_scrollback_2133.rs`. This is separate from the
+presentation-layer Kitty image rule: alternate-screen images are hidden while
+the TUI owns the screen, while the retained main-screen placements repaint on
+exit.
+
 ## Damage tracking model
 
 - Each applied action records a damaged rectangle set (grid coordinates plus

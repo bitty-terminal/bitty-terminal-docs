@@ -352,8 +352,8 @@ height, active/inactive colors, and hiding land in that record as candidate
 retained `workspace.show_bar`; the Workspace area, decoration insets, and PTY
 geometry are recomputed per edge by the band geometry and reflow rules there
 (four edges defined, `top`/`bottom` planned for v0.1). The earlier
-`bitty --safe` minimal-bar fallback is superseded by
-[ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md): safe mode draws no bar. These resolutions are candidate,
+`bitty --safe` minimal-bar wording is superseded by
+[ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md): safe mode does not load the optional bar replacement; the Core fallback remains available. These resolutions are candidate,
 not accepted.
 
 **Appearance owned by plugins.** Under the candidate

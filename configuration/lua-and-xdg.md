@@ -577,8 +577,10 @@ Status: **shipped input** (read-only from `bitty` `origin/main`,
 [bitty#1572](https://github.com/bitty-terminal/bitty/issues/1572)
 implementer decision, CTX-0979 `bitty` #1721). `workspace.show_bar` and
 `workspace.bar.edge` are RETAINED as `bar`-plugin-owned input
-(`bitty-terminal.bar`); Core parses but consumes neither for drawing — Core
-draws no workspace presentation chrome, including in `bitty --safe`. No
+(`bitty-terminal.bar`); Core parses but does not use these keys as workspace
+truth. The default workspace strip remains the fallback, including in
+`bitty --safe`; the bar replaces it only through read-only workspace
+observations and Core commands. No
 `workspace.bar.colors` or `workspace.bar.pill_align` keys were introduced.
 
 ```lua

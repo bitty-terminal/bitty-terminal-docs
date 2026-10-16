@@ -271,8 +271,10 @@ presentation plugins enabled, including `bitty --safe`:
 
 1. Workspaces are fully usable: every workspace operation works through Core
    commands and key bindings, with no dependency on the plugin system.
-2. Core draws no workspace presentation: no bar, no tab strip, no sidebar, and
-   no workspace pills; every edge band reserves zero space.
+2. Core owns workspace state and semantics and provides the default workspace
+   strip as fallback. A bar plugin may replace that strip with read-only
+   workspace observations and Core commands; failure returns to the fallback.
+   Optional tab and sidebar surfaces remain plugin presentation.
 3. The hidden scratchpad slot and its Core toggle command remain available, with
    no visible indicator when no presentation plugin is enabled.
 4. The baseline does not depend on the plugin runtime, event delivery, or

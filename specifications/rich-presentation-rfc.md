@@ -380,6 +380,38 @@ What merged, exactly:
    live-verify task itself remains open; pixel painting is evidenced by
    CTX-0291, not by closing CTX-0250.
 
+### Kitty probe and alternate-screen image evidence
+
+Status: **experimental review evidence only.** The following behavior merged
+in `bitty` PRs #2148, #2152, and #2166 (2026-10-16). It records the current
+probe and present-path behavior without changing the accepted image ceilings
+or promoting the implementation to `Verified`/`Compatible`.
+
+- XTWINOPS `CSI 16 t` replies with the live cell height and width as
+  `CSI 6 ; height ; width t`. Bitty continues to answer only the admitted
+  `14 t`, `16 t`, and `18 t` probes; every other window operation stays
+  silent, and replies cannot retrigger the query scanner.
+- This direct cell-size reply is required by Yazi and Chafa-style detectors:
+  their geometry probe now sees non-zero cell metrics and agrees with the
+  `14 t` pixel-area and `18 t` cell-count answers.
+- Bitty children retain an honest `TERM_PROGRAM=bitty` while inherited outer
+  terminal graphics fingerprints are sanitized. Yazi's query battery can
+  therefore select the bounded Kitty Graphics path (`KgpOld`) from actual
+  replies rather than a spoofed terminal brand. The tested flow transmits
+  and paints with `a=T`, preserves the cursor with `C=1`, and clears with
+  `a=d,d=A`; Sixel remains unclaimed.
+- Main-screen Kitty image placements survive an alternate-screen cycle. While
+  alternate screen is active, existing placements are retained but not
+  blitted, and new placements are suppressed; on return to the primary screen
+  the retained placements repaint. This is presentation state and is
+  independent of the terminal-state rule that alternate-screen scrolls never
+  enter primary scrollback.
+
+Headless evidence is `terminal_queries.rs` for the `14 t`/`16 t`/`18 t` and
+Yazi probe battery, `kitty_images_present.rs` for KgpOld display/erase and
+alt-screen restoration, and the runtime query/present tests named in PRs
+PRs `#2148`, `#2152`, and `#2166`.
+
 Recorded deviations and open items (not silently resolved):
 
 - The Kitty path admits `8192` px per side within the same `4096²`-pixel area

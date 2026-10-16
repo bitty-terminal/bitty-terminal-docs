@@ -10,6 +10,13 @@ and this project adheres to
 
 ### Added
 
+- 0.0.24 behavior synchronization: `bitty init` single-keypress TTY picker
+  navigation and mascot removal; corrected fcitx5 IME commit ownership;
+  detached/pinned float scrolling, discard, Alt-only drag, and full occlusion;
+  Kitty `16t` probing, Yazi/Chafa detection, alternate-screen scrollback and
+  image semantics; and plugin install/enable next-step guidance. These entries
+  record implementation evidence only, not a `Verified` or `Compatible` claim.
+
 - Repository bootstrap (CTX-0187 Phase 1): docs-quality toolchain (justfile,
   `.github/scripts/check-docs.mjs`, docs-quality workflow), CarryCtx baseline,
   and an empty documentation skeleton.

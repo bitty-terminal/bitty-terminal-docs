@@ -546,6 +546,28 @@ What merged, exactly:
     `appearance.animations`. Layout commits immediately; only Core-owned
     chrome ring fades. Reduced-motion, safe-mode, and disabled suppress
     all three; zero-wakeup-when-idle preserved.
+14. **Detached-float scroll routing** (`bitty` #2139, PR #2151,
+    `8eafcb84`): wheel, page, and keyboard scroll lookup includes detached
+    and pinned views, so a focused float receives viewport and selection-offset
+    updates instead of silently falling back to the tiled tree.
+15. **Float modifier ownership** (`bitty` #2140, PR #2161, `cf2ec8d6`):
+    `Alt`-drag owns in-app float movement and edge resize; `Super` is left to
+    the desktop compositor and does not arm a Bitty float grab. The headed
+    Hyprland behavior and headless `float_super_drag` regression tests are
+    implementation evidence only.
+16. **Detached-float chrome occlusion** (`bitty` #2138, PR #2160,
+    `10f5a5eb`): detached Float-tier frames add both a rectangular and rounded
+    theme-background cover before lower chrome, hiding tiled rings, shadows,
+    and glows beneath the float. The bounded present-path cover is Float-tier
+    only; tiled rendering is unchanged. Evidence is
+    `float_chrome_occlusion.rs`.
+17. **Dead float and pin discard** (`bitty` #2141, PR #2149,
+    `59cf70bc`): when a child session exits, a detached or pinned view is
+    discarded rather than restored as an empty panel. Its stored view,
+    offsets, drag/resize grabs, and pane session are released; focus moves to
+    a live leaf, stale bindings are invalidated, and the window leaf count
+    includes active floats, pins, and inactive-workspace floats. Evidence is
+    the `discard_floated`, `discard_pinned`, and window-count regression suite.
 
 Explicit non-claims: the `LayoutProvider` plugin algorithms, drag/resize
 interactions, and scratchpad retention in this specification are not
@@ -675,6 +697,24 @@ Rules:
 4. Every interaction is undoable via the same command surface that the
    configuration and IPC layers use; no interaction relies on an ambient
    platform-specific shortcut alone.
+
+## Workspace presentation contract
+
+Core owns workspace state and semantics: identity, lifecycle, focus, ordering,
+commands, layout validity, and the meaning of a workspace transition. The
+default workspace strip is the presentation fallback. A mounted bar or other
+plugin may replace that strip by consuming bounded, read-only workspace
+observations and dispatching the existing Core commands; it never becomes the
+source of workspace truth and never mutates terminal state directly. If the
+plugin is absent, denied, malformed, stale, or fails during update, Core
+restores the default strip and keeps workspace commands and state usable.
+
+The fallback and replacement use the same workspace identities and ordering.
+The replacement surface may change layout and styling, but it cannot invent a
+workspace, hide a state transition from Core, or widen authority through an
+observation subscription. This is the explicit presentation boundary consumed
+by the [Core and Plugin Boundaries](../architecture/core-boundaries.md) and
+the candidate [Chrome Surface Contract](chrome-surface-contract-candidate.md).
 
 ## Hyprland and Waybar reference handling
 

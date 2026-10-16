@@ -229,6 +229,9 @@ un-validated payload.
 - **Kitty Graphics (admitted).** `ESC _ G ... ST` (APC `G`) is intercepted
   before the VT state machine; the control header, the base64 payload, and the
   chunked reassembly are bounded. This is the only admitted image protocol.
+  The current implementation evidence also answers Kitty's support probe and
+  preserves main-screen placements across an alternate-screen cycle; see the
+  [Rich Presentation RFC](rich-presentation-rfc.md#kitty-probe-and-alternate-screen-image-evidence).
 - **Sixel (refused).** The recorded refusal stands; `bitty inspect protocol
 sixel` reports unsupported and Sixel sequences are ignored while text and
   fallbacks keep working. This page opens no Sixel path.

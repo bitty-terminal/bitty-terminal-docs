@@ -294,8 +294,9 @@ them (see the draft
 `WorkspaceRail` (a workspace list with drop and `+` creation targets),
 `StatusBar`, and a tab strip are **plugin compositions** on edge surfaces that
 read domain data through `<domain>.read` snapshots and events and mutate only
-through `<domain>.control` commands. They are not Core surfaces; with no plugin
-enabled, no bar, rail, or tab strip is drawn. The draft
+through `<domain>.control` commands. The rail/bar replacement is not the Core
+source of workspace truth; when absent or failed, the Core default workspace
+strip remains the fallback. The draft
 [Status System Specification](status-system.md) remains the module registry
 contract a status plugin consumes.
 

@@ -668,7 +668,9 @@ Status: **experimental review evidence only.** This subsection records the
 shipped `bitty` input slice; it does not accept the candidate sections above
 and does not close OQ-004/OQ-007.
 
-Shipped at `bitty` `679f12f` (2026-09-25), read-only:
+The original composition evidence was shipped at `bitty` `679f12f`
+(2026-09-25). The fcitx5 correction is merged in `bitty` PR #2147
+(`deab629c`, 2026-10-16), read-only:
 
 - Platform event family and bounds: `ImeEvent` at
   `crates/bitty-platform/src/event.rs:541-548`; `winit` translation and the
@@ -685,30 +687,44 @@ Shipped at `bitty` `679f12f` (2026-09-25), read-only:
   dispatch that maps an empty preedit to an overlay clear and routes
   `Enabled`/`Disabled` is the `Ime` arm at
   `crates/bitty-runtime/src/runtime/resize.rs:643-663`.
-- Bounded single-write commit: `handle_ime_commit`
-  (`crates/bitty-runtime/src/runtime/input.rs:1668-1703`); it clears the
-  overlay, then pushes the bounded text through the same bounded PTY queue as
-  keyboard input, with no added bytes.
+- Bounded single-write commit: `handle_ime_commit_at`
+  (`crates/bitty-runtime/src/runtime/input.rs`); it clears the overlay, then
+  pushes the bounded text through the same bounded PTY queue as keyboard
+  input. For an armed composition, exactly one trailing ASCII space is removed
+  when present because fcitx5 may include the committing Space in the commit
+  text. An unsolicited commit has no armed key claim and remains verbatim,
+  including a deliberate trailing space.
 - Focus-loss cancel: `crates/bitty-runtime/src/runtime/input.rs:1598-1602`
   (added for `bitty` #1356 so a preedit whose clearing event never arrives
   cannot brick the keyboard).
-- Headless evidence: `crates/bitty-runtime/tests/ime_input.rs` (7 tests),
-  including `empty_preedit_then_commit_inserts_exactly_once` and
-  `raw_keys_during_composition_do_not_double_input`.
+- Headless evidence: `crates/bitty-runtime/tests/ime_input.rs` plus
+  `crates/bitty-runtime/tests/ime_fcitx5_2142.rs`. The latter covers Shift
+  alone under Kitty report-all, armed versus unsolicited commit spacing, and
+  one-delete-only press/release behavior. The former retains the exact-once
+  empty-preedit/commit and raw-key composition coverage.
+- The former open `bitty` #1449 trailing-space defect is resolved by the
+  armed-claim correction. The implementation still remains
+  `Implemented` (experimental), not `Verified`/`Compatible`, and a live
+  fcitx5 headed session was not part of this evidence.
 
-**Open defect `bitty` #1449 (`[P1]` trailing space after an fcitx commit).**
-The shipped composition guard is keyed on overlay presence
-(`ime_preedit.is_some()`), so the empty `Preedit` that precedes `Commit` ends
-the composition before the commit-triggering key press can be suppressed. On
-a Wayland or X11 fcitx session the commit key is then encoded as ordinary
-input, which is the reported synthetic trailing space. Two contract
-obligations are therefore unmet at `679f12f`: the commit-triggering key is not
-consumed, and the committed text is not the only input the commit produces.
-The corpus records this as an open `P1` defect with the product fix owned by
-the `bitty` repository; the required fix must keep composition liveness
-independent of overlay content and add hermetic fcitx-shaped
-composition/commit fixtures (no personal input data). Status stays
-`Implemented` (experimental), not `Verified`/`Compatible`.
+### Float scroll, modifier ownership, and occlusion evidence
+
+Status: **experimental review evidence only.** These observations are from
+merged `bitty` PRs #2151, #2161, and #2160 (2026-10-16). They refine the
+candidate interaction model above and do not promote it to an accepted UI
+contract.
+
+- Wheel and page scrolling resolve the focused target through the runtime's
+  detached/pinned view lookup, not only the tiled layout tree. A focused
+  detached or pinned float therefore receives the same bounded viewport and
+  selection-offset updates as a tiled view.
+- Float movement and edge resize are `Alt`-only. `Super` is deliberately left
+  to the desktop compositor, so a `Super` drag does not arm an in-app float
+  move or resize; `Alt` still grabs the float and supports edge placement.
+- The implementation evidence includes `float_super_drag.rs` and the float
+  scroll regression coverage in the `bitty-runtime` test suite. Headed
+  compositor behavior was observed separately; the repository remains
+  `Implemented` (experimental), not `Verified`/`Compatible`.
 
 ## Selection, copy, and paste (candidate)
 
@@ -1133,10 +1149,12 @@ own RFCs. It is registered as a **Draft** in
 implementation exists at `bitty` `c0aadd2` + `a8735d0` (CTX-0095/0098,
 `Implemented` experimental not `Verified`) as review evidence per CTX-0116.
 The IME composition lifecycle, preedit/commit ordering, and verbatim-commit
-rules were synchronized against `bitty` `679f12f` (2026-09-25) and record the
-open [bitty#1449](https://github.com/bitty-terminal/bitty/issues/1449) defect
-(`P1`, trailing space after an fcitx commit) as unmet, with the product fix
-owned by the `bitty` repository. The selection model, mouse coordinate
+rules were synchronized against `bitty` `679f12f` (2026-09-25), then corrected
+by `deab629c` (2026-10-16, PR #2147): armed fcitx5 commits remove exactly one
+committing ASCII space, unsolicited commits remain verbatim, Shift alone is
+IME-owned, and bare Delete release emits no second deletion. The former
+`bitty#1449` trailing-space defect is resolved in implementation evidence;
+the page remains experimental rather than `Verified`/`Compatible`. The selection model, mouse coordinate
 mapping, and alternate-screen capture sections were synchronized against
 `bitty` `d2ccd64` (2026-09-27, PR #1485). Selection is View-owned end to end,
 pointer consumers address the View under the pointer, and copy mode and
@@ -1151,6 +1169,8 @@ caret hidden under higher floats via the shared occluder table. Per-leaf
 glyph occlusion itself is owned by the
 [Panel Runtime RFC](panel-runtime-rfc.md) implementation status
 (`bitty` #2033, CTX-1165).
+Float scroll routing, Alt-only float drag ownership, and detached-float chrome
+occlusion were added from `bitty` PRs #2151, #2161, and #2160 (2026-10-16).
 The [Terminal compatibility matrix](../reference/compatibility-matrix.md)
 records live IME composition as an uncovered `gap` because the compat lab
 replays bytes and cannot drive an input method; that gap is unaffected by this
