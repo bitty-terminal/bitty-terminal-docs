@@ -552,7 +552,18 @@ owning session lifetime):
 > Implementation note (Implemented-only, `bitty` CTX-0792, PR #1515 (`c9b386f`)): bearer
 > tokens are 128 bits from the platform CSPRNG, and each bearer is bound to
 > one session, principal, consent generation, terminal, and method family; a
-> consent change or session end voids it. The consent gesture in item 1 is Implemented-only via `bitty#1520` (`#1747`): explicit local-user consent grants one of five scopes (`debug.inspect`, `debug.trace`, `debug.control`, `terminal.inspect`, `terminal.input`) with a capped TTL (`AUTOMATION_BEARER_TTL_MS = 600_000`, 10 minutes); revocation reuses the session-consent lifecycle (`revoke_scope`, `revoke_session`, `consent grant` / `consent revoke-session` verbs). This note claims no Verified status.
+> consent change or session end voids it. The item 1 consent gesture and the
+> item 4 revocation surface are Implemented-only via `bitty` issue #1520 and
+> PR #1747 (`8623cd1e`, merged 2026-10-07T04:06Z): an explicit local-user
+> consent prompt mints a consent-issued bearer over the five consentable
+> scopes (`debug.inspect`, `debug.trace`, `debug.control`, `terminal.inspect`,
+> `terminal.input`) with a capped TTL (the accepted 10-minute automation cap),
+> and the revocation surface is exposed as the `bitty.debug/grantConsentScope`,
+> `bitty.debug/revokeConsentScope`, and `bitty.debug/revokeConsentSession`
+> wire methods, which the `bitty ctl consent grant` / `consent revoke` /
+> `consent revoke-session` verbs speak; revocation advances the consent
+> generation or ends the session, so queued controls deny at the next drain
+> recheck and later requests fail closed. This note claims no Verified status.
 >
 > Implementation note (Implemented-only, `bitty` CTX-0855, PR #1523
 > (`0f7134f9`)): the authority-less `ServeContext` constructors and the
@@ -561,7 +572,14 @@ owning session lifetime):
 > feature. That feature is enabled only from dev-dependencies. A repository
 > gate fails the build when any normal or build dependency edge of the
 > workspace enables a `test-support` feature, so production builds contain no
-> bearer minter until the consent gesture in item 1 exists.
+> context-free bearer minter; the production issuance path is the item 1
+> consent-issued bearer, Implemented-only via `bitty` issue #1520 and PR
+> #1747 (`8623cd1e`, merged 2026-10-07T04:06Z). This note claims no Verified
+> status.
+>
+> These notes move no acceptance: the automation-bearer issuance UX and TTL
+> default (Open 9) and the Amendment A4 continuation rules and wire-format
+> reconciliation (Open 15-16) remain acceptance-open.
 
 **Campaign client helper (Implemented-only, `bitty-devtools` CTX-0059/#105):**
 `runCampaign` defaults to read-only probes. Mutating probes require explicit
@@ -957,7 +975,9 @@ above, with no dispatch.
 3. Concurrent connections are bounded (accepted default 16 per
    endpoint) and excess connections are shed newest-first; payload and
    request-rate limits follow RC-9 (100 req/s sustained, 2x burst for
-   one second, 1 MiB per frame, DM).
+   one second, 1 MiB per frame, DM). The RC-9 request-rate budget
+   (100 req/s, 200-request burst) is per endpoint and shared by all
+   connections: opening more connections never buys more requests.
 4. Session consent is per-client, least-privilege, and revocable:
    `bitty plugin revoke` and the plugin-manager action remove debug
    grants, and the host detaches affected handlers at the next dispatch
@@ -1020,9 +1040,7 @@ reconnect-counter issue #106, and claims no Verified status.
 > 500 ms of the control's deadline remains, and a waiter whose deadline
 > passes during an in-flight apply reports an unknown outcome instead of a
 > no-effect timeout; the CLI waits the server budget plus a 1 s reply grace
-> so it observes that reply. Request-rate admission is one RC-9 budget
-> (100 req/s, 200 burst) per endpoint, shared by all connections, so opening
-> more connections never buys more requests. A stale socket is reclaimed
+> so it observes that reply. A stale socket is reclaimed
 > only when a probe connection is refused: the path is moved to a private
 > quarantine name and its dev/inode/owner/mode are re-verified before
 > removal; any other probe error, a replacement, or a symlink refuses the
