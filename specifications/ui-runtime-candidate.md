@@ -11,6 +11,8 @@ sidebar_order: 38
 
 # Workspace-Native UI Runtime (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document is a design record for the
 > terminal-side slice of a Workspace-native application UI runtime direction:
@@ -107,7 +109,29 @@ OS window owned by `bitty-platform`, and no geometry, command, or Lua value
 exposes a window handle, native surface, or OS window identifier
 ([No window leak](workspace-compositor.md#no-window-leak)).
 
-## Status vocabulary
+## Normative sources this specification must not weaken
+
+- [Core and Plugin Boundaries](../architecture/core-boundaries.md) and
+  [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md)
+  fix the mechanism/policy boundary: named bars, rails, and panel tabs are
+  plugin presentation; Core supplies generic mechanisms and no fallback strip.
+- The Workspace Compositor and Panel Runtime contracts retain identity,
+  lifecycle, command atomicity, focus, and no-window-leak requirements.
+- The security corpus and the Plugin Platform, Lua Runtime, and Isolation
+  Resource contracts linked below retain bounded inputs, isolation,
+  capability checks, and hot-path exclusion. Candidate UI/GPU budgets do not
+  relax accepted ceilings or grant authority.
+
+## Terminology
+
+- **`UiTree`**: candidate retained declarative presentation data reconciled by
+  Rust; not Terminal Truth or an executable drawing loop.
+- **Workspace / View / Panel / Activity**: the candidate spatial and identity
+  layers detailed in U-2; accepted identity inequalities remain authoritative.
+- **Chrome mechanism / presentation**: Core geometry and enforcement versus
+  plugin-composed named bars and rails; a host mechanism does not select a UI.
+
+### Status vocabulary
 
 | Status            | Meaning in this document                                                             |
 | ----------------- | ------------------------------------------------------------------------------------ |
@@ -324,6 +348,10 @@ content is plugin controlled within the host budget. A plugin can influence
 only through its declared request surfaces and never takes authority from the
 user or the safety policy.
 
+These are enforcement and override scopes, not presentation ownership:
+plugins still compose named bars, rails, and tabs under ADR 0014. Core's
+validation and user precedence create no Core-owned presentation fallback.
+
 Terminal-side conclusions, composed with the accepted contracts:
 
 - Chrome surfaces are presentation, never Terminal Truth: they read stable
@@ -345,7 +373,7 @@ Terminal-side conclusions, composed with the accepted contracts:
   the chrome keys and Panel Rule grammar are new candidate spellings, not
   defined here.
 
-**Open.** Chrome runtime ownership and scope (the owner-pending Window Chrome
+**Open.** Generic chrome runtime contract scope (the owner-pending Window Chrome
 RFC, U-9); whether a rail plugin replaces or composes beside a bar plugin; the Panel Rule
 grammar, specificity algorithm, and conflict diagnostics; whether the cascade
 is user-visible as a resolution trace; how the safety policy rank is expressed
@@ -651,7 +679,49 @@ supersedes that page, and no replacement vision exists yet.
 | U-8 Beacon core engine         | Candidate; names and split accepted by ADR 0018, contract published; P7 decoupling Open                         | [Beacon Core Mechanism Contract](beacon-core-mechanism-contract.md) (Draft), [Semantic Terminal RFC](semantic-terminal-rfc.md) (Draft), plugin side owner-pending                                                      |
 | U-9 convergence roadmap        | Owner-pending; no RFC or vision page is created or edited here                                                  | [bitty-docs](https://github.com/bitty-terminal/bitty-docs) (owner-pending)                                                                                                                                             |
 
-## Open items (not global open questions)
+## Security review
+
+All U-1 through U-9 directions remain constrained by the linked security
+contracts. Declarative UI cannot mutate Terminal Truth, enter the parser,
+input, or render hot paths, or expose native handles. Commands retain
+capability checks, read never implies control, and candidate gestures,
+annotations, panel rules, and attention requests grant no authority. The
+resource-budget and fail-closed requirements above are review obligations,
+not evidence that the candidate UI runtime passed independent acceptance.
+
+## Verification plan
+
+An owning UI or scene amendment must verify bounded-tree admission,
+identity/generation rejection, command-only mutations, focus and lifecycle
+composition, reduced-motion and safe-mode behavior, and resource attribution
+against the existing contracts. Gesture equivalence and transaction rollback
+need their U-5 conformance evidence; persistence and rehydration need their
+own accepted schema and failure tests. Existing source observations cited in
+U-4/U-8 are limited implementation evidence, not proof of the full runtime,
+cross-platform behavior, or P0 acceptance. Whole-page documentation and link
+checks do not replace those gates.
+
+## Alternatives considered
+
+- Per-frame Lua drawing: excluded by U-1 and U-6; Lua emits bounded
+  declarative data while Rust owns reconciliation and interpolation.
+- Core-drawn workspace strip on plugin absence/failure: the candidate
+  fallback is unaccepted under ADR 0014; named presentation remains optional
+  plugin policy over generic Core mechanisms.
+- Deserialize VM heaps on restart: excluded by the U-7 direction; proposed
+  rehydration creates fresh VMs and reapplies declarative state, with the
+  persistence contract still open.
+
+## Affected contracts
+
+Reconciliation with accepted contracts and Relation to existing systems above
+map every U slice to its owner. This record amends none of those accepted
+contracts. Plugin-side libraries, applications, and protocols remain pointers
+to their owning repository; the five-RFC roadmap creates no API or accepted
+governance artifact. Later changes require synchronized owning specifications
+and their independent reviews.
+
+## Open points
 
 None of these is a global `OQ`: this document proposes no new contract boundary
 and blocks no current-milestone gate, so under the
@@ -670,7 +740,7 @@ or Beacon reconciliation settles them:
   persistence (U-2), with `RFC-OQ-3` as the placement decision;
 - the `bitty-ui-core` governance, primitive set, theme token schema, and
   accessibility contract (U-3);
-- chrome runtime ownership, rail-versus-Bar composition, Panel Rule grammar
+- generic chrome runtime contract scope, rail-versus-Bar composition, Panel Rule grammar
   and diagnostics, cascade tracing, and `--safe` interaction (U-4);
 - drop-target zones, preview and rollback detail, transaction scope, keyboard
   equivalents, and mechanical gesture-to-command equivalence checking (U-5);
@@ -685,6 +755,24 @@ or Beacon reconciliation settles them:
   [Beacon Core Mechanism Contract](beacon-core-mechanism-contract.md);
 - the five-RFC convergence schedule and the Vision v2 retirement decision
   (U-9), both owner-pending in `bitty-docs`.
+
+## Acceptance criteria
+
+- Keep U-1 through U-9 candidate or owner-pending except where an explicitly
+  linked accepted contract already fixes the rule.
+- Preserve Core mechanisms, plugin presentation, Terminal Truth isolation,
+  capability checks, resource ceilings, and no-window-leak constraints.
+- Leave tree schemas, identities, geometry, persistence, and API spellings
+  open where the owning contract has not accepted them.
+- Require the owning amendment's verification and independent review before
+  any lifecycle promotion. This document supplies no new runtime test result.
+
+## P0 Review Sign-off
+
+No P0 sign-off is recorded for this candidate. Independent security acceptance
+remains with each owning amendment and implementation under the authoritative
+security corpus. The existing Implemented-only evidence does not constitute
+`Verified` UI-runtime acceptance.
 
 ## References
 

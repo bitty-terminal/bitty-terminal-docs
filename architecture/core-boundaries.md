@@ -29,22 +29,22 @@ the retained Core mechanisms are now decided as direction by
 [ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
 and
 [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md),
-with the focused contracts `W-71` through `W-75`; no extraction, migration, or
-implementation is claimed. See "Decided extraction boundaries" below and the
+with the focused contracts `W-71` through `W-75`; those decisions alone claim
+no extraction, migration, or implementation. See "Decided extraction boundaries" below and the
 [small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
 The terminal-platform disposition, the required validation commands, the
 no-plugin baseline, and the deprecation links for both boundaries are collected
 in the candidate
 [Legacy Chrome and Validation Suite Disposition](../specifications/legacy-chrome-and-validation-disposition.md)
 (`W-83`/`W-84`).
-The `bitty-lua` tail crate keeps a generic-runtime boundary today; its current
-`piccolo` 0.3.3 runtime is unchanged by the accepted successor direction
-(Phodopus, recorded in
-[ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md)).
+The `bitty-lua` tail crate keeps a generic-runtime boundary. Source inventory
+at `bitty` `1c68de25` (2026-10-17), `crates/bitty-lua/Cargo.toml`, records
+Phodopus `0.2.0-alpha.1`, pinned at `f6aa59a`, following the successor direction
+in [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md).
 The terminal-side host-ABI
 [Phodopus Host ABI (Candidate)](../specifications/phodopus-host-abi-candidate.md)
-stays a draft candidate, and the deferral of `bitty-lua` implementation work
-changes nothing here.
+stays a draft candidate; the dependency inventory accepts no host ABI and
+establishes no `Verified` runtime behavior.
 “Core” and “Plugin” in the tables indicate accepted ownership with lifecycle
 `Specified -> Accepted -> Implemented -> Verified -> Compatible -> Release-ready`
 per the [risk evidence RFC](../specifications/risk-evidence-rfc.md); risk
@@ -64,6 +64,35 @@ are not part of this accepted contract. A few bounded mechanism gaps inside
 the extension-API composition below are labeled inline as requiring an RFC;
 they do not change any ownership table and do not weaken any normative P0
 gate.
+
+## Purpose and scope
+
+This specification assigns terminal-platform mechanisms to Core and optional
+experience policy to plugins. It covers the ownership tables, public extension
+composition, the zero-plugin baseline, and the security gates that constrain
+both domains. Candidate API spellings and future extraction work remain with
+their linked specifications; this page does not accept them by implication.
+
+## Normative sources this specification must not weaken
+
+- [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md)
+  fixes plugin-only workspace and panel-tab presentation over Core mechanisms.
+- The Plugin Platform, Isolation Resource, Rich Presentation, CLI, IPC, and
+  Lua contracts named in Document status govern their respective boundaries.
+- The security overview, threat model, and risk register linked under
+  [Normative security constraints](#normative-security-constraints) remain
+  authoritative; no ownership assignment relaxes their P0 controls.
+
+## Terminology
+
+- **Core mechanism**: resource, state, invariant, or enforcement primitive
+  retained inside the terminal platform.
+- **Plugin policy**: optional behavior, composition, and user experience over
+  the public capability-gated API.
+- **Terminal Truth**: the grid, cursor, modes, scrollback, and replies that
+  plugins may observe only through granted interfaces and never mutate.
+- **Implemented / Verified**: distinct lifecycle stages; source presence and
+  headless tests do not substitute for independent acceptance evidence.
 
 ## Accepted directions
 
@@ -101,8 +130,9 @@ capability-gated interfaces; first-party extensions receive no private bypass.
 
 The decisions below are direction and ownership only. They authorize focused
 contracts and later, separately tracked implementation and migration tasks; they
-authorize no code by themselves, and this page claims no extraction or migration
-is done. The accepted boundary decisions are
+authorize no code by themselves. Dated source observations of retirement and
+validation relocation live in the linked disposition record; they do not
+establish acceptance of every extraction or migration gate. The accepted boundary decisions are
 [ADR 0015 - Small-Core Extraction Boundaries](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
 (`W-70`) and
 [ADR 0016 - Execution, Graphics, Accessibility, Storage, and Platform-Service Boundaries](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)
@@ -121,7 +151,8 @@ The `W-130`/ADR 0016 set (execution supervisor, graphics decode, platform
 accessibility, restricted storage, and platform services) follows the same
 retained-mechanism rule and is not repeated here. `W-71` through `W-75` fix
 ownership and security boundaries; the corresponding implementation, extraction,
-and migration tasks remain gated on their contracts and are not claimed as done.
+and migration tasks remain gated on their contracts. Dated source changes do
+not by themselves establish completion of those tasks.
 The cross-repository execution map and dependency order are recorded in the
 [small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
 
@@ -417,7 +448,18 @@ interaction only. Whether configuration scripts and runtime plugins share a
 capability model remains open, but that decision cannot weaken the P0 gates
 above.
 
-## Boundary acceptance (lifecycle `Specified -> Accepted -> Implemented -> Verified`)
+## Security review
+
+The normative constraints and two security domains above are the review basis.
+No ownership table permits ambient authority, a private first-party channel,
+hot-path Lua execution, or a weakened protocol/resource limit. Independent
+security-auditor and P0-AC evidence remains required before any `Verified`
+claim; this documentation correction supplies none of that runtime evidence.
+
+## Verification plan
+
+Boundary acceptance follows `Specified -> Accepted -> Implemented -> Verified`.
+The following existing mechanisms and gates require independent evidence:
 
 - Architecture tests inspect the crate dependency DAG and prevent lower layers
   from depending on higher layers (`Implemented`, pending `Verified`).
@@ -432,9 +474,62 @@ above.
 - Debug consumers read state only through a versioned protocol and do not link
   application-private types (`Accepted` DevTools RFC OQ-019; `Implemented` but not yet `Verified`).
 
-## Candidate evolution
+## Alternatives considered
+
+- Put workspace state and commands behind a plugin: rejected by ADR 0014
+  because workspace operations must work with zero plugins and in safe mode.
+- Keep Core-drawn bars or tabs: rejected by ADR 0014; presentation is optional
+  plugin policy over generic geometry and commands.
+- Give first-party plugins private APIs: prohibited by the accepted boundary
+  and capability model; bundled status changes neither authority nor lifecycle.
+
+## Affected contracts
+
+The Plugin Platform and public Lua surface govern extension composition;
+the [Workspace Compositor](../specifications/workspace-compositor.md) owns
+layout and workspace mechanisms. The
+[Legacy Chrome and Validation Suite Disposition](../specifications/legacy-chrome-and-validation-disposition.md)
+records retirement consequences, and the
+[Phodopus Host ABI candidate](../specifications/phodopus-host-abi-candidate.md)
+retains its draft status. This page changes none of their API spellings.
+
+## Open points
 
 Candidate decision rules, cross-cutting evolution rules, health signals, and
 the pending decision list are tracked in [Future Boundaries](future-boundaries.md)
 (`draft`). They refine this accepted contract without changing any ownership
 table and without weakening any normative P0 gate.
+
+The inline Command, Event, Capability, and Lifecycle discussions retain their
+unresolved lazy-loading, scope, migration, and verification questions; this
+page settles no new API or enforcement threshold.
+
+## Acceptance criteria
+
+- Ownership tables agree with the accepted mechanism/policy decisions and
+  keep all workspace and panel-tab presentation in plugins.
+- The zero-plugin and safe-mode baseline retains Core commands, reserves no
+  workspace band, and introduces no built-in strip fallback.
+- Dependency and source inventories name their revision and do not promote
+  draft APIs or Implemented-only mechanisms to `Verified`.
+- All verification and P0 gates above remain required; documentation gates
+  establish prose consistency only.
+
+## P0 Review Sign-off
+
+Independent security-auditor and P0-AC acceptance remains pending as stated in
+Document status and Normative security constraints. No new sign-off or risk
+transition is recorded by this correction.
+
+## References
+
+- [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md)
+  — accepted workspace and panel-tab ownership.
+- [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md)
+  — runtime successor direction.
+- [Risk evidence RFC](../specifications/risk-evidence-rfc.md) — lifecycle and
+  independent evidence requirements.
+- [Future Boundaries](future-boundaries.md) — candidate evolution and pending
+  decisions.
+- `bitty` `1c68de25`, `crates/bitty-lua/Cargo.toml` — dependency inventory,
+  not host-ABI acceptance or runtime verification.

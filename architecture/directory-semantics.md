@@ -11,6 +11,15 @@ sidebar_order: 24
 
 # Extension, Plugin, and Component Directory Semantics
 
+## Document status
+
+Draft directory contract recording the decided extension/plugin naming split
+and the clean-break migration in closed
+[bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949). The public
+`extension` verbs are canonical; the hidden deprecated `component` alias and
+internal field names remain. These observations do not accept a new trust
+boundary or establish compatibility or runtime verification.
+
 ## Purpose and scope
 
 This specification fixes the meaning of the three directory names that meet
@@ -235,7 +244,7 @@ Core (mechanisms) ──typed seam── extensions/ (L1, upstream prebuilt, opt
   resource-budget gates apply at every trust transition regardless of
   which directory the unit arrived from.
 
-## Security alignment and traceability
+## Security review
 
 - Install-time code execution stays forbidden: placing files under
   either root, or publishing under the distribution prefix, never runs
