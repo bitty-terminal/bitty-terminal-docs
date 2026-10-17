@@ -298,9 +298,10 @@ Concretely:
   extension repository; it is never kept as a convenience.
 
 The current `bitty-lua` tail crate keeps its generic-runtime boundary; its
-`piccolo` 0.3.3 runtime is unchanged by the accepted Phodopus successor
-direction, and the terminal-side Phodopus host ABI stays a draft candidate.
-Neither fact changes the ownership rule above.
+`Cargo.toml` at `bitty` `1c68de25` pins Phodopus `0.2.0-alpha.1` at revision
+`f6aa59a`. This is a dependency inventory observation, not runtime verification
+or acceptance of the terminal-side Phodopus host ABI, which stays a draft
+candidate. The ownership rule above is unchanged.
 
 ## bitty-plugin-sdk redesign pointer
 

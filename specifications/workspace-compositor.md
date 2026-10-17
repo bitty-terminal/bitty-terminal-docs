@@ -11,6 +11,8 @@ sidebar_order: 25
 
 # Workspace Compositor Specification
 
+## Document status
+
 > Status: **accepted** on 2026-08-31 by independent docs-reviewer per
 > CTX-0118 — accepted Hyprland workspace tiling philosophy import for Bitty.
 > This document defines the accepted contract for the Instance, Window,
@@ -19,12 +21,12 @@ sidebar_order: 25
 > `gaps_in`, `gaps_out`, `border`, `radius`, `content_inset`, and the
 > `LayoutProvider` plugin surface for layout algorithms including dwindle,
 > master, and grid, plus
-> drag, resize, move, and scratchpad interactions. It does not describe
-> implemented behavior, does not authorize shipped, stable, or
-> compatibility-guaranteed behavior beyond the accepted contract, and does not
-> weaken any normative security control. No experimental implementation exists
-> yet (none yet); any future experimental implementation may exist as review
-> evidence but carries no compatibility promise beyond the accepted contract.
+> drag, resize, move, and scratchpad interactions. The implementation evidence
+> below describes experimental subsets, including merged memory diagnostics
+> checked at `bitty` `1c68de25`; it does not authorize stable or
+> compatibility-guaranteed behavior beyond the accepted contract and does not
+> weaken any normative security control. Implementation remains
+> `Implemented-only`, without `Verified` or compatibility acceptance.
 > The lifecycle is `Draft -> experimental review evidence -> Accepted ->
 normative`.
 
@@ -438,13 +440,14 @@ What merged, exactly:
    `view.inspect`; `workspace new|focus|move` ride `view.manage`;
    `workspace close ws:N` requires the elevated `terminal.manage` scope
    because it kills live sessions.
-   CTX-1269 extends the experimental `core.workspace.list` result with a
-   pending candidate `memory` object. It reports retained workspace slots,
+   CTX-1269, merged in bitty #2183 (`b97a8b20`, an ancestor of `1c68de25`),
+   extends the experimental `core.workspace.list` result with a candidate
+   `memory` object. It reports retained workspace slots,
    including inactive slots, without changing the active-layout query
    semantics of `core.terminal.list`. The candidate is documented in the
-   [CLI reference](../interfaces/cli.md); it is not a stable or
-   compatibility-guaranteed schema until the implementation branch merges and
-   receives independent verification.
+   [CLI reference](../interfaces/cli.md); it remains `Implemented-only`,
+   pending independent verification, with no stable or
+   compatibility-guaranteed schema claim.
 
    The candidate memory object is versioned as `memory.v: 1`. Its rows are
    bounded to `16` retained slots and report at most `32` layout leaves per
@@ -785,7 +788,7 @@ Lua and no bypass of the existing P0 gates.
 4. Presentation ownership remains isolated: `Workspace` and `LayoutTree` never
    mutate `Terminal` state, and no plugin holds a PTY descriptor or GPU object.
 
-## Verification
+## Verification plan
 
 1. **Metadata and link gates**: `just check` must pass with zero markdownlint,
    link, metadata, language, agents, and hygiene issues for this document and
@@ -820,7 +823,23 @@ Lua and no bypass of the existing P0 gates.
      without a window or GPU, asserting rectangle equivalence and atomicity of
      cross-workspace moves.
 
-## Open items remaining under this accepted specification
+## Alternatives considered
+
+The accepted [Hyprland workspace tiling philosophy import](#hyprland-workspace-tiling-philosophy-import)
+keeps tiling inside a Window rather than creating operating-system windows
+for layout leaves. The [Candidate Panel model](#candidate-panel-model)
+retains its alternatives for future review; the memory diagnostics select
+none of them.
+
+## Affected contracts
+
+The [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md),
+[Configuration Model RFC](configuration-model-rfc.md), and
+[Core and Plugin Boundaries](../architecture/core-boundaries.md) retain
+their authority. Read-only memory reports change no layout, attachment,
+close, configuration, or capability semantics.
+
+## Open points
 
 - Exact `LayoutProvider` trait spelling and error taxonomy beyond the
   illustrative sketch above.
@@ -898,6 +917,19 @@ does not claim `Verified` or `Compatible` status. Remaining open items above
 require follow-up RFCs or tasks per the
 [documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md) and
 [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
+
+## Acceptance criteria
+
+The identity, layout, decoration, provider, and interaction checks in the
+[Verification plan](#verification-plan) remain the acceptance obligations.
+Merged memory diagnostics supply implementation observations only; they
+establish no process-RSS, memory-reduction, or performance-budget result.
+
+## P0 Review Sign-off
+
+The CTX-0118 acceptance recorded in [Document status](#document-status) is
+unchanged. These memory-status corrections add no independent P0 sign-off
+or security-risk closure; the normative security corpus remains binding.
 
 ## References
 

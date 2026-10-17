@@ -11,6 +11,8 @@ sidebar_order: 42
 
 # Ligature Decision
 
+## Document status
+
 > Status: **accepted decision record**. It addresses the M1-22 question
 > (backlog item `M1-22`, [bitty#1148](https://github.com/bitty-terminal/bitty/issues/1148)),
 > the ligature question `OQ-073` (which is **Closed** by this decision),
@@ -23,12 +25,12 @@ sidebar_order: 42
 > [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md) row are
 > synchronized by this change.
 
-## Purpose
+## Purpose and scope
 
 This record answers the M1-22 question — adopt ligatures or record an explicit
-refusal — at the recommendation level, and states the exact path that would
-close `OQ-073`. It exists so the absence of ligature code is a recorded Bitty
-position rather than an inference from missing matches.
+refusal — with the accepted adoption recorded by governance for `OQ-073`.
+Implementation observations remain `Implemented-only`; adoption does not
+accept the whole Text and Rendering RFC or establish performance compliance.
 
 In scope: whether Bitty forms ligatures in the rendered grid, and if so through
 which shaping path, fallback interaction, and bounds. Out of scope: the
@@ -42,10 +44,10 @@ does not redefine them.
 | Source                                                                                                                       | Role                                                                                                            |
 | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)            | `OQ-073` Closed by this decision record and [bitty#1666](https://github.com/bitty-terminal/bitty/issues/1666)   |
-| [Text and Rendering RFC](text-rendering-rfc.md)                                                                              | Accepted contract; § Shaping defines the pure-Rust `harfrust` shaping stack and bounds                          |
+| [Text and Rendering RFC](text-rendering-rfc.md)                                                                              | Draft RFC; § Shaping records the adopted pure-Rust `harfrust` stack and implementation bounds                   |
 | [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md)                                                            | P1 row "Ligatures": `shipped` via [bitty#1666](https://github.com/bitty-terminal/bitty/issues/1666)             |
 | [Rich Presentation RFC](rich-presentation-rfc.md)                                                                            | Accepted boundary: cursor and selection keep per-cluster granularity; presentation never changes terminal truth |
-| [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) (`OQ-099`) | Selection mapping: wide-span repainting preserves cluster truth                                                 |
+| [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) (`OQ-099`) | Open: logical-to-visual selection, hit-testing, and cluster/ligature/bidi snapping remain unresolved            |
 
 Implementation evidence from `bitty` `a8abe148` (2026-10-05, CTX-0959 / PR [#1706](https://github.com/bitty-terminal/bitty/pull/1706)):
 
@@ -65,8 +67,8 @@ The earlier draft recommendation to refuse ligatures is superseded by the owner 
 
 1. **User and parity requirement.** Programming ligatures (`->`, `!=`, `===`) and OpenType features are standard capabilities in modern terminal emulators (Ghostty, WezTerm, Kitty).
 2. **Safe supply-chain invariant maintained.** By adopting `harfrust` (pure-Rust HarfBuzz port) instead of C-bindings (`harfbuzz-sys`), the workspace `#![forbid(unsafe_code)]` requirement remains 100% intact.
-3. **Terminal truth preserved.** Shaping operates on the render path (`GridRenderer`). The underlying terminal grid (`Snapshot`) remains logical and unmutated; cursor, copy-paste, and selection maintain exact cluster boundaries.
-4. **Performance budget compliance.** Single-core throughput complies with the PB-6 render budget with bounded glyph spans and atlas staging.
+3. **Terminal truth preserved.** Shaping operates on the render path (`GridRenderer`). The underlying terminal grid (`Snapshot`) remains logical and unmutated. This does not resolve the selection and hit-testing mapping tracked by `OQ-099`.
+4. **Performance budget remains unverified.** Bounded glyph spans and atlas staging are implementation bounds, not evidence of PB-6 compliance. The accepted [Performance Budget RFC](performance-budget-rfc.md#pb-6-throughput-floor) requires sustained VT parse-and-render throughput on one core of the slowest Tier 1 reference machine. This record supplies no matching named workload, hardware, source revision, raw result, or accepted measurement evidence.
 
 ### Security and bounds
 
@@ -77,3 +79,13 @@ The earlier draft recommendation to refuse ligatures is superseded by the owner 
 ## Resolution
 
 This document, together with PR [#1685](https://github.com/bitty-terminal/bitty/pull/1685), PR [#1690](https://github.com/bitty-terminal/bitty/pull/1690), and PR [#1706](https://github.com/bitty-terminal/bitty/pull/1706), closes `OQ-073` and satisfies backlog item `M1-22`.
+
+`OQ-099` remains open. The Text and Rendering RFC remains `draft`, and no
+`Verified`, compatibility, performance, or P0 security acceptance follows
+from this adoption record.
+
+## References
+
+- [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) — authority for `OQ-073` adoption and open `OQ-099`.
+- [Text and Rendering RFC](text-rendering-rfc.md) — draft text contract and implementation observations.
+- [Performance Budget RFC](performance-budget-rfc.md) — accepted measurement targets, including PB-6.
