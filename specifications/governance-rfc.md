@@ -11,6 +11,8 @@ sidebar_order: 21
 
 # Governance RFC
 
+## Document status
+
 > Status: **accepted** on 2026-08-29 by the project initiator. This document defines the accepted repository-governance contract: licenses, branch protections, ownership
 > rules, compatibility policy, and cross-repository release flow for the
 > seven formal repositories under `github.com/bitty-terminal` at the design level; it closes [OQ-024](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md). It does not
@@ -566,7 +568,9 @@ is not allowed. Revocation or yank of a published package follows the
 version-lifecycle rules in the Package Follow-up RFC (OQ-027), not a
 silent retag.
 
-## Security alignment and traceability
+## Security review
+
+### Security alignment and traceability
 
 | Accepted element                                                                                        | Normative gate it implements                                           | Threat / Risk IDs                                                                                                           |
 | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |

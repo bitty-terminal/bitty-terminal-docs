@@ -11,6 +11,8 @@ sidebar_order: 34
 
 # AI Surface Accepted Record
 
+## Document status
+
 > Status: **accepted record**. This document canonicalizes only the
 > **accepted subset** of the bitty draft candidate record
 > [ai-surface-reconciliation.md](https://github.com/bitty-terminal/bitty/blob/main/specifications/ai-surface-reconciliation.md)
@@ -61,7 +63,9 @@ Where this record restates an accepted rule it cites the accepted document
 and does not re-define it. Cross-project contracts are linked by absolute
 URL, never copied.
 
-## Source contracts
+## Normative sources this specification must not weaken
+
+### Source contracts
 
 | Source                                                                                                                                          | Status                     | Used for                                                                                                      |
 | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -71,6 +75,10 @@ URL, never copied.
 | [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) (`OQ-066` context-budget row) | Open                       | `32 KiB` default stays open; per-model profiles undecided                                                     |
 | [Core and Plugin Boundaries](../architecture/core-boundaries.md)                                                                                | Accepted                   | ownership tables cited, never redefined here                                                                  |
 | [ai-surface-reconciliation.md](https://github.com/bitty-terminal/bitty/blob/main/specifications/ai-surface-reconciliation.md) (bitty, CTX-0423) | Draft candidate            | provenance for the full 17-verdict table and `D-1`..`D-6` / `F-1`..`F-4`; candidate text is not accepted here |
+
+## Terminology
+
+Accepted subset means only A-1 through A-7, with the confidence qualifications stated below. Candidate fence means the D-1..D-6 demotions and F-1..F-4 follow-ups remain proposals in the linked owner record. Value mirrors reuse existing numbers without accepting a new default: OQ-066 stays open, and the planned dispatcher retains its ownership.
 
 ## Accepted subset
 
@@ -161,6 +169,34 @@ below accepts, revises, or duplicates it.
   bypass, ambient authority, or allow-all capability is proposed.
 - The accepted [Core and Plugin Boundaries](../architecture/core-boundaries.md)
   ownership tables are untouched by this record.
+
+## Security review
+
+This dated restatement preserves the closed generic panel.* family, single-owner placement, per-request scopes, consent ledger, IPC framing bounds, and DIR-018's no-new-AI-logic guard. It adds, removes, or changes no Core API, capability, command, type, scope, wire name, or bound. The later 2026-09-30 removal note and candidate consent/workspace/memory rows remain fenced; this record accepts no replacement AI contract.
+
+## Verification plan
+
+Review of this record traces each A-row to the authority column and checks its accepted-subset or value-mirror qualification. The 32 KiB/OQ-066 row must remain open and IPC values must remain mirrors of the cited contract. Implementation evidence follows each owning document's rules; this historical restatement supplies no new test result or proof of a future AI panel.
+
+## Alternatives considered
+
+The reconciliation distinguishes generic keep verdicts from demote/rehome/cosmetic proposals. Only keeps already grounded in accepted contracts enter this record; the full 17-verdict table and D/F proposals remain in the linked draft. The explicit non-acceptance section retains that boundary rather than accepting new AI-specific Core mechanisms.
+
+## Affected contracts
+
+Panel Runtime, IPC and Agent, Core and Plugin Boundaries, and DIR-018 remain the owning contracts restated by citation. OQ-066 and draft RFC-0003 remain open/separate. No dispatcher method, handler, provider/model authority, or agent-layer memory/consent contract is defined by moving this historical record into the section form.
+
+## Open points
+
+The candidate fence retains the demotion/follow-up work, draft workspace and memory consent rows, per-model budget profiles, and planned generic services as outside the accepted subset. Their owners and statuses remain those of the linked records; the 2026-09-30 removal of the bundled AI panel does not accept its future replacement.
+
+## Acceptance criteria
+
+The recorded acceptance covers only the cited generic keeps and qualified value mirrors. A review of the restatement must preserve the A-row authorities, OQ-066's open state, the candidate fence, explicit non-acceptance, and dated removal note. Acceptance does not prove implementation; any new API or AI-owned decision requires its own owning review.
+
+## P0 Review Sign-off
+
+The page records an accepted subset of already-accepted contracts, with no separately named P0 reviewer/date for this restatement. Its evidence scope is A-1..A-7 with the stated value-mirror qualifications. No current P0 approval of the candidate demotions, consent rows, planned services, or a future AI panel is recorded here.
 
 ## References
 

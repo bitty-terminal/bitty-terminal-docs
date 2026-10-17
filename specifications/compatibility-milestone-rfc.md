@@ -11,7 +11,9 @@ sidebar_order: 11
 
 # Compatibility Milestone RFC
 
-## Status
+## Document status
+
+### Status
 
 Accepted on 2026-08-26 by the project initiator. Acceptance authorizes planning
 against this milestone contract; it makes no shipped-behavior claims until the
@@ -26,6 +28,18 @@ Scroll**, not a focus-event mode; focus events are mode 1004 only. Verified
 against the read-only xterm reference snapshot (xterm-411, revision `9489b20`):
 `Ps = 1 0 0 4` sends FocusIn/FocusOut events, `Ps = 1 0 0 7` enables Alternate
 Scroll Mode. The M1 scope is unchanged; only the classification is corrected.
+
+## Purpose and scope
+
+This accepted M1 contract defines the exact protocol commitments for ordinary daily-driver shell work on Tier 1 platforms. The Decision section retains the Required, opt-in, gated, and out-of-scope matrix; acceptance authorizes planning, while milestone completion still requires the recorded evidence and independent sign-off.
+
+## Normative sources this specification must not weaken
+
+The Context section cites [Product vision](../product/vision.md) and the technology strategy and preserves the security baseline's bounded, fuzz-covered parsing of untrusted protocol bytes. [ADR 0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md) owns Tier 1 coverage. M1 excludes OSC 52 read regardless of configuration and requires permission before OSC 52 write; shell integration remains optional with no prompt-text inference.
+
+## Terminology
+
+M1 is the exact daily-driver milestone described in Decision. Required items need the listed core evidence; opt-in enhancements must prove enabled behavior and default-off parity; gated OSC 52 write requires permission; out-of-M1 protocols create no commitment. Implemented-only tooling evidence does not declare any M1 item complete.
 
 ## Context
 
@@ -104,48 +118,6 @@ terminal state, hang the parser, or allocate unbounded resources.
 - Sixel fallback graphics mode, Tektronix, legacy character-set completeness.
 - tmux control mode passthrough guarantees beyond "does not corrupt state".
 
-## Acceptance evidence requirements
-
-Each M1 item needs recorded evidence before the milestone can be declared
-complete. Evidence lives in `bitty-docs` test reports and links from the
-compatibility register.
-
-| Commitment level       | Required acceptance evidence                                                                                                                                                                                                                                               |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Required (core VT)     | Differential test corpus run against at least one reference oracle (vttest subset plus captured Ghostty/kitty/WezTerm sessions); all cases green; parser fuzzing (cargo-fuzz) over VT/OSC/DCS/APC with zero crashes, hangs, or unbounded allocations over an agreed budget |
-| Required (modes/input) | Automated integration tests driving a headless terminal state instance per mode (alternate screen, bracketed paste, mouse modes 1000/1002/1003/1006, focus 1004, alternate scroll 1007, 2026, DECSCUSR); golden snapshots committed                                        |
-| Required (color/title) | Snapshot tests for SGR 0–255 and truecolor cell attributes; automated test for OSC 10/11 query-response round trip                                                                                                                                                         |
-| Opt-in enhancement     | Feature works end-to-end when enabled AND default-off behavior is proven identical to the without-feature build via differential snapshot suite; enabling/disabling requires no restart unless documented                                                                  |
-| Gated (OSC 52 write)   | Permission prompt or pre-granted capability required before first write; denial path tested; clipboard content never logged; adversarial test showing untrusted output cannot trigger a silent write                                                                       |
-| Denied (OSC 52 read)   | Negative tests proving read requests are ignored/denied and no clipboard data enters the PTY-observable surface                                                                                                                                                            |
-| Shell integration      | Tests prove full functionality with zero integration active on bash, zsh, fish, PowerShell, cmd, nushell smoke suites; injected-script tests cover OSC 7 and OSC 133 zones; no prompt-text heuristic anywhere in the codebase (grep-audited review evidence)               |
-| Cross-platform         | Every Required item verified on each [ADR 0002 Tier 1 platform](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md) in CI; Opt-in items verified on at least one Tier 1 platform with documented gaps elsewhere |
-| Performance guardrail  | Parser throughput benchmark recorded (baseline number committed); no pathological regression versus plain-text throughput beyond an agreed factor                                                                                                                          |
-
-Evidence rules:
-
-1. A claimed capability without linked evidence is treated as unverified and
-   must not appear in README, release notes, or website content.
-2. Fuzzing and differential-corpus evidence re-runs on every parser change,
-   not once at milestone declaration.
-3. Milestone completion requires independent reviewer sign-off, matching the
-   CarryCtx workflow.
-
-## Alternatives considered
-
-- **Ship images in M1** — rejected: image storage/placement interacts with
-  renderer contracts and security budgets that OQ-008 has not resolved; pulling
-  them in would delay a correct text terminal.
-- **Allow OSC 52 read behind a flag in M1** — rejected: clipboard read-back by
-  any process whose output reaches the terminal is a known exfiltration vector;
-  the security baseline forbids temporary bypass APIs for P0 boundaries.
-- **Kitty keyboard as M1-required** — rejected: it would make Bitty unusable
-  with programs expecting legacy encoding if defaults regress, and doubles the
-  input-test matrix before the state model exists. Legacy-first with progressive
-  enhancement keeps risk bounded.
-- **No explicit matrix, "be xterm compatible"** — rejected: unverifiable and
-  directly responsible for decades of emulator compatibility drift.
-
 ## Consequences
 
 - M1 scope is auditable: each row maps to named tests, snapshots, or negative
@@ -190,6 +162,54 @@ independent reviewer sign-off:
 All five are `Implemented`, not `Verified`; they change no M1 requirement,
 no evidence threshold, and no normative control.
 
+## Security review
+
+Protocol inputs remain untrusted and require bounded parsing plus fuzz coverage; unknown/out-of-subset behavior must not corrupt state, hang, or allocate unbounded resources. OSC 52 read stays denied, write requires permission with denial/adversarial evidence and no clipboard logging, and shell operation must not depend on integration or prompt-text heuristics. Image protocols retain their separate OQ-008 security review.
+
+## Verification plan
+
+### Acceptance evidence requirements
+
+Each M1 item needs recorded evidence before the milestone can be declared
+complete. Evidence lives in `bitty-docs` test reports and links from the
+compatibility register.
+
+| Commitment level       | Required acceptance evidence                                                                                                                                                                                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Required (core VT)     | Differential test corpus run against at least one reference oracle (vttest subset plus captured Ghostty/kitty/WezTerm sessions); all cases green; parser fuzzing (cargo-fuzz) over VT/OSC/DCS/APC with zero crashes, hangs, or unbounded allocations over an agreed budget |
+| Required (modes/input) | Automated integration tests driving a headless terminal state instance per mode (alternate screen, bracketed paste, mouse modes 1000/1002/1003/1006, focus 1004, alternate scroll 1007, 2026, DECSCUSR); golden snapshots committed                                        |
+| Required (color/title) | Snapshot tests for SGR 0–255 and truecolor cell attributes; automated test for OSC 10/11 query-response round trip                                                                                                                                                         |
+| Opt-in enhancement     | Feature works end-to-end when enabled AND default-off behavior is proven identical to the without-feature build via differential snapshot suite; enabling/disabling requires no restart unless documented                                                                  |
+| Gated (OSC 52 write)   | Permission prompt or pre-granted capability required before first write; denial path tested; clipboard content never logged; adversarial test showing untrusted output cannot trigger a silent write                                                                       |
+| Denied (OSC 52 read)   | Negative tests proving read requests are ignored/denied and no clipboard data enters the PTY-observable surface                                                                                                                                                            |
+| Shell integration      | Tests prove full functionality with zero integration active on bash, zsh, fish, PowerShell, cmd, nushell smoke suites; injected-script tests cover OSC 7 and OSC 133 zones; no prompt-text heuristic anywhere in the codebase (grep-audited review evidence)               |
+| Cross-platform         | Every Required item verified on each [ADR 0002 Tier 1 platform](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md) in CI; Opt-in items verified on at least one Tier 1 platform with documented gaps elsewhere |
+| Performance guardrail  | Parser throughput benchmark recorded (baseline number committed); no pathological regression versus plain-text throughput beyond an agreed factor                                                                                                                          |
+
+Evidence rules:
+
+1. A claimed capability without linked evidence is treated as unverified and
+   must not appear in README, release notes, or website content.
+2. Fuzzing and differential-corpus evidence re-runs on every parser change,
+   not once at milestone declaration.
+3. Milestone completion requires independent reviewer sign-off, matching the
+   CarryCtx workflow.
+
+## Alternatives considered
+
+- **Ship images in M1** — rejected: image storage/placement interacts with
+  renderer contracts and security budgets that OQ-008 has not resolved; pulling
+  them in would delay a correct text terminal.
+- **Allow OSC 52 read behind a flag in M1** — rejected: clipboard read-back by
+  any process whose output reaches the terminal is a known exfiltration vector;
+  the security baseline forbids temporary bypass APIs for P0 boundaries.
+- **Kitty keyboard as M1-required** — rejected: it would make Bitty unusable
+  with programs expecting legacy encoding if defaults regress, and doubles the
+  input-test matrix before the state model exists. Legacy-first with progressive
+  enhancement keeps risk bounded.
+- **No explicit matrix, "be xterm compatible"** — rejected: unverifiable and
+  directly responsible for decades of emulator compatibility drift.
+
 ## Affected contracts
 
 Acceptance on 2026-08-26 applied these same-change updates:
@@ -199,3 +219,22 @@ Acceptance on 2026-08-26 applied these same-change updates:
 - [Product vision](../product/vision.md): the compatibility-milestone
   open-question wording is resolved.
 - Future terminal-state and parser tasks cite this document for M1 scope.
+
+## Open points
+
+OQ-004 is closed by the 2026-08-26 design acceptance; OQ-007/OQ-008/OQ-016 are fed but not decided here. The implementation-status section retains the narrowed M1-03..M1-11 evidence slice, 13 sibling items still open, missing recurring-fuzz CI wiring, and Tier 1 evidence limits. Full-milestone completion remains explicitly withheld.
+
+## Acceptance criteria
+
+Milestone completion requires every listed M1 commitment's acceptance evidence, the stated Tier 1 coverage, recurring parser-change fuzz/differential runs, and independent reviewer sign-off. A capability without linked evidence remains unverified and cannot be advertised. The scoped tooling and nine-item review evidence do not satisfy the remaining milestone items.
+
+## P0 Review Sign-off
+
+Design acceptance was by the project initiator on 2026-08-26 as recorded in Document status. The implementation-status section records a later narrowed independent-reviewer sign-off for M1-03..M1-11 only, with its artifacts and limits; it is not full-M1 or current P0 acceptance. Clipboard, parser, and remaining platform/evidence gates still apply.
+
+## References
+
+- [Product vision](../product/vision.md) and [Technology strategy](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/technology-strategy.md) — scope and compatibility context.
+- [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) — OQ-004 closure and adjacent questions.
+- [ADR 0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md) — Tier 1 evidence.
+- The retained implementation-status entries identify the exact bitty commits, PRs, and narrowed evidence scope.

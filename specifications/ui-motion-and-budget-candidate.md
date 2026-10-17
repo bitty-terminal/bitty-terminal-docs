@@ -11,6 +11,8 @@ sidebar_order: 46
 
 # UI Motion and Budget (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This record states the candidate motion
 > tree, its key spellings, and the UI/GPU budget categories that the candidate

@@ -11,6 +11,8 @@ sidebar_order: 47
 
 # UI/UX Invariant Set (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. The draft
 > [Workspace Panel Invariants](workspace-panel-invariants.md) (per-row statuses,
@@ -62,7 +64,9 @@ accessibility (draft, [Accessibility Baseline (Candidate)](accessibility-baselin
 - [Performance Budget RFC](performance-budget-rfc.md) (accepted): frame-on-demand
   and no periodic timer.
 
-## Status vocabulary
+## Terminology
+
+### Status vocabulary
 
 | Status                | Meaning                                                                                               |
 | --------------------- | ----------------------------------------------------------------------------------------------------- |

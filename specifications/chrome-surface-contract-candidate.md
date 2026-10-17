@@ -11,6 +11,8 @@ sidebar_order: 42
 
 # Chrome Surface Contract (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This record states the chrome-surface
 > contract the candidate

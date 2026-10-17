@@ -11,6 +11,8 @@ sidebar_order: 62
 
 # bitty-network Shared Network Crates (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document records the
 > terminal-platform slice of the shared-network direction: a split
@@ -132,7 +134,9 @@ Out of scope and owned elsewhere (pointers, not content):
   numbering is distinct from the BN-7 extension layers below; the two
   schemes must not be conflated.
 
-## Status vocabulary
+## Terminology
+
+### Status vocabulary
 
 | Status            | Meaning in this document                                                             |
 | ----------------- | ------------------------------------------------------------------------------------ |

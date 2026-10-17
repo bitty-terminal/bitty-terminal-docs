@@ -11,6 +11,8 @@ sidebar_order: 54
 
 # Panel/Surface/Process Trichotomy (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This note fixes the vocabulary for three
 > concepts that are routinely conflated — Panel, Surface, and Process — and

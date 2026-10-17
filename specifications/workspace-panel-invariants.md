@@ -11,6 +11,8 @@ sidebar_order: 33
 
 # Workspace Panel Invariants (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document freezes a first invariant
 > batch for `WorkspaceId` / `ViewId` / `PanelId` / `TerminalId` / session
@@ -53,18 +55,9 @@ cross-process session hosts, and any behavior the accepted sources exclude.
 Where this document restates an accepted rule it cites the accepted document
 by absolute URL and does not re-define it.
 
-## Status vocabulary
+## Normative sources this specification must not weaken
 
-| Status                         | Meaning in this document                                                                                                           |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Accepted                       | An accepted specification already requires the rule; this document adds a testable wording.                                        |
-| Candidate                      | Only the Panel Runtime pre-study, the UI compositor gap analysis, or this document proposes the rule; review is still open.        |
-| Implementation-only            | Shipped `bitty` code and tests define the rule; no specification states it yet.                                                    |
-| Implementation-only (untested) | Shipped code defines the rule but no executable check exists; used where a coverage cell can only cite source behavior.            |
-| Tested                         | An executable check in `bitty` covers the invariant at revision `01ffdda` plus the linked `ctx-0405` and `ctx-0414` pull requests. |
-| Uncovered — follow-up          | No executable check exists; a follow-up task is required before the invariant can be frozen as accepted.                           |
-
-## Source contracts
+### Source contracts
 
 | Source                                                                                                                                                                 | Status    | Used for                                                            |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------- |
@@ -82,6 +75,19 @@ depend on `PanelId` are therefore candidate until the pre-study is promoted to
 an accepted RFC. OQ-058 (spatial multi-agent orchestration, panel/session
 lifecycle coupling) tracks the candidate contract that depends on these
 identity and ownership rules; this document does not answer OQ-058.
+
+## Terminology
+
+### Status vocabulary
+
+| Status                         | Meaning in this document                                                                                                           |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Accepted                       | An accepted specification already requires the rule; this document adds a testable wording.                                        |
+| Candidate                      | Only the Panel Runtime pre-study, the UI compositor gap analysis, or this document proposes the rule; review is still open.        |
+| Implementation-only            | Shipped `bitty` code and tests define the rule; no specification states it yet.                                                    |
+| Implementation-only (untested) | Shipped code defines the rule but no executable check exists; used where a coverage cell can only cite source behavior.            |
+| Tested                         | An executable check in `bitty` covers the invariant at revision `01ffdda` plus the linked `ctx-0405` and `ctx-0414` pull requests. |
+| Uncovered — follow-up          | No executable check exists; a follow-up task is required before the invariant can be frozen as accepted.                           |
 
 ## Identity model as implemented
 
@@ -178,7 +184,13 @@ coverage. `bitty` test paths are relative to the `bitty` repository root.
 | WS-INV-26 | Rehydration creates a fresh `TerminalId` and `RuntimeId` under the same `PersistentId`; a second live terminal with the same `PersistentId` is rejected; rehydrated scrollback is immutable history, never live PTY state. | Accepted            | Tested at registry scope — `reattachment_vs_recreation`, `persistent_id_validation_and_in_use`, `stale_handle_rejected_with_expected_and_found`; registry identities stay registry-scoped, while the runtime serialization side ships at `668a461` (F-2).                                     |
 | WS-INV-27 | `bitty --safe` opens no background image and keeps an ephemeral, bounded registry; no persisted resource is loaded implicitly.                                                                                             | Accepted            | Tested — `background_images_present.rs::no_image_config_opens_nothing_and_presents_no_background` (no file opened, no background presented), `background_images_present.rs::validate_background_images_gate_matches_startup`; `workspace_panel.rs::safe_mode_rejects_workspace_without_panic` |
 
-## Verification map
+## Security review
+
+The invariant set retains single-owner grid/PTY state, pairwise-distinct handles, stale-generation rejection, focused-writer-only input, bounded resize queues, no zero-area PTY resize, and safe startup with no implicit persisted resources. Accepted versus candidate versus implementation-only rows keep their own status; tested code does not close the WS-INV-4 retirement gap or accept a new Panel/session contract.
+
+## Verification plan
+
+### Verification map
 
 | Check                                                                                                                                                                                                  | Covers                                                                                  |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
@@ -193,7 +205,17 @@ All checks run headless. Live-session tests require a POSIX shell and a PTY on
 Unix; they skip cleanly under the repository PTY gate on unsupported
 platforms.
 
-## Uncovered and follow-ups
+## Alternatives considered
+
+The identity model distinguishes live ViewId-keyed pane sessions from experimental registry RuntimeId identity instead of inventing SessionId. Reattachment/move preserves live identities, while rehydration uses fresh runtime identities under PersistentId. F-1 records retirement tracking or a per-runtime monotonic allocator as possible follow-up actions; this candidate register selects neither implementation.
+
+## Affected contracts
+
+The Source contracts table retains accepted registry lifecycle, Terminal State, and Workspace Compositor authority, with candidate panel/gap inputs explicitly separate. Registry identities remain registry-scoped; runtime session serialization evidence does not close RFC-OQ-9 or live-reload gaps. OQ-058 is referenced but unanswered by this set.
+
+## Open points
+
+### Uncovered and follow-ups
 
 | ID  | Item                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Proposed action                                                                                                                                                                                                  |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -204,6 +226,14 @@ platforms.
 | F-5 | WS-INV-22 defect found and fixed under `ctx-0405`: pane grid and PTY winsize stayed at the pre-resize size after a workspace switch, and at the pre-promotion size after a workspace move promoted a sibling; the primary owner could also remain bound to the id of a leaf destroyed by a workspace close.                                                                                                                                                                                                                                                    | Fixed in the linked `bitty` pull request (`ctx-0405`); the new invariant tests are the regression guard.                                                                                                         |
 
 | F-6 | WS-INV-13/16 defect found by the `ctx-0405` review (finding F1) and fixed under `ctx-0414` (bitty PR #671, issue #668): closing an inactive workspace reloaded the active slot from its stale stash, discarding the active workspace's live layout and focus, and with three or more workspaces silently switched the active workspace. | Fixed in the linked `bitty` `ctx-0414` pull request (PR #671); `panel_invariants.rs::inactive_workspace_close_preserves_active_layout_focus_and_owner` is the regression guard. |
+
+## Acceptance criteria
+
+Each WS-INV row must retain a testable statement, source status, and named executable check or explicit uncovered follow-up. A row lacking a check cannot be frozen as accepted by this register. F-1 retirement, F-2 live reload/persistence boundaries, F-3 SessionId decision, and F-4 sequence stability remain unresolved as recorded; fixed F-5/F-6 regressions retain their exact evidence and scope.
+
+## P0 Review Sign-off
+
+No new P0 sign-off is recorded for this candidate invariant set. Accepted source rules retain their authority, while the dated read-only test/source mapping and fixed regressions are scoped implementation evidence. Uncovered retirement, reload, and candidate Panel/session boundaries still require their owning follow-ups and review.
 
 ## References
 

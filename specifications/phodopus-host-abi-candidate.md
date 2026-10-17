@@ -11,6 +11,8 @@ sidebar_order: 39
 
 # Phodopus Host ABI (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document is a design record for the
 > terminal-platform slice of the successor direction to adopt **Phodopus** (a
@@ -60,7 +62,13 @@ Out of scope and owned elsewhere (pointers, not content):
   (recorded, [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md),
   [bitty-docs](https://github.com/bitty-terminal/bitty-docs)).
 
-## Status vocabulary
+## Normative sources this specification must not weaken
+
+The scope and relation tables cite the accepted Lua Runtime, Plugin Host Runtime, Plugin Platform, isolation, and Core boundary contracts. Those retain per-plugin isolation, restricted libraries, budgets, host-service Send behavior, and Terminal Truth ownership. ADR 0012 records the successor direction without moving current pins or accepting the terminal-side ABI mechanisms below.
+
+## Terminology
+
+### Status vocabulary
 
 | Status            | Meaning in this document                                                             |
 | ----------------- | ------------------------------------------------------------------------------------ |
@@ -217,7 +225,25 @@ swap at the `bitty-lua` seam.
   Lua UI standard library:
   [bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs).
 
-## Open items (not global open questions)
+## Security review
+
+The proposed generic VM gains no Bitty-specific or ambient host authority. Pending operations remain bounded/cancellable and must fail closed under accepted timeouts without entering terminal hot paths. Terminal width/grapheme truth stays terminal-owned, and plugin sandbox/library/memory ceilings remain authoritative. Exact handle cancellation, re-entrancy, queue bounds, and parity evidence are still open.
+
+## Verification plan
+
+P-4 defers integration until generic-runtime readiness, and its open item requires migration/parity evidence before a bitty-lua runtime swap. Review must reconcile P-2 with the accepted Send host boundary and bounded pending semantics and P-3 with the text-domain width authority. This candidate supplies no swap, benchmark, test result, or completed host-ABI acceptance.
+
+## Alternatives considered
+
+P-1 separates a Bitty-agnostic VM from its one Bitty-specific host consumer rather than embedding Bitty APIs/runtime dependencies in the VM. P-2 assigns future polling and coroutine resume to the adapter rather than a NOOP-waker path. P-3 keeps code-point utf8 helpers distinct from typography, and P-4 defers the swap until readiness instead of claiming adoption from the direction alone.
+
+## Affected contracts
+
+The Relation to existing systems and Related owner records retain the accepted Lua/plugin/security contracts, draft text-domain contracts, generic Phodopus ownership, and plugin-side resolver/binding ownership. ADR 0012's accepted direction does not change current pins through this record; exact ABI, adoption timing, and terminal width surface remain pending.
+
+## Open points
+
+### Open items (not global open questions)
 
 None of these is a global `OQ`: this document proposes no new contract boundary
 and blocks no current-milestone gate, so they stay parked here until one
@@ -231,6 +257,14 @@ settles them:
   the pending authoritative width tables (P-3);
 - the phase-to-milestone mapping and the readiness gate that ends the `bitty-lua`
   deferral (P-4).
+
+## Acceptance criteria
+
+The reviewed governance/runtime/host-ABI track identified in Open points must settle adoption/licensing, bounded HostOp/resume semantics, terminal typography surfaces, and the readiness/migration parity gate. Until then the accepted contracts stay authoritative and this terminal-side record remains draft; no runtime swap is claimed or scheduled.
+
+## P0 Review Sign-off
+
+No P0 acceptance of the host-ABI candidate is recorded. The accepted sandbox/resource/hot-path controls remain in force, while cancellation, pending bounds, migration parity, and readiness await their owning reviews. ADR 0012's direction does not self-accept these mechanisms.
 
 ## References
 

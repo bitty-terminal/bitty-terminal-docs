@@ -11,6 +11,8 @@ sidebar_order: 61
 
 # Render Damage and Invalidation Architecture (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This note sketches a candidate render
 > damage and invalidation architecture generalized from the way the foot

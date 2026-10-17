@@ -11,6 +11,8 @@ sidebar_order: 36
 
 # Event-Sourced Panel Model (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document is a design record for the
 > terminal-side slice of an event-sourced agent workspace: the part the Bitty
@@ -77,7 +79,13 @@ Out of scope and owned elsewhere (pointers, not content):
 - shared governance, decision, and security corpora (linked, never copied,
   [bitty-docs](https://github.com/bitty-terminal/bitty-docs)).
 
-## Status vocabulary
+## Normative sources this specification must not weaken
+
+The Purpose and scope exclusions cite the accepted Panel Runtime, Terminal State, Core and Plugin Boundaries, and IPC and Agent contracts. They retain panel identity/lifecycle, immutable terminal truth, capability isolation, agent read-only defaults, and the rule that output is observation data. The shared security corpus remains authoritative; T-1 through T-5 accept no new transport, storage, or agent authority.
+
+## Terminology
+
+### Status vocabulary
 
 | Status            | Meaning in this document                                                             |
 | ----------------- | ------------------------------------------------------------------------------------ |
@@ -282,7 +290,25 @@ direction-level context and orchestration design stays with the AI owner.
 | [Terminal Platform Boundaries (Candidate)](terminal-platform-boundaries-candidate.md) (Draft)                                               | Panel write-lease semantics stay defined there; execution-supervisor, host-ceiling, and UI-boundary slices are siblings, not inputs.                                               |
 | [AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/architecture/ai-architecture.md) (Draft, `bitty-ai-docs` owner) | Owner-pending destination for the agent-graph, mailbox, context-compiler, and orchestration pointers above.                                                                        |
 
-## Open items (not global open questions)
+## Security review
+
+The headed/headless direction never authorizes typing into the user's panel: tool execution stays under policy, capability, and resource controls, and shared headless access needs a lease or capability. Event/log immutability and separate context/history lifetimes remain candidate constraints. No persistent secret-handling or storage schema is accepted; the accepted terminal and agent-authority contracts still govern any future implementation.
+
+## Verification plan
+
+A future History/storage RFC or amendment must reconcile T-2's event vocabulary with PH-1..PH-12 and resolve the explicit T-3 SQLite-versus-PH-3/PH-5 conflict before making a storage claim. Review must preserve the never-couple rule between UI collapse and model-context materialization and distinguish terminal snapshots/retention from AI-owned compiler/GC policy. No implementation or test evidence for T-1..T-5 is claimed here.
+
+## Alternatives considered
+
+The body contrasts headed-panel keystroke driving with snapshot-forked headless execution, chat logs with immutable event logs, and UI folding with separate context materialization. It records hybrid SQLite/object storage alongside Panel History's narrower segmented-store/rebuildable-index direction, explicitly choosing neither until an owning RFC reconciles them.
+
+## Affected contracts
+
+The Relation to existing systems table retains the exact accepted/candidate owners. Panel History remains the append-only direction and conflicting storage input; Semantic Terminal owns command anchors and per-view folding; Panel Environment State owns inheritance; the AI owner retains context compilation, GC policy, mailboxes, graphs, and orchestration. No accepted source is amended.
+
+## Open points
+
+### Open items (not global open questions)
 
 None of these is a global `OQ`: this document proposes no new contract boundary
 and blocks no current-milestone gate, so under the
@@ -308,3 +334,18 @@ or RFC amendment settles them:
   that compose with them without adopting model-context policy;
 - the fork-snapshot field list and its composition with Panel Environment
   State inheritance and ShellState ownership.
+
+## Acceptance criteria
+
+Each T-slice needs owner approval through the future History/storage RFC or amendment identified in Open points, reconciled against accepted terminal, authority, and lifecycle contracts. Event/record spellings, snapshot fields, inspect bounds, and retention/GC defaults remain undecided. This candidate record cannot accept either storage direction or an AI-owned mechanism.
+
+## P0 Review Sign-off
+
+No P0 acceptance of the event-sourced model is recorded. T-1..T-5 remain candidate, with owner approval and reconciliation pending; accepted read-only, capability, lease, and terminal-truth rules are not waived by the design direction.
+
+## References
+
+- [Panel History (Candidate)](panel-history-candidate.md) — PH-1..PH-12 and the storage conflict.
+- [Panel Runtime RFC](panel-runtime-rfc.md) and [Terminal State RFC](terminal-state-rfc.md) — accepted lifecycle and truth.
+- [Semantic Terminal RFC](semantic-terminal-rfc.md) — folding and anchors.
+- The Relation to existing systems table and owner-pending pointers retain the remaining source and ownership links.

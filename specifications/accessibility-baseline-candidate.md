@@ -11,6 +11,8 @@ sidebar_order: 45
 
 # Accessibility Baseline (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. The corpus names accessibility in several
 > places (the UI runtime's Level 0 mechanism list and Level 2 component duties,

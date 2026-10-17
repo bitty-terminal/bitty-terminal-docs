@@ -11,6 +11,8 @@ sidebar_order: 30
 
 # Rich content and presentation interfaces
 
+## Document status
+
 > Status: candidate architecture. This document defines an accepted boundary
 > and candidate interfaces; experimental code exists for parts of the image
 > intake path, but no stable or supported API or protocol is claimed, and
@@ -19,6 +21,18 @@ sidebar_order: 30
 Bitty should support streaming Markdown and other structured output without
 rewriting PTY bytes or changing the VT grid that terminal applications depend
 on.
+
+## Purpose and scope
+
+This interface direction covers explicit semantic sources, rich-block anchoring, streaming Markdown, structured-channel and PTY-extension candidates, and presentation conflicts. The accepted Terminal Truth boundary and the dated Kitty pipeline evidence remain distinct from candidate interfaces; structured transports and a stable public API are not established here.
+
+## Normative sources this specification must not weaken
+
+[Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) governs bounded parsing and resource policy; the cited risk register retains R-002/R-003/R-005/R-021. [Rich Presentation RFC](../specifications/rich-presentation-rfc.md) owns the exact image/scene contracts and intake/decode/placement limits. Plugin-system conflict and alternate-screen rules remain authoritative for composition.
+
+## Terminology
+
+TerminalSurface denotes the VT grid; RichSurface denotes semantically sourced content; OverlaySurface denotes transient presentation. RichBlock is the illustrative anchored scene contribution, and semantic zones are candidate prompt/input/command/output boundaries from shell integration. Presentation is derived from Terminal Truth and never rewrites it.
 
 ## Accepted direction: preserve terminal truth
 
@@ -286,7 +300,25 @@ and blit path, and it has no `bitty-rich` dependency edge. The composition
 described in this document therefore remains a design target rather than
 wired behavior.
 
-## Open questions
+## Security review
+
+Explicit semantic sources avoid guessing formats from untrusted screen text. Parsers and resource access remain bounded by the security corpus; performance helpers may use capability-scoped processes or sandboxed WASM, never untrusted native in-process plugins. Structured channels still require authentication, framing, ordering, backpressure, and lifecycle design; the PTY-extension candidate additionally requires limits, sanitization, negotiation, and fallback. BITTY=1 alone is explicitly insufficient.
+
+## Verification plan
+
+The implementation-evidence section cites exact Kitty intake and subsequent decode/placement/GPU milestones, and the dated e8dc9e5 boundary distinguishes in-memory SceneNode models from frame consumption. A future interface claim must demonstrate its anchoring behavior under pruning, resize, DPI, reflow, and block-height changes and its streaming/conflict behavior. No structured-transport or scene-to-frame conformance result is supplied by this direction.
+
+## Alternatives considered
+
+The semantic-source section prefers plugin-owned content, then a separate structured channel, then a later negotiated PTY extension with plain-text fallback. Screen-text heuristics and full-document reparse/layout/redraw per token are explicitly excluded as target architectures. Helper/WASM parsing is a candidate strategy, and no illustrated CLI or Lua spelling reserves a namespace.
+
+## Affected contracts
+
+Rich Presentation owns the scene and image pipeline contracts cited here; Plugin system owns replacement conflicts and safe overlays. The candidate inspector consumes owner, anchor, layout, and damage observations without creating an implemented DevTools feature. Selection, accessibility, search, export, authentication, and transport semantics remain the open integration questions below.
+
+## Open points
+
+### Open questions
 
 - What is the first stable `RichBlock` and `SceneNode` contract?
 - Are rich blocks inline with scrollback, adjacent to command zones, or hosted
@@ -298,3 +330,17 @@ wired behavior.
 - Which structured transport should be attempted first?
 - How are rich sources authenticated, especially over SSH or nested sessions?
 - What transforms, if any, remain enabled for an alternate-screen TUI?
+
+## Acceptance criteria
+
+Before a stable interface or protocol can be claimed, its owning specification must resolve semantic-source authentication, anchor lifetime, cancellation/backpressure, composition conflicts, and the explicit fallback requirements. Experimental Kitty milestones do not accept the illustrated RichBlock, Lua, CLI, or structured-transport surfaces.
+
+## P0 Review Sign-off
+
+No sign-off accepting a structured channel or PTY extension is recorded here. Transport/security specifications remain required before adoption of those sources, and the existing bounded-parser/resource controls remain in force for experimental image work.
+
+## References
+
+- [Rich Presentation RFC](../specifications/rich-presentation-rfc.md) — authoritative scene/image contracts and dated evidence.
+- [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) and [risk register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md) — resource and access controls.
+- [Plugin system](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/plugin-system.md) — presentation conflict handling.

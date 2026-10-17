@@ -11,6 +11,8 @@ sidebar_order: 40
 
 # Panel Placement Decision
 
+## Document status
+
 > Status: **draft** decision record resolving [`RFC-OQ-3`](panel-runtime-rfc.md#open-questions).
 > The accepted [Panel Runtime RFC](panel-runtime-rfc.md) deliberately left Panel
 > placement undecided between three options; the candidate

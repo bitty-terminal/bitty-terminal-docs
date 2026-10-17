@@ -11,6 +11,8 @@ sidebar_order: 29
 
 # Semantic Terminal RFC
 
+## Document status
+
 > Status: **Draft RFC with Implemented-only slices P1-P5** as of 2026-09-08
 > (CTX-0131). P1 (anchoring) plus P2 (fold MVP) are Implemented-only in
 > `bitty` CTX-0225 (PR #390, `4ccb771`); P3 (Hint Mode) in CTX-0226
@@ -21,6 +23,18 @@ sidebar_order: 29
 > (OQ-S1..S7 stay open), weakens no normative control, moves no risk, and
 > implies nothing `Verified`/`Compatible`/`Release-ready`. P6, the P7 Beacon
 > candidate, and the packaging sketch remain proposal-only.
+
+## Purpose and scope
+
+This draft covers P1 command anchoring, P2 folding, P3 Hint Mode, P4 composer, P5 external editor, and proposal-only P6/P7 extensions. The dated baseline and superseding current-state notes remain separate from design acceptance; folding/hints/composition must preserve byte-identical Terminal Truth, complete copy/search/agent reads, and replay.
+
+## Normative sources this specification must not weaken
+
+[Terminal State RFC](terminal-state-rfc.md) owns scrollback and paste safety; [Workspace Compositor](workspace-compositor.md) owns view/tiling geometry. The Security considerations below retain plugin capability/allowlist, isolation, bounded annotation, and IPC/Agent review requirements. ADR 0018 and the [Beacon Core Mechanism Contract](beacon-core-mechanism-contract.md) decide the named Core mechanism boundary without accepting the remaining P7 plugin direction.
+
+## Terminology
+
+CommandBlock is the proposed addressable command/result anchor; FoldState is per-view presentation over complete underlying rows. Hint targets combine an anchor, scope, and action set. Composer is an explicit opt-in command buffer with bracketed-paste submission; Implemented-only labels identify dated code evidence, while P6/P7 and packaging remain proposals.
 
 ## Problem
 
@@ -356,7 +370,9 @@ dispatch), and a composer unit (buffer, submit keys, history, external
 editor). Packaging is advisory; it creates no repositories and assigns no
 owners.
 
-## Security considerations
+## Security review
+
+### Security considerations
 
 - Folding changes no trust boundary: hidden output is still terminal content
   and stays untrusted observation data for agents.
@@ -373,7 +389,34 @@ owners.
   review under the [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) and the
   [Risk Evidence RFC](risk-evidence-rfc.md); this draft grants nothing.
 
-## Open questions
+## Verification plan
+
+The status record preserves read-only ancestry checks at 7048139 for P1..P5 and the later dated current-state notes; the P5 editor probe is the named negative-path evidence. Future acceptance still needs OQ-S1..S7 resolution, proof that folds preserve complete copy/search/replay, bounded hint behavior, composer fail-open behavior outside its mode, and the reviewed editor/temp-file contract. Existing code evidence closes none of those questions.
+
+## Alternatives considered
+
+P1 prefers stable semantic line anchors over raw rows, while P2 retains complete underlying output instead of rewriting scrollback. P3/P7 use one bounded annotation batch rather than hundreds of overlays. P4 uses explicit composer mode rather than globally hijacking Enter, and P5 treats editor environment values as attacker-influenced input under the recorded exact allowlist. Proposed three-unit packaging remains advisory.
+
+## Affected contracts
+
+### Relation to other documents
+
+- [Terminal State RFC](terminal-state-rfc.md): owns OSC 133 semantics and
+  scrollback truth; P1 needs its anchor decision.
+- [Workspace Compositor](workspace-compositor.md): accepted tiling and view
+  model that hints address.
+- [Panel Runtime Pre-Study](panel-runtime-pre-study.md): draft lifecycle P6
+  would build on; P6 waits for its acceptance.
+- [Input and Pointer Contract](input-pointer-rfc.md): owns key handling that
+  P3/P4 must not break.
+- [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md): owns any future remote exposure.
+- Roadmap placement is proposed in
+  [Now / Next / Later](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/roadmap/now-next-later.md) only after acceptance;
+  this draft changes no horizon by existing.
+
+## Open points
+
+### Open questions
 
 All seven stay open as of CTX-0131 (`bitty` origin `main` `7048139`): the
 P1-P5 implementations above are evidence only and close none of them.
@@ -394,17 +437,17 @@ P1-P5 implementations above are evidence only and close none of them.
 - OQ-S7: What capability, if any, does a third-party hint provider need, and
   how is a malicious or noisy provider contained?
 
-## Relation to other documents
+## Acceptance criteria
 
-- [Terminal State RFC](terminal-state-rfc.md): owns OSC 133 semantics and
-  scrollback truth; P1 needs its anchor decision.
-- [Workspace Compositor](workspace-compositor.md): accepted tiling and view
-  model that hints address.
-- [Panel Runtime Pre-Study](panel-runtime-pre-study.md): draft lifecycle P6
-  would build on; P6 waits for its acceptance.
-- [Input and Pointer Contract](input-pointer-rfc.md): owns key handling that
-  P3/P4 must not break.
-- [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md): owns any future remote exposure.
-- Roadmap placement is proposed in
-  [Now / Next / Later](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/roadmap/now-next-later.md) only after acceptance;
-  this draft changes no horizon by existing.
+Acceptance must resolve the retained OQ-S1..S7 and obtain the separate scoped reviews required by Security considerations for any IPC/agent exposure. P1..P5 code evidence, later wiring notes, ADR 0018's Core boundary, and the packaging sketch do not accept P6/P7 APIs, new plugin authority, or a stable semantic-terminal contract.
+
+## P0 Review Sign-off
+
+Pending for contract acceptance and any future IPC/agent exposure. The dated P1..P5 entries and editor probe are Implemented-only evidence, not Accepted/Verified/Compatible or risk closure. Existing paste, clipboard, scope, allowlist, and temporary-file security requirements remain authoritative.
+
+## References
+
+- [Terminal State RFC](terminal-state-rfc.md), [Workspace Compositor](workspace-compositor.md), and [Input and Pointer Contract](input-pointer-rfc.md) — truth, geometry, and input owners.
+- [Composer Architecture and Host API](composer-architecture.md) — superseding 2026-10-03 wiring notes.
+- [Beacon Core Mechanism Contract](beacon-core-mechanism-contract.md) — ADR 0018's accepted mechanism boundary.
+- The retained Relation to other documents section below supplies the remaining scope and roadmap links.

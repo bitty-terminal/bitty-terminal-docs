@@ -11,6 +11,8 @@ sidebar_order: 41
 
 # Overlay Ownership and Composition Reconciliation
 
+## Document status
+
 > Status: **draft**. This record closes a documentation gap, not an
 > implementation one: `bitty-ui` carries an accepted three-owner overlay
 > decision in code (`CTX-0482` / `bitty` #763) and a typed `OverlayTier`

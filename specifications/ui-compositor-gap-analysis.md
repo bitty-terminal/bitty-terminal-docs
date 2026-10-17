@@ -11,6 +11,8 @@ sidebar_order: 29
 
 # UI and Compositor Gap Analysis
 
+## Document status
+
 > Status: **draft** (frontmatter `draft`), docs-only, direction not
 > implementation. This document records a point-in-time gap analysis of the
 > UI/compositor surface plus candidate native tiling window-form directions.
@@ -47,6 +49,14 @@ scope: changing the accepted
 [Workspace Compositor Specification](workspace-compositor.md), the
 [Semantic Terminal RFC](semantic-terminal-rfc.md), or any renderer contract;
 those remain authoritative for their subject matter.
+
+## Normative sources this specification must not weaken
+
+The scope and References identify Workspace Compositor, Semantic Terminal, Rich Presentation, Panel Runtime/pre-study, and the appearance/animation RFCs as the subject owners. The matrix is dated source evidence, not authority to change those contracts. Candidate native window forms remain non-normative and leave layout-algorithm ownership with the compositor's existing LayoutProvider contract.
+
+## Terminology
+
+The Verification basis defines shipped, implemented-only (unwired), partial, and missing verdicts. Implemented-only means a tested library mechanism is not consumed by presentation and therefore is not shipped UI behavior. A re-checked row carries its newer revision/file evidence; unchanged rows retain the original dated basis.
 
 ## Verification basis
 
@@ -165,7 +175,25 @@ authoritative for layout-algorithm ownership.
    real-render soak evidence to complement the bounded headless suite; this is
    an evidence-process item, not a contract question.
 
-## Open questions touched
+## Security review
+
+The candidate directions keep panel rules presentation-only with no capability grant, semantic workspaces based on identity/cwd observations rather than terminal row data, and gestures under existing command ownership. The analysis accepts no new renderer, input, plugin, or remote surface and closes no security/open-question gate. Historical shipped/missing labels are limited to the cited revisions.
+
+## Verification plan
+
+The retained Verification basis records symbol/line inspection at b761c03, 2a26480, and c01f538 with per-row evidence. A future claim must re-check its owning render/runtime/config/layout/rich path and distinguish present derivation from user/render consumption. Long-duration real-render soak remains an explicit evidence gap; this documentation organization adds no new source audit or live result.
+
+## Alternatives considered
+
+The native-window directions compare extending dwindle via LayoutProvider, a post-v1.0 scrolling ribbon, and staged scratchpad behavior rather than selecting a second Core algorithm. The matrix contrasts bounded headless tests with missing long-duration real-render evidence; headless mechanism presence does not substitute for wired UI behavior.
+
+## Affected contracts
+
+The existing compositor, semantic terminal, renderer, appearance, and animation contracts remain unchanged. The prioritized gaps route anchoring/fold persistence to OQ-050/OQ-S1/S2, scene content to OQ-051, and native window forms/Mod to OQ-052. Existing UI-extensibility questions retain their cited owner.
+
+## Open points
+
+### Open questions touched
 
 - [OQ-050](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md): stable scrollback-line identity for
   semantic command-block anchors and fold-state persistence (summary; detail
@@ -178,6 +206,14 @@ authoritative for layout-algorithm ownership.
 - Existing: OQ-S1 through OQ-S7 in the
   [Semantic Terminal RFC](semantic-terminal-rfc.md), OQ-043/OQ-044/OQ-049 in
   [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/architecture/ui-extensibility-architecture.md).
+
+## Acceptance criteria
+
+A gap row can change only with explicit revision/file or execution evidence for the behavior it claims; library/present-planning evidence must remain distinct from render/user-path consumption. The prioritized design questions require their owning decisions, and this analysis itself neither closes them nor changes accepted contracts.
+
+## P0 Review Sign-off
+
+No P0 sign-off is recorded for the candidate directions. The read-only, revision-limited gap audit supplies status evidence only; any successor changing capabilities, input routing, renderer access, or resource limits needs its owning review and security gates.
 
 ## References
 

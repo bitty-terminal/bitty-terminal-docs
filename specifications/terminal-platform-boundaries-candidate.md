@@ -11,6 +11,8 @@ sidebar_order: 35
 
 # Terminal Platform Boundaries (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document is a design record for the
 > terminal-side slice of several cross-repository directions: the part the Bitty
@@ -60,7 +62,13 @@ Out of scope and owned elsewhere (pointers, not content):
 - Core-versus-plugin ownership and P0 gates (accepted,
   [Core and Plugin Boundaries](../architecture/core-boundaries.md)).
 
-## Status vocabulary
+## Normative sources this specification must not weaken
+
+Purpose and scope cites Panel Runtime, Terminal State, Core and Plugin Boundaries, IPC and Agent, and the plugin lifecycle/isolation contracts as the accepted owners. They retain Terminal Truth, capability/resource enforcement, read-only agent defaults, and package integrity. T-1..T-6 are terminal-side candidate directions and leave AI/plugin-owned contracts with their owners.
+
+## Terminology
+
+### Status vocabulary
 
 | Status            | Meaning in this document                                                             |
 | ----------------- | ------------------------------------------------------------------------------------ |
@@ -371,10 +379,42 @@ Terminal-side conclusions, composed with the accepted
   registry scope are owner-pending (`bitty-plugins-docs` owner); the registry
   and index role belongs to the plugin-ecosystem owners.
 
-## Open items
+## Security review
+
+The host-ceiling direction requires most-restrictive intersection, generation-fenced leases, opaque credential handles, explicit scoped privilege approval, and default-deny sensitive paths; exact values and APIs remain undecided. Execution must stay constrained to owned process trees and scoped operations. Packaging rejects native loading and silent project-triggered installs; wrappers/services never bypass host enforcement. These are candidate inputs, not current gate satisfaction or new authority.
+
+## Verification plan
+
+The proposed execution-supervisor RFC must settle the v0.1/Phase 2 boundary, platform process-tree/OOM evidence, output/artifact retention, IPC reconciliation, and needs-input projection before claiming behavior. Host-ceiling adoption still needs resource thresholds and lease/secret/privilege review under the cited contracts. No implementation or test evidence is supplied for the six candidate slices.
+
+## Alternatives considered
+
+T-1 favors a first-class execution supervisor with handles/event-driven completion over a stronger spawn helper or model polling, while retaining later persistence/daemon phases as deferred. T-5 separates a small public SDK and optional competing frameworks from a mandatory second Lua Core. T-6 separates development-time Lua resolution from self-contained runtime artifacts and forbids ambient/native dependency execution.
+
+## Affected contracts
+
+Accepted lifecycle, truth, IPC, capability, plugin package, and sandbox owners remain unchanged. T-1/T-2 separate terminal mechanisms from AI-owned task/mailbox/retry policy; T-3/T-4 retain Wheel/provider/request identity details as owner pointers only. T-5/T-6 retain service/manifest/registry/SDK details with the plugin owners and specify no accepted new service or wire method.
+
+## Open points
+
+### Open items
 
 - Owner acceptance of each Candidate slice (T-1 through T-6) through the
   owning RFC or specification track; until then none of this text authorizes
   behavior.
 - Terminal-side job-visibility and needs-input contracts (T-1) need an owning
   design task before any panel surface is specified.
+
+## Acceptance criteria
+
+Each T-1..T-6 slice needs owner acceptance through the owning RFC/specification track identified in Open points. Exact execution, ceiling, lease, secret, service, packaging, and UI spellings remain proposals until reconciled with accepted owners and security requirements. Job visibility/needs-input must receive its own design scope before a panel surface is specified.
+
+## P0 Review Sign-off
+
+No P0 acceptance of these candidate slices is recorded. The execution, lease, privilege, secret, filesystem, and package boundaries still need their owning reviews; the accepted capability/resource/consent and no-bypass requirements are not relaxed by this direction record.
+
+## References
+
+- [Panel Runtime RFC](panel-runtime-rfc.md), [Terminal State RFC](terminal-state-rfc.md), and [Core and Plugin Boundaries](../architecture/core-boundaries.md) — accepted terminal owners.
+- [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) — the OQ-057/058/059/061/065/083 ownership and boundary questions cited in the body.
+- Purpose and scope and the per-direction owner splits retain the AI, plugin, package, isolation, and shared-governance contract links.

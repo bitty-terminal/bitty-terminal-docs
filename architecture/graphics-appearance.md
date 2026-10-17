@@ -11,6 +11,8 @@ sidebar_order: 23
 
 # Graphics and Appearance Model
 
+## Document status
+
 > Status: **draft** (frontmatter `draft`), docs-only, candidate direction not
 > implementation. This document records the user rendering/appearance
 > direction recorded as
@@ -32,6 +34,18 @@ sidebar_order: 23
 > `eef983e` (2026-09-15; shared checkout, not modified). No product code was
 > changed for this task. Implementation-status notes in the appendix cite exact
 > paths; everything else is direction.
+
+## Purpose and scope
+
+This candidate model separates image-producing terminal protocols from renderer-owned composition, platform backdrop effects, and theme policy. It covers the layer/opacity model, shared image infrastructure with separate lifecycles, the reference survey, and the dated read-only implementation appendix; illustrative types and configuration are not accepted APIs.
+
+## Normative sources this specification must not weaken
+
+The status record cites the authoritative [Rich Presentation RFC](../specifications/rich-presentation-rfc.md) IMG-1 through IMG-9 bounds, [Workspace Compositor](../specifications/workspace-compositor.md), [Core and Plugin Boundaries](core-boundaries.md), theme catalog, and accepted Appearance Configuration RFC. Those sources win on conflict. Reference-terminal quota and loader observations in the survey do not replace Bitty's accepted limits or deny-by-default ResourcePolicy.
+
+## Terminology
+
+Image producers decode protocol bytes and describe placement; the renderer owns textures, blending, alpha, and scene composition. Background opacity, image alpha, and UI/surface opacity are separate concepts; the survey additionally considers per-cell alpha. Backdrop blur is a platform/windowing effect, and a theme/palette is appearance data above the graphics protocols.
 
 ## Core principle
 
@@ -676,7 +690,25 @@ remain authoritative.
   matugen-style plugin are **not verified** in the checkout and stay pure
   direction.
 
-## Follow-ups (not opened as tasks here)
+## Security review
+
+The loader survey contrasts permissive loading with Bitty's deny-by-default ResourcePolicy and flags transmission mediums, slicing bounds, symlinks, sensitive files, quotas, and stale chunk generations for the loader contract. Accepted IMG ceilings remain unchanged. Reference clones are untrusted evidence; shared decoding/textures must not merge source namespaces or lifecycles. These are candidate review inputs, not a new resource grant or completed security review.
+
+## Verification plan
+
+The appendix records read-only source evidence at bitty eef983e on 2026-09-15, while the survey identifies its reference revisions. Future claims must distinguish parser intake, decoding/storage, placement, and actual present-path consumption at the cited revision; the appendix explicitly leaves several effects unverified. Full-command coverage and the owning Rich Presentation follow-ups remain pending; no current rendering or platform test result is added here.
+
+## Alternatives considered
+
+The body compares a small owned parser layer with pulling the full termwiz tree into production, and records kitty-graphics-protocol as a sender-side test tool rather than a receiver parser. It compares Kitty-primary/Sixel-compat roles, shared image backends with separate namespaces, loader-policy choices, and decoration/fallback options. Survey possibilities remain candidates and do not select new dependencies or budgets.
+
+## Affected contracts
+
+Rich Presentation continues to own image bounds and protocol behavior; the compositor owns composition geometry, RFC-0001 owns accepted appearance configuration, and the shipped theme catalog remains authoritative. APC command-model work belongs to the VT/parser track; a graphics-protocol extraction needs its own scoped task. No accepted contract changes through this model.
+
+## Open points
+
+### Follow-ups (not opened as tasks here)
 
 1. APC full-command-model coverage (delete/query/animation/put actions,
    z-index, Unicode placeholders, scroll behavior): owner is the bitty
@@ -692,3 +724,18 @@ remain authoritative.
    untouched here, not duplicated as new items.
 5. No new open question is admitted by this task: none of the above blocks the
    current milestone beyond already-tracked work.
+
+## Acceptance criteria
+
+Any successor must reconcile its concrete layer order, image lifecycle, loader policy, and appearance behavior with the authoritative contracts cited above, and supply the missing implementation and present-path evidence. The existing follow-ups and unverified effects remain explicit; survey examples and illustrative types alone accept no API, dependency, or numeric ceiling.
+
+## P0 Review Sign-off
+
+Pending for any successor that changes graphics loading, resource bounds, or renderer access. The 2026-09-15 appendix is read-only status evidence, not P0 acceptance; accepted image and loader controls continue to govern.
+
+## References
+
+- [Rich Presentation RFC](../specifications/rich-presentation-rfc.md) — image contracts and owning follow-ups.
+- [Workspace Compositor](../specifications/workspace-compositor.md) and [Core and Plugin Boundaries](core-boundaries.md) — ownership.
+- [Theme presets](../configuration/themes.md) — shipped catalog.
+- The external-terminal survey and implementation appendix above retain the exact reference revisions and file evidence.
