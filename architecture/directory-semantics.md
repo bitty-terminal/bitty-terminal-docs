@@ -183,7 +183,10 @@ $XDG_DATA_HOME/bitty/plugins/
 - `plugins/` under the data root holds installed plugin source. It is
   distinct from the `plugins/` configuration subtree under
   `$XDG_CONFIG_HOME/bitty/plugins/`, which holds behavior configuration
-  and declarative imports, not installed source.
+  and declarative imports, not installed source. Per-plugin settings files
+  under that configuration subtree follow the canonical Lua and XDG settings
+  contract; the plugin ecosystem owns the public `bitty.settings` API in its
+  [`settings` reference](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/reference/settings.md).
 - With no plugin enabled, Bitty is a plain terminal window with Core
   primitives reachable through commands and key bindings; every bar, tab
   strip, and status line is plugin presentation, per the accepted
