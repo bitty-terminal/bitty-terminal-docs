@@ -79,3 +79,4 @@
 {"deleted_at":"2026-10-17T15:57:06.756031451+00:00","deleted_by":null,"project_id":"01M2DX0M89VSBG7TB7H5WNKNA4","reason":"worktree.removed","row_id":"01M5550MGEGEHZP078V4TSDCVA","table_name":"worktrees"}
 {"deleted_at":"2026-10-17T16:12:15.164589096+00:00","deleted_by":null,"project_id":"01M2DX0M89VSBG7TB7H5WNKNA4","reason":"scope.removed","row_id":"01M559GM946K5T1W8QGF4MSQHV","table_name":"scopes"}
 {"deleted_at":"2026-10-17T16:12:15.216631491+00:00","deleted_by":null,"project_id":"01M2DX0M89VSBG7TB7H5WNKNA4","reason":"scope.removed","row_id":"01M559GMA69MAAWBSVC5NEFZ6J","table_name":"scopes"}
+{"deleted_at":"2026-10-17T17:00:45.775284411+00:00","deleted_by":null,"project_id":"01M2DX0M89VSBG7TB7H5WNKNA4","reason":"worktree.removed","row_id":"01M559M5Z3HWFSTY61AZD34WKA","table_name":"worktrees"}
