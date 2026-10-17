@@ -11,21 +11,24 @@ sidebar_order: 20
 
 # Review Extension Source and Consent
 
-> Status: draft guide. Every command below was verified read-only against
-> the merged `bitty` `main` branch (confinement `2a3fddaf`, spawn ledger
-> `a89f51a5`, source transparency `9a5296b9`; 2026-10-12). The behavior is
+> Status: draft, source-qualified guide. The extension and spawn procedures
+> were inspected read-only against merged `bitty` source (confinement
+> `2a3fddaf`, spawn ledger `a89f51a5`, source transparency `9a5296b9`;
+> 2026-10-12). The plugin install/enable procedure below describes
+> `1c52ba7617e4c42d2fde06c5b318ebefc54aec3b` (PR #2212). The behavior is
 > experimental (`Implemented`-only, never `Verified`): this guide describes
 > what the current code does, not a stable or supported contract. No
 > compatibility promise is made; flags and exit codes may change before any
-> supported release.
+> supported release. This is not evidence that 0.0.24 has shipped or that
+> the supply-chain security acceptance criteria are fully satisfied.
 
 Use this guide to answer four questions about your installation: what is
 installed, what authority it holds, whether its bytes are the pinned bytes,
-and what to do when Bitty refuses to run something. Plugin and extension
-inventory, inspection, install, and source-review commands are local: they
-need no running instance, load no plugin code, and execute no extension
-binary. Runtime consent revocation commands in section 3 require a live
-instance as noted below.
+and what to do when Bitty refuses to run something. Plugin store management
+needs no running instance, IPC, or plugin VM and executes no package code.
+Store inspection and state changes are local/offline; Git installation uses
+the network and system tools. Native extension downloads have their own
+network and consent flow, and runtime consent commands need a live instance.
 
 Normative security constraints behind these commands live in the
 [security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)
@@ -34,8 +37,8 @@ documents; this guide states no policy of its own.
 
 ## Prerequisites
 
-- A `bitty` binary built from `main` (no release artifact is supported
-  yet).
+- A `bitty` build containing the source revision for the procedure you use;
+  these draft procedures do not establish support for a release artifact.
 - A terminal where you can run `bitty --help` successfully.
 - No running Bitty instance is required except where noted (`bitty ctl`
   consent verbs need one live instance).
@@ -83,7 +86,7 @@ capabilities always need fresh consent.
 
 ## 3. Revoke authority you do not want granted
 
-Drop one capability without removing the plugin:
+For a bundled managed plugin, drop one capability without removing it:
 
 ```sh
 bitty plugin revoke <id> --cap <capability>
@@ -97,17 +100,63 @@ bitty plugin revoke <id>
 
 A revoked capability is remembered as explicitly denied: it is not
 silently re-prompted. To grant again later, reinstall with explicit
-consent:
+consent. Use a bundled ID for its managed record:
 
 ```sh
 bitty plugin install <id>
+```
+
+Store-installed packages do not support `plugin revoke`: remove the store
+record and package tree with `bitty plugin remove <id> --force`, then
+reinstall from the reviewed source to re-grant. For example:
+
+```sh
 bitty plugin install ./my-plugin --yes
 ```
 
 `--yes` approves the capability consent non-interactively. Without it,
-the installer prompts `Grant these capabilities? [y/N]` (up to 3
-attempts); `y`/`yes` approves, `n`/`no`/empty declines, EOF aborts, and a
-decline changes nothing (exit 1).
+new requested capabilities prompt `Grant these capabilities? [y/N]` (up
+to 3 attempts); `y`/`yes` approves, `n`/`no`/empty declines, and EOF aborts
+(exit 1). Store consent is bound to the staged package snapshot. Decline or
+EOF leaves the committed index, existing grants, and installed version
+unchanged; staging or housekeeping may already have occurred.
+
+### Review a store install before enabling it
+
+Choose one reviewed source for `bitty plugin install <source> [--yes]`:
+a local plugin directory, a local `.tar.gz`/`.tgz`/`.tar.zst`/`.zip` archive,
+or an allowlisted Git spelling (`https://<host>/<path>.git`,
+`git+https://<host>/<path>.git`, or `git@<host>:<path>`). Git and archive
+acquisition feed the same local validation and consent pipeline; rejected
+schemes or missing system helpers fail closed. See the
+[CLI reference](../interfaces/cli.md#implemented-slice-bitty-plugin-management)
+for source syntax, state stores, and failure semantics.
+
+After a **fresh** local, Git, or archive install, inspect its manifest ID
+and grants, then authorize future activation separately:
+
+```sh
+bitty plugin list --format json
+bitty plugin info <id>
+bitty plugin enable <id>
+```
+
+Expected result: the fresh install is **disabled**, including with `--yes`
+or zero requested capabilities. Approval records capability consent; it
+does not enable the package. Before enablement, startup discovery skips the
+disabled store package. `enable` changes desired state without executing
+package code; later discovery and activation still apply integrity,
+compatibility, safe-mode, and recorded-grant checks. Inspect `plugin info`
+again to confirm the recorded state; this does not prove runtime execution.
+
+Updating or reinstalling an existing store package preserves its prior
+enabled or disabled state. New capabilities still require consent before
+commit. This policy applies to the CLI source-install path; bundled
+install/enable behavior and the public library's default options are
+unchanged. A desired-state change does not promise immediate revocation of
+an already-running generation.
+
+### Manage runtime consent separately
 
 For runtime debug and automation scopes on a live instance, revoke with:
 
@@ -257,6 +306,15 @@ describe the exact build you run.
 
 ## Open points
 
+- Plugin install evidence is source-qualified: the pinned CLI tests cover
+  local fresh-disabled state, explicit enable followed by v1/v3 activation,
+  preserved update enablement, and decline/EOF state preservation. Successful
+  Git transport, enabled-v2 activation, and an instrumented zero-invocation
+  proof are not established. Archive tests cover successful installation,
+  while the disabled policy follows the shared source path. The
+  [CLI reference evidence](../interfaces/cli.md#implemented-slice-bitty-plugin-management)
+  links the exact implementation and tests; no product test run is claimed
+  by this guide.
 - No dedicated `consent list` verb exists; the consent inventory is
   `plugin list` plus `plugin info` today.
 - Non-Linux tool spawns refuse by design until per-platform confinement
