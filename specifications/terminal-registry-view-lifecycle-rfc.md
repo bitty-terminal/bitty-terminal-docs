@@ -210,6 +210,61 @@ clamped.
 
 ## View lifecycle: attachment, detachment, focus, layout, visibility, persistence
 
+### Candidate diagnostics synchronization
+
+Status: **implemented and merged into `bitty` `main` (bitty #2183);
+experimental and not stable.**
+
+The candidate control-plane implementation exposes read-only terminal
+diagnostics through `core.terminal.list`. The result is an active-layout
+prefix, bounded to `MAX_TERMINALS` (`64` in the candidate runtime), with an
+aligned diagnostic row for every returned `t:N`/`v:N` pair. A row reports
+session presence, retained scrollback line count, retained terminal-state heap
+bytes, an optional recorded direct-child PID, and `child_state` (`unreaped`,
+`reaped`, or `absent`). The child state is an ownership snapshot: `unreaped`
+does not prove that the process is running because the query does not poll.
+
+When the active-layout walk reaches its bound, `truncated` is true and
+`total_lower_bound` equals the returned prefix length rather than an exact
+process-wide or retained-workspace count. A complete walk has
+`truncated: false`, making that value exact for the active layout. The command
+does not enumerate terminals retained in hidden or inactive workspaces.
+
+The candidate `core.workspace.list` result separately carries a bounded
+retained-workspace memory report. It covers at most `16` workspace slots,
+`32` layout leaves per row, and `128` pane-session owners in its aggregate,
+with a layout recursion guard of `64`. Rows expose explicit layout and
+detached-float truncation counters, ownership counts, primary-state presence,
+and unique retained state bytes. Shared owners are charged once by `ViewId`
+and the primary-owner marker; orphaned owners remain aggregate-only and are
+reported as unattributed bytes. This report does not inspect PTY output or
+change attachment, layout, or terminal-list behavior. It is an experimental
+diagnostic contract, not a stable lifecycle API.
+
+The workspace report is serialized as `memory.v: 1` beside the existing
+`workspaces`, `names`, `active`, `active_id`, and `count` fields. Each row uses
+`seq`, `active`, `leaf_views`, `layout_truncated`,
+`detached_floats_total`, `detached_floats_reported`,
+`detached_floats_omitted`, `detached_floats_truncated`, `owned_views`,
+`pane_sessions`, `primary_state`, and `owned_bytes`. The aggregate uses
+`workspaces`, `leaf_views`, `pane_sessions`, `orphaned_pane_sessions`,
+`primary_states`, `owned_views`, `unique_owned_bytes`, and
+`unattributed_bytes`. `leaf_views` intentionally counts reported references;
+ownership and byte fields de-duplicate by `ViewId` and the singleton primary
+owner. The report includes no terminal text, cwd, host path, or PID and makes
+no process-RSS or RSS-reduction claim.
+
+The report's truncation fields describe observation, not mutation: layout
+walking stops at the `64` depth guard or `32` leaf prefix. Detached floats are
+materialized only when the complete detached-float set fits in the row's
+remaining leaf budget; if they do not fit, none of that set is materialized.
+In that case `detached_floats_total` remains the exact count,
+`detached_floats_reported` is the included count,
+`detached_floats_omitted` is the remainder, and
+`detached_floats_truncated` is `true`. The aggregate examines no more than
+`128` pane-session owners. These are candidate/pending-merge diagnostics, not
+new attachment, detachment, or workspace lifecycle transitions.
+
 ### Attachment and detachment
 
 | Operation                                        | Behavior                                                                                                                                                                                                                                                                                                                                  |

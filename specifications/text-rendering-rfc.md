@@ -141,6 +141,27 @@ does not move a requirement between owners and does not create a bypass.
 | `Cache`              | The memoizing decorator `GlyphCache` in front of a `GlyphRasterizer` (`bitty-render::cache`)                                                                                         |
 | `IME preedit`        | The unfinished composition string held by the platform IME, rendered as an ephemeral overlay above the cursor, not as grid cells.                                                    |
 
+### Public bitmap compatibility and internal coverage storage
+
+PX-6618 keeps the public renderer bitmap boundary compatible. The public
+`BitmapFormat` enum remains the two-variant `Rgb`/`Rgba` API, and
+`GlyphBitmap::try_new` continues to validate `data.len()` as
+`width * height * BitmapFormat::channels()`. Packed grayscale coverage is an
+internal atlas/pipeline representation, not a new public `BitmapFormat` enum
+variant and not a reinterpretation of public `Rgb` data as one byte per pixel.
+
+The current grayscale serving path converts public `Rgb` coverage to one
+luminance byte per texel and public `Rgba` coverage to its alpha byte before
+writing the internal `R8` atlas. The internal `R8` texture and any packed
+coverage masks may change without changing the public rasterizer trait,
+`GlyphBitmap` validation, or the meaning of `BitmapFormat::Rgb` and
+`BitmapFormat::Rgba`. Subpixel storage remains a separate candidate policy;
+the current serving paths use grayscale coverage.
+
+Status: **implemented compatibility evidence after PX-6618, but this RFC
+remains Draft and the renderer behavior is not `Verified` or a stable
+compatibility guarantee until the acceptance gates below close.**
+
 ## Text segmentation and width (UAX #29, UAX #11)
 
 ### Grapheme clusters (UAX #29)
@@ -619,6 +640,11 @@ Ok(None) | Err`. Deterministic per session: equal keys give bit-identical
   oversized request; blank `0×0` always refused), `occupancy()`, and
   `reset()` (wholesale eviction). Pairwise-disjoint, in-bounds invariant
   after every successful allocation, deterministic.
+- **Public bitmap boundary and internal coverage:** `BitmapFormat::Rgb` and
+  `BitmapFormat::Rgba` remain the public upstream-compatible input formats.
+  The grayscale `R8` coverage mask is created after that boundary and is
+  internal to atlas/software/GPU serving paths; it is not exposed as a public
+  enum variant or public one-byte `GlyphBitmap` format.
 - **`GridRenderer<HeadlessRasterizer>`** (`grid.rs`): `Snapshot + Damage ->
 DamageDescriptor -> FramePlan -> place -> Cache -> Atlas -> DrawList` with
   metrics `counters`/`cache_stats`/`atlas_stats` to make PB-4/PB-6/PB-7
@@ -636,11 +662,13 @@ user-facing typography.
 
 ### Atlas policy (candidate, reconciled)
 
-1. **Tiered atlases.** One `2048×2048` `Rgba` atlas backs the common glyph set
-   (CJK, Latin, symbols, color-emoji `COLR` layers at cell extent). A second
-   `1024×1024` atlas tiers large color emoji bitmaps whose side exceeds
-   `MAX_ATLAS_GLYPH_SIDE = 128` px. Both share the same packer, counters, and
-   overflow policy.
+1. **Tiered atlases.** One `2048×2048` atlas dimension backs the common glyph
+   set (CJK, Latin, symbols, color-emoji `COLR` layers at cell extent). The
+   current grayscale serving path stores coverage internally as one-byte
+   `R8` texels; the public `Rgb`/`Rgba` bitmap formats remain the input
+   boundary. A second `1024×1024` atlas tiers large color emoji bitmaps whose
+   side exceeds `MAX_ATLAS_GLYPH_SIDE = 128` px. Both share the same packer,
+   counters, and overflow policy.
 2. **Upload path.** The CPU-side coverage texture plus `AtlasLayout` slot plus
    drainable upload queue per `AtlasLayout` remain; the `wgpu` pipeline copies
    the queued bytes post-frame. Nothing in the atlas layer creates a GPU texture
@@ -1012,9 +1040,11 @@ each will require a follow-up decision. Each cites the gate that will accept it.
 5. **Variable-font surfacing** — which axes beyond `wght`/`wdth` become user
    facing and whether variation deltas participate in `ConfigPlan` diffs.
    Gate: this RFC revision + [Configuration Model RFC](configuration-model-rfc.md).
-6. **Hinting and anti-aliasing policy** — grayscale vs subpixel RGB, hinting
-   level per platform/DPI bucket, and its interaction with atlas `Rgb` vs
-   `Rgba` format. Gate: this RFC revision + Platform RFC half of text.
+6. **Hinting and anti-aliasing policy** — future grayscale vs subpixel RGB
+   selection and hinting level per platform/DPI bucket. The current grayscale
+   policy does not change the public `BitmapFormat::Rgb`/`Rgba` boundary;
+   internal `R8` packing is already the serving representation. Gate: this
+   RFC revision + Platform RFC half of text.
 7. **Selection mapping under ligatures/bidi** — whether double-click and
    expand-selection snap to cluster, word, or shaped-glyph extent when a
    ligature spans clusters. Gate: this RFC revision + [Core and Plugin Boundaries](../architecture/core-boundaries.md) selection primitive.
