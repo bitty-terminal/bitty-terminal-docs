@@ -335,10 +335,11 @@ Terminal-side conclusions:
 - The Bar is presentation, never Terminal Truth: it composes declarative status
   segments and never reads or mutates grid, cursor, modes, scrollback, or IPC
   policy; its modules keep their own cadence and failure posture.
-- The Workspace area composition maps to accepted Core-owned decoration:
-  `gaps_out` insets the Workspace tiling area within the `Window`, so a Bar edge
-  necessarily reduces the area available to the compositor. Bar geometry is
-  Core-owned presentation; no plugin or `LayoutProvider` sets it.
+- The Workspace area composition maps to generic Core-owned band geometry:
+  `gaps_out` insets the Workspace tiling area within the `Window`, so a mounted
+  Bar edge may reduce the area available to the compositor. This mechanism
+  does not make Bar presentation Core-owned; plugin policy selects and mounts
+  the surface, and no plugin or `LayoutProvider` mutates Core geometry.
 - Colors, indicator color, and active-workspace color compose with the accepted
   appearance surface (`appearance.theme`, `decoration.border_color*`,
   `appearance.animations.*` in the
@@ -353,7 +354,7 @@ retained `workspace.show_bar`; the Workspace area, decoration insets, and PTY
 geometry are recomputed per edge by the band geometry and reflow rules there
 (four edges defined, `top`/`bottom` planned for v0.1). The earlier
 `bitty --safe` minimal-bar wording is superseded by
-[ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md): safe mode does not load the optional bar replacement; the Core fallback remains available. These resolutions are candidate,
+[ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md): safe mode does not load optional bar presentation and no Core fallback is available. The fallback wording above is an unaccepted proposal/deviation from ADR 0014, not current accepted behavior. These resolutions are candidate,
 not accepted.
 
 **Appearance owned by plugins.** Under the candidate

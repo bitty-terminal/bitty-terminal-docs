@@ -295,8 +295,9 @@ them (see the draft
 `StatusBar`, and a tab strip are **plugin compositions** on edge surfaces that
 read domain data through `<domain>.read` snapshots and events and mutate only
 through `<domain>.control` commands. The rail/bar replacement is not the Core
-source of workspace truth; when absent or failed, the Core default workspace
-strip remains the fallback. The draft
+source of workspace truth. Under accepted ADR 0014, no Core strip fallback is
+drawn when the plugin is absent or fails; candidate fallback wording is an
+unaccepted proposal/deviation. The draft
 [Status System Specification](status-system.md) remains the module registry
 contract a status plugin consumes.
 

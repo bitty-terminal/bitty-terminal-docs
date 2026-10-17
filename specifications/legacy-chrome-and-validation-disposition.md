@@ -37,10 +37,10 @@ source wins.
     retires the `bitty-terminal.tabs` compatibility alias and the bundled
     `bitty-terminal.shell-integration` manifest at a `>= v0.2.0` floor and
     defines the stored-grant migration path.
-- Execution status: not executed. The `bitty` workspace still carries the
-  transitional workspaceline, the compatibility aliases, and the bundled
-  manifests, and `bitty-compat-lab` and `bitty-perf` are still product-workspace
-  members. Relocation is `W-105`; Core-side removal is `W-104`. Every
+- Execution status: partially executed. The Core workspaceline presentation
+  was removed (`bitty#1721`, `819f286`), and the `tabs` alias was purged early
+  (`bitty#1717`, `471b3f9`); the remaining `workspace` manifest/claim and the
+  validation-suite relocation remain open under `W-104` and `W-105`. Every
   implementation-status page linked below stays candidate.
 - Frontmatter `status` is `draft` per the repository metadata schema; document
   status is Candidate.
@@ -271,16 +271,19 @@ presentation plugins enabled, including `bitty --safe`:
 
 1. Workspaces are fully usable: every workspace operation works through Core
    commands and key bindings, with no dependency on the plugin system.
-2. Core owns workspace state and semantics and provides the default workspace
-   strip as fallback. A bar plugin may replace that strip with read-only
-   workspace observations and Core commands; failure returns to the fallback.
+2. Core owns workspace state and semantics but provides no workspace-strip
+   fallback. Without a presentation plugin, no workspace band is reserved,
+   including in safe mode. A bar plugin uses read-only workspace observations
+   and Core commands; fallback-strip wording elsewhere is an unaccepted
+   proposal/deviation from ADR 0014.
    Optional tab and sidebar surfaces remain plugin presentation.
 3. The hidden scratchpad slot and its Core toggle command remain available, with
    no visible indicator when no presentation plugin is enabled.
 4. The baseline does not depend on the plugin runtime, event delivery, or
    request queue.
-5. The transitional workspaceline is the only exception while it is still
-   present; it is removed once a first-party presentation plugin reaches parity.
+5. The transitional workspaceline was historical migration state, not an
+   exception to ADR 0014; it has since been removed. Workspace presentation
+   remains plugin-only.
 
 ### Evidence artifacts
 

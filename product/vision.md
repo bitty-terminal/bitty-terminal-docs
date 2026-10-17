@@ -111,10 +111,11 @@ With no plugin enabled, Bitty is a plain terminal window comparable to
 Alacritty: a shell, the grid, scrollback, selection and clipboard, fonts,
 colors, and themes, keymaps, typed configuration, and splits and workspaces as
 Core primitives reachable through commands and key bindings. Core owns
-workspace state and semantics and provides the default workspace strip as a
-fallback. A bar/plugin may replace that strip through read-only observations
-and Core commands; failure returns to the fallback. Tab and status surfaces
-remain optional plugin presentation. Core supplies the mechanisms and APIs;
+workspace state and semantics but does not draw workspace presentation. With
+no presentation plugin, no workspace strip is drawn and no band is reserved,
+including in safe mode. A bar plugin consumes read-only observations and
+invokes Core commands. Tab and status surfaces remain optional plugin
+presentation. Core supplies the mechanisms and APIs;
 Lua plugins decide which optional chrome exists and what it shows (candidate,
 [Chrome Surface API](../specifications/chrome-surface-api-candidate.md)).
 

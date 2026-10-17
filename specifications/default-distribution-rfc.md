@@ -85,10 +85,11 @@ sidebar_order: 20
 > removal landed. The bundled catalog is `bitty-terminal.shell-integration`
 > only. Workspace presentation is owned by the first-party `bar` plugin
 > (`bitty-terminal.bar`, Waybar-like consolidated bar covering workspaces,
-> statusline, and tabs); Core owns workspace state and semantics and retains
-> the default workspace strip as the fallback presentation. The bar may
-> replace that strip only through read-only workspace observations and Core
-> commands; absence or failure returns to the fallback. Rows and examples below that name
+> statusline, and tabs); Core owns workspace state and semantics but draws no
+> workspace presentation. The accepted zero-plugin baseline reserves no
+> workspace band; absence or failure of the optional bar does not create a Core
+> fallback. Core-strip fallback wording in later candidate records is an
+> unaccepted proposal/deviation. Rows and examples below that name
 > `bitty-terminal.workspace` as owning the workspaceline remain the dated
 > catalog record.
 
@@ -317,8 +318,9 @@ eight-plugin catalog once #680 merges; the
 
 The workspace lifecycle stays Core and the `workspaceline` claim is removed:
 workspace presentation is owned by the first-party `bar` plugin
-(`bitty-terminal.bar`) and Core draws no chrome, including in `bitty --safe`
-(bitty#1572; #1677/#1680/#1721). Shell integration stays bundled and
+(`bitty-terminal.bar`) and Core draws no workspace chrome, including in
+`bitty --safe` (ADR 0014; bitty#1572; #1677/#1680/#1721). With no presentation
+plugin, no workspace band is reserved. Shell integration stays bundled and
 remains the upstream OSC 7/133 semantic-zone provider.
 
 > Note (2026-09-30, CTX-0076; retired 2026-10-06 per bitty#1572

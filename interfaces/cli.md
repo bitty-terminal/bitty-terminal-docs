@@ -186,8 +186,8 @@ compatibility-guaranteed CLI schema.
 corresponding to the active layout leaves and reports whether each leaf has a
 pane session. It is not a process-wide inventory and does not include
 terminals retained in hidden or inactive workspaces. `workspace.list` reports
-workspace identity and active state; it does not currently provide memory
-accounting for retained workspaces.
+workspace identity and active state; the merged experimental diagnostic also
+provides bounded memory accounting for retained workspaces, described below.
 
 The candidate retains the existing read scopes: `core.terminal.list` requires
 `terminal.inspect`, and `core.workspace.list` requires `view.inspect`. The

@@ -238,23 +238,23 @@ With no plugin enabled, Bitty is a plain terminal window comparable to
 Alacritty: a shell, the grid, scrollback, selection and clipboard, fonts,
 colors, and themes, keymaps, typed configuration, and splits and workspaces as
 Core primitives reachable through commands and key bindings. Core owns the
-workspace state and semantics, and its default workspace strip is the fallback
-presentation. A bar or other plugin may replace that strip with read-only
-workspace observations; it never owns workspace truth or mutates terminal
-state. If the replacement is unavailable or fails, Core falls back to the
-default strip so workspace state and commands remain usable. Other optional
+workspace state and semantics, but does not present them. With no workspace
+presentation plugin, no workspace strip is drawn and edge bands reserve zero
+space; workspace operations remain available through Core commands and key
+bindings, including in `bitty --safe`. The Core-strip fallback described in
+later candidate records is an unaccepted proposal and deviates from ADR 0014;
+it is not the accepted baseline or current source behavior. Other optional
 chrome, including tab and status surfaces, remains plugin presentation.
-Every piece of chrome is a plugin composition on generic Core mechanisms, so
-the Tabs, Workspace bar, and Status line rows above own presentation
-entirely.
+Generic Core chrome-band mechanisms remain available to mounted presentation
+plugins and do not themselves imply Core-drawn chrome.
 
 Retired state (`W-104`, `bitty#1677` `c246e52`, `bitty#1680` `34b6d83`):
 the retired Core workspaceline, tab strip, and status-line presentation are no
-longer the replacement surface. The default workspace strip remains the Core
-fallback described above, including in `bitty --safe`; the first-party bar
-presentation plugin may replace it with read-only observations. Core retains
-workspace lifecycle, state, query commands, and generic chrome-band
-mechanisms. The accepted
+longer the replacement surface. There is no Core-strip replacement, including
+in `bitty --safe`; the optional first-party bar presentation plugin uses
+read-only observations. Core retains workspace lifecycle, state, query
+commands, and generic chrome-band mechanisms; bands reserve space only for
+mounted surfaces. The accepted
 [`W-74` legacy-chrome retirement](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/legacy-chrome-retirement.md)
 contract and
 [ADR 0017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0017-tabs-alias-shell-integration-retirement.md)
