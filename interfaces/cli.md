@@ -11,12 +11,16 @@ sidebar_order: 10
 
 # Command-line interface
 
+## Document status
+
 > Status: candidate architecture. An extensible, first-class CLI is an
 > accepted working direction, and experimental parser/registry code exists in
 > the `bitty` workspace. The shared executable registry, command tree,
 > identifiers, environment variables, output schemas, and exit codes are
 > candidate contracts until separately specified, implemented, and verified;
 > no stable or supported CLI contract is claimed.
+
+## Purpose and scope
 
 The Bitty CLI is a formal frontend to the same capabilities used by GUI
 actions, key bindings, Lua, IPC, developer tools, and agent adapters. It must
@@ -334,8 +338,9 @@ target first returns `Pending` and arms a kill confirmation without tearing
 down sessions. Repeating close for that same target returns `Closed` and tears
 down its sessions. `Esc` or the explicit cancel path returns to the ordinary
 state without closing. A pending arm is replaced when another workspace is
-armed, and unknown workspace indices fail closed. These are candidate
-control-plane semantics pending the CTX-1269 merge and independent
+armed, and unknown workspace indices fail closed. These control-plane semantics
+are present at `bitty` `1c68de25`, which includes merged #2183 (CTX-1269);
+they remain experimental, `Implemented-only`, and pending independent
 verification.
 
 ## Instance targeting and environment
@@ -461,10 +466,10 @@ that the wizard creates or selects profiles.
   entry, and the bounded escape-sequence reader preserves a lone Escape as
   cancel without treating a partial CSI/SS3 sequence as a separate answer.
   Non-TTY input keeps the line-oriented path.
-- The ASCII mascot greeting and `--mascot` flag were removed. `--no-splash`
-  remains the one-launch suppression for the normal first-run splash; machine
-  flows such as `--headless` and `--test-mode` remain splash-free. `bitty init`
-  now starts with the setup prompt and no mascot output.
+- The ASCII mascot greeting, `--mascot`, and `--no-splash` were removed.
+  Core `b99059bc` (PR #2197), present at `1c68de25`, also removes the splash
+  code and first-run marker lifecycle. `bitty init` starts with the setup
+  prompt and no mascot output; no splash-suppression option remains.
 - The wizard still writes only the documented configuration surface and keeps
   its bounded-attempt and fail-closed behavior. These are implementation
   observations, not an acceptance of the candidate CLI grammar.

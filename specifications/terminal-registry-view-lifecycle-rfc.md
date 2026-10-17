@@ -11,6 +11,8 @@ sidebar_order: 26
 
 # TerminalRegistry and View Lifecycle Contract
 
+## Document status
+
 > Status: **accepted** on 2026-08-31 by independent docs-reviewer per
 > CTX-0117 plus **Experimental Implementation** at `bitty` `c0aadd2`/`a8735d0`
 > — accepted lifecycle contract with experimental code evidence (not
@@ -68,7 +70,7 @@ exact glyph hit-testing math, and registry or package-transport mechanics whose
 contracts already reference this lifecycle as an ownership source.
 
 Normative sources this RFC must not weaken are listed in
-[Normative sources this specification does not weaken](#normative-sources-this-specification-does-not-weaken).
+[Normative sources this specification must not weaken](#normative-sources-this-specification-must-not-weaken).
 Where this specification selects a threshold it refines those sources; it does
 not move a requirement between owners and does not create a bypass.
 
@@ -88,7 +90,7 @@ specification per CTX-0117 (2026-08-31). `HeadlessRasterizer` and
 `char_cell_width` approximation remain non-user-ready evidence per the
 text-rendering draft until that draft is accepted.
 
-## Normative sources this specification does not weaken
+## Normative sources this specification must not weaken
 
 - [ADR 0003 Core Workspace Topology](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) (OQ-005): one-way DAG; `bitty-vt`, `bitty-term-state`, `bitty-pty` never depend on UI, platform, plugin-host, config, runtime, or app; `bitty-render` reads only snapshots.
 - [Terminal State RFC](terminal-state-rfc.md) (OQ-007): parser to `Action` to state is the only write path; 8 grid and mode invariants; damage `generation`; bounded reply buffer; deterministic replay and state hash.
@@ -215,6 +217,10 @@ clamped.
 Status: **implemented and merged into `bitty` `main` (bitty #2183);
 experimental and not stable.**
 
+The merged source is `b97a8b20`, an ancestor of `bitty` `1c68de25`.
+The observations below remain `Implemented-only`, pending independent
+verification; merge status does not accept a stable diagnostics API.
+
 The candidate control-plane implementation exposes read-only terminal
 diagnostics through `core.terminal.list`. The result is an active-layout
 prefix, bounded to `MAX_TERMINALS` (`64` in the candidate runtime), with an
@@ -262,8 +268,9 @@ In that case `detached_floats_total` remains the exact count,
 `detached_floats_reported` is the included count,
 `detached_floats_omitted` is the remainder, and
 `detached_floats_truncated` is `true`. The aggregate examines no more than
-`128` pane-session owners. These are candidate/pending-merge diagnostics, not
-new attachment, detachment, or workspace lifecycle transitions.
+`128` pane-session owners. These merged, experimental diagnostics remain
+`Implemented-only`; they introduce no new attachment, detachment, or
+workspace lifecycle transitions.
 
 ### Attachment and detachment
 
@@ -442,7 +449,7 @@ for Lua and no bypass of existing P0 gates.
 4. Bounded resources are validated before allocation; exceeding a ceiling returns a typed error and never grows heap without bound, preserving invariant 7.
 5. The separate terminal and plugin security domains from the core boundaries are preserved. A terminal requesting a resource via an escape sequence and a plugin requesting the same resource via a host API traverse different policies and produce distinct audit events.
 
-## Verification
+## Verification plan
 
 1. **Metadata and link gates**: `just check` must pass with zero markdownlint, link, metadata, language, agents, and hygiene issues for this document and its index entries, and `act -n -W .github/workflows/ci.yml` must report workflow dry-run success.
 2. **Identity invariant tests** (acceptance gates):
@@ -463,7 +470,22 @@ for Lua and no bypass of existing P0 gates.
    - Detached terminal survives with same ids; reattached terminal retains history; exited terminal reports `TerminalExited`; `close` retires the id and a subsequent create with the same `PersistentId` rehydrates scrollback but allocates fresh `TerminalId` and `RuntimeId`.
 8. **Headless composition tests**: workspace view rectangles, registry lifecycle, focus, and resize routing each have headless tests without a window or GPU, asserting rectangle equivalence and atomicity.
 
-## Open items remaining under this accepted specification
+## Alternatives considered
+
+The existing [Reattachment versus recreation](#reattachment-versus-recreation)
+and [Explicit exclusions](#explicit-exclusions-not-authorized) sections define
+the lifecycle choices and deferred alternatives. Merged memory observations
+do not change those choices or authorize another attachment topology.
+
+## Affected contracts
+
+The [Terminal State RFC](terminal-state-rfc.md),
+[Workspace Compositor Specification](workspace-compositor.md), and
+[Input and Pointer Contract](input-pointer-rfc.md) retain their own status
+and authority. Diagnostics observe retained owners without changing those
+contracts, their resource limits, or their security requirements.
+
+## Open points
 
 - Exact `TerminalRegistry` trait spelling, error taxonomy, and crate placement beyond the illustrative sketches above.
 - Whether `PersistentId` participates in `ConfigPlan` live reload or requires registry recreation, and whether rehydrated scrollback is limited to the configured `max_scrollback_lines` or a narrower bound.
@@ -484,6 +506,19 @@ lifecycle above were synchronized against `bitty` `d2ccd64` (PR #1485,
 recorded in the [Input and Pointer Contract](input-pointer-rfc.md). Remaining open items above require follow-up RFCs or
 tasks per the [documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md)
 and [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
+
+## Acceptance criteria
+
+The identity, registry, view lifecycle, resize, capture, reattachment, and
+headless composition checks in the [Verification plan](#verification-plan)
+remain the acceptance obligations. Source presence and a merged diagnostics
+commit alone satisfy no `Verified` or compatibility claim.
+
+## P0 Review Sign-off
+
+The CTX-0117 acceptance recorded in [Document status](#document-status) is
+unchanged. The merged memory observations add no independent P0 sign-off;
+the normative security corpus and outstanding verification remain binding.
 
 ## References
 

@@ -20,11 +20,13 @@ an explicit label — **Enforced today** or **Planned** — and draft text
 does not authorize shipped, stable, normative, or
 compatibility-guaranteed behavior.
 
-The mediation described here is gate-level only: requests pass
+Requests pass gate-level mediation through
 capability, policy, authenticated-scope, and resource-budget checks
-before execution. Operating-system-level confinement of spawned
-processes is **Planned**, not enforced (see
-[bitty#2067](https://github.com/bitty-terminal/bitty/issues/2067)).
+before execution. At `bitty` `1c68de25`, admitted Layer-2 tool spawns also
+have inherited exec confinement on Linux: an EXECUTE-only Landlock ruleset
+is installed in the child before exec. Setup failure and non-Linux
+platforms refuse those spawns fail-closed. This is `Implemented-only`
+evidence, not full OS isolation or P0 acceptance.
 
 ## Purpose and scope
 
@@ -60,10 +62,10 @@ Out of scope (owned elsewhere):
   risks).
 
 This page tracks [bitty#2070](https://github.com/bitty-terminal/bitty/issues/2070)
-(`v0.2.0`). It is written against `bitty` `origin/main`; implementation
-evidence lives in the `bitty` repository, and any divergence between
-this page and the code resolves in favor of the code until the page is
-re-synced.
+(`v0.2.0`). The confinement and spawn-ledger observations below are checked
+against `bitty` `1c68de2545c961790d0a2011340e4a3c04564ab7`.
+Implementation evidence describes that source revision; the shared
+security corpus remains authoritative for requirements.
 
 ## Normative sources this specification must not weaken
 
@@ -93,8 +95,8 @@ re-synced.
 | Term                | Meaning                                                                                                                            |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Mediation           | Gate-level checks applied to an execution request before it runs: capability, policy, scope, and budget. Not OS confinement.       |
-| Gate-only mediation | The enforced-today state: checks happen at the request gate; once a spawn passes, the child process inherits the host OS context.  |
-| OS inheritance      | The planned state where spawned processes inherit Landlock / seccomp confinement from the supervisor (tracked in `bitty#2067`).    |
+| Gate-only mediation | Request-gate checks alone; insufficient to constrain a binary's later execs. Admitted Layer-2 tools also require exec confinement. |
+| OS inheritance      | Linux child and descendant exec restrictions through EXECUTE-only Landlock; non-Linux admitted tool spawns refuse fail-closed.     |
 | Unit of mediation   | The `command` plus `args` vector of one tool spawn. Shells are never invoked; there is no string command line to interpolate.      |
 | Fail-closed verdict | A denial shaped as an explicit error (`NotFound`, `InvalidRequest`, `LimitExceeded`) rather than a silent pass or a default allow. |
 | TOFU pin            | Trust-on-first-use pin binding the strongest available artifact identity; a changed pin blocks until re-approved.                  |
@@ -117,8 +119,9 @@ the gate legitimately but behaves maliciously within its allowance
 
 ## Enforced today
 
-Each item below holds on current `bitty` `origin/main`. Labels read
-`[Enforced]` per item for skimming.
+Labels read `[Enforced]` per item for skimming, with implementation evidence
+only and no independent P0 acceptance. Confinement and ledger observations
+are pinned to the source revision above.
 
 ### Deny-by-default grants with consent and revocation `[Enforced]`
 
@@ -231,9 +234,48 @@ consent-required — is recorded in the bounded drop-oldest
 counted; implementation-measured, pending independent re-verification).
 Consent grants and revocations audit too, so the ledger
 shows not only what was decided but which grant made an allow
-possible. Tool-spawn outcomes are tracked with bounded in-memory
-entries, but there is no spawn audit ledger matching `FsAuditLedger`
-yet — that gap is planned (see `bitty#2068` below), not enforced.
+possible.
+
+### Inherited tool exec confinement `[Enforced]`
+
+For admitted Layer-2 tools, `bitty-sandbox` installs a Linux Landlock ABI v1
+ruleset handling only `EXECUTE`. Rules pin the allowlisted executable and its
+ELF interpreter by inode; `restrict_self` runs in the child's `pre_exec`
+hook. Other execs in that confined process tree fail, while reads, writes,
+memory maps, and network access are not confined by this ruleset. There is
+no seccomp or full OS isolation claim.
+
+Confinement setup failure refuses the spawn as `Unavailable` with a
+confinement diagnostic. macOS, Windows, and other platforms refuse admitted
+tool spawns until their mechanisms land; no unconfined fallback exists for
+this path. Generic non-tool requests and operator-configured secret-tier
+helpers are outside this exec profile and retain their own gates.
+
+Source: `crates/bitty-sandbox/src/{lib,linux}.rs` and
+`crates/bitty-runtime/src/plugin_runtime/spawn.rs` at `1c68de25`.
+
+### Bounded spawn-decision ledger `[Enforced]`
+
+`ToolSpawnLedger` in `crates/bitty-plugin-host/src/tools.rs` records bounded
+allow/deny decisions. At `1c68de25`, each `SpawnService` also owns a ledger
+and every `dispatch` appends one decision. `Allow` means gate authorization;
+an authorized spawn that later fails to start still records `Allow`, not a
+successful execution. `Deny` means a gate refused before execution.
+
+The drop-oldest ledger retains at most 1,024 entries and counts evictions.
+Sequence numbers replace wall-clock timestamps; caller identity is clamped
+to 128 bytes, tool names to 64 bytes, and at most 8 argument previews of
+64 bytes each are retained with excess arguments counted. These are source
+bounds, not a new normative limit or verification claim.
+
+Environment values cannot enter through the ledger API because it takes no
+environment parameter. Attribution-only construction is the barrier, not
+secret redaction: a secret supplied as an argument can persist as a
+truncated preview. `secret://` names are references, not secret values.
+This bounded in-memory decision history is not durable or exhaustive
+execution history and proves no P0 audit closure. The shared
+[execution mediation security page](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/extension-execution-mediation.md)
+remains authoritative for audit limitations and follow-up requirements.
 
 ## Planned (0.2.0 roadmap)
 
@@ -241,14 +283,6 @@ Each item below is **Planned**, tracked by a live `bitty` issue.
 Pointers to these trackers are roadmap links, not provenance, and
 nothing here may be read as implemented.
 
-- **OS-level confinement inheritance** ([bitty#2067](https://github.com/bitty-terminal/bitty/issues/2067)):
-  spawned processes inherit Landlock / seccomp confinement from the
-  supervisor, closing the gate-only mediation gap. Until this lands,
-  a spawn that passes the gate runs with the host OS context.
-- **Spawn audit ledger** ([bitty#2068](https://github.com/bitty-terminal/bitty/issues/2068)):
-  bounded drop-oldest audit of every mediated spawn (who, when,
-  which args) matching `FsAuditLedger`, closing the asymmetry noted
-  above.
 - **Update-diff, show-source, and anti-obfuscation**
   ([bitty#2069](https://github.com/bitty-terminal/bitty/issues/2069)):
   a show-source command, a mandatory update diff before approval
@@ -292,11 +326,13 @@ and no planned item fully does either.
    and frequent prompts train users to approve reflexively. Grants
    stay narrow and session-scoped to limit what one reflexive click
    yields, but the human factor remains the weakest approval link.
-4. **Gate-only mediation until OS inheritance.** Checks happen at the
-   request gate; a compromised or exploited child process is not
-   confined by the OS. This is the central open window and the
-   reason OS inheritance (`bitty#2067`) is the highest-value planned
-   item.
+4. **Partial confinement and bounded attribution.** Linux confinement on
+   admitted tools restricts exec only; it does not confine file I/O, memory
+   maps, or network access. Non-Linux admitted tool spawns refuse by design.
+   Generic non-tool execution and secret-tier helpers are outside this
+   profile. Ledger eviction loses older decisions, and argument previews
+   can retain caller-supplied secrets; no durable audit or redaction proof
+   follows from the attribution ledger.
 5. **Pre-audit status.** The audit program in
    [bitty#975](https://github.com/bitty-terminal/bitty/issues/975)
    is open. Until independent P0-AC evidence lands, every
@@ -314,11 +350,10 @@ specification spine.
   crossing from plugin-declared intent into host execution. The gate
   is the request path described above; deny-by-default is the posture
   whenever no narrow grant applies.
-- **Enforced posture.** Every `[Enforced]` item bounds blast radius at
-  the request gate with fail-closed verdicts. None of them confines a
-  compromised child process; that window is the central residual risk
-  above and the reason OS inheritance (`bitty#2067`) is the
-  highest-value planned item.
+- **Enforced posture.** Request gates fail closed. Admitted Linux tools
+  additionally inherit EXECUTE-only Landlock; non-Linux platforms refuse
+  those spawns. File I/O, memory maps, and network access remain outside
+  this ruleset; no full OS isolation is claimed.
 - **Residual risk.** The five residual risks above are not mitigated
   by any enforced or planned gate. Prompt-injection defense belongs to
   the AI lane and is not claimed here.
@@ -328,7 +363,7 @@ specification spine.
   `[Enforced]` item is implementation evidence only; this page makes
   no absolute confinement or audit-passed claim.
 - **Numeric bounds.** The argv and payload bounds, the tracked-outcome
-  cap, and the `FsAuditLedger` sizes are implementation-measured
+  cap, and the filesystem and spawn-ledger sizes are source-observed
   values pending independent re-verification; treat them as current
   implementation status, not accepted normative limits.
 
@@ -343,8 +378,9 @@ specification spine.
       `bitty-runtime/src/plugin_runtime/spawn.rs`, pins in
       `bitty-package/src/trust.rs`, immutable payload layout in the
       `bitty` packaging README).
-- [ ] Every `[Planned]` claim resolves to an open `bitty` tracker
-      (`#2064`–`#2069`) and no planned item is worded as enforced.
+- [ ] Every `[Planned]` claim resolves to its owning tracker and no
+      planned item is worded as enforced. Confinement and ledger presence
+      are checked at `1c68de25`, separately from broader roadmap work.
 - [ ] No claim exceeds `draft`; no absolute pre-audit language
       appears (zero-ambient-authority, verified, audit-passed).
 - [ ] This page agrees with [Core and Plugin
@@ -364,10 +400,9 @@ specification spine.
   distinct trust decisions (which binary, which verbs, which paths)
   into one boolean and makes silent widening invisible. Per-request
   mediation with per-path consent keeps each decision attributable.
-- **Deferring the page until OS inheritance lands.** Rejected: the
-  enforced-vs-planned split is exactly what operators need before
-  the audit; documenting gate-only limits now is safer than silence
-  that reads as a promise.
+- **Deferring the page until full confinement is available.** Rejected:
+  operators need the implemented-versus-planned split and the explicit
+  EXECUTE-only and attribution-ledger limits before the audit.
 - **Placing this page under `security/` alongside the audits.**
   Rejected: `security/` holds revision-locked audit records for
   parser, clipboard, loader, and image surfaces; this page is an
@@ -392,11 +427,12 @@ specification spine.
 
 ## Open points
 
-1. Exact Landlock / seccomp rule sets for inherited confinement:
-   owned by `bitty#2067`, not decided here.
-2. Spawn-ledger retention, query surface, and redaction rules:
-   owned by `bitty#2068`; must match `FsAuditLedger` drop-oldest
-   precedent unless that issue decides otherwise.
+1. Non-Linux confinement mechanisms and any broader Linux confinement:
+   implementation and independent evidence remain owning security work;
+   this page records only the current EXECUTE-only slice.
+2. Spawn-ledger persistence, query, aggregation, and redaction guarantees
+   beyond the current bounded attribution surface: follow the shared
+   security corpus; no new guarantee is decided here.
 3. Signature scheme and identity roots: owned by the package
    lifecycle work; this page records only that TOFU is interim.
 4. bittyd IPC trust details (socket permissions, `SO_PEERCRED`,
@@ -414,7 +450,7 @@ specification spine.
 - Every claim is labeled `[Enforced]` or `[Planned]`; no planned
   item reads as implemented and no enforced item reads as verified.
 - The residual-risks section names allowlisted-but-malicious use,
-  prompt injection (AI lane), consent fatigue, gate-only limits,
+  prompt injection (AI lane), consent fatigue, partial confinement and ledger limits,
   and the open pre-audit state without absolute claims.
 - The page agrees with the two architecture pages it constrains
   itself against and links rather than duplicates the owning
