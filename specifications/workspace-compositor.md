@@ -167,9 +167,10 @@ Rules of the import:
 2. Every Hyprland-inspired behavior is re-expressed as a typed, validated
    contract; Hyprland load-order or file-concatenation semantics are never a
    fallback.
-3. Presentation ownership stays with Core: `Workspace`, `LayoutTree`, and
-   decoration are Core-owned; `LayoutProvider` plugins contribute only geometry
-   proposals.
+3. Workspace and layout mechanisms stay with Core: `Workspace`, `LayoutTree`,
+   and generic decoration geometry are Core-owned; `LayoutProvider` plugins
+   contribute only geometry proposals. Workspace-bar presentation remains
+   plugin-only under ADR 0014.
 
 ### No window leak
 
@@ -743,15 +744,18 @@ Rules:
 ## Workspace presentation contract
 
 Core owns workspace state and semantics: identity, lifecycle, focus, ordering,
-commands, layout validity, and the meaning of a workspace transition. The
-default workspace strip is the presentation fallback. A mounted bar or other
-plugin may replace that strip by consuming bounded, read-only workspace
-observations and dispatching the existing Core commands; it never becomes the
-source of workspace truth and never mutates terminal state directly. If the
-plugin is absent, denied, malformed, stale, or fails during update, Core
-restores the default strip and keeps workspace commands and state usable.
+commands, layout validity, and the meaning of a workspace transition. Under
+accepted ADR 0014, workspace presentation is plugin-only: without a mounted
+presentation plugin, no workspace strip is drawn and edge bands reserve zero
+space, including in safe mode. A mounted bar or other plugin consumes bounded,
+read-only workspace observations and dispatches existing Core commands; it
+never becomes the source of workspace truth and never mutates terminal state
+directly. If the plugin is absent, denied, malformed, stale, or fails during
+update, no Core presentation is supplied; workspace commands and state remain
+usable. The Core-strip fallback described in candidate records is an
+unaccepted proposal/deviation, not this accepted contract.
 
-The fallback and replacement use the same workspace identities and ordering.
+Mounted presentation uses Core workspace identities and ordering.
 The replacement surface may change layout and styling, but it cannot invent a
 workspace, hide a state transition from Core, or widen authority through an
 observation subscription. This is the explicit presentation boundary consumed

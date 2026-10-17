@@ -82,7 +82,7 @@ does not move a requirement between owners and does not create a bypass.
 
 | Term                        | Meaning                                                                                                                                                                                           |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `StatusBar`                 | Core-owned horizontal bar that composes ordered status modules into `left`/`center`/`right` slots and renders them as presentation, never as Terminal Truth.                                      |
+| `StatusBar`                 | Candidate plugin-owned horizontal bar that composes ordered status modules into `left`/`center`/`right` slots and renders them as presentation, never as Terminal Truth.                          |
 | `Status Module`             | Declarative unit that produces a bounded text/icon segment for the bar at a defined cadence (for example `workspace`, `cpu`, `clock`).                                                            |
 | `Status Module Registry`    | Deterministic registry that maps module identifiers to slot assignments, ordering, enabled state, and per-module configuration, mirroring Waybar `modules-left`/`modules-center`/`modules-right`. |
 | `SystemMetricsService`      | Platform Core-owned service that samples `cpu`/`memory`/`network` metrics through OS APIs with rate limiting and caching; the only v1 source for those three modules.                             |
@@ -108,8 +108,9 @@ Rules of the import:
 2. Every Waybar-inspired behavior is re-expressed as a typed, validated
    registry entry; load-order or file-concatenation semantics are never a
    fallback.
-3. Presentation ownership stays with Core: modules contribute declarative
-   segments, the bar composes and renders them.
+3. Presentation ownership stays with the bar plugin: modules contribute
+   declarative segments, while Core supplies generic band geometry and the
+   mounted surface is composed and rendered through the plugin boundary.
 
 ## Architectural placement
 
@@ -356,9 +357,9 @@ registry identifier, and allows slot placement like
    live-reconcilable; adding a previously unknown Provider component is
    restart-allowed but not rejected, with diagnostics pointing at the
    provider lifecycle.
-3. `bitty --safe` loads no optional status/bar replacement. The default Core
-   workspace strip remains the fallback, while optional status presentation is
-   absent. The earlier minimal built-in bar (`workspace` + `clock`) is
+3. `bitty --safe` loads no optional status/bar replacement and draws no Core
+   workspace strip; no workspace band is reserved without a presentation
+   plugin. The earlier minimal built-in bar (`workspace` + `clock`) is
    superseded by
    [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md),
    which leaves workspace state and semantics in Core.

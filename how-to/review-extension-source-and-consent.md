@@ -21,9 +21,11 @@ sidebar_order: 20
 
 Use this guide to answer four questions about your installation: what is
 installed, what authority it holds, whether its bytes are the pinned bytes,
-and what to do when Bitty refuses to run something. All commands here are
-local: they need no running instance, load no plugin code, and execute no
-extension binary.
+and what to do when Bitty refuses to run something. Plugin and extension
+inventory, inspection, install, and source-review commands are local: they
+need no running instance, load no plugin code, and execute no extension
+binary. Runtime consent revocation commands in section 3 require a live
+instance as noted below.
 
 Normative security constraints behind these commands live in the
 [security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)
