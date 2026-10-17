@@ -595,9 +595,11 @@ amend the accepted contract and claim no `Verified`/`Compatible` status.
   `crates/bitty-terminal/src/chrome_keys.rs`; `remove_leaf` split-collapse
   in `crates/bitty-ui/src/layout.rs`.
 - **Intentional Hyprland divergences (DEC-0099):**
-  - last-panel refusal: closing the last leaf is refused so the layout is
-    never stranded empty; closing the last workspace resets to a fresh idle
-    leaf instead.
+  - last tiled-panel close (CTX-1297): `Mod+q`/`close_view` prunes an empty
+    workspace and follows a surviving workspace when other workspaces still
+    own panels. The whole-window last-panel case remains the window-close
+    gesture. A workspace with detached or local floats is retained while its
+    tiled shell is closed.
   - fresh-leaf-on-move: moving the only leaf of a source workspace leaves a
     fresh leaf behind so the never-empty invariant holds; the moved `ViewId`
     and session appear in exactly one slot.
@@ -607,6 +609,25 @@ amend the accepted contract and claim no `Verified`/`Compatible` status.
   - G1 float-stays-float: draining the tiled base keeps the `Overlay` with
     an empty-base tombstone so the float keeps bounds/tier (Hyprland keeps
     floats floating); draining the overlay still collapses to base.
+
+### CTX-1297 implementation evidence
+
+Status: **implementation evidence only.** An explicit `Mod+q`/`close_view`
+on the last tiled panel prunes that now-empty workspace and follows focus to a
+surviving workspace when another workspace still owns panels. When the closed
+workspace is the only owner of panels in the window, the same gesture remains
+the whole-window last-panel close path. A workspace with detached or local
+floats is kept; the tiled shell is closed while those floats remain owned by
+the workspace. Zoomed mutations restore the real layout before deciding or
+applying the close. A multi-pane zoom closes only the focused real leaf; a
+single-pane zoom may prune its workspace. `close_confirm = "when_busy"`
+examines every session doomed by a workspace-prune, including hidden
+zoom-backup panes and the runtime-global primary PTY when its owner is doomed.
+A pending confirmation leaves the zoom and layout untouched, the repeated
+close confirms the same target, and `Esc` cancels without pruning or tearing
+down sessions. Evidence: `crates/bitty-terminal/src/chrome_keys.rs`,
+`crates/bitty-runtime/src/runtime/close_confirm.rs`, and their CTX-1297
+regression tests. This evidence makes no release, merge, or tag claim.
 
 ## Layout algorithms as plugin via LayoutProvider
 

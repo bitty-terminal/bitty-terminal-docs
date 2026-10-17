@@ -839,12 +839,27 @@ return {
 - `close_confirm` is a fully-optional top-level scalar (CTX-0370; read-only
   from `bitty` `origin/main` at `c64dd1e`) selecting the view/window close
   safety: `"always"` confirms every close, `"when_busy"` (default) confirms
-  only while some pane's PTY runs a foreground job beyond the idle shell,
-  and `"never"` never confirms. Anything else fails closed with the
-  `close_confirm` field path. The workspace kill-confirm gate (CTX-0257) is a
-  separate control and is not governed by this key; project layers must not
-  declare it, so a repository-local file can never disable this data-loss
-  guard.
+  while any session that the close will destroy has a foreground job beyond
+  the idle shell, and `"never"` never confirms. For a CTX-1297 workspace
+  prune, the doomed set includes all real panes represented by a hidden zoom
+  backup and the runtime-global primary PTY when its owner is in that
+  workspace; a busy job in any of them arms the confirmation. The first
+  gesture leaves the layout, zoom, workspace, and sessions unchanged, the
+  repeated `close_view` gesture confirms the same target, and `Esc` cancels
+  without mutation. Anything else fails closed with the `close_confirm` field
+  path. The workspace kill-confirm gate (CTX-0257) is a separate control and
+  is not governed by this key; project layers must not declare it, so a
+  repository-local file can never disable this data-loss guard. The CTX-1297
+  wording is implementation evidence, not a release, merge, or tag claim.
+
+CTX-1297 implementation evidence: the existing `close_view` action is invoked
+by `Mod+q`. On the last tiled panel, it prunes the empty workspace and follows
+the surviving workspace when another workspace still owns panels; the
+whole-window last-panel path remains window close. A workspace with detached
+or local floats is retained while its tiled shell closes. Zoom mutations
+restore the real layout first; multi-pane zoom closes only the focused real
+leaf, while single-pane zoom may prune. This paragraph records implementation
+evidence only and makes no release, merge, or tag claim.
 
 Open: whether the shipped set grows CLI flags or a command-palette surface;
 the leader chord override plus bounded fail-open timeout above are shipped
