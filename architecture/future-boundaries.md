@@ -11,6 +11,8 @@ sidebar_order: 22
 
 # Future Boundaries
 
+## Document status
+
 This document is `draft`. It tracks candidate decision rules, cross-cutting
 evolution rules, and pending decisions for the Core and Plugin boundary. It is
 the evolution companion to [Core and Plugin Boundaries](core-boundaries.md)
@@ -20,6 +22,18 @@ shipped, stable, or compatibility-guaranteed behavior.
 
 Provenance: extracted from `core-boundaries.md` by CTX-0007 so that each
 document carries one truthful machine-readable status.
+
+## Purpose and scope
+
+This evolution companion records the candidate Core/plugin decision rule, primitive-versus-composable test, and network-boundary refinements below. Accepted extraction ownership remains with the cited ADRs, W-71 through W-75, and Core and Plugin Boundaries; pending mechanisms do not authorize implementation.
+
+## Normative sources this specification must not weaken
+
+[Core and Plugin Boundaries](core-boundaries.md) remains the accepted ownership and P0 baseline. The cited ADR 0015, ADR 0016, and W-72 determine the decided extraction and package-path boundaries; DIR-016 and DIR-017 remain the candidate network directions described in the body. The cited Plugin Platform and Plugin Host Runtime contracts retain their lifecycle, capability, queue, and resource controls.
+
+## Terminology
+
+Core denotes terminal mechanisms and security enforcement; a Platform Primitive is the candidate mechanism vocabulary listed in the primitive-or-composable test. Composables are workflows built above those primitives. The network invariant distinguishes initiating Internet/network connections from local AF_UNIX IPC; it is not a socket ban.
 
 ## Guiding principle and decided boundaries
 
@@ -249,7 +263,25 @@ above). Enforcement stays as recorded in the CTX-0201 candidate
 (dependency-DAG test rejecting network-capable dependencies in Core crates);
 this refinement adds no new mechanism.
 
-## Pending decisions
+## Security review
+
+The candidate rules preserve accepted ownership, capability-gated interfaces, no private first-party bypass, hot-path isolation, and failure containment. The network refinements preserve local IPC while putting network access behind declared transport/provider boundaries. No P0 gate is waived; broader invariant acceptance and dependency-DAG enforcement ownership remain pending in the decisions below.
+
+## Verification plan
+
+The existing enforcement proposal is a dependency-DAG architecture test rejecting network-capable dependencies in Core crates. Review must compare each candidate placement against the accepted ownership tables and W-72's read-only startup/package split. This page records the unplug property as direction and supplies no new execution or measurement evidence; the pending enforcement and per-crate implementation evidence are still required.
+
+## Alternatives considered
+
+The decision rule compares terminal primitives with plugin-composable workflows rather than freezing a permanent feature list. The transport discussion compares minimal/wrapper terminals with integrated network stacks and favors the former as direction. System git, curl, ssh, and rsync are the recorded composition alternatives to bundled implementations; the broader network invariant remains candidate.
+
+## Affected contracts
+
+The accepted ownership tables in [Core and Plugin Boundaries](core-boundaries.md) are unchanged. Package-source mechanics stay with the cited plugin package-management document; plugin HTTP and secrets stay with the plugin-system direction. AI provider/transport adoption remains an AI-owner follow-up, and exact observation bounds remain with W-100/W-110.
+
+## Open points
+
+### Pending decisions
 
 - The minimum Command, Event, UI, and Service set for the first Plugin API
   version.
@@ -294,3 +326,17 @@ this refinement adds no new mechanism.
   exact bounds and semantics remain parked to `W-100` and `W-110`.
 - Which user actions allow interception and the default behavior after a
   timeout.
+
+## Acceptance criteria
+
+Adoption of these candidate mechanisms requires the owning decisions to resolve the pending items and reconcile them with the accepted ownership tables and P0 controls. The page itself fixes neither manifest schemas nor new capability families, and its candidate status cannot stand in for the dependency-DAG or per-crate evidence described above.
+
+## P0 Review Sign-off
+
+No current security acceptance is recorded for these candidate refinements. The accepted P0 gates and W-72 requirements remain authoritative; broader network-invariant acceptance, enforcement ownership, and pending resource/observation details require their owning reviews.
+
+## References
+
+- [Core and Plugin Boundaries](core-boundaries.md) — accepted ownership and security constraints.
+- [Plugin package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md) — source and lock mechanics.
+- [Decision register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md) — DIR-016/DIR-017; the body cites the specific extraction ADRs and W contracts.

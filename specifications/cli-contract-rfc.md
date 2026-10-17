@@ -11,6 +11,8 @@ sidebar_order: 18
 
 # CLI Contract RFC
 
+## Document status
+
 > Status: **accepted** on 2026-08-28 by the project initiator. This document defines the accepted
 > top-level CLI command set, dynamic namespace, action and output schemas, alias policy, and
 > stable exit codes for [OQ-017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) at the design level; it closes [OQ-017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md). It does not describe implemented
@@ -70,7 +72,9 @@ This RFC introduces no new trust boundary. Every privileged CLI operation
 remains behind the scope and budget gates already normative in the security
 corpus.
 
-## Normative precedence
+## Normative sources this specification must not weaken
+
+### Normative precedence
 
 The following are normative and override every proposal here. If any grammar,
 default, alias, schema, or exit-code behavior below weakens them, the normative
@@ -717,7 +721,9 @@ Switching the default `--format` would be treated as a breaking change for
 presentational purposes: there is no implicit default change without an RFC;
 `--format table` remains the interactive default and JSON remains opt-in.
 
-## Security considerations
+## Security review
+
+### Security considerations
 
 - **No ambient authority in the envelope.** A CLI invocation never injects a
   scope inside the request payload; scopes are evaluated server-side on every
@@ -743,7 +749,9 @@ presentational purposes: there is no implicit default change without an RFC;
   and lockfile rules in [Package Lifecycle RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/packaging/package-lifecycle-rfc.md); the
   CLI never executes package code at install time.
 
-## Verification
+## Verification plan
+
+### Verification
 
 Every contract row requires automation; no manual-only gate closes it.
 
@@ -758,7 +766,17 @@ Every contract row requires automation; no manual-only gate closes it.
 | Safe-mode and redaction suite    | `doctor`, `config check`, `list`, and `inspect` variants produce the safe-mode banner and truncated, redacted previews under P0-AC-026.                                                                                                                                                         |
 | Negative and bounded-input suite | Oversized arguments, manifest injections, depth-32 overflow, and malformed qualified ids fail closed before dispatch with a typed error.                                                                                                                                                        |
 
-## Deferred candidates
+## Alternatives considered
+
+The contract keeps bitty run (local spawn) separate from bitty ctl (authenticated runtime control), and rejects aliases that merge them. Qualified bitty x and bitty cmd routes remain available when short/top-level aliases collide; no last-installed winner is elected. The optional top-level alias, static manifest discovery without VM load, and small stable alias set record the chosen namespace trade-offs; deferred REPL, renderer overlays, and advisory variables remain candidates.
+
+## Affected contracts
+
+The accepted CLI contract consumes the IPC and Agent RFC's wire/auth/scope/rate-limit contract, Plugin Platform's registry/capability/manifest rules, and Package Lifecycle's transactional install rules. The acceptance criteria record the historical same-change synchronization of CLI, decision and open-question registers, specifications, and P0 checklist. DevTools retains ownership of instrumentation scopes; no transport, package, or resource threshold is re-decided here.
+
+## Open points
+
+### Deferred candidates
 
 - **Interactive `bitty shell` REPL** that exposes the registry as a
   remote-control loop. Useful for diagnostics and scripting but not an initial
@@ -771,7 +789,7 @@ Every contract row requires automation; no manual-only gate closes it.
   in v1 and require a follow-up RFC with the security review from
   [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) before they become public protocol.
 
-## Risks and open choices
+### Risks and open choices
 
 | Risk                         | Effect if unresolved                                                                                                                                                             |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -11,6 +11,8 @@ sidebar_order: 63
 
 # L1 Install Model and Plugin Capability Declarations (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document records the
 > terminal-platform slice of two follow-ups to the accepted plugin

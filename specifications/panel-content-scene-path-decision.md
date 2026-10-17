@@ -11,6 +11,8 @@ sidebar_order: 43
 
 # Panel Content Scene Path Decision
 
+## Document status
+
 > Status: **draft** decision record resolving
 > [OQ-051](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 > The [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md) records

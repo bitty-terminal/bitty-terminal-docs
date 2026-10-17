@@ -11,6 +11,8 @@ sidebar_order: 44
 
 # Unified Mod Contract (Candidate)
 
+## Document status
+
 > Status: **draft candidate** resolving the `Mod` half of
 > [OQ-052](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 > The open question asks which native window forms enter scope — niri-style

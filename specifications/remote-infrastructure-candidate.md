@@ -11,6 +11,8 @@ sidebar_order: 60
 
 # Remote Infrastructure and Remote Client (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document records the terminal-platform
 > slice of the remote-infrastructure and remote-client direction: a remote
@@ -104,7 +106,9 @@ Out of scope and owned elsewhere (pointers, not content):
   retained-tree UI direction this record's serializable constraint composes
   with; reconciliation is owned by the UI Runtime successor RFC, not here.
 
-## Status vocabulary
+## Terminology
+
+### Status vocabulary
 
 | Status            | Meaning in this document                                                             |
 | ----------------- | ------------------------------------------------------------------------------------ |

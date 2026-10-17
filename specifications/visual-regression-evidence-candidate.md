@@ -11,6 +11,8 @@ sidebar_order: 48
 
 # Visual and Behavioral Regression Evidence (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. The corpus states repeatedly that a UI
 > surface is not proven until frame or behavioral evidence exists, but no

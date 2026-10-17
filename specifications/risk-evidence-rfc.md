@@ -11,6 +11,8 @@ sidebar_order: 21
 
 # Risk Evidence RFC
 
+## Document status
+
 > Status: **accepted** on 2026-08-29 by the project initiator. This document defines the accepted risk-to-P0-AC traceability, evidence taxonomy, artifact storage, and review gates for closing each security risk without weakening P0 controls for
 > [OQ-025](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) at the design level; it closes [OQ-025](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md). It does not describe implemented
 > behavior, does not authorize shipped, stable, normative, or
@@ -348,7 +350,9 @@ Existing rows for R-001 through R-022 are otherwise unchanged; no risk is added
 or removed by this RFC. A new risk requires its own ADR or RFC that updates the
 register first.
 
-## Review gates and roles
+## Security review
+
+### Review gates and roles
 
 Per [documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md) and
 [security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md), every candidate that touches a
@@ -397,7 +401,9 @@ Crate presence (`bitty-plugin-host`, `bitty-lua`, `bitty-rich`, `bitty-ipc`,
 `bitty-agent`, `bitty-package`) does not constitute evidence until its harness
 is cited and green.
 
-## Verification plan (accepted staging of OQ-025 closure)
+## Verification plan
+
+### Verification plan (accepted staging of OQ-025 closure)
 
 Closure of [OQ-025](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) at the design level
 requires the lifecycle above to be exercisable on at least one risk without

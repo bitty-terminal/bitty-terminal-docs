@@ -11,6 +11,8 @@ sidebar_order: 22
 
 # Website Delivery RFC
 
+## Document status
+
 > Status: **accepted** on 2026-08-29 by the project initiator. This document defines the accepted loader, synchronization mechanism, release selector, multi-version URL scheme, route mapping, and redirect manifest that implement the
 > [Website content contract](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/website-content-contract.md) and
 > its ownership split with the [Repository map](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/repository-map.md) at the design level; it closes [OQ-023](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md). It does not describe implemented behavior, does not authorize shipped,
@@ -627,7 +629,9 @@ duplicated contracts. A website integration is not done when it bypasses the
 metadata, language, link, revision-pin, publication, route-collision, or
 redirect gates.
 
-## Security alignment and traceability
+## Security review
+
+### Security alignment and traceability
 
 | Accepted element                                                                | Normative gate it implements                                              | Threat / Risk IDs                                                       |
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -839,6 +843,17 @@ This RFC is accepted on 2026-08-29 and closes
 
 Closes OQ-023: this RFC closes that open question at the design level; the register rows are updated per the open-question register rules. The lifecycle is `Draft -> experimental review evidence -> Accepted (2026-08-29) -> normative`.
 
+## P0 Review Sign-off
+
+> P0 review per CTX-0079 tracks acceptance of OQ-023 via this RFC. Frontmatter is `accepted` and [open-questions.md](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) is updated per its close rule. This section records passing sign-off and closes OQ-023.
+
+| Role                                  | Reviewer          | Verdict | Evidence / scope                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Date       |
+| ------------------------------------- | ----------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| security-auditor                      | `bitty-security`  | pass    | Loader schema eight-field `title==H1` `website_publish`-after-validation, pinned `src/content/docs-revision.json` `sync:docs --pin` stale-mirror rejection, no floating `main`, language/CJK, link/collision, redirect validation loops wildcards 302 vs 301, R-015 R-022 threat-model                                                                                                                                                                                                                    | 2026-08-29 |
+| category-owner (architecture)         | `bitty-architect` | pass    | Astro content collections `z.object` eight fields `title==H1`, sync pin `src/content/docs-revision.json` with `bun run sync:docs --pin` stale-content prohibition, multi-version `/docs/<version>/<path>/` with `latest`/`stable` and per-version `dist` isolation, deterministic route mapping `docs/<category>/<file>.md -> /docs/<version>/<category>/<slug>/` with `README.md` index and collision gate                                                                                               | 2026-08-29 |
+| category-owner (security-and-quality) | `bitty-quality`   | pass    | Release selector `src/content/versions.json` data-driven `latest`/`stable` and navigation rewrite preserving path, route mapping case-sensitive slugify, redirect manifest split intent `docs/project/redirects.json` plus `src/redirects.json` 301/302, validation rejecting loops chains missing targets, cross-repository `Docs-PR`/`Code-PR` ordering, `just check` 93 files 0 issues                                                                                                                 | 2026-08-29 |
+| docs-curator                          | `bitty-curator`   | pass    | Frontmatter `accepted`, lifecycle `Draft -> experimental review evidence -> Accepted (2026-08-29) -> normative`, links to [Repository map](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/repository-map.md), [Website content contract](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/website-content-contract.md), [Documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md), English-only | 2026-08-29 |
+
 ## References
 
 - Accepted polyrepo and bootstrap: [ADR 0001](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0001-repository-bootstrap-baseline.md)
@@ -867,14 +882,3 @@ Closes OQ-023: this RFC closes that open question at the design level; the regis
   (pinned `prettier` 3.9.6, `markdownlint-cli2` 0.23.1, `actionlint`
   1.7.12) and [Documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md)
   (status meanings, lifecycle, and change-trigger matrix).
-
-## P0 Review Sign-off
-
-> P0 review per CTX-0079 tracks acceptance of OQ-023 via this RFC. Frontmatter is `accepted` and [open-questions.md](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) is updated per its close rule. This section records passing sign-off and closes OQ-023.
-
-| Role                                  | Reviewer          | Verdict | Evidence / scope                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Date       |
-| ------------------------------------- | ----------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| security-auditor                      | `bitty-security`  | pass    | Loader schema eight-field `title==H1` `website_publish`-after-validation, pinned `src/content/docs-revision.json` `sync:docs --pin` stale-mirror rejection, no floating `main`, language/CJK, link/collision, redirect validation loops wildcards 302 vs 301, R-015 R-022 threat-model                                                                                                                                                                                                                    | 2026-08-29 |
-| category-owner (architecture)         | `bitty-architect` | pass    | Astro content collections `z.object` eight fields `title==H1`, sync pin `src/content/docs-revision.json` with `bun run sync:docs --pin` stale-content prohibition, multi-version `/docs/<version>/<path>/` with `latest`/`stable` and per-version `dist` isolation, deterministic route mapping `docs/<category>/<file>.md -> /docs/<version>/<category>/<slug>/` with `README.md` index and collision gate                                                                                               | 2026-08-29 |
-| category-owner (security-and-quality) | `bitty-quality`   | pass    | Release selector `src/content/versions.json` data-driven `latest`/`stable` and navigation rewrite preserving path, route mapping case-sensitive slugify, redirect manifest split intent `docs/project/redirects.json` plus `src/redirects.json` 301/302, validation rejecting loops chains missing targets, cross-repository `Docs-PR`/`Code-PR` ordering, `just check` 93 files 0 issues                                                                                                                 | 2026-08-29 |
-| docs-curator                          | `bitty-curator`   | pass    | Frontmatter `accepted`, lifecycle `Draft -> experimental review evidence -> Accepted (2026-08-29) -> normative`, links to [Repository map](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/repository-map.md), [Website content contract](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/website-content-contract.md), [Documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md), English-only | 2026-08-29 |

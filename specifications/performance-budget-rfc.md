@@ -41,6 +41,14 @@ Out of scope: plugin-specific budgets (owned by the future
 isolation/resource RFC under OQ-014), rendering throughput ceilings, battery
 metrics, and platform-tier-specific relaxations (OQ-003).
 
+## Normative sources this specification must not weaken
+
+[Product vision](../product/vision.md) supplies the lightweight product property, and [Core and Plugin Boundaries](../architecture/core-boundaries.md) keeps plugins off the input hot path. The cited documentation workflow governs provenance and accepted-design versus measured behavior. Platform relaxations remain with OQ-003 and plugin VM costs with OQ-014 rather than silently changing PB-1..PB-7.
+
+## Terminology
+
+PB-1..PB-7 are accepted target budgets under their stated conditions, not measured results. p50/p99 distinguish median and tail behavior; RSS is the recorded memory metric. Frame-on-demand means no Bitty-attributable periodic wakeup without active output/animation/plugin timers. Implemented-only profiling observes the authoritative metrics without changing their thresholds.
+
 ## Reference landscape
 
 All figures are external observations, reproduced here with their provenance
@@ -234,7 +242,25 @@ number, and claims no Verified status:
   Profiling records carry zero terminal bytes, so no redaction path beyond
   bounded renderer labels applies.
 
-## Open items
+## Security review
+
+Budgets apply to the safe startup/default configuration with no third-party plugins; plugin costs have separate attribution. Profiling remains cold-path bounded sampling, carries zero terminal bytes, and must violate neither PB-4 tail latency nor PB-7 idle constraints. A measurement deficit does not relax a resource or hot-path control; per-frame tracing still needs its future neutrality proof.
+
+## Verification plan
+
+Each PB entry retains its metric, conditions, and measurement method, including at least 50 startup launches, stated idle/session windows, fixed throughput corpus, reclaim tolerance, and platform-specific evidence. The cross-cutting rules require harnesses, corpora, and reference hardware in the implementing repository before budgets become hard gates. This record supplies no new measurements; the live-profiling sampling/neutrality questions remain open.
+
+## Alternatives considered
+
+The reference landscape compares minimal, efficient feature-rich, and multiplexing terminals while explicitly preserving hardware/method variance. The selected targets aim between those bands rather than copying one benchmark. Growth/reclaim is constrained as well as initial footprint; PB-5 is explicitly lower-confidence inference, and platform-specific relaxation is routed to the platform ADR rather than ad-hoc exceptions.
+
+## Affected contracts
+
+[DevTools RFC](devtools-rfc.md) A1 observes PB-2/PB-3/PB-4/PB-7 using their existing definitions. Isolation/resource work owns plugin budgets, while platform policy owns platform-specific relaxations. Product vision supplies the lightweight goal; no measured performance or revised numerical budget is accepted through this organization.
+
+## Open points
+
+### Open items
 
 - Define the exact benchmark harness, corpus, and reference hardware (follow-up
   implementation task; cannot be specified meaningfully before code exists).
@@ -245,3 +271,18 @@ number, and claims no Verified status:
 - (CTX-0124/CTX-0127, Implemented-only, acceptance open) Confirm the
   implemented 100 ms sampling floor and the PB-4/PB-7 neutrality proof shape
   for the DevTools live-profiling scope before it is accepted.
+
+## Acceptance criteria
+
+The 2026-08-26 acceptance establishes target design constraints. Turning them into hard gates still requires the implementing repository's defined harness/corpus/reference machines and recorded measurements under each PB condition. Violations require a fix, reviewed RFC renegotiation, or documented time-bounded exception; silent drift and profiling non-neutrality remain failures.
+
+## P0 Review Sign-off
+
+The recorded project-initiator acceptance on 2026-08-26 is design-level budget acceptance, not a named P0 implementation audit or a measurement result. The profiling entry remains Implemented-only with acceptance open; its 100 ms sampling floor and PB-4/PB-7 neutrality proof still require the recorded follow-up.
+
+## References
+
+- [Product vision](../product/vision.md) — lightweight goal.
+- [Core and Plugin Boundaries](../architecture/core-boundaries.md) — hot-path isolation.
+- [DevTools RFC](devtools-rfc.md) — read-only live profiling.
+- The retained Reference landscape supplies the external URLs and provenance qualifiers for each comparative observation.

@@ -11,6 +11,8 @@ sidebar_order: 66
 
 # Sparse Workspaces and Unified Chrome Bar Contract (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This record defines the candidate Core
 > mechanism and chrome interface for tiling-window-manager-style sparse,
@@ -57,7 +59,9 @@ Out of scope:
   plugins, such as `bitty-plugins/plugins/bar`).
 - External status bar daemons (Waybar, eww, ags) communicating via `bitty-ipc`.
 
-## Normative sources this candidate must not weaken
+## Normative sources this specification must not weaken
+
+### Normative sources this candidate must not weaken
 
 - [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md):
   invariant 3 (presentation never Terminal Truth), invariant 4 (no hot-path
@@ -69,6 +73,10 @@ Out of scope:
   the 1-row non-occluding reservation geometry (`ChromeInsets`).
 - [Workspace Compositor Specification](workspace-compositor.md):
   the `Window -> Workspace -> LayoutTree -> View` hierarchy.
+
+## Terminology
+
+Sparse WorkspaceId is a bounded numeric identity, not an ordinal in a dense array. Switch-or-create addresses that identity; prune-on-empty removes eligible dynamic workspaces. ChromeBand is the candidate single non-occluding edge reservation, and ChromeInsets is the geometry input separating it from terminal content.
 
 ## Sparse workspace model
 
@@ -149,3 +157,38 @@ plugins:
   `workspace.addressing = "contiguous"`.
 - Existing `workspace_prev` and `workspace_next` navigation commands traverse the
   sorted sequence of currently active sparse workspace IDs in circular order.
+
+## Security review
+
+The cited security invariants keep presentation separate from Terminal Truth, exclude hot-path plugin execution, and require bounded inputs. Workspace creation is bounded by MAX_WORKSPACE_INDEX and MAX_WORKSPACES_PER_WINDOW and fails closed without dropping existing state. Plugin presentations consume read-only observations and command dispatch; no candidate snapshot/event spelling grants new authority.
+
+## Verification plan
+
+Evidence for a successor must cover sparse switch-or-create and fail-closed capacity behavior, pinned versus dynamic prune behavior, sorted circular navigation, and contiguous fallback. The one-row band must leave the grid fully unoccluded after layout partitioning. This candidate records no executable check or passing artifact for those behaviors; event and configuration spellings remain candidate.
+
+## Alternatives considered
+
+The scope compares dense ordinal allocation/clamping with sparse on-demand identity and retains contiguous addressing as a fallback. It compares separate tab/status rows with a single unified edge band to preserve terminal height. ADR 0014's plugin-only presentation boundary remains accepted; this candidate does not select widget rendering or an external status daemon.
+
+## Affected contracts
+
+[Workspace Compositor](workspace-compositor.md) retains hierarchy and layout ownership; [Chrome Band Contract](chrome-band-contract-candidate.md) is the candidate reservation geometry. ADR 0014 owns Core mechanisms versus plugin presentation. The proposed workspace commands, snapshots, runtime-status observations, and configuration are not stabilized by this record.
+
+## Open points
+
+Acceptance and implementation evidence for sparse lifecycle and unified-band integration are not recorded. The cited Chrome Band contract remains candidate, and the snapshot/event/configuration spellings here remain draft. Widget rendering and external-bar daemon integration are explicitly outside this page's scope.
+
+## Acceptance criteria
+
+A successor review must reconcile sparse lifecycle and the single-band geometry with the accepted compositor/ADR 0014 ownership and the existing bounds, then supply the missing lifecycle, navigation, and no-occlusion evidence. The draft status grants no shipped behavior and cannot replace the cited security gates.
+
+## P0 Review Sign-off
+
+No P0 sign-off is recorded for this candidate. Accepted presentation/truth, hot-path, bounded-input, and plugin-only composition rules remain in force; concrete sparse/band adoption still requires its owning review and evidence.
+
+## References
+
+- [Workspace Compositor](workspace-compositor.md) — hierarchy.
+- [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md) — reservation geometry.
+- [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md) — plugin-only presentation.
+- [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) — invariants 3, 4, and 7.

@@ -11,6 +11,8 @@ sidebar_order: 34
 
 # Panel History (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document is a design record for
 > Panel History (the direction is summarized inline in
@@ -57,7 +59,13 @@ Out of scope and owned elsewhere:
   (`bitty-ai-docs` side); panel export here must compose with it,
   not duplicate it.
 
-## Status vocabulary
+## Normative sources this specification must not weaken
+
+The scope and Relation to existing systems sections cite Panel Runtime lifecycle/bus rules, Terminal State scrollback truth, IPC and Agent read-only defaults, and the plugin sandbox/capability/resource contracts. PH-6's mediated storage must reconcile with the accepted fs.read/fs.write split. ADR 0006 and the security overview govern secret handling from the start; persistence does not replace Core scrollback.
+
+## Terminology
+
+### Status vocabulary
 
 | Status            | Meaning in this document                                                             |
 | ----------------- | ------------------------------------------------------------------------------------ |
@@ -326,7 +334,25 @@ contract to copy.
 | [Panel Environment State (Candidate)](panel-environment-state-candidate.md) (Draft)                                       | Live environment ownership stays with `ShellState`; history records the past (`CommandRecord` cwd plus snapshots reference it). No direction here changes the no-disk-persistence default.                                      |
 | Session/context export (`bitty-ai-docs` side)                                                                             | Session/context/memory export and the SQLite lifecycle split; panel export of [PH-10](#ph-10-export-panel-is-a-plugin-on-the-host-history-api) must compose.                                                                    |
 
-## Open items (not global open questions)
+## Security review
+
+History is secret-capable persistent data, and Open points explicitly leaves its exact handling undecided. Any future design must compose with typed redaction, user-only files, and export preview rather than inherit plaintext shell-history habits. Lua gains no direct SQLite/native-library access or arbitrary database authority, and agent history reads remain scoped, read-only observation. Illustrative replay/input events grant no recording permission.
+
+## Verification plan
+
+A future History RFC or amendment must settle the event taxonomy/delivery, record fields, storage API, segment/retention bounds, and Atuin adapter semantics listed in Open points. Review must check append-only persistence versus volatile scrollback, rebuildable index versus store of record, and sandboxed storage/secret controls. Adjacent search/copy tasks are evidence for neighboring paths only; no history implementation or test result is claimed here.
+
+## Alternatives considered
+
+PH-3..PH-6 compare a Core SQLite dependency with plugin persistence above a host-mediated surface, and a relational store of all bytes with append-only segments plus at most a rebuildable index. PH-11 distinguishes Atuin federation, CLI import, and sink modes without reading its private database or duplicating raw output there. Segment sizes and retention tiers remain illustrative, not selected defaults.
+
+## Affected contracts
+
+The Relation to existing systems table preserves lifecycle, scrollback, input/clipboard, and IPC owners; OQ-074/OQ-075 and live environment no-persist defaults are not redefined. PH-10 panel export must compose with AI-owned session/context export, and PH-6 storage spellings require reconciliation with the owning filesystem capability contract.
+
+## Open points
+
+### Open items (not global open questions)
 
 None of these is a global `OQ`: Panel History blocks no current-milestone gate
 and no implementation evidence forces any of them, so under the
@@ -348,7 +374,22 @@ amendment settles them:
   user-only files, export preview) from the start rather than inheriting shell
   history's plaintext habits.
 
-## Provenance
+## Acceptance criteria
+
+The future History RFC/amendment identified in Open points must accept concrete events, record fields, storage/retention, adapter semantics, and secret handling before these candidate spellings can become a contract. Accepted Terminal Truth, sandbox/capability ceilings, read-only agent defaults, and export ownership must remain intact; completed adjacent search/copy work does not accept Panel History.
+
+## P0 Review Sign-off
+
+No P0 sign-off for persistent Panel History is recorded here. Secret-handling design and capability/storage reconciliation remain pending under the cited security and plugin contracts; the illustrative raw-input/replay and export sketches confer no new authority.
+
+## References
+
+- [Terminal State RFC](terminal-state-rfc.md) — volatile scrollback truth.
+- [Panel Runtime RFC](panel-runtime-rfc.md) — lifecycle/bus and save/restore ownership.
+- [Semantic Terminal RFC](semantic-terminal-rfc.md) — anchors and per-view folding.
+- The Relation to existing systems table and retained Provenance section below identify the other contracts and adjacent implementation lanes.
+
+### Provenance
 
 - Panel History direction (Atuin integration covered in the second half,
   summarized inline in Purpose and scope). The Atuin documentation links cited

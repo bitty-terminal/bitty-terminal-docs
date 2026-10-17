@@ -11,6 +11,8 @@ sidebar_order: 23
 
 # Single-Window Vertical Slice Acceptance Plan
 
+## Document status
+
 > Status: **draft** spec plus **Experimental Implementation** evidence —
 > candidate acceptance contract for the first real single-window terminal
 > vertical slice. This document defines candidate scope, end-to-end path,
@@ -82,24 +84,9 @@ reads internal grid structures. Input encoding is the only write into the PTY.
 Selection, IME preedit, and clipboard are presentation or platform state until
 explicitly encoded.
 
-## Candidate vs accepted status
+## Normative sources this specification must not weaken
 
-| Area                | Accepted fact (cite)                                                                                                                                                                                                                       | Candidate in this draft                                                                                                                                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Terminal invariants | `Action` -> state, 8 invariants, damage `generation`, deterministic replay per [Terminal State RFC](../specifications/terminal-state-rfc.md) (OQ-007)                                                                                      | Which reflow algorithm is pinned for this slice, and how its hash pins the replay corpus                                                                                                                                |
-| Input families      | M1 input scope per [Compatibility Milestone RFC](../specifications/compatibility-milestone-rfc.md) (OQ-004): required VT + mouse 1000/1002/1003/1006 + focus 1004 + bracketed paste 2004                                                   | Bounded encoding limits, Kitty keyboard opt-in negotiation (`CSI ? 7727`), shift-override, pixel-scroll, pinch/swipe deferred per [Input and Pointer Contract](../specifications/input-pointer-rfc.md) (CTX-0107 draft) |
-| Text and rendering  | `cell.width` 1-or-2 + trailing spacer, `Snapshot + Damage -> DrawList` seam in `bitty-render`, `char_cell_width` approximation as headless evidence per [Text and Rendering RFC](../specifications/text-rendering-rfc.md) (CTX-0108 draft) | Authoritative EAW tables, UAX #29 grapheme-to-cell mapping, fallback/shaping/ligature/kerning, atlas eviction, DPI-aware metrics for this slice                                                                         |
-| Platform            | Tier promises and gates per [ADR 0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md) (OQ-003)                                                                             | Exact per-platform manual evidence set and which Tier 2 platforms are exercised in this slice                                                                                                                           |
-| Performance         | PB-1..PB-7 targets per [Performance Budget RFC](../specifications/performance-budget-rfc.md) (OQ-001)                                                                                                                                      | How each budget is measured for one window / one terminal and what is deferred to later slices                                                                                                                          |
-| Headless            | Deferred daemon per [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md) (OQ-020); `HeadlessRasterizer` as non-user-ready headless evidence per text-rendering draft                | Visible/headless consistency proof and deterministic headless golden corpus for this slice                                                                                                                              |
-
-Any row whose right column is still candidate must not be cited as normative
-until its acceptance decision is registered. `HeadlessRasterizer` in
-`bitty-runtime` and `char_cell_width` approximation remain **non-user-ready
-evidence**; they are headless test seams, not user-facing typography or
-rendering.
-
-## Normative sources this plan must not weaken
+### Normative sources this plan must not weaken
 
 This plan refines, but does not move or relax, the following accepted
 contracts (all 32 OQs `Accepted` as of 2026-08-29 per the
@@ -177,6 +164,27 @@ Where this draft selects a threshold, it is a candidate synthesis; it does
 not reassign an owner, does not downgrade a P0 gate to P1, and does not create
 an ambient-authority or unbounded-parsing exception.
 
+## Terminology
+
+The slice is one process, one native window, one implicit workspace, and one PTY/parser/state/view. Terminal Truth is written only by the Action stream; Snapshot + Damage is the renderer seam. Experimental Implementation is reviewable code evidence, while Accepted, Verified, and Compatible require the separate decisions and evidence named in the status record.
+
+## Candidate vs accepted status
+
+| Area                | Accepted fact (cite)                                                                                                                                                                                                                       | Candidate in this draft                                                                                                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Terminal invariants | `Action` -> state, 8 invariants, damage `generation`, deterministic replay per [Terminal State RFC](../specifications/terminal-state-rfc.md) (OQ-007)                                                                                      | Which reflow algorithm is pinned for this slice, and how its hash pins the replay corpus                                                                                                                                |
+| Input families      | M1 input scope per [Compatibility Milestone RFC](../specifications/compatibility-milestone-rfc.md) (OQ-004): required VT + mouse 1000/1002/1003/1006 + focus 1004 + bracketed paste 2004                                                   | Bounded encoding limits, Kitty keyboard opt-in negotiation (`CSI ? 7727`), shift-override, pixel-scroll, pinch/swipe deferred per [Input and Pointer Contract](../specifications/input-pointer-rfc.md) (CTX-0107 draft) |
+| Text and rendering  | `cell.width` 1-or-2 + trailing spacer, `Snapshot + Damage -> DrawList` seam in `bitty-render`, `char_cell_width` approximation as headless evidence per [Text and Rendering RFC](../specifications/text-rendering-rfc.md) (CTX-0108 draft) | Authoritative EAW tables, UAX #29 grapheme-to-cell mapping, fallback/shaping/ligature/kerning, atlas eviction, DPI-aware metrics for this slice                                                                         |
+| Platform            | Tier promises and gates per [ADR 0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md) (OQ-003)                                                                             | Exact per-platform manual evidence set and which Tier 2 platforms are exercised in this slice                                                                                                                           |
+| Performance         | PB-1..PB-7 targets per [Performance Budget RFC](../specifications/performance-budget-rfc.md) (OQ-001)                                                                                                                                      | How each budget is measured for one window / one terminal and what is deferred to later slices                                                                                                                          |
+| Headless            | Deferred daemon per [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md) (OQ-020); `HeadlessRasterizer` as non-user-ready headless evidence per text-rendering draft                | Visible/headless consistency proof and deterministic headless golden corpus for this slice                                                                                                                              |
+
+Any row whose right column is still candidate must not be cited as normative
+until its acceptance decision is registered. `HeadlessRasterizer` in
+`bitty-runtime` and `char_cell_width` approximation remain **non-user-ready
+evidence**; they are headless test seams, not user-facing typography or
+rendering.
+
 ## Architecture and ownership (candidate slice)
 
 ### Component map for one window / one terminal
@@ -203,134 +211,6 @@ All crate edges follow [ADR 0003](https://github.com/bitty-terminal/bitty-docs/b
 rule 3: `Terminal -> Snapshot`, renderer never reads private grid, lower
 layers never depend on higher layers. Snapshot is the only cross-domain
 contract.
-
-## Acceptance criteria (candidate, all must hold)
-
-### A1. End-to-end PTY loop
-
-- A shell spawned by the single PTY echoes typed input and exits with the
-  shell's status. `echo hello` or `printf` round-trips through
-  `Shell -> PTY -> VT -> state -> snapshot -> present -> input -> PTY`.
-- Bounded reply buffer: DCS/OSC replies are bounded, drop-on-excess with a
-  flag, never blocking the PTY reader. Evidence: bounded-buffer unit test +
-  manual `infocmp` or `tput` query that generates a reply.
-- No panic on malformed/unterminated CSI/OSC/DCS/APC of bounded size per
-  T-01; recovery is deterministic per the Terminal State RFC decoder policy
-  (`U+FFFD` one cell).
-
-### A2. Cursor
-
-- Cursor shape, style, and visibility follow `DECSCUSR` and `DECTCEM` via the
-  `Action::CursorStyle`/`Action::CursorVisibility` path. Cursor blinks only
-  when enabled; no blink when focus is lost (platform focus gate).
-- Cursor integrity invariant holds after every action batch: cursor points at
-  a leading cell, never the trailing spacer of a wide cell; movement onto a
-  wide char follows the single documented rule from the Terminal State RFC.
-  Verified by invariant validator in debug and by corpus replay.
-- Cursor tracks insert/delete, scroll region, and alternate-screen swap:
-  entry saves and exit restores the primary-screen cursor/mode set per mode
-  consistency.
-
-### A3. Scrollback
-
-- Scrollback monotonicity: lines enter scrollback only via scroll-under-region
-  operations; pruning drops oldest first; scrollback contents are immutable
-  once written (Terminal State RFC invariant 4).
-- Size is bounded and deterministic for this slice: visible grid plus
-  scrollback history bounded by configured limit (candidate default: total
-  lines bounded by `history_limit` with explicit `unbounded = false` guard;
-  growth beyond the limit truncates oldest, never unbounded allocation). The
-  exact limit is configurable but must be stated in the manual evidence for
-  this slice.
-- Scroll interaction: Shift+wheel or Shift+PgUp/PgDn scrolls scrollback when
-  not in alternate screen; application-mode mouse (1002) does not leak
-  scrollback into the application's coordinate space.
-
-### A4. Resize to PTY
-
-- Native window resize recomputes grid geometry (columns x rows) from
-  cell metrics, applies `SIGWINCH` (Unix) or `ConPTY` resize, and records a
-  single reflow with full-grid damage. The reflow algorithm is singular for
-  this slice (candidate: reflow via wrap-preserving line rewrap with no
-  hidden rewrap branch; exact algorithm to be pinned before acceptance).
-- Resize preserves cursor integrity and geometry invariants across every
-  tested size in the matrix (see Verification below). Resize events are
-  `Env(resize)` frames in the replay recording, part of the determinism
-  declaration.
-- Reply-bounded resize: concurrent resize + burst output does not wedge the
-  PTY writer and respects the `portable-pty` / ConPTY backpressure contract.
-
-### A5. Selection
-
-- Selection is **presentation-layer** state over grid cells, not terminal
-  state. It is addressable by viewport coordinates, survives no mutation to
-  `Terminal` invariants, and clears on demand or on alternate-screen entry
-  as specified per view.
-- Selection modes: character-stream and line-block per the Input and Pointer
-  draft (word/line double/triple is candidate fidelity inside this slice;
-  exact hit granularity is presentation-only and must be documented as
-  candidate). Wide cells select as one logical cell (no half-wide selections).
-- Shift override: holding Shift while dragging bypasses application mouse
-  capture (when mouse mode 1000/1002/1003 is active) to force selection,
-  per the Input draft. Mouse capture itself is alternate-screen only.
-
-### A6. Copy and paste
-
-- Copy uses bounded text: selected grid text is extracted as bounded
-  `BoundedText` (clipboard write path uses platform clipboard primitive;
-  bounded before allocation per invariant 7). No unbounded concat.
-- Paste uses `CLIPBOARD_MAX_BYTES=8192` char-boundary bound already audited
-  at `7a4ee41` (CTX-0097) plus bracketed paste `CSI ? 2004 h` as defense in
-  depth when the application has enabled it. PASTE payload exceeding the bound
-  is truncated at a char boundary with telemetry, never expanded.
-- Clipboard policy per [P0-AC-007/008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md)
-  and audit `7a4ee41`: OSC 52 read denied in this slice (M1), OSC 52 write
-  gated and platform-limited; residual gaps (platform backends
-  `arboard` X11/Wayland/macOS/Windows, real-window UX, 8192 post-acquisition
-  bound scope) remain documented as `R-004 Open` and are not claimed fixed by
-  this slice.
-- Copy/paste are distinct host operations from selection; no plugin or agent
-  observes raw clipboard bytes except via the same bounded, consented host
-  primitive.
-
-### A7. Shell coverage
-
-- Default shell on each Tier 1 platform renders a usable prompt, accepts
-  command entry, displays output, and restores the prompt on `clear`/`reset`.
-  Candidate shell set for this slice: `bash` (Linux), `zsh` (macOS),
-  `PowerShell` or `bash` on Windows via ConPTY, with one Tier 1 shell
-  exercised per PR matrix and all three exercised in release evidence.
-- Shell integration markers `OSC 133` (prompt) and `OSC 7` (cwd) are parsed as
-  `OscPromptMark` / `OscCwd` actions that produce semantic-zone events (cold
-  path), not grid mutation; unknown OSCs are `OscUnknown` (inert, telemetry).
-  No shell integration feature is required to be visible in this slice.
-
-### A8. nvim and tmux smoke
-
-- `nvim` smoke: launch `nvim` inside the single terminal, observe alternate
-  screen entry, cursor visibility/styles, bracketed paste, focus events
-  (1004), and mouse SGR (1006) when enabled by the application. Clean exit
-  restores primary screen and cursor. No `nvim` key binding is required to be
-  remapped by Bitty.
-- `tmux` smoke: launch `tmux` inside the single terminal, observe 256-color
-  SGR, alternate screen, and status line repaint after resize. Detach/attach
-  is inside `tmux`, not Bitty daemon lifecycle (deferred per ADR 0008).
-- Both smokes are **manual evidence** with recordings (see Verification);
-  they are not hard compatibility gates and do not extend M1 scope.
-
-### A9. Visible vs headless consistency
-
-- The same `VT -> Action -> state -> snapshot` determinism applies to both
-  visible rendering and headless execution. A headless run of the same byte
-  stream + `Env` sequence hashes identically to the visible run's state hash
-  (`StateHash` canonical little-endian per Terminal State RFC), even though
-  pixel output differs.
-- `HeadlessRasterizer` (per text-rendering draft) is permitted only as a
-  deterministic, side-effect-free stand-in for atlas/raster measurement; it is
-  not user-facing rendering and must not be cited as visual evidence.
-- Damage correctness: the union of per-batch damage equals a full-redraw diff
-  of consecutive snapshots, verified headless; replay tooling ignores damage
-  (performance-only).
 
 ## Platform scope (candidate, per ADR 0002)
 
@@ -428,9 +308,41 @@ address the owning RFC's acceptance gates.
 - CTX-0116 reconciled this plan into [Roadmap: Now / Next / Later](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/roadmap/now-next-later.md)
   and [`TODO.md`](https://github.com/bitty-terminal/bitty-docs/blob/main/TODO.md) as experimental evidence; spec remains `Draft`.
 
-## Verification and evidence (candidate)
+## Maintenance and mapping
 
-### Manual evidence (required for this slice)
+- Keep this document, the [Input and Pointer Contract](../specifications/input-pointer-rfc.md),
+  and the [Text and Rendering RFC](../specifications/text-rendering-rfc.md)
+  in sync; divergence is a defect. When an input or text detail moves from
+  draft to accepted, update its accepted source and link the acceptance
+  decision here — do not silently promote candidate prose.
+- When the slice moves from `Draft` to `Accepted` to `Implemented` to
+  `Verified`, update its status and the linked [Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md)
+  evidence note per the [Risk Evidence RFC](../specifications/risk-evidence-rfc.md);
+  `Verified` requires independent `security-auditor` and P0-AC evidence. The
+  update belongs in a dedicated CarryCtx task for that slice, not as a side
+  edit to another task's worktree.
+- Keep every link local and repository-portable; no local filesystem link
+  appears in workspace roots or any `AGENTS.md`. Validate with `just links`
+  and `just metadata` before any PR.
+- English-only per the [Documentation Workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md);
+  flat frontmatter with no arrays or maps; repository hygiene via `just check`.
+- Canonical sync for the broader program remains
+  [`docs/project/project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
+  validated by `bun .github/scripts/check-state.mjs` (synchronized `a8735d0`,
+  chain `d4d75e9 -> c0aadd2 -> 7e3104d -> a8735d0`, `R-004` `Open`, `R-005`/`R-006`/`R-007`
+  `Mitigated`, experimental not `Verified`); `c0aadd2`/`a8735d0` were added via
+  CTX-0116 synchronized state task (not via this slice doc alone); spec
+  lifecycle is `Draft -> Experimental Implementation -> Accepted -> Verified`.
+
+## Security review
+
+The candidate review gates require independent review of T-01 bounded parsing, T-13/Terminal Truth ownership, no hot-path plugins, the 8192-byte clipboard bound and bracketed paste, IPC/MCP non-interference, and trace minimization against P0-AC-001/002/007/008. R-004's platform/backend and post-acquisition residuals remain Open. The full gate and residual disclosures are retained under Verification plan and Open points; no approval is created by this arrangement.
+
+## Verification plan
+
+### Verification and evidence (candidate)
+
+#### Manual evidence (required for this slice)
 
 For each Tier 1 platform where a visible run is claimed:
 
@@ -450,7 +362,7 @@ For each Tier 1 platform where a visible run is claimed:
 Manual evidence alone does not prove determinism; it is paired with headless
 mechanized proof below.
 
-### Headless and deterministic proof (required)
+#### Headless and deterministic proof (required)
 
 1. **State hash corpus**: a pinned synthetic corpus of PTY byte streams +
    `Env(resize)` frames replays identically on visible and headless runs.
@@ -465,7 +377,7 @@ mechanized proof below.
    Ghostty/kitty/WezTerm sessions) with known-divergence ledger; differential
    failures are triaged bug-or-choice explicitly.
 
-### Replay and diagnostics (candidate)
+#### Replay and diagnostics (candidate)
 
 - Recording format is `header + framed chunks` (`Input(bytes)` or
   `Env(event)`) containing only raw PTY bytes + explicit environment inputs as
@@ -481,7 +393,7 @@ Damage` for offline inspection. Its scope and schema remain owned by the
   [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md) debug-instrumentation
   permissions; it does not expose GPU/PTY internals.
 
-### Platform and budget evidence
+#### Platform and budget evidence
 
 - `just check` green on the same revision that claims the slice: `fmt-check` +
   `markdownlint` + `links` + `metadata` + `language` + `agents` + `hygiene` +
@@ -495,7 +407,7 @@ Damage` for offline inspection. Its scope and schema remain owned by the
   first real `bitty-app` link exists; PB-3 reclaim over 4 h single-terminal
   soak and PB-5 sizes reported as informational.
 
-### Review gates (block implementation until passed)
+#### Review gates (block implementation until passed)
 
 The slice is **not authorized** for product code until all hold. The
 revision-locked evidence status for each gate and for A1-A9 is maintained in
@@ -525,7 +437,17 @@ Only after (1)-(5) are recorded as approvals on the implementing PR and as
 CarryCtx checkpoint may a new implementation task be opened that cites this plan
 as its accepted design constraint.
 
-## Risks and residual gaps (candidate disclosure)
+## Alternatives considered
+
+The slice deliberately uses one real shell/window and pairs visible evidence with headless state-hash and damage proof. Safe mode remains recovery rather than the acceptance configuration; HeadlessRasterizer is non-user-ready measurement evidence rather than visual proof. The exclusions retain multi-window/panel/plugin/image/daemon work for separate scopes, and PB-3's eight-tab clause and PB-5 remain deferred or informational as recorded.
+
+## Affected contracts
+
+The maintenance section requires synchronization with the draft Input and Pointer and Text and Rendering contracts without accepting them. Terminal State owns Action/state/replay, Compatibility Milestone owns M1 scope, and the accepted PB and security documents retain their gates. The dependencies, ordering, historical synchronization notes, and broader project-state ownership remain as recorded in the substantive body.
+
+## Open points
+
+### Risks and residual gaps (candidate disclosure)
 
 - `R-004` remains `Open` at `7a4ee41` per the
   [Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md) and [Evidence Matrix](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/evidence-matrix.md);
@@ -542,31 +464,139 @@ as its accepted design constraint.
 - No third-party plugin is granted additional authority in this slice; every
   future plugin still passes capability and budget gates per R-006/R-007.
 
-## Maintenance and mapping
+## Acceptance criteria
 
-- Keep this document, the [Input and Pointer Contract](../specifications/input-pointer-rfc.md),
-  and the [Text and Rendering RFC](../specifications/text-rendering-rfc.md)
-  in sync; divergence is a defect. When an input or text detail moves from
-  draft to accepted, update its accepted source and link the acceptance
-  decision here — do not silently promote candidate prose.
-- When the slice moves from `Draft` to `Accepted` to `Implemented` to
-  `Verified`, update its status and the linked [Risk Register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md)
-  evidence note per the [Risk Evidence RFC](../specifications/risk-evidence-rfc.md);
-  `Verified` requires independent `security-auditor` and P0-AC evidence. The
-  update belongs in a dedicated CarryCtx task for that slice, not as a side
-  edit to another task's worktree.
-- Keep every link local and repository-portable; no local filesystem link
-  appears in workspace roots or any `AGENTS.md`. Validate with `just links`
-  and `just metadata` before any PR.
-- English-only per the [Documentation Workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md);
-  flat frontmatter with no arrays or maps; repository hygiene via `just check`.
-- Canonical sync for the broader program remains
-  [`docs/project/project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
-  validated by `bun .github/scripts/check-state.mjs` (synchronized `a8735d0`,
-  chain `d4d75e9 -> c0aadd2 -> 7e3104d -> a8735d0`, `R-004` `Open`, `R-005`/`R-006`/`R-007`
-  `Mitigated`, experimental not `Verified`); `c0aadd2`/`a8735d0` were added via
-  CTX-0116 synchronized state task (not via this slice doc alone); spec
-  lifecycle is `Draft -> Experimental Implementation -> Accepted -> Verified`.
+### Acceptance criteria (candidate, all must hold)
+
+#### A1. End-to-end PTY loop
+
+- A shell spawned by the single PTY echoes typed input and exits with the
+  shell's status. `echo hello` or `printf` round-trips through
+  `Shell -> PTY -> VT -> state -> snapshot -> present -> input -> PTY`.
+- Bounded reply buffer: DCS/OSC replies are bounded, drop-on-excess with a
+  flag, never blocking the PTY reader. Evidence: bounded-buffer unit test +
+  manual `infocmp` or `tput` query that generates a reply.
+- No panic on malformed/unterminated CSI/OSC/DCS/APC of bounded size per
+  T-01; recovery is deterministic per the Terminal State RFC decoder policy
+  (`U+FFFD` one cell).
+
+#### A2. Cursor
+
+- Cursor shape, style, and visibility follow `DECSCUSR` and `DECTCEM` via the
+  `Action::CursorStyle`/`Action::CursorVisibility` path. Cursor blinks only
+  when enabled; no blink when focus is lost (platform focus gate).
+- Cursor integrity invariant holds after every action batch: cursor points at
+  a leading cell, never the trailing spacer of a wide cell; movement onto a
+  wide char follows the single documented rule from the Terminal State RFC.
+  Verified by invariant validator in debug and by corpus replay.
+- Cursor tracks insert/delete, scroll region, and alternate-screen swap:
+  entry saves and exit restores the primary-screen cursor/mode set per mode
+  consistency.
+
+#### A3. Scrollback
+
+- Scrollback monotonicity: lines enter scrollback only via scroll-under-region
+  operations; pruning drops oldest first; scrollback contents are immutable
+  once written (Terminal State RFC invariant 4).
+- Size is bounded and deterministic for this slice: visible grid plus
+  scrollback history bounded by configured limit (candidate default: total
+  lines bounded by `history_limit` with explicit `unbounded = false` guard;
+  growth beyond the limit truncates oldest, never unbounded allocation). The
+  exact limit is configurable but must be stated in the manual evidence for
+  this slice.
+- Scroll interaction: Shift+wheel or Shift+PgUp/PgDn scrolls scrollback when
+  not in alternate screen; application-mode mouse (1002) does not leak
+  scrollback into the application's coordinate space.
+
+#### A4. Resize to PTY
+
+- Native window resize recomputes grid geometry (columns x rows) from
+  cell metrics, applies `SIGWINCH` (Unix) or `ConPTY` resize, and records a
+  single reflow with full-grid damage. The reflow algorithm is singular for
+  this slice (candidate: reflow via wrap-preserving line rewrap with no
+  hidden rewrap branch; exact algorithm to be pinned before acceptance).
+- Resize preserves cursor integrity and geometry invariants across every
+  tested size in the matrix (see Verification below). Resize events are
+  `Env(resize)` frames in the replay recording, part of the determinism
+  declaration.
+- Reply-bounded resize: concurrent resize + burst output does not wedge the
+  PTY writer and respects the `portable-pty` / ConPTY backpressure contract.
+
+#### A5. Selection
+
+- Selection is **presentation-layer** state over grid cells, not terminal
+  state. It is addressable by viewport coordinates, survives no mutation to
+  `Terminal` invariants, and clears on demand or on alternate-screen entry
+  as specified per view.
+- Selection modes: character-stream and line-block per the Input and Pointer
+  draft (word/line double/triple is candidate fidelity inside this slice;
+  exact hit granularity is presentation-only and must be documented as
+  candidate). Wide cells select as one logical cell (no half-wide selections).
+- Shift override: holding Shift while dragging bypasses application mouse
+  capture (when mouse mode 1000/1002/1003 is active) to force selection,
+  per the Input draft. Mouse capture itself is alternate-screen only.
+
+#### A6. Copy and paste
+
+- Copy uses bounded text: selected grid text is extracted as bounded
+  `BoundedText` (clipboard write path uses platform clipboard primitive;
+  bounded before allocation per invariant 7). No unbounded concat.
+- Paste uses `CLIPBOARD_MAX_BYTES=8192` char-boundary bound already audited
+  at `7a4ee41` (CTX-0097) plus bracketed paste `CSI ? 2004 h` as defense in
+  depth when the application has enabled it. PASTE payload exceeding the bound
+  is truncated at a char boundary with telemetry, never expanded.
+- Clipboard policy per [P0-AC-007/008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md)
+  and audit `7a4ee41`: OSC 52 read denied in this slice (M1), OSC 52 write
+  gated and platform-limited; residual gaps (platform backends
+  `arboard` X11/Wayland/macOS/Windows, real-window UX, 8192 post-acquisition
+  bound scope) remain documented as `R-004 Open` and are not claimed fixed by
+  this slice.
+- Copy/paste are distinct host operations from selection; no plugin or agent
+  observes raw clipboard bytes except via the same bounded, consented host
+  primitive.
+
+#### A7. Shell coverage
+
+- Default shell on each Tier 1 platform renders a usable prompt, accepts
+  command entry, displays output, and restores the prompt on `clear`/`reset`.
+  Candidate shell set for this slice: `bash` (Linux), `zsh` (macOS),
+  `PowerShell` or `bash` on Windows via ConPTY, with one Tier 1 shell
+  exercised per PR matrix and all three exercised in release evidence.
+- Shell integration markers `OSC 133` (prompt) and `OSC 7` (cwd) are parsed as
+  `OscPromptMark` / `OscCwd` actions that produce semantic-zone events (cold
+  path), not grid mutation; unknown OSCs are `OscUnknown` (inert, telemetry).
+  No shell integration feature is required to be visible in this slice.
+
+#### A8. nvim and tmux smoke
+
+- `nvim` smoke: launch `nvim` inside the single terminal, observe alternate
+  screen entry, cursor visibility/styles, bracketed paste, focus events
+  (1004), and mouse SGR (1006) when enabled by the application. Clean exit
+  restores primary screen and cursor. No `nvim` key binding is required to be
+  remapped by Bitty.
+- `tmux` smoke: launch `tmux` inside the single terminal, observe 256-color
+  SGR, alternate screen, and status line repaint after resize. Detach/attach
+  is inside `tmux`, not Bitty daemon lifecycle (deferred per ADR 0008).
+- Both smokes are **manual evidence** with recordings (see Verification);
+  they are not hard compatibility gates and do not extend M1 scope.
+
+#### A9. Visible vs headless consistency
+
+- The same `VT -> Action -> state -> snapshot` determinism applies to both
+  visible rendering and headless execution. A headless run of the same byte
+  stream + `Env` sequence hashes identically to the visible run's state hash
+  (`StateHash` canonical little-endian per Terminal State RFC), even though
+  pixel output differs.
+- `HeadlessRasterizer` (per text-rendering draft) is permitted only as a
+  deterministic, side-effect-free stand-in for atlas/raster measurement; it is
+  not user-facing rendering and must not be cited as visual evidence.
+- Damage correctness: the union of per-batch damage equals a full-redraw diff
+  of consecutive snapshots, verified headless; replay tooling ignores damage
+  (performance-only).
+
+## P0 Review Sign-off
+
+Pending: the linked [Vertical Slice Review Gates (A1-A9)](vertical-slice-review-gates.md) records the four independent review gates as Open, with only local gates Evidenced on the docs revision. Experimental code review is not spec acceptance. Architecture, security, performance, and docs-curator approvals plus same-revision local evidence remain required before the plan authorizes a new implementation task.
 
 ## References
 

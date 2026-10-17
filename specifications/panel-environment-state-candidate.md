@@ -11,6 +11,8 @@ sidebar_order: 34
 
 # Panel Environment State (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document records the Panel
 > environment-state design direction as a
@@ -21,6 +23,18 @@ sidebar_order: 34
 > does not weaken any accepted source it cites. Every mechanism below stays
 > **Candidate** until a reviewed RFC or ADR accepts it with security-auditor
 > review.
+
+## Purpose and scope
+
+This DIR-022 design-level direction covers four environment layers, prompt-time exported-environment acquisition, PanelEnvSnapshot, Panel-owned ShellState, sanitized agent views/opaque execution handles, new-panel inheritance, and no disk persistence by default. Full shell cloning is explicitly excluded; AI-side field/redaction/lease details remain owner-pending.
+
+## Normative sources this specification must not weaken
+
+[Panel Runtime](panel-runtime-rfc.md), [TerminalRegistry/View](terminal-registry-view-lifecycle-rfc.md), [Workspace Compositor](workspace-compositor.md), and [Terminal State](terminal-state-rfc.md) retain lifecycle, identity, tiling, and truth ownership. Security conformance below retains ADR 0006 and the security corpus's secret minimization, scoped child credentials, read-only agent default, and P0-AC-023/024/026 requirements. DIR-022 accepts the working direction only; mechanisms remain candidate.
+
+## Terminology
+
+ProcessEnv is the Bitty process environment; ConfigEnv is session/project configuration; LaunchEnv is a panel's creation environment; RuntimeEnv is live exported shell state. ShellState is the candidate Panel-owned aggregate. Execution View may use full values through Core, while sanitized Agent View and env-snapshot handles preserve Use Environment ≠ Read Environment.
 
 ## Claim status map
 
@@ -292,7 +306,9 @@ accepted rule it cites the accepted document and does not redefine it:
 - Shared governance in bitty-docs stays canonical and is linked, never
   copied (see [Security conformance](#security-conformance)).
 
-## Security conformance
+## Security review
+
+### Security conformance
 
 The normative security corpus governs this direction and is cited, never
 contradicted:
@@ -327,21 +343,21 @@ If a future refinement of this direction conflicts with any normative
 control above, the conflict must be marked `candidate +
 needs-security-review` and resolved in favor of the security corpus.
 
-## Evidence-only references
+## Verification plan
 
-- Kitty shell integration (`clone-in-kitty` serializes shell state via
-  integration; plain environment copy reflects creation time only):
-  <https://sw.kovidgoyal.net/kitty/shell-integration/>
-- Ghostty shell integration (new terminal starts from the focused
-  terminal's working directory):
-  <https://ghostty.org/docs/features/shell-integration>
-- Ghostty configuration reference (`env = KEY=VALUE` launch environment):
-  <https://ghostty.org/docs/config/reference>
+The promotion follow-up requires bounded values, error taxonomy, budgets, and verification mapping to P0-AC-023/024/026 before an environment RFC or Panel Runtime amendment can accept the mechanism. Review must preserve exported-only acquisition, no input parsing/procfs reliance, sanitized views, handle-only credential use, and no whole-environment persistence. This direction supplies no test result and marks no criterion satisfied.
 
-These projects are evidence for feasibility only. Their documentation is
-not copied, and their designs decide nothing for Bitty.
+## Alternatives considered
 
-## Follow-ups (not decided here)
+Input parsing and /proc environ are explicitly rejected as portable live-shell-state mechanisms; prompt-time child inheritance observes effects instead. Snapshot-first v1 defers diffs pending measured need, and a separate EnvManager is rejected in favor of Panel-owned ShellState. Whole-environment persistence/full shell cloning are excluded; an exact persistence allowlist is a future opt-in design.
+
+## Affected contracts
+
+The retained Relationship to accepted sources section preserves Panel/registry/compositor/Terminal State ownership unchanged. The C-1..C-9 claim map distinguishes candidate mechanisms from conformance and external feasibility evidence. Agent-side handles, field shapes, patterns, and lease coupling remain AI-owner follow-ups, and persistence allowlist semantics need their own design.
+
+## Open points
+
+### Follow-ups (not decided here)
 
 1. ai-docs rollout: agent-view field shapes, secret-pattern list,
    env-snapshot handle lifecycle, and lease-model coupling — owned by the
@@ -354,3 +370,29 @@ not copied, and their designs decide nothing for Bitty.
    verification mapping to P0-AC-023 / P0-AC-024 / P0-AC-026 — only when an
    owning task schedules it. No open question is opened by this document
    because the direction alone blocks no milestone.
+
+## Acceptance criteria
+
+Promotion requires the owning environment RFC or Panel Runtime amendment and security-auditor review described by the status and follow-ups. It must supply bounds/errors/budgets and P0 verification without exporting secret values, persisting whole environments, or widening the exported-only scope. DIR-022 and external Kitty/Ghostty observations alone do not accept the mechanism.
+
+## P0 Review Sign-off
+
+Pending: the status record requires security-auditor review before any mechanism is accepted. Security conformance explicitly marks no P0-AC-023/024/026 criterion satisfied and retains R-012/R-013/R-014 as open gates. External feasibility references confer no review authority.
+
+## References
+
+The retained Evidence-only references below identify Kitty and Ghostty feasibility sources; those projects decide nothing for Bitty. The Relationship to accepted sources and Security conformance sections retain the normative contract, ADR 0006, security, and DIR-022 citations.
+
+### Evidence-only references
+
+- Kitty shell integration (`clone-in-kitty` serializes shell state via
+  integration; plain environment copy reflects creation time only):
+  <https://sw.kovidgoyal.net/kitty/shell-integration/>
+- Ghostty shell integration (new terminal starts from the focused
+  terminal's working directory):
+  <https://ghostty.org/docs/features/shell-integration>
+- Ghostty configuration reference (`env = KEY=VALUE` launch environment):
+  <https://ghostty.org/docs/config/reference>
+
+These projects are evidence for feasibility only. Their documentation is
+not copied, and their designs decide nothing for Bitty.
