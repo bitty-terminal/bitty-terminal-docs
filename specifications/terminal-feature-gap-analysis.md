@@ -11,6 +11,8 @@ sidebar_order: 32
 
 # Terminal Feature Gap Analysis
 
+## Document status
+
 > Status: **draft** (frontmatter `draft`), docs-only, no product code. This
 > document records a point-in-time re-verification of basic terminal-emulator
 > features in `bitty` against classic terminal emulators, closing the follow-up
@@ -36,9 +38,8 @@ sidebar_order: 32
 
 ## Purpose and scope
 
-The originating directive (carrier messages m0392/m0424) asked which basic
-terminal features are still missing in Bitty compared with the classic terminal
-emulators kept as read-only research snapshots, for example scroll-follow,
+This analysis compares Bitty's basic terminal features with classic terminal
+emulators using revision-pinned, read-only external evidence: scroll-follow,
 scrollbar and scrollback behavior, image protocols, mouse reporting modes,
 selection and clipboard semantics, reflow, search, OSC 8 hyperlinks, cursor
 shapes, bracketed paste, focus events, and the bell.
@@ -65,6 +66,31 @@ Related material, not duplicated here:
 - [Compatibility Milestone RFC](compatibility-milestone-rfc.md) defines which
   protocols are M1 `Required`, `Opt-in enhancement`, `Gated opt-in`, or
   `Out of M1`; the reconciliation section below applies that contract.
+
+## Normative sources this specification must not weaken
+
+- [Compatibility Milestone RFC](compatibility-milestone-rfc.md) owns M1
+  classification and acceptance gates; a feature rank here changes neither.
+- [Input and Pointer Contract](input-pointer-rfc.md),
+  [Terminal State RFC](terminal-state-rfc.md), and
+  [Rich Presentation RFC](rich-presentation-rfc.md) own their contracts and
+  evidence requirements; this comparison amends none of them.
+- [Core and Plugin Boundaries](../architecture/core-boundaries.md) and
+  [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)
+  retain Terminal Truth isolation, capability checks, bounded parsing, and
+  hot-path restrictions. Comparison with another terminal authorizes no
+  feature, protocol, or risk transition.
+
+## Terminology
+
+- **Snapshot / refreshed row**: evidence at a named revision, superseded only
+  for the slice explicitly re-inspected at a later cited revision.
+- **Gap priority**: feature-comparison rank, not security severity or scope
+  authorization.
+- **Shipped / partial / implemented-only / missing**: source-inspection
+  verdicts defined under Verification basis, never a lifecycle `Verified`
+  claim. Historical wording such as "verified at HEAD" means inspection at
+  the row's recorded pin, not current main or new runtime execution.
 
 ## Verification basis
 
@@ -125,7 +151,12 @@ scope. The P0 rows below have moved from missing to implemented; the P0 rank
 is retained here because their M1 acceptance evidence is still the open
 tracking item, not because a capability is absent.
 
-### Top 10
+### Top 10 (historical survey ranking)
+
+This list preserves the earlier survey ranking. Later evidence in individual
+rows supersedes a verdict only for the cited slice (for example keyboard,
+bell, and prompt-jump implementations); it does not retroactively refresh
+every other row or establish present-day vendor parity.
 
 1. Synchronized output (DECSET 2026) is parsed and the runtime honors it (P0; the M1 acceptance evidence remains the tracking item).
 2. OSC 10/11 dynamic foreground/background color query and set are implemented: queries answer from the resolved palette, sets are capability-gated (default deny) (P0).
@@ -338,7 +369,51 @@ Workspace Compositor and OQ-052; synchronized output and OSC 10/11 stay
 - **CTX-0251 remains the cross-vendor rank source.** This document re-verifies
   `bitty` status and adds citations; it does not re-run the six-vendor survey.
 
-## Maintenance
+## Security review
+
+This comparison executes no vendor code and grants no terminal or plugin
+authority. Existing clipboard, paste, image, notification, and protocol limits
+remain owned by their accepted contracts. External feature availability is
+not a reason to bypass default-deny gates. The historical IME and protocol
+observations above leave their named acceptance gaps open; this page supplies
+no independent security sign-off or risk-status promotion.
+
+## Verification plan
+
+Re-inspect each changed verdict against its exact production revision and
+named source/test evidence. Preserve unchanged row pins and the external
+revision/license table; distinguish source tests from execution and live
+platform evidence. For IME, retain the `679f12f` historical ordering failure
+and cite the later armed-composition correction without claiming a live
+fcitx5 run. M1 acceptance still requires the owning contract's golden and
+round-trip evidence. Documentation gates check links, form, language, and
+self-containment, not runtime parity.
+
+## Alternatives considered
+
+- Treat a source symbol or named regression test as full feature acceptance:
+  excluded by the evidence limits and Implemented-versus-Verified lifecycle.
+- Replace all historical verdicts after inspecting one row at a later pin:
+  excluded; only that row's cited slice is refreshed.
+- Infer comprehensive vendor parity from a feature citation: excluded; each
+  citation covers only the inspected external snapshot and feature.
+
+## Affected contracts
+
+The Compatibility Milestone, Input and Pointer, Rich Presentation, and Text
+Compatibility contracts remain authoritative. The owning ligature, image
+protocol, and terminfo decisions disposition their rows; this comparison
+links those decisions and the shared open-question register without changing
+protocol scope, accepted ownership, risk status, or lifecycle acceptance.
+
+## Open points
+
+The Registered open questions table records OQ-073 through OQ-078 at their
+cited decision snapshots; the linked register and accepted decision artifacts
+own closure. Evidence limits retain the outstanding M1 acceptance, live IME,
+and row-specific parity gaps. This form correction closes none of them.
+
+### Maintenance
 
 Re-verify this page whenever a `bitty` revision changes a row verdict, and
 close OQ-073 through OQ-078 only through their accepted decision artifact with
@@ -349,3 +424,34 @@ closed by the armed-composition fix. Keep this page, the
 and [Text Compatibility](text-compatibility.md#ime-overlay-vs-commit) in the
 same change. The next natural checkpoint is the M3 usable-terminal wave named in the
 [roadmap](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/roadmap/now-next-later.md#candidate-horizon-mapping-hints-not-commitments).
+
+## Acceptance criteria
+
+- Every row retains an explicit revision, evidence scope, and status; newer
+  observations supersede only their stated slices.
+- Named external revisions, licenses, and dated measurements are preserved
+  without opaque discussion-process identifiers.
+- Feature ranks do not accept protocols, close risks, or promote
+  Implemented-only evidence to `Verified`.
+- IME history, the later source fix, and the absence of live fcitx5 evidence
+  remain distinct; owning acceptance and security gates stay required.
+
+## P0 Review Sign-off
+
+No P0 acceptance is recorded for this comparison. The owning protocol and
+security reviews and M1 evidence requirements remain authoritative; source
+inspection and documentation gates supply no substitute sign-off.
+
+## References
+
+- Verification basis contains the external terminal snapshot revisions,
+  licenses, and inspected files; per-row citations define their exact scope.
+- [Compatibility Milestone RFC](compatibility-milestone-rfc.md) — M1 scope
+  and acceptance evidence.
+- [Input and Pointer Contract](input-pointer-rfc.md#ime-composition-and-commit-candidate)
+  and [Text Compatibility](text-compatibility.md#ime-overlay-vs-commit) — IME
+  contract and the later armed-composition correction.
+- [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md) — separate
+  chrome and UI comparison scope.
+- [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)
+  — owning decision status and closure requirements.

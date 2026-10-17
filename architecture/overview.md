@@ -24,7 +24,8 @@ crates remain `Implemented` not yet `Verified` and do not imply shipped or
 compatibility-guaranteed behavior.
 
 Time-bound implementation state — crate counts, revisions, releases, test
-evidence, and milestone assessments — is not pinned here. The workspace
+evidence, and milestone assessments — is linked rather than maintained here,
+apart from explicitly dated, narrow source observations below. The workspace
 topology and dependency edges are fixed in
 [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md)
 and `bitty/Cargo.toml`; current counts, revisions, and assessments live in
@@ -242,8 +243,8 @@ decomposition and dependency edges are fixed in
 [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md);
 `bitty-package` lifecycle and integrity model is `Accepted` (OQ-021) with
 signatures still draft, `bitty-lua` `Accepted` (OQ-009/030-032; runtime
-successor direction recorded in [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md),
-still on `piccolo` 0.3.3), and the tail crate `bitty-rich` (OQ-008/015/016) is
+successor direction recorded in [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md)),
+and the tail crate `bitty-rich` (OQ-008/015/016) is
 `Implemented` but not yet `Verified`. The out-of-process IPC (`bitty-ipc`),
 shared networking (`bitty-network`), agent protocol layer (`bitty-agent`), and
 observability infrastructure (`bitty-observability`) exist as dedicated L1 Rust
@@ -253,9 +254,19 @@ extraction boundaries and retained Core mechanisms are decided as direction by
 [ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
 and
 [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md),
-with focused contracts `W-71` through `W-75`; no extraction or migration is
-claimed. Current revision and milestone evidence lives in
+with focused contracts `W-71` through `W-75`; those decisions alone claim no
+extraction or migration. The dated source inventory in the
+[legacy disposition record](../specifications/legacy-chrome-and-validation-disposition.md)
+separates observed removals and validation relocation from acceptance of their
+remaining gates. Current revision and milestone evidence lives in
 [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
+
+Dependency inventory at `bitty` `1c68de25` (2026-10-17),
+`crates/bitty-lua/Cargo.toml`, records Phodopus `0.2.0-alpha.1` at
+`f6aa59a`. This dated source observation replaces the earlier Piccolo
+inventory; it does not accept the draft
+[Phodopus Host ABI](../specifications/phodopus-host-abi-candidate.md) or promote
+runtime behavior to `Verified`.
 
 ## Candidate UI layering
 

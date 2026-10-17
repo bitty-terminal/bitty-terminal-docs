@@ -11,6 +11,8 @@ sidebar_order: 18
 
 # Status System Specification
 
+## Document status
+
 > Status: **draft** — Waybar module philosophy import for Bitty. This document
 > is a draft contract for the StatusBar composable modules, the Status Module
 > Registry with `left`/`center`/`right` slots, the Platform Core-owned
@@ -80,13 +82,13 @@ does not move a requirement between owners and does not create a bypass.
 
 ## Terminology
 
-| Term                        | Meaning                                                                                                                                                                                           |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `StatusBar`                 | Candidate plugin-owned horizontal bar that composes ordered status modules into `left`/`center`/`right` slots and renders them as presentation, never as Terminal Truth.                          |
-| `Status Module`             | Declarative unit that produces a bounded text/icon segment for the bar at a defined cadence (for example `workspace`, `cpu`, `clock`).                                                            |
-| `Status Module Registry`    | Deterministic registry that maps module identifiers to slot assignments, ordering, enabled state, and per-module configuration, mirroring Waybar `modules-left`/`modules-center`/`modules-right`. |
-| `SystemMetricsService`      | Platform Core-owned service that samples `cpu`/`memory`/`network` metrics through OS APIs with rate limiting and caching; the only v1 source for those three modules.                             |
-| `Provider:status.component` | Plugin/Provider contribution point that supplies a status module component as a declarative value composed by the registry; providers never mutate bar state directly.                            |
+| Term                        | Meaning                                                                                                                                                                                  |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `StatusBar`                 | Candidate plugin-owned horizontal bar that composes ordered status modules into `left`/`center`/`right` slots and renders them as presentation, never as Terminal Truth.                 |
+| `Status Module`             | Declarative unit that produces a bounded text/icon segment for the bar at a defined cadence (for example `workspace`, `cpu`, `clock`).                                                   |
+| `Status Module Registry`    | Plugin-owned composition registry mapping module identifiers to slots, order, enabled state, and configuration; Core retains generic bounded schema validation and geometry enforcement. |
+| `SystemMetricsService`      | Platform Core-owned service that samples `cpu`/`memory`/`network` metrics through OS APIs with rate limiting and caching; the only v1 source for those three modules.                    |
+| `Provider:status.component` | Plugin/Provider contribution point that supplies a status module component as a declarative value composed by the registry; providers never mutate bar state directly.                   |
 
 ## Waybar module philosophy import
 
@@ -115,7 +117,7 @@ Rules of the import:
 ## Architectural placement
 
 ```text
-Platform Core -> SystemMetricsService --+--> Status Module Registry --> StatusBar --> Scene snapshot --> Renderer
+Platform Core -> SystemMetricsService --+--> Plugin Registry --> Plugin StatusBar --> Core-validated scene --> Renderer
                                         |         ^                           |
 Workspace / CWD / Git snapshot ---------+         |                           |
 Battery / Clock (OS time) ---------------+         |                           |
@@ -129,9 +131,15 @@ Rules:
    `network`. Lua code, including Provider modules, must not read `/proc`,
    `/sys`, or platform-specific metric files directly; such reads are outside
    the allowed standard-library subset and fail validation or capability checks.
-2. `StatusBar` and the Registry are Core-owned; Providers contribute only
-   through `Provider:status.component` declarative values validated against a
-   bounded schema.
+2. `StatusBar` presentation and the Status Module Registry's composition
+   policy are plugin-owned, including the `workspace` module, slot ordering,
+   and overflow choices. Core retains generic bounded-schema validation,
+   capability enforcement, mounted-surface geometry, and the mediated metrics
+   mechanism; none of these makes bar composition Core-owned. Providers
+   contribute only bounded declarative `Provider:status.component` values
+   through that validated boundary. This follows
+   [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md)
+   and accepts no new API or sampling authority.
 3. No status module runs on the PTY, parse, or render hot paths; sampling and
    composition occur on the presentation cold path with explicit cadence caps.
 
@@ -191,7 +199,8 @@ ambient `os` or `io` access inside `render`.
 
 ### Registry model
 
-The Registry is the single source of truth for bar composition:
+The plugin-owned Registry is the single source of truth for bar composition;
+Core validates the bounded input and enforces the generic host boundary:
 
 ```text
 ConfigPlan -> validation -> Registry { left: Vec<ModuleId>, center: Vec<ModuleId>, right: Vec<ModuleId>, modules: Map<ModuleId, ModuleConfig> }
@@ -364,7 +373,7 @@ registry identifier, and allows slot placement like
    [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md),
    which leaves workspace state and semantics in Core.
 
-## Resource limits and security review
+## Security review
 
 1. **Bounded bar cost**: total bar segment count (built-ins plus provider
    components) is capped; exceeding the cap is a validation error. Per-module
@@ -381,7 +390,7 @@ registry identifier, and allows slot placement like
    VT parser or damage-to-snapshot path; budget overruns in a provider
    component are contained by the isolation ceilings.
 
-## Verification
+## Verification plan
 
 1. **Metadata and link gates**: `just check` must pass with zero
    markdownlint, link, metadata, language, agents, and hygiene issues for
@@ -399,7 +408,29 @@ registry identifier, and allows slot placement like
 4. **Security review**: security-reviewer sign-off that no new ambient
    authority, unbounded parsing, or Terminal Truth mutation is introduced.
 
-## Open items remaining under this draft
+## Alternatives considered
+
+- Core-owned StatusBar and composition registry: superseded by ADR 0014 for
+  workspace presentation. Core keeps generic validation, band geometry, and
+  mediated metrics; the plugin chooses and composes the visible modules.
+- Direct Lua sampling or one sampler per module: prohibited by the mediated
+  metrics and cadence rules above; no new file or sampling capability follows
+  from a status contribution.
+- Minimal built-in safe-mode bar: superseded by ADR 0014. Safe mode loads no
+  optional bar and reserves no workspace band.
+
+## Affected contracts
+
+- [Core and Plugin Boundaries](../architecture/core-boundaries.md) and
+  ADR 0014 fix presentation ownership and the zero-plugin baseline.
+- [Configuration Model RFC](configuration-model-rfc.md) constrains validation,
+  attribution, and reload; the shapes here remain illustrative draft text.
+- The Plugin Platform, Isolation Resource, and Lua Runtime contracts linked
+  below retain capability, generation, budget, and standard-library authority.
+- The Chrome Band and Chrome Surface candidates retain draft geometry and API
+  spellings; no status-specific API is accepted here.
+
+## Open points
 
 - Exact `StatusComponent` schema fields and their bounded lengths beyond the
   illustrative set above.
@@ -426,6 +457,21 @@ This draft does not close an open question on its own; it will track to the
 owning status-system question once that question is recorded in the
 [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) or close directly as
 a standalone specification per the [documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md).
+
+## Acceptance criteria
+
+The draft is not accepted by this correction. Later acceptance requires the
+negative and headless tests in Verification plan, a bounded component schema
+and cadence rules, and independent security review. Bar composition must stay
+plugin-owned, privileged metrics mediated, and all status execution off the
+PTY, parser, input, and render hot paths. Zero-plugin and safe-mode operation
+must require no bar, draw no Core strip, and reserve no workspace band.
+
+## P0 Review Sign-off
+
+Pending: Verification plan requires security-reviewer sign-off on ambient
+authority, parsing bounds, and Terminal Truth isolation. No sign-off, test
+result, or `Verified` status is supplied by this draft's form correction.
 
 ## References
 
