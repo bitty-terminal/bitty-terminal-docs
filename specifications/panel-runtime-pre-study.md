@@ -20,10 +20,9 @@ Section organization follows the specification form; the original archived body,
 > (docs `CTX-0181`, 2026-09-14), which promotes its contract content. Do not
 > treat this document as current advice; the RFC is authoritative and the open
 > questions below are carried forward there as `RFC-OQ-1` through `RFC-OQ-9`.
-> The text is retained unchanged for provenance except this banner and the
-> frontmatter `status`. Example owner handles and placeholder home paths in the
-> retained body are historical and were not rewritten; the accepted RFC carries
-> the current neutralized examples.
+> The historical technical content, dated status/evidence, and supersession
+> record are retained. Example owner identifiers and paths are neutralized;
+> this does not revise the archived technical proposals.
 >
 > Archived status: this document was published as a **draft** research pre-study,
 > and it is not **Accepted**, not **Verified**, not
@@ -107,7 +106,7 @@ and does not close an open question on its own.
 | `PanelType`     | Closed v1 candidate set contributed by a `PanelProvider` (for example `terminal`, `rich`, `browser`, `helper`, `canvas`), validated via manifest |
 | `PanelRuntime`  | Core-owned host that creates, mounts, suspends, resumes, and disposes panels, validates `PanelId` plus generation, and mediates bus traffic      |
 | `PanelProvider` | Plugin-supplied factory that declares one or more `PanelType` values; requires `panel.provider` capability                                       |
-| `EventTopic`    | Qualified `owner.name:topic` identifier for inter-panel messages, for example `xuepoo.git:branch-changed`                                        |
+| `EventTopic`    | Qualified `owner.name:topic` identifier for inter-panel messages, for example `example.git:branch-changed`                                       |
 | `Overlay`       | Ephemeral presentation surface (palette, modal, tooltip, candidate picker) owned by the compositor, not a tiling leaf                            |
 | `Focus`         | Which `View` or `Panel` inside the active `Workspace` of the active `Window` owns keyboard, IME preedit, and wheel routing                       |
 
@@ -241,7 +240,7 @@ The command registry remains Core-owned and generation-aware per the accepted
 [CLI Contract RFC](cli-contract-rfc.md) direction:
 
 1. Panels contribute commands as qualified names `owner.name:command`, for
-   example `xuepoo.git:open`. Registration is manifest-declared and validated
+   example `example.git:open`. Registration is manifest-declared and validated
    at graph construction; duplicates across providers are rejected, not shadowed.
 2. Command dispatch is the only way a panel exposes invocable behavior; there
    is no direct hook into the compositor or terminal hot path.
@@ -385,10 +384,10 @@ Illustrative shape only:
 ```lua
 -- Candidate shape only; not an implemented API.
 -- Manifest-declared topics; payloads are typed, bounded, immutable.
-bitty.bus.emit("xuepoo.files:file.open", { path = "/home/user/main.rs" })
+bitty.bus.emit("example.files:file.open", { path = "src/main.rs" })
 
-bitty.bus.on("xuepoo.files:file.open", function(event)
-  bitty.commands.invoke("xuepoo.editor:open", event.path)
+bitty.bus.on("example.files:file.open", function(event)
+  bitty.commands.invoke("example.editor:open", event.path)
 end)
 ```
 
@@ -450,7 +449,7 @@ Rules under research:
 3. Official and bundled panels pass through the identical capability model; no
    private channel and no first-party bypass.
 4. Bus topics reuse the topic-declared capability rule above: subscribing to
-   `xuepoo.git:branch-changed` needs at least a workspace-observation scope,
+   `example.git:branch-changed` needs at least a workspace-observation scope,
    while subscribing to a topic that carries clipboard or raw-terminal bytes
    needs that specific family; capability checks are synchronous and
    transactional (leave no partial state on denial).

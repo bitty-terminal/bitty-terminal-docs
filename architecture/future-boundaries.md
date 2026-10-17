@@ -20,8 +20,8 @@ the evolution companion to [Core and Plugin Boundaries](core-boundaries.md)
 here weakens any normative P0 gate. Candidate text here does not authorize
 shipped, stable, or compatibility-guaranteed behavior.
 
-Provenance: extracted from `core-boundaries.md` by CTX-0007 so that each
-document carries one truthful machine-readable status.
+Candidate mechanisms are documented separately from accepted ownership so that
+each document carries one truthful machine-readable status.
 
 ## Purpose and scope
 
@@ -69,11 +69,17 @@ If the answer is yes, it should preferentially be a plugin.
 If adopted, this rule will matter more than a permanently frozen feature list.
 New requirements should pass through these two questions first.
 
-## Candidate 009 cross-cutting rules
+<!-- markdownlint-disable MD033 -->
 
-The following rules are candidates from the platform-architecture research
-direction. They refine the candidate decision rule above; they do not change
-any accepted ownership table and do not weaken any normative P0 gate.
+<a id="candidate-009-cross-cutting-rules"></a>
+
+<!-- markdownlint-enable MD033 -->
+
+## Candidate platform evolution rules
+
+The following rules are candidates for platform evolution. They refine the
+candidate decision rule above; they do not change any accepted ownership table
+and do not weaken any normative P0 gate.
 
 ### Primitive-or-composable test
 
@@ -146,8 +152,7 @@ open items above still require their own RFCs.
 
 ## Candidate network boundary: Core never talks to the network
 
-Status: **candidate direction, non-normative** (user architecture note,
-bitty-docs CTX-0201 / bitty-docs#288,
+Status: **candidate direction, non-normative** (network-boundary direction,
 [DIR-016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)).
 Nothing here changes any accepted ownership table in
 [Core and Plugin Boundaries](core-boundaries.md) and nothing here weakens any
@@ -159,7 +164,7 @@ terminal: `bitty` runs without git, curl, or network access.
 
 - **Core (never network).** The crates that own terminal truth, state,
   rendering, configuration, and plugin hosting must never depend on the
-  network. The user note names `bitty-core`, `bitty-terminal`, `bitty-render`,
+  network. The candidate names `bitty-core`, `bitty-terminal`, `bitty-render`,
   `bitty-panel`, `bitty-plugin-host`, and `bitty-config` (and by extension
   `bitty-ai-core` / `bitty-agent`). The current crate topology is fixed in
   [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md);
@@ -188,16 +193,22 @@ registry-via-git) are canonical in
 [Plugin package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md)
 (candidate section); this document records only the Core boundary half.
 
-## Candidate network invariant and transport rules (029 refinement)
+<!-- markdownlint-disable MD033 -->
 
-Status: **candidate direction, non-normative** (network-capability model, bitty-docs CTX-0202 / bitty-docs#290,
+<a id="candidate-network-invariant-and-transport-rules-029-refinement"></a>
+
+<!-- markdownlint-enable MD033 -->
+
+## Candidate network invariant and transport rules
+
+Status: **candidate direction, non-normative** (network-capability model,
 [DIR-017](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)).
-It refines the CTX-0201 network-boundary candidate
-([DIR-016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md),
-PR #27) by reference and records only what 029 adds: the precise invariant,
-the three rules, the system-capability principle, and condensed terminal
-evidence. It duplicates no CTX-0201 mechanics. Nothing here changes any
-accepted ownership table in [Core and Plugin Boundaries](core-boundaries.md),
+It refines the network-boundary candidate above
+([DIR-016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md))
+by reference and records the precise invariant, the three rules, the
+system-capability principle, and condensed terminal evidence. It duplicates no
+network-boundary mechanics. Nothing here changes any accepted ownership table in
+[Core and Plugin Boundaries](core-boundaries.md),
 nothing here weakens any normative P0 gate, and nothing here claims
 implementation.
 
@@ -256,10 +267,10 @@ canonical in
 (candidate section); registry-via-git distribution and the `bitty.lock`
 (source, version, revision) reproducibility record stay canonical in
 [Plugin package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md)
-(CTX-0201 candidate section, extended by reference only); the AI
+(network-boundary candidate section, extended by reference only); the AI
 provider/transport split is an ai-docs rollout follow-up owned by the ai-docs
 owners (DIR-017 records the direction; this repository records only the rules
-above). Enforcement stays as recorded in the CTX-0201 candidate
+above). Enforcement stays as recorded in the network-boundary candidate
 (dependency-DAG test rejecting network-capable dependencies in Core crates);
 this refinement adds no new mechanism.
 
@@ -303,7 +314,7 @@ The accepted ownership tables in [Core and Plugin Boundaries](core-boundaries.md
   (candidate; refines the source-trust item without changing accepted
   ownership).
 - Whether the precise `MUST NOT initiate` invariant (DIR-017, refining the
-  CTX-0201 wording) is accepted, and how the dependency-DAG enforcement test
+  network-boundary wording) is accepted, and how the dependency-DAG enforcement test
   is owned. The accepted
   [`W-72` package-manager boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/package-manager-boundary.md)
   carries the Core-never-network invariant for the package path and makes
