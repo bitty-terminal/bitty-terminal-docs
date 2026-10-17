@@ -11,7 +11,9 @@ sidebar_order: 15
 
 # Configuration Model RFC
 
-## Status
+## Document status
+
+### Status
 
 Accepted on 2026-08-27 by the project initiator. This RFC defines the accepted
 configuration model; it does not claim shipped, stable, or compatibility-guaranteed
@@ -34,7 +36,9 @@ OQ-011/OQ-012 (plugin-facing configuration surfaces), OQ-017 (CLI grammar for
 coexistence), and budgets PB-1/PB-2 in the
 [Performance Budget RFC](performance-budget-rfc.md).
 
-## Problem statement
+## Purpose and scope
+
+### Problem statement
 
 OQ-010 asks: _are declarative `ConfigPlan` generation and Rust reconciliation
 adopted, and how do XDG layers, profiles, merge rules, reload, and project
@@ -44,7 +48,11 @@ rules, profiles, and trust behavior were recorded as candidate contracts in
 [Lua and XDG configuration](../configuration/lua-and-xdg.md) and are now
 adopted by this RFC, which defines failure semantics and reload classification.
 
-Normative sources this specification must not weaken:
+Out of scope: which Lua VM executes the configuration (OQ-009), package
+manifest/lock file formats (OQ-021/OQ-022), plugin capability grants
+(OQ-012), and concrete CLI flag grammar (OQ-017).
+
+## Normative sources this specification must not weaken
 
 - [Security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md): user `init.lua` is trusted code
   evaluated in a Config VM toward a validated plan; system/distribution
@@ -59,9 +67,14 @@ Normative sources this specification must not weaken:
   canonical terminal state are core-owned; configuration can parametrize
   policy within bounds the schema declares, never bypass it.
 
-Out of scope: which Lua VM executes the configuration (OQ-009), package
-manifest/lock file formats (OQ-021/OQ-022), plugin capability grants
-(OQ-012), and concrete CLI flag grammar (OQ-017).
+## Terminology
+
+- ConfigPlan: the declarative data produced by Lua before typed validation,
+  merge, diff, and reconciliation.
+- Canonical settings file: the owner-qualified Lua settings file selected
+  before a short-name compatibility alias.
+- Implemented-only: merged source evidence without independent verification
+  or a stable compatibility promise.
 
 ## Pipeline candidates
 
@@ -304,8 +317,9 @@ middle-click paste acceptance, deferred under CTX-0158.
 
 ## Plugin settings plane
 
-Status: **shipped mechanics** (read-only from merged Core `origin/main` at
-`662212c5`, Core2192, `bitty` #2057 closing #2010). Optional per-plugin user settings
+Status: **implemented-only** (Core2192 settings and Core PR #2198 diagnostics,
+read-only from merged Core `1c68de2545c961790d0a2011340e4a3c04564ab7`;
+`bitty` #2057 closed #2010). Optional per-plugin user settings
 files use a restricted plain-data Lua VM and override manifest defaults
 through the same settings source that serves `bitty.settings.get`. Values are
 the user's, authority is the system's (non-delegable): no config value grants
@@ -329,10 +343,11 @@ to the manifest hash, and settings declarations intentionally stay out of
    access the network.
    It uses the RC-1/RC-2 model of 10,000,000 instructions, 50 ms wall time,
    and a 32 MiB accounted heap. The loader caps source bytes at 16 KiB;
-   extraction caps depth at 16, table entries at 64, values at 256, strings at
+   extraction caps depth at 16, entries per table at 64, values at 256, strings at
    2,048 bytes, and aggregate output at 16 KiB. The manifest declares at most
    32 keys. The legacy TOML subset remains a compatibility fallback only when
-   no canonical or eligible alias Lua file is selected.
+   no canonical or eligible alias Lua file is selected. Its separate parser
+   bounds are listed in the [configuration reference](../reference/configuration-options.md).
 3. **Precedence and failure.** Per declared key: shipped default, then the
    shared host source, then canonical Lua — each step gated on strict type
    agreement with no coercion. A canonical `<owner>.<name>.lua` wins over the
@@ -361,10 +376,14 @@ selection, sandbox, merge, and fail-closed behavior. See the authoritative
 [settings reference](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/reference/settings.md).
 
 Diagnostics for alias ambiguity, canonical-over-alias shadowing, dropped
-entries, and rejected files belong to the separately tracked Core PR2198
-candidate (reviewed source head `fc1d5a0c`; local integration candidate
-`c83ffd5a`). This RFC does not claim those diagnostics are merged into the
-current documented contract.
+entries, and rejected files are **implemented-only** in merged Core PR
+[#2198](https://github.com/bitty-terminal/bitty/pull/2198) at
+`1c68de2545c961790d0a2011340e4a3c04564ab7`. They remain in host-owned
+per-generation state and are read by terminal startup logging; they are not
+Lua-visible, independently Verified, or a stable public diagnostics contract.
+The pinned [settings loader](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790d0a2011340e4a3c04564ab7/crates/bitty-runtime/src/plugin_runtime/plugin_settings.rs)
+and [plain-data evaluator](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790d0a2011340e4a3c04564ab7/crates/bitty-lua/src/plain_config.rs)
+provide implementation evidence, without changing this RFC's accepted model.
 
 ## Reload classification
 
@@ -414,7 +433,9 @@ that skips all external configuration and plugins regardless of configuration
 health (R-009). These behaviors are obligations of the accepted pipeline;
 Candidate B would have to reprove them if ever reconsidered.
 
-## Security review notes
+## Security review
+
+### Security review notes
 
 The declarative-plan direction strengthens the P0 posture: side-effect-free
 evaluation keeps project and distribution content inert until trust decisions
@@ -426,7 +447,33 @@ security-relevant or policy-owned fields, if that overlay RFC is later accepted.
 No control here downgrades the normative baseline; thresholds and enforcement
 evidence remain with the security corpus.
 
-## Open items remaining under OQ-010
+## Verification plan
+
+Check the two-stage pipeline, source attribution, typed rejection, merge
+identity, reload classification, trust binding, and safe-mode recovery against
+the owning implementation before claiming Verified behavior. For plugin settings,
+compare the pinned sources above and the
+[configuration reference](../reference/configuration-options.md), including
+Lua limits, separate TOML fallback limits, canonical/alias selection, and
+host-internal diagnostics. Documentation corrections must pass repository
+formatting, link, metadata, language, and hygiene gates.
+
+## Alternatives considered
+
+[Pipeline candidates](#pipeline-candidates) records Candidate A as accepted,
+Candidate B as rejected, and Candidate C as deferred. This evidence correction
+does not reconsider those dispositions.
+
+## Affected contracts
+
+The accepted model depends on OQ-009 and feeds OQ-011/OQ-012, OQ-017, and
+OQ-021/OQ-022 as listed in [Status](#status). Plugin settings retain the
+ecosystem-owned API and capability boundary. No policy, schema, or installation
+contract changes with the merged-source status and bounds correction.
+
+## Open points
+
+### Open items remaining under OQ-010
 
 The following items were open at proposal and are now dispositioned upon
 acceptance on 2026-08-27. Acceptance of this RFC closes OQ-010 at the design
@@ -455,3 +502,24 @@ Closes OQ-010: this RFC closes OQ-010 at the design level; the register row is
 updated per the open-question register rules. Candidate A is the accepted v1
 pipeline and Candidate C is deferred, retained from the Wave-C P1 winner note
 without remaining OQ-010 scope.
+
+## Acceptance criteria
+
+The accepted pipeline, precedence, merge, reload, failure, and trust obligations
+must remain consistent with the normative security sources. Implementation
+claims must distinguish merged evidence from independent verification, and
+settings limits must match the owning Lua loader or TOML fallback parser.
+
+## P0 Review Sign-off
+
+The design acceptance recorded above remains in effect. This documentation
+correction records no new P0 sign-off, Verified behavior, or security-risk
+closure. Independent post-merge review remains required before task acceptance.
+
+## References
+
+- [Lua configuration and filesystem layout](../configuration/lua-and-xdg.md).
+- [Configuration options reference](../reference/configuration-options.md),
+  including pinned Lua budget and TOML parser sources.
+- [Core PR #2198](https://github.com/bitty-terminal/bitty/pull/2198): merged
+  host-internal settings diagnostics.

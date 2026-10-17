@@ -14,8 +14,9 @@ sidebar_order: 30
 ## Status and provenance
 
 - Status: **draft**. This page is a lookup reference, not a stability
-  promise. Core2192 plugin-settings rows below are read-only evidence from
-  merged Core `origin/main`; unrelated rows retain their own implementation,
+  promise. Core2192 plugin-settings rows and Core PR #2198 diagnostics below
+  are implemented-only evidence from merged Core
+  `1c68de2545c961790d0a2011340e4a3c04564ab7`; unrelated rows retain their own implementation,
   candidate, or gap status.
 - Ownership: `bitty-terminal-docs` **CTX-0059** renders this inventory; the
   `bitty` repository owns the schemas, defaults, validation, and tests it
@@ -38,6 +39,12 @@ sidebar_order: 30
   Nothing below has shipped as a stable contract in any release, and rows
   marked **gap** name behavior the code does not own yet instead of
   inventing it.
+
+## Purpose and scope
+
+This reference inventories configuration inputs, validation bounds, precedence,
+and reload behavior. The plugin settings section records merged implementation
+evidence relevant to 0.0.24; it does not introduce a schema or policy change.
 
 ## How to read the tables
 
@@ -94,23 +101,51 @@ only when complete discovery proves that exactly one plugin owns `<name>`.
 Ambiguous aliases, disabled installed claimants, invalid candidates, and
 incomplete discovery fail closed. The canonical file wins over the alias.
 
-| Bound                        | Value                                                  | Fail-closed                               |
-| ---------------------------- | ------------------------------------------------------ | ----------------------------------------- |
-| VM budgets                   | 10,000,000 instructions / 50 ms / 32 MiB heap          | evaluation suspends or rejects            |
-| File size / lines / line len | at most 16 KiB / 512 lines / 1024 bytes per line       | rejected file falls back wholesale        |
-| Manifest declarations        | at most 32 keys; names at most 64 bytes                | invalid manifest rejected                 |
-| String values                | at most 512 bytes, no NUL                              | fail to default for that key              |
-| String arrays                | at most 32 items, each at most 128 bytes, strings only | fail to default for that key              |
-| Type agreement               | strict, no coercion; undeclared keys unreadable        | fail to default / `E_SETTINGS_UNDECLARED` |
+The Lua loader sets `PlainConfigLimits.source_bytes` to 16 KiB and uses the
+remaining plain-data limits below. The generic evaluator's source default is
+64 KiB; it does not override this narrower plugin settings loader cap.
+
+| Lua bound               | Value                                           | Fail-closed                                        |
+| ----------------------- | ----------------------------------------------- | -------------------------------------------------- |
+| RC-1 execution          | 10,000,000 instructions / 50 ms wall time       | rejected file uses lower layers                    |
+| RC-2 memory             | 32 MiB accounted VM heap                        | rejected file uses lower layers                    |
+| Source bytes            | at most 16 KiB                                  | rejected file uses lower layers                    |
+| Extraction depth        | at most 16                                      | rejected file uses lower layers                    |
+| Entries per table       | at most 64                                      | rejected file uses lower layers                    |
+| Values in returned tree | at most 256                                     | rejected file uses lower layers                    |
+| Bytes per string        | at most 2,048                                   | rejected file uses lower layers                    |
+| Aggregate output        | at most 16 KiB, including structural overhead   | rejected file uses lower layers                    |
+| Manifest declarations   | at most 32 keys; names at most 64 bytes         | invalid manifest rejected                          |
+| Type agreement          | strict, no coercion; undeclared keys unreadable | lower layer for that key / `E_SETTINGS_UNDECLARED` |
 
 Precedence per declared key: shipped default < shared host source < canonical
 Lua file. A wrong-typed value fails to the lower layer for that key; a
 malformed or rejected Lua file falls back wholesale and never aborts startup.
 If neither a canonical nor an eligible alias Lua file is selected, legacy
 `<owner>.<name>.toml` is used as a compatibility fallback with the same strict
-declaration and bound rules.
-`bitty-plugins.toml` stays machine-only. Diagnostics added by Core PR2198 are
-candidate-only and are not a current stable or shipped diagnostics contract.
+declaration and type rules, but its own parser bounds:
+
+| Legacy TOML fallback bound            | Value                                                  | Fail-closed                     |
+| ------------------------------------- | ------------------------------------------------------ | ------------------------------- |
+| Source bytes / lines / bytes per line | at most 16 KiB / 512 lines / 1,024 bytes               | rejected file uses lower layers |
+| Keys per file                         | at most 64; duplicates rejected                        | rejected file uses lower layers |
+| String values                         | at most 512 bytes, no NUL                              | lower layer for that key        |
+| String arrays                         | at most 32 items, each at most 128 bytes, strings only | lower layer for that key        |
+
+`bitty-plugins.toml` stays machine-only. Core PR
+[#2198](https://github.com/bitty-terminal/bitty/pull/2198) diagnostics for alias
+ambiguity, canonical-over-alias shadowing, dropped entries, and rejected files
+are **implemented-only** at merged Core
+`1c68de2545c961790d0a2011340e4a3c04564ab7`. The host retains them per plugin
+generation and the terminal logs them at startup. They are host-internal,
+not Lua-visible or independently Verified; no stable public diagnostics
+contract is claimed.
+
+Source evidence at that revision:
+[settings loader](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790d0a2011340e4a3c04564ab7/crates/bitty-runtime/src/plugin_runtime/plugin_settings.rs),
+[plain-data limits](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790d0a2011340e4a3c04564ab7/crates/bitty-lua/src/plain_config.rs),
+[RC-1/RC-2 constants](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790d0a2011340e4a3c04564ab7/crates/bitty-lua/src/lib.rs),
+and [TOML parser](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790d0a2011340e4a3c04564ab7/crates/bitty-config/src/plugin_file.rs).
 
 ## Core options (`init.lua` top level and tables)
 
