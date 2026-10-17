@@ -304,13 +304,13 @@ middle-click paste acceptance, deferred under CTX-0158.
 
 ## Plugin settings plane
 
-Status: **shipped mechanics** (read-only from `bitty` `origin/main`,
-CTX-1195, `bitty` #2057 closing #2010). Optional per-plugin user files
-override shipped manifest defaults through the same settings source that
-serves `bitty.settings.get`. Values are the user's, authority is the
-system's (non-delegable): no config value grants anything — grants still
-come only from manifest declaration plus consent bound to the manifest
-hash, and settings declarations intentionally stay out of
+Status: **shipped mechanics** (read-only from merged Core `origin/main` at
+`662212c5`, Core2192, `bitty` #2057 closing #2010). Optional per-plugin user settings
+files use a restricted plain-data Lua VM and override manifest defaults
+through the same settings source that serves `bitty.settings.get`. Values are
+the user's, authority is the system's (non-delegable): no config value grants
+anything — grants still come only from manifest declaration plus consent bound
+to the manifest hash, and settings declarations intentionally stay out of
 `canonical_bytes`, so value declarations never invalidate grant pins.
 
 1. **Declarations.** The manifest `[settings]` section declares at most
@@ -320,30 +320,51 @@ hash, and settings declarations intentionally stay out of
    kind and bound. Unknown types, type/default disagreement, quota or
    duplicate violations, and out-of-bound defaults fail manifest validation
    closed.
-2. **Files.** One TOML-subset file per plugin at
-   `<config-dir>/plugins/<owner>.<name>.toml` (env-derived config dir:
-   XDG/APPDATA/HOME, never hardcoded). Files are data, never code: flat
-   scalars plus string arrays only, no exec/include/shell. File bounds are
-   `16` KiB / `512` lines / `1024` bytes per line / `64` keys / `512`-byte
-   strings / `32` string items of `128` bytes each; duplicate keys fail.
+2. **Files.** One canonical restricted Lua file per plugin at
+   `<config-dir>/plugins/<owner>.<name>.lua` (env-derived config dir:
+   XDG/APPDATA/HOME, never hardcoded). It must return a plain table of
+   booleans, integers, strings, and string arrays. The settings VM has no host
+   callbacks, `print`, `tonumber`, `io`, `os`, `debug`, `package`, `require`,
+   `load`, `loadfile`, or `dofile`; it cannot read files, spawn processes, or
+   access the network.
+   It uses the RC-1/RC-2 model of 10,000,000 instructions, 50 ms wall time,
+   and a 32 MiB accounted heap. The loader caps source bytes at 16 KiB;
+   extraction caps depth at 16, table entries at 64, values at 256, strings at
+   2,048 bytes, and aggregate output at 16 KiB. The manifest declares at most
+   32 keys. The legacy TOML subset remains a compatibility fallback only when
+   no canonical or eligible alias Lua file is selected.
 3. **Precedence and failure.** Per declared key: shipped default, then the
-   shared host source, then the user file — each step gated on strict type
-   agreement with no coercion, wrong-typed values failing to the default
-   for that key. A malformed file falls back wholesale to the lower layers
-   with a diagnostic, never aborting startup.
+   shared host source, then canonical Lua — each step gated on strict type
+   agreement with no coercion. A canonical `<owner>.<name>.lua` wins over the
+   unique short alias `<name>.lua`; the alias is admitted only after complete
+   discovery proves one owner and fails closed for collisions, disabled
+   claimants, invalid candidates, or incomplete discovery. A malformed or
+   rejected Lua file falls back wholesale to lower layers and never aborts
+   startup; it does not fall through to an alias or TOML file.
 4. **Read gate.** `bitty.settings.get` reads only the generation's declared
    set; an undeclared key fails closed with `E_SETTINGS_UNDECLARED`, so
    settings are never a side channel between plugins. Each generation holds
    its own resolved map; cross-plugin reads fail closed structurally and at
    the gate. Tables are deferred: table values fail to the default for that
    key.
-5. **`bitty-plugins.toml` is untouched**: it stays machine-only. Symlinked
-   user files are followed as standard XDG config behavior; values stay
-   typed per declaration.
+5. **`bitty-plugins.toml` is untouched**: it stays machine-only. User file
+   reads use the Core file-type restrictions, and values stay typed per
+   declaration.
 
 The bar plugin is the first customer, wired end-to-end as proof with its
 declaration (`show`, `edge`, `show_single`, `name_max_chars` plus a
 `modules` string array); its Lua `read_settings` pattern runs unchanged.
+
+The plugin ecosystem owns the public `bitty.settings` API vocabulary and
+capability boundary; this terminal-platform RFC records only the Core file
+selection, sandbox, merge, and fail-closed behavior. See the authoritative
+[settings reference](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/reference/settings.md).
+
+Diagnostics for alias ambiguity, canonical-over-alias shadowing, dropped
+entries, and rejected files belong to the separately tracked Core PR2198
+candidate (reviewed source head `fc1d5a0c`; local integration candidate
+`c83ffd5a`). This RFC does not claim those diagnostics are merged into the
+current documented contract.
 
 ## Reload classification
 

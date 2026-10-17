@@ -451,6 +451,11 @@ not accept the rest of the tree or its other subtrees.
 Status: **implemented-only evidence** from `bitty` PR #2153 and PR #2157
 (0.0.24); this does not make the broader CLI candidate contract stable.
 
+Profile-backed `bitty init` from Core issue #2187 is explicitly deferred to
+the post-0.0.24 release-tail gate. It is a future P0/P1 release-preparation
+item, not a current implementation or contract, and this page does not claim
+that the wizard creates or selects profiles.
+
 - The interactive TTY wizard uses single-keypress navigation for option
   pickers. Arrow keys and `j`/`k` move immediately, Enter selects the current
   entry, and the bounded escape-sequence reader preserves a lone Escape as
