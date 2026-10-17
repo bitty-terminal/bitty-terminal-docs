@@ -410,34 +410,63 @@ loading the plugin VM. `bitty --help` should place optional aliases under an
 Package lifecycle and external executable extensions are covered in
 [Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md).
 
-## Shipped slice: `bitty plugin` management
+## Implemented slice: `bitty plugin` management
 
-Status: **implemented local-class slice** (read-only from `bitty` `origin/main`,
-CTX-0150, `bitty` #483 commit `95c2b23`, closes `bitty` #244; merged to `bitty`
-origin `main`, verified read-only via `merge-base --is-ancestor`). This section
-records the first implemented subtree of the candidate contract above; it does
-not accept the rest of the tree or its other subtrees.
+Status: **implemented-only, source-qualified** at `bitty`
+`1c52ba7617e4c42d2fde06c5b318ebefc54aec3b` (PR #2212). The original
+bundled-only v1 slice (`95c2b23`, #483, CTX-0150) rejected Git and local-path
+sources; that is a historical observation, not the current source behavior.
+This section does not claim a shipped 0.0.24 release, a stable CLI, complete
+security acceptance, or implementation of the other candidate subtrees.
 
-- Verbs: `bitty plugin list|install|remove|enable|disable|info`. `list` and
+- Verbs: `bitty plugin list|install|remove|enable|disable|info|revoke`. `list` and
   `info` accept `--format table|json|jsonl` (default `table`) and `--no-color`.
-- Class: local only — no instance, no IPC, no plugin VM, and no plugin code
-  is loaded or executed (safe-mode clean). v1 `install` resolves the bundled
-  catalog; registry, Git, and local-path sources fail closed until the package
-  manager lands.
-- Durable state: exactly one managed manifest at
+- Class: management needs no running instance, IPC, or plugin VM, and loads or
+  executes no package code. Store inspection and state changes are local/offline;
+  Git acquisition uses the network and system `git`, while archive extraction
+  uses system helpers. Installation is therefore not universally offline.
+- Sources: `bitty plugin install <source> [--yes]` accepts a bundled ID, a
+  local plugin directory, a local `.tar.gz`/`.tgz`/`.tar.zst`/`.zip` archive,
+  or an allowlisted Git spelling: `https://<host>/<path>.git`,
+  `git+https://<host>/<path>.git`, or `git@<host>:<path>`. Git checkout and
+  archive extraction converge on the local-directory validation and consent
+  pipeline. Unsupported schemes and malformed sources fail closed; this does
+  not add a registry-install route. Source operands remain bounded to 256 bytes.
+- Durable state: the bundled managed manifest lives at
   `$XDG_CONFIG_HOME/bitty/bitty-plugins.toml` (or beside an explicit
   `--config`), a strict bounded TOML subset; unknown keys, duplicates,
   malformed values, over-limit files, and unknown versions fail closed before
-  any mutation. The Lua `init.lua` is never rewritten.
-- Capability consent: `install` pins `PluginManifest::manifest_hash()` and
-  grants the requested capability set only after explicit consent (`--yes` or
-  an interactive `[y/N]` that fails closed on EOF); a capability increase on
-  an existing record blocks until re-approved while narrowed sets carry
-  forward. `enable` re-checks the pin and grant coverage; `remove` requires
-  `--force` and keeps a `.bak`.
+  any mutation. Store installs instead use
+  `$XDG_DATA_HOME/bitty/plugins/current.json` and versioned package trees under
+  `packages/<id>/<version>/`. The user's configuration `init.lua` is never
+  rewritten by these management operations.
+- Capability consent: new requested capabilities require explicit approval
+  (`--yes` or an interactive `[y/N]` that fails closed on EOF). Store consent
+  binds to the staged snapshot, including manifest hash and content digest;
+  a capability increase blocks until approved, while unchanged or narrowed
+  sets carry forward. Decline or EOF returns before committing the new package
+  version or index, preserving the existing record and grants. Temporary staging
+  and housekeeping may occur before consent.
+- First activation: a fresh CLI local, Git, or archive install records the
+  package **disabled**, even with `--yes` or no requested capabilities.
+  `bitty plugin enable <id>` separately authorizes future discovery and
+  activation; it updates desired state without executing the package. Startup
+  discovery skips disabled store records before resolving their packages.
+  Resolution and activation retain integrity, compatibility, safe-mode, and
+  recorded-grant checks; enablement does not bypass them or promise immediate
+  changes to an already-running generation.
+- Updates and boundaries: store updates/reinstalls preserve the existing
+  enabled or disabled state, including after approved capability changes.
+  This CLI policy selects `LocalInstallOptions::staged_and_disabled()`; the
+  public library default remains `enable = true, explicit_override = None`.
+  Bundled install/enable behavior is unchanged: bundled `enable` re-checks the
+  manifest pin and grant coverage. `revoke <id> [--cap <capability>]` operates
+  on bundled managed records; store grants are reset by removal and reinstall.
+  `remove` requires `--force`; bundled state mutation retains its `.bak`.
 - Exit codes: `0` success (including idempotent no-op toggles), `1` declined
-  consent or post-approval filesystem failure, `2` usage error, `4` plugin
-  error (unknown/non-bundled id, invalid or corrupt manifest, pin mismatch,
+  consent, aborted prompt, filesystem or fetch-helper failure, `2` usage error,
+  `4` plugin error (unknown ID, invalid or corrupt manifest, rejected source,
+  hostile archive, pin mismatch,
   uncovered grant, blocked capability increase).
 - Post-install guidance (implemented-only, `bitty` #2144, PR #2154): a
   successful `plugin install` or `plugin enable` prints the enable command,
@@ -450,6 +479,20 @@ not accept the rest of the tree or its other subtrees.
 - Deliberate non-goals in this slice: no `bitty x` execution, no top-level
   aliases, no dynamic plugin namespace, and no plugin completion integration —
   those stay candidate contract above.
+
+Evidence: the pinned
+[CLI parser and acquisition paths](https://github.com/bitty-terminal/bitty/blob/1c52ba7617e4c42d2fde06c5b318ebefc54aec3b/crates/bitty-terminal/src/plugin.rs),
+[package transactions](https://github.com/bitty-terminal/bitty/blob/1c52ba7617e4c42d2fde06c5b318ebefc54aec3b/crates/bitty-runtime/src/plugin_runtime/package.rs),
+[discovery and activation](https://github.com/bitty-terminal/bitty/blob/1c52ba7617e4c42d2fde06c5b318ebefc54aec3b/crates/bitty-runtime/src/plugin_runtime/mod.rs),
+and [CLI tests](https://github.com/bitty-terminal/bitty/blob/1c52ba7617e4c42d2fde06c5b318ebefc54aec3b/crates/bitty-terminal/tests/cli_plugin.rs)
+support these source observations. Tests cover local fresh-disabled installs,
+explicit enable followed by v1/v3 activation, preserved enabled/disabled update
+state, and exact index/grant preservation on decline and EOF. They do not
+establish successful Git transport, activation of the enabled v2 update, or an
+instrumented zero-invocation proof. Archive tests cover installation but do not
+assert the disabled bit; its policy follows the shared source tail. No new
+product execution is implied by this documentation. For the review procedure,
+see [Review Extension Source and Consent](../how-to/review-extension-source-and-consent.md).
 
 ### `bitty init` and startup presentation
 
