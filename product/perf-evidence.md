@@ -193,31 +193,60 @@ one machine, not a cross-platform claim; budgets stay arch constraints until
 Tier 1 reference hardware is pinned (PERF-01/OQ-100). This doc still changes
 no budget and claims no `Verified` gate.
 
-### Headed idle RSS baseline CTX-1211d and render optimization log
+### Headed idle RSS methodology and unverified candidate captures
 
-Candidate headed measurements plus the merged render optimizations since
-`terminal-docs` #218. Budgets are unchanged; none of this is a compliance
-claim.
+This section defines the headed measurement method for the merged render
+optimizations since `terminal-docs` #218. Budgets are unchanged; this section
+makes no compliance or reduction claim. The candidate numeric captures
+previously described here are unavailable and unverified in this repository:
+the docs and source checkouts contain no tracked `summary.txt`, driver record,
+or equivalent capture artifact from which to verify them. They are therefore
+not repository evidence and no values or provenance are asserted here.
 
-Baseline (`bitty` #2087, CTX-1211d, main `2f34490d`, release, idle 30 s,
-same-protocol headed runs; evidence
-`recording/headed/runs/ctx-1211d-20261014T1955Z/` in `bitty`, local only):
+Future comparisons must use the same binary protocol, hardware and operating
+system, graphics driver version, launch configuration, and settle period for
+both sides of a comparison. The same-driver/same-settle requirement is
+necessary because driver mappings and post-device faulting can change process
+RSS independently of terminal-owned memory. Each capture should retain the
+driver record and the complete summary alongside the source revision and
+measurement conditions.
 
-| Run                    | VmRSS   | Anon | RssFile | Shmem |
-| ---------------------- | ------- | ---- | ------- | ----- |
-| Oct-9 mem run          | 132.8MB | 25MB | 88MB    | 19MB  |
-| CTX-1211d (post-#2083) | 178MB   | 42MB | 118MB   | 19MB  |
+The measurement summary should retain the process-level `RSS_KB` and a pmap
+attribution split. `PMAP_RSS_KB` is the pmap total, not `/proc` `RssFile`:
 
-RssFile remains the top driver (66%). The +45MB gap bisects into
-driver-resident pages, not `bitty`-owned memory (`bitty` CTX-1216, #2090):
-a driver upgrade alone (615.71.09 to 615.78.08) moves about +35MB of
-driver-resident RSS for the same binary, post-device faulting varies about
-50MB run to run for identical launches, and the `bitty`-linked owned set is
-flat near 28MB in every sample. Two headed runs compare only when the driver
-version and settle age match; `scripts/mem-measure.sh` now records
-`driver.txt` and splits pmap RSS into `DRIVER_RSS_KB`, `ANON_RSS_KB`, and
-`OWNED_OTHER_KB` in `summary.txt`. The interim headed gate stays idle
-single-panel main-process RSS at or below 250MB toward the 150MB budget.
+- `DRIVER_RSS_KB` is named NVIDIA/Vulkan/GL/VkLayer resident mappings that the
+  terminal does not control.
+- `ANON_RSS_KB` is every anonymous mapping, including heap and driver arenas
+  that cannot be separated by mapping name.
+- `OWNED_OTHER_KB` is the remaining named set, including the binary, libc, and
+  fonts. A product-owned regression should appear here or in the heap portion
+  of `ANON_RSS_KB`, not be attributed to the driver line.
+
+The split is attribution evidence, not an exact reconstruction of process
+RSS. A future evidence entry must include the same-driver/same-settle details,
+the raw summary and driver artifacts, and enough information to reproduce the
+comparison before it can support a reduction claim. Until then, no verified
+headed budget result, memory reduction, release gate, or cross-machine claim
+is made. The accepted PB-2 budget remains owned by the performance budget RFC
+and is unchanged by this document.
+
+#### Measurement cleanup identity and early-exit contract
+
+The headed probe's cleanup is part of measurement validity and applies on
+success, refusal, and every early exit after launch. At launch it records only
+a bounded process tree, including the window identity and every PID eligible
+for cleanup. Cleanup closes the still-present window by its recorded identity,
+then processes recorded descendants before the recorded root. Before acting
+on each surviving recorded member, it independently revalidates the
+executable identity, process start time, and `BITTY_INSTANCE_ID`. A missing or
+zombie member is skipped. Cleanup never discovers replacement processes after
+launch and has no basename, `pid`/`comm`, or other fallback discovery. The
+prior workspace focus is restored as the final idempotent cleanup step.
+
+The probe must therefore not claim that cleanup, PID absence, or a successful
+capture proves an RSS reduction. These identity and early-exit guarantees
+describe the candidate measurement method and do not promote its numeric
+captures to verified evidence.
 
 Optimization log (all merged in `bitty`, headless-tested; headed numbers
 remain open):

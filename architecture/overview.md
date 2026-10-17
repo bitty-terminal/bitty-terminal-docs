@@ -24,7 +24,8 @@ crates remain `Implemented` not yet `Verified` and do not imply shipped or
 compatibility-guaranteed behavior.
 
 Time-bound implementation state — crate counts, revisions, releases, test
-evidence, and milestone assessments — is not pinned here. The workspace
+evidence, and milestone assessments — is linked rather than maintained here,
+apart from explicitly dated, narrow source observations below. The workspace
 topology and dependency edges are fixed in
 [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md)
 and `bitty/Cargo.toml`; current counts, revisions, and assessments live in
@@ -242,8 +243,8 @@ decomposition and dependency edges are fixed in
 [ADR 0003](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md);
 `bitty-package` lifecycle and integrity model is `Accepted` (OQ-021) with
 signatures still draft, `bitty-lua` `Accepted` (OQ-009/030-032; runtime
-successor direction recorded in [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md),
-still on `piccolo` 0.3.3), and the tail crate `bitty-rich` (OQ-008/015/016) is
+successor direction recorded in [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md)),
+and the tail crate `bitty-rich` (OQ-008/015/016) is
 `Implemented` but not yet `Verified`. The out-of-process IPC (`bitty-ipc`),
 shared networking (`bitty-network`), agent protocol layer (`bitty-agent`), and
 observability infrastructure (`bitty-observability`) exist as dedicated L1 Rust
@@ -253,9 +254,19 @@ extraction boundaries and retained Core mechanisms are decided as direction by
 [ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
 and
 [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md),
-with focused contracts `W-71` through `W-75`; no extraction or migration is
-claimed. Current revision and milestone evidence lives in
+with focused contracts `W-71` through `W-75`; those decisions alone claim no
+extraction or migration. The dated source inventory in the
+[legacy disposition record](../specifications/legacy-chrome-and-validation-disposition.md)
+separates observed removals and validation relocation from acceptance of their
+remaining gates. Current revision and milestone evidence lives in
 [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
+
+Dependency inventory at `bitty` `1c68de25` (2026-10-17),
+`crates/bitty-lua/Cargo.toml`, records Phodopus `0.2.0-alpha.1` at
+`f6aa59a`. This dated source observation replaces the earlier Piccolo
+inventory; it does not accept the draft
+[Phodopus Host ABI](../specifications/phodopus-host-abi-candidate.md) or promote
+runtime behavior to `Verified`.
 
 ## Candidate UI layering
 
@@ -288,18 +299,19 @@ pattern serves every domain, so no API is specific to workspaces.
 window comparable to Alacritty: a shell, the grid, scrollback, selection and
 clipboard, fonts, colors, and themes, keymaps, typed configuration, and splits
 and workspaces as Core primitives reachable through commands and key bindings.
-Core owns workspace state and semantics and provides the default workspace
-strip as a fallback. A bar/plugin may replace that strip using read-only
-workspace observations and existing Core commands; absence, denial, malformed
-updates, or failure returns to the Core strip. Tab and status surfaces remain
-optional plugin presentation.
+Core owns workspace state and semantics but does not present them. Without a
+workspace presentation plugin, no strip is drawn and edge bands reserve zero
+space; workspace state and commands remain usable, including in `bitty --safe`.
+The Core-strip fallback described in later candidate records is an unaccepted
+proposal that deviates from ADR 0014, not the accepted baseline or current
+source behavior. Tab and status surfaces remain optional plugin presentation.
 
 Retired state (`W-104`, `bitty#1721` `819f286`): the Core workspaceline and
-its transitional band reservation were removed. The default workspace strip
-is the fallback described above, including in `bitty --safe`; the first-party
-bar presentation plugin may replace it with read-only observations. Core
-retains workspace lifecycle, state, query commands, and generic chrome-band
-mechanisms. Mounted plugin trees are stored but not yet rendered.
+its transitional band reservation were removed. No Core workspace strip
+replaces them, including in `bitty --safe`; the first-party bar presentation
+plugin uses read-only observations. Core retains workspace lifecycle, state,
+query commands, and generic chrome-band mechanisms. Mounted plugin trees are
+stored but not yet rendered.
 
 ## Candidate execution-domain model
 

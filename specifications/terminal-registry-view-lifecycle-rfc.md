@@ -11,6 +11,8 @@ sidebar_order: 26
 
 # TerminalRegistry and View Lifecycle Contract
 
+## Document status
+
 > Status: **accepted** on 2026-08-31 by independent docs-reviewer per
 > CTX-0117 plus **Experimental Implementation** at `bitty` `c0aadd2`/`a8735d0`
 > — accepted lifecycle contract with experimental code evidence (not
@@ -68,7 +70,7 @@ exact glyph hit-testing math, and registry or package-transport mechanics whose
 contracts already reference this lifecycle as an ownership source.
 
 Normative sources this RFC must not weaken are listed in
-[Normative sources this specification does not weaken](#normative-sources-this-specification-does-not-weaken).
+[Normative sources this specification must not weaken](#normative-sources-this-specification-must-not-weaken).
 Where this specification selects a threshold it refines those sources; it does
 not move a requirement between owners and does not create a bypass.
 
@@ -88,7 +90,7 @@ specification per CTX-0117 (2026-08-31). `HeadlessRasterizer` and
 `char_cell_width` approximation remain non-user-ready evidence per the
 text-rendering draft until that draft is accepted.
 
-## Normative sources this specification does not weaken
+## Normative sources this specification must not weaken
 
 - [ADR 0003 Core Workspace Topology](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0003-core-workspace-topology.md) (OQ-005): one-way DAG; `bitty-vt`, `bitty-term-state`, `bitty-pty` never depend on UI, platform, plugin-host, config, runtime, or app; `bitty-render` reads only snapshots.
 - [Terminal State RFC](terminal-state-rfc.md) (OQ-007): parser to `Action` to state is the only write path; 8 grid and mode invariants; damage `generation`; bounded reply buffer; deterministic replay and state hash.
@@ -209,6 +211,66 @@ validation with a source-attributed diagnostic. No ceiling is silently
 clamped.
 
 ## View lifecycle: attachment, detachment, focus, layout, visibility, persistence
+
+### Candidate diagnostics synchronization
+
+Status: **implemented and merged into `bitty` `main` (bitty #2183);
+experimental and not stable.**
+
+The merged source is `b97a8b20`, an ancestor of `bitty` `1c68de25`.
+The observations below remain `Implemented-only`, pending independent
+verification; merge status does not accept a stable diagnostics API.
+
+The candidate control-plane implementation exposes read-only terminal
+diagnostics through `core.terminal.list`. The result is an active-layout
+prefix, bounded to `MAX_TERMINALS` (`64` in the candidate runtime), with an
+aligned diagnostic row for every returned `t:N`/`v:N` pair. A row reports
+session presence, retained scrollback line count, retained terminal-state heap
+bytes, an optional recorded direct-child PID, and `child_state` (`unreaped`,
+`reaped`, or `absent`). The child state is an ownership snapshot: `unreaped`
+does not prove that the process is running because the query does not poll.
+
+When the active-layout walk reaches its bound, `truncated` is true and
+`total_lower_bound` equals the returned prefix length rather than an exact
+process-wide or retained-workspace count. A complete walk has
+`truncated: false`, making that value exact for the active layout. The command
+does not enumerate terminals retained in hidden or inactive workspaces.
+
+The candidate `core.workspace.list` result separately carries a bounded
+retained-workspace memory report. It covers at most `16` workspace slots,
+`32` layout leaves per row, and `128` pane-session owners in its aggregate,
+with a layout recursion guard of `64`. Rows expose explicit layout and
+detached-float truncation counters, ownership counts, primary-state presence,
+and unique retained state bytes. Shared owners are charged once by `ViewId`
+and the primary-owner marker; orphaned owners remain aggregate-only and are
+reported as unattributed bytes. This report does not inspect PTY output or
+change attachment, layout, or terminal-list behavior. It is an experimental
+diagnostic contract, not a stable lifecycle API.
+
+The workspace report is serialized as `memory.v: 1` beside the existing
+`workspaces`, `names`, `active`, `active_id`, and `count` fields. Each row uses
+`seq`, `active`, `leaf_views`, `layout_truncated`,
+`detached_floats_total`, `detached_floats_reported`,
+`detached_floats_omitted`, `detached_floats_truncated`, `owned_views`,
+`pane_sessions`, `primary_state`, and `owned_bytes`. The aggregate uses
+`workspaces`, `leaf_views`, `pane_sessions`, `orphaned_pane_sessions`,
+`primary_states`, `owned_views`, `unique_owned_bytes`, and
+`unattributed_bytes`. `leaf_views` intentionally counts reported references;
+ownership and byte fields de-duplicate by `ViewId` and the singleton primary
+owner. The report includes no terminal text, cwd, host path, or PID and makes
+no process-RSS or RSS-reduction claim.
+
+The report's truncation fields describe observation, not mutation: layout
+walking stops at the `64` depth guard or `32` leaf prefix. Detached floats are
+materialized only when the complete detached-float set fits in the row's
+remaining leaf budget; if they do not fit, none of that set is materialized.
+In that case `detached_floats_total` remains the exact count,
+`detached_floats_reported` is the included count,
+`detached_floats_omitted` is the remainder, and
+`detached_floats_truncated` is `true`. The aggregate examines no more than
+`128` pane-session owners. These merged, experimental diagnostics remain
+`Implemented-only`; they introduce no new attachment, detachment, or
+workspace lifecycle transitions.
 
 ### Attachment and detachment
 
@@ -387,7 +449,7 @@ for Lua and no bypass of existing P0 gates.
 4. Bounded resources are validated before allocation; exceeding a ceiling returns a typed error and never grows heap without bound, preserving invariant 7.
 5. The separate terminal and plugin security domains from the core boundaries are preserved. A terminal requesting a resource via an escape sequence and a plugin requesting the same resource via a host API traverse different policies and produce distinct audit events.
 
-## Verification
+## Verification plan
 
 1. **Metadata and link gates**: `just check` must pass with zero markdownlint, link, metadata, language, agents, and hygiene issues for this document and its index entries, and `act -n -W .github/workflows/ci.yml` must report workflow dry-run success.
 2. **Identity invariant tests** (acceptance gates):
@@ -408,7 +470,22 @@ for Lua and no bypass of existing P0 gates.
    - Detached terminal survives with same ids; reattached terminal retains history; exited terminal reports `TerminalExited`; `close` retires the id and a subsequent create with the same `PersistentId` rehydrates scrollback but allocates fresh `TerminalId` and `RuntimeId`.
 8. **Headless composition tests**: workspace view rectangles, registry lifecycle, focus, and resize routing each have headless tests without a window or GPU, asserting rectangle equivalence and atomicity.
 
-## Open items remaining under this accepted specification
+## Alternatives considered
+
+The existing [Reattachment versus recreation](#reattachment-versus-recreation)
+and [Explicit exclusions](#explicit-exclusions-not-authorized) sections define
+the lifecycle choices and deferred alternatives. Merged memory observations
+do not change those choices or authorize another attachment topology.
+
+## Affected contracts
+
+The [Terminal State RFC](terminal-state-rfc.md),
+[Workspace Compositor Specification](workspace-compositor.md), and
+[Input and Pointer Contract](input-pointer-rfc.md) retain their own status
+and authority. Diagnostics observe retained owners without changing those
+contracts, their resource limits, or their security requirements.
+
+## Open points
 
 - Exact `TerminalRegistry` trait spelling, error taxonomy, and crate placement beyond the illustrative sketches above.
 - Whether `PersistentId` participates in `ConfigPlan` live reload or requires registry recreation, and whether rehydrated scrollback is limited to the configured `max_scrollback_lines` or a narrower bound.
@@ -429,6 +506,19 @@ lifecycle above were synchronized against `bitty` `d2ccd64` (PR #1485,
 recorded in the [Input and Pointer Contract](input-pointer-rfc.md). Remaining open items above require follow-up RFCs or
 tasks per the [documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md)
 and [open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
+
+## Acceptance criteria
+
+The identity, registry, view lifecycle, resize, capture, reattachment, and
+headless composition checks in the [Verification plan](#verification-plan)
+remain the acceptance obligations. Source presence and a merged diagnostics
+commit alone satisfy no `Verified` or compatibility claim.
+
+## P0 Review Sign-off
+
+The CTX-0117 acceptance recorded in [Document status](#document-status) is
+unchanged. The merged memory observations add no independent P0 sign-off;
+the normative security corpus and outstanding verification remain binding.
 
 ## References
 

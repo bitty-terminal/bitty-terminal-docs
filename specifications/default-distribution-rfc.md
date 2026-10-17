@@ -11,6 +11,8 @@ sidebar_order: 20
 
 # Default Distribution RFC
 
+## Document status
+
 > Status: **accepted** on 2026-08-29 by the project initiator. This document defines the accepted default plugin bundle, enabled-by-default set, and disable mechanisms for
 > [OQ-002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) at the design level; it closes [OQ-002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md). It does not describe implemented
 > behavior, does not authorize shipped, stable, normative, or
@@ -85,12 +87,18 @@ sidebar_order: 20
 > removal landed. The bundled catalog is `bitty-terminal.shell-integration`
 > only. Workspace presentation is owned by the first-party `bar` plugin
 > (`bitty-terminal.bar`, Waybar-like consolidated bar covering workspaces,
-> statusline, and tabs); Core owns workspace state and semantics and retains
-> the default workspace strip as the fallback presentation. The bar may
-> replace that strip only through read-only workspace observations and Core
-> commands; absence or failure returns to the fallback. Rows and examples below that name
+> statusline, and tabs); Core owns workspace state and semantics but draws no
+> workspace presentation. The accepted zero-plugin baseline reserves no
+> workspace band; absence or failure of the optional bar does not create a Core
+> fallback. Core-strip fallback wording in later candidate records is an
+> unaccepted proposal/deviation. Rows and examples below that name
 > `bitty-terminal.workspace` as owning the workspaceline remain the dated
-> catalog record.
+> catalog record. Source readback at `bitty` `1c68de25` (2026-10-17),
+> `crates/bitty-plugin-host/src/bundled.rs`, confirms one bundled-disabled
+> manifest, `bitty-terminal.shell-integration`, and no bundled workspace or
+> tabs alias. Older catalog counts and workspace/claim examples on this page
+> are explicitly historical or illustrative, not the current catalog. This
+> inventory is not runtime parity, distribution validation, or a new waiver.
 
 ## Purpose and scope
 
@@ -205,8 +213,8 @@ normative text wins and this RFC must be corrected.
    activation and its capability grants are present.
 2. The v1 enabled-by-default set is **empty**: a fresh installation with
    no user configuration starts the core only. First-party plugins are
-   bundled as ready-to-enable artifacts (the two-plugin catalog after
-   `bitty` CTX-0886 — see
+   bundled as ready-to-enable artifacts (the current catalog contains only
+   shell-integration; the two-plugin CTX-0886 catalog is historical — see
    [Bundled set for v1](#bundled-set-for-v1-staged-not-enabled)) but require
    an explicit enable that preserves the capability-consent and
    lightweight-budget guarantees.
@@ -236,9 +244,12 @@ distribution/
     checksums.sha256
 ```
 
-Versions follow the catalog's bundled `0.1.0`; the pinned set is data, not a
-commitment that every artifact is already staged. `bitty-terminal.tabs` is a
-deprecated alias resolved by the host and is not a separate staged artifact.
+This illustrative layout retains the historical two-plugin catalog; it does
+not reinstate the retired workspace artifact or tabs alias. Versions follow
+that catalog's bundled `0.1.0`; the pinned set is data, not a
+commitment that every artifact is already staged. In that historical catalog,
+`bitty-terminal.tabs` was an alias, never a separate staged artifact; source
+at `1c68de25` contains no such bundled alias.
 `bitty-terminal.palette` and `bitty-terminal.statusline` are no longer staged
 here; they are independent first-party packages
 ([split amendment](#split-to-independent-first-party-packages-2026-09-14)).
@@ -275,11 +286,11 @@ version, checksum, plugin-api = "^1.0", compat.bitty }` and is validated
 
 ### Bundled set for v1 (staged, not enabled)
 
-| Plugin ID                          | Stage purpose                                                                                         | Default                                                                   | Capability sketch (illustrative)                                          |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `bitty-terminal.shell-integration` | OSC 7/133 semantic zones, cwd/title, fail-closed fallback when absent                                 | bundled, **disabled**                                                     | `terminal.semantic-read` (read-only)                                      |
-| `bitty-terminal.workspace`         | retired (bitty#1572; #1677/#1680/#1721); removed from bundled catalog, workspace commands run in Core | removed (dated record below); current catalog is `shell-integration` only | `workspaceline` claim removed; presentation owned by `bitty-terminal.bar` |
-| `bitty-terminal.tabs`              | **deprecated alias** of `bitty-terminal.workspace`; legacy tabline claim and commands                 | deprecated alias, not separately staged (removal >= v0.2.0)               | legacy `tabline` claim (deprecated)                                       |
+| Plugin ID                          | Stage purpose                                                                                         | Default                                                                              | Capability sketch (illustrative)                                                  |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `bitty-terminal.shell-integration` | OSC 7/133 semantic zones, cwd/title, fail-closed fallback when absent                                 | bundled, **disabled**                                                                | `terminal.semantic-read` (read-only)                                              |
+| `bitty-terminal.workspace`         | retired (bitty#1572; #1677/#1680/#1721); removed from bundled catalog, workspace commands run in Core | removed (dated record below); current catalog is `shell-integration` only            | `workspaceline` claim removed; presentation owned by `bitty-terminal.bar`         |
+| `bitty-terminal.tabs`              | retired alias of `bitty-terminal.workspace`; historical tabline claim and commands                    | absent at `1c68de25`; early purge `bitty#1717` (`471b3f9`, recorded DEC-0100 waiver) | no bundled alias or tabline claim; historical window below remains a dated record |
 
 Revision (2026-09-13, CTX-0170): the **accepted** staged set as of
 2026-08-29 recorded five plugins including `bitty-terminal.tabs`. The owning
@@ -317,8 +328,9 @@ eight-plugin catalog once #680 merges; the
 
 The workspace lifecycle stays Core and the `workspaceline` claim is removed:
 workspace presentation is owned by the first-party `bar` plugin
-(`bitty-terminal.bar`) and Core draws no chrome, including in `bitty --safe`
-(bitty#1572; #1677/#1680/#1721). Shell integration stays bundled and
+(`bitty-terminal.bar`) and Core draws no workspace chrome, including in
+`bitty --safe` (ADR 0014; bitty#1572; #1677/#1680/#1721). With no presentation
+plugin, no workspace band is reserved. Shell integration stays bundled and
 remains the upstream OSC 7/133 semantic-zone provider.
 
 > Note (2026-09-30, CTX-0076; retired 2026-10-06 per bitty#1572
@@ -610,7 +622,7 @@ hostile third-party plugins as noted in [Configuration Model RFC](configuration-
   record is reused. Revocation (`bitty plugin revoke`) is orthogonal and
   takes effect at the next dispatch boundary.
 - **Service and claim release.** Disabling releases reserved commands, event
-  subscriptions, claims (the `workspaceline` claim and protocol handlers),
+  subscriptions, claims (the legacy `workspaceline` example and protocol handlers),
   and service provisions atomically with generation disposal, so the
   resolver can admit a replacement provider exactly once.
 - **Budget reclaim.** Disabling reclaims instruction, memory, task, timer,
@@ -639,7 +651,7 @@ hostile third-party plugins as noted in [Configuration Model RFC](configuration-
   timers 32, RC-5 three-level queues). This RFC consumes those numbers for
   disable-reclaim verification but does not retune them.
 
-## Security alignment and traceability
+## Security review
 
 | Accepted element                                                                    | Normative gate it implements                                               | Threat / Risk IDs        |
 | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------ |
@@ -797,12 +809,14 @@ As of 2026-08-29, the distribution, disable, and budget contracts remain design 
 
 ## References
 
-- Bitty crate evidence: `crates/bitty-config` (typed ConfigPlan and layer
+- Dated Bitty crate evidence: `crates/bitty-config` (typed ConfigPlan and layer
   merge), `crates/bitty-plugin-host` (generation, registry, budget snapshot,
   and the `bundled.rs` two-plugin catalog after `bitty` CTX-0886, with the
   deprecated
   `bitty-terminal.tabs` alias of `bitty-terminal.workspace`),
-  `crates/bitty-package` (staged activation) — all accepted model crates whose
+  `crates/bitty-package` (staged activation) — the two-plugin catalog and
+  alias are historical, superseded by the retirement readback in Document
+  status. These are accepted model crates whose
   call sites this RFC reuses without retuning.
 - Distribution budgets: [Performance Budget RFC](performance-budget-rfc.md)
   PB-1 through PB-7 and PB-5 40 MiB distribution cap.

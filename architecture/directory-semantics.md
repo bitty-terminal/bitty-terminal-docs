@@ -11,6 +11,15 @@ sidebar_order: 24
 
 # Extension, Plugin, and Component Directory Semantics
 
+## Document status
+
+Draft directory contract recording the decided extension/plugin naming split
+and the clean-break migration in closed
+[bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949). The public
+`extension` verbs are canonical; the hidden deprecated `component` alias and
+internal field names remain. These observations do not accept a new trust
+boundary or establish compatibility or runtime verification.
+
 ## Purpose and scope
 
 This specification fixes the meaning of the three directory names that meet
@@ -90,11 +99,11 @@ descriptor rules). `<version>` is the strict `X.Y.Z` unit version.
 
 The three names partition by producer and form, not by importance:
 
-| Directory     | Producer   | Form                                              | Examples                                                                                      |
-| ------------- | ---------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `extensions/` | Upstream   | Prebuilt binary plus descriptor                   | graphics decode worker, accessibility adapter, execution supervisor, plugin manager seed      |
-| `plugins/`    | Downstream | Lua source checkout (git)                         | workspace bar, status line, tabs, palette, sessions, AI panels                                |
-| `components/` | Reserved   | Boot-required units and historic identifiers only | Existing `bitty component` CLI spelling and `components_dir` fields (transitional, see below) |
+| Directory     | Producer   | Form                                              | Examples                                                                                            |
+| ------------- | ---------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `extensions/` | Upstream   | Prebuilt binary plus descriptor                   | graphics decode worker, accessibility adapter, execution supervisor, plugin manager seed            |
+| `plugins/`    | Downstream | Lua source checkout (git)                         | workspace bar, status line, tabs, palette, sessions, AI panels                                      |
+| `components/` | Reserved   | Boot-required units and historic identifiers only | Hidden deprecated `bitty component` CLI alias and `components_dir` fields (transitional, see below) |
 
 Rules:
 
@@ -134,7 +143,7 @@ $XDG_DATA_HOME/bitty/extensions/<name>/<version>/
 - The user root (`$XDG_DATA_HOME/bitty/extensions/`, normally
   `~/.local/share/bitty/extensions/`) wins over the system root
   (`/usr/lib/bitty/extensions/`, or platform equivalent) on collision.
-- `bitty component list` enumerates installed units across both tiers;
+- `bitty extension list` enumerates installed units across both tiers;
   removal of a system-wide install belongs to the system package
   manager, never to the user-side remove path.
 - A missing optional extension fails soft: resolution reports the name
@@ -183,7 +192,10 @@ $XDG_DATA_HOME/bitty/plugins/
 - `plugins/` under the data root holds installed plugin source. It is
   distinct from the `plugins/` configuration subtree under
   `$XDG_CONFIG_HOME/bitty/plugins/`, which holds behavior configuration
-  and declarative imports, not installed source.
+  and declarative imports, not installed source. Per-plugin settings files
+  under that configuration subtree follow the canonical Lua and XDG settings
+  contract; the plugin ecosystem owns the public `bitty.settings` API in its
+  [`settings` reference](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/reference/settings.md).
 - With no plugin enabled, Bitty is a plain terminal window with Core
   primitives reachable through commands and key bindings; every bar, tab
   strip, and status line is plugin presentation, per the accepted
@@ -198,16 +210,18 @@ reason: existing identifiers still spell it.
 
 Transitional evidence, recorded honestly:
 
-- The user-facing CLI still spells `bitty component ...` (`list`,
-  `install`, `remove`) and its context fields are still named
+- The canonical user-facing CLI spells `bitty extension ...` (`list`,
+  `install`, `remove`). `bitty component ...` remains a hidden deprecated
+  compatibility alias; internal context fields retain the names
   `components_dir` / `system_components_dir`.
 - The on-disk search roots and the R2 prefix already use `extensions/`
   (`$XDG_DATA_HOME/bitty/extensions/` over
   `/usr/lib/bitty/extensions/`; `bitty/extensions/<name>/<version>/`).
 
 The rule going forward: no new directory, key, field, or documented path
-uses the `components/` name. Follow-up renames of the CLI verbs and
-field names are tracked with the owning implementation work, not here.
+uses the `components/` name. The public CLI verb migration is complete; the
+deprecated alias and internal field names are retained for compatibility and
+implementation continuity, not pending public renames.
 The migration handling for installs created under the old directory name
 is decided as a clean break with no compatibility shim in closed
 [bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949):
@@ -230,7 +244,7 @@ Core (mechanisms) ──typed seam── extensions/ (L1, upstream prebuilt, opt
   resource-budget gates apply at every trust transition regardless of
   which directory the unit arrived from.
 
-## Security alignment and traceability
+## Security review
 
 - Install-time code execution stays forbidden: placing files under
   either root, or publishing under the distribution prefix, never runs
@@ -301,11 +315,10 @@ Core (mechanisms) ──typed seam── extensions/ (L1, upstream prebuilt, opt
    compatibility shim in closed
    [bitty#1949](https://github.com/bitty-terminal/bitty/issues/1949);
    only the release-note line is still to be written at release time.
-2. CLI and field renames (`bitty component ...` verbs,
-   `components_dir` / `system_components_dir` fields) to the
-   `extension` vocabulary: follow-up implementation work, not this
-   page. Until it lands, users will see the old verbs over the new
-   directories.
+2. CLI and field naming status: the public `extension` verbs are canonical;
+   the hidden deprecated `component` alias and internal
+   `components_dir` / `system_components_dir` field names remain. No public
+   CLI rename is pending.
 3. System-root platform equivalents (macOS, Windows) for
    `/usr/lib/bitty/extensions/`: named but not pinned here; the owning
    implementation records each platform's equivalent.

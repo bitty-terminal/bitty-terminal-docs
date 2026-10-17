@@ -11,12 +11,16 @@ sidebar_order: 10
 
 # Command-line interface
 
+## Document status
+
 > Status: candidate architecture. An extensible, first-class CLI is an
 > accepted working direction, and experimental parser/registry code exists in
 > the `bitty` workspace. The shared executable registry, command tree,
 > identifiers, environment variables, output schemas, and exit codes are
 > candidate contracts until separately specified, implemented, and verified;
 > no stable or supported CLI contract is claimed.
+
+## Purpose and scope
 
 The Bitty CLI is a formal frontend to the same capabilities used by GUI
 actions, key bindings, Lua, IPC, developer tools, and agent adapters. It must
@@ -169,6 +173,176 @@ config.inspect    config.modify
 
 The exact names and authorization flow are open.
 
+### Current list behavior and CTX-1269 candidate diagnostics
+
+Status: **implemented experimental list behavior; candidate, not stable.**
+
+The current `bitty` `main` source implements `core.terminal.list` and
+`core.workspace.list`. The diagnostic fields described below were merged into
+`bitty` `main` by bitty #2183; they remain experimental, not stable, and not a
+compatibility-guaranteed CLI schema.
+
+`terminal.list` is derived from the active layout: it lists the terminal IDs
+corresponding to the active layout leaves and reports whether each leaf has a
+pane session. It is not a process-wide inventory and does not include
+terminals retained in hidden or inactive workspaces. `workspace.list` reports
+workspace identity and active state; the merged experimental diagnostic also
+provides bounded memory accounting for retained workspaces, described below.
+
+The candidate retains the existing read scopes: `core.terminal.list` requires
+`terminal.inspect`, and `core.workspace.list` requires `view.inspect`. The
+diagnostic fields add no permission, terminal-content access, or control
+operation; both reports remain read-only.
+
+#### CTX-1269 candidate diagnostics
+
+Status: **implemented and merged into `bitty` `main` (bitty #2183);
+experimental and not stable.**
+
+The candidate extends `core.terminal.list` with a bounded `diagnostics` array
+aligned one-for-one with the returned `terminals` array. Each diagnostic has:
+
+- `terminal_id` and `view_id`, using the current one-to-one `t:N`/`v:N`
+  mapping;
+- `has_session`, `scrollback_lines`, and `retained_heap_bytes`;
+- `child_pid`, which is either the recorded direct-child PID or `null`; and
+- `child_state`, one of `unreaped`, `reaped`, or `absent`.
+
+`unreaped` means that the PTY handle still owns an unconsumed child status; it
+does not assert that the child is currently running because this read-only
+query does not poll. `reaped` means the status was consumed while the pane
+session remains attached. `absent` has no session and no PID. The diagnostic
+contains no command, cwd, host path, or terminal text.
+
+The candidate terminal envelope is therefore shaped as follows:
+
+```json
+{
+  "terminals": [{ "id": "t:7", "has_pane_session": true }],
+  "diagnostics": [
+    {
+      "terminal_id": "t:7",
+      "view_id": "v:7",
+      "has_session": true,
+      "scrollback_lines": 200,
+      "retained_heap_bytes": 65536,
+      "child_pid": 1234,
+      "child_state": "unreaped"
+    }
+  ],
+  "total_lower_bound": 1,
+  "truncated": false
+}
+```
+
+`child_state` is an ownership state, not a process-status probe:
+
+| State      | Meaning                                                                |
+| ---------- | ---------------------------------------------------------------------- |
+| `unreaped` | The attached PTY handle still owns an unconsumed child status.         |
+| `reaped`   | The child status was consumed while the pane session remains attached. |
+| `absent`   | No pane session is attached; `child_pid` is `null`.                    |
+
+The query performs no poll, wait, kill, or reap operation. A non-null PID and
+`unreaped` state must not be read as proof that the child is currently alive.
+
+The terminal result is bounded to the active-layout prefix, at most
+`MAX_TERMINALS` entries (`64` in the candidate runtime). `terminals` and
+`diagnostics` are truncated together and remain aligned. `truncated` is true
+when the bounded walk stops before all active-layout leaves are visited.
+`total_lower_bound` is the number of returned entries: it is exact when
+`truncated` is false and is only a lower bound when `truncated` is true. The
+candidate does not scan retained inactive workspaces for this command.
+
+The same candidate adds a `memory` object to `core.workspace.list`. Its
+`workspaces` array covers retained workspace slots in slot order, including
+hidden or inactive workspaces, with rows containing:
+
+- `seq`, `active`, `leaf_views`, and `layout_truncated`;
+- `detached_floats_total`, `detached_floats_reported`,
+  `detached_floats_omitted`, and `detached_floats_truncated`;
+- `owned_views`, `pane_sessions`, `primary_state`, and `owned_bytes`.
+
+The candidate workspace envelope retains the existing identity fields and adds
+the versioned memory report:
+
+```json
+{
+  "workspaces": ["ws:1"],
+  "names": ["ws1"],
+  "active": 1,
+  "active_id": "ws:1",
+  "count": 1,
+  "memory": {
+    "v": 1,
+    "workspaces": [
+      {
+        "seq": 1,
+        "active": true,
+        "leaf_views": 1,
+        "layout_truncated": false,
+        "detached_floats_total": 0,
+        "detached_floats_reported": 0,
+        "detached_floats_omitted": 0,
+        "detached_floats_truncated": false,
+        "owned_views": 1,
+        "pane_sessions": 0,
+        "primary_state": true,
+        "owned_bytes": 65536
+      }
+    ],
+    "aggregate": {
+      "workspaces": 1,
+      "leaf_views": 1,
+      "pane_sessions": 0,
+      "orphaned_pane_sessions": 0,
+      "primary_states": 1,
+      "owned_views": 1,
+      "unique_owned_bytes": 65536,
+      "unattributed_bytes": 0
+    }
+  }
+}
+```
+
+The workspace walk reports at most `MAX_WORKSPACES` rows (`16`), visits at
+most `MAX_VIEWS_PER_WORKSPACE` layout leaves (`32`) per row, and examines at
+most `MAX_SESSION_PANES_TOTAL` pane-session owners (`128`) in the aggregate.
+The layout depth guard is `64`. Detached floats are materialized only when the
+complete detached-float set fits in the row's remaining leaf budget; otherwise
+none of that set is materialized and all are reported as omitted. Their total,
+reported, omitted, and truncation fields remain explicit.
+`layout_truncated` records a depth/leaf-prefix stop.
+These bounds describe the diagnostic report and do not change the active
+layout or the existing `terminal.list` result.
+
+The workspace `aggregate` reports bounded workspace, leaf, pane-session,
+orphaned-session, primary-state, and ownership counts, together with
+`unique_owned_bytes` and `unattributed_bytes`. A pane owner is charged once by
+`ViewId`; the runtime-global primary state is charged once by its primary-owner
+marker. Shared or duplicate references are therefore visible in leaf counts
+but not double-counted in ownership or byte totals. Orphaned global owners are
+aggregate-only and contribute to `unattributed_bytes`.
+
+Both candidate reports are read-only. Workspace memory output omits terminal
+text, cwd, host paths, and PIDs. It makes no claim about process RSS, RSS
+reduction, or post-close reclaim. The active-layout versus retained-workspace
+distinction remains explicit: `terminal.list` describes currently laid-out
+terminals, while workspace memory diagnostics account for retained hidden
+state. The broader workspace lifecycle and ownership contract remains in the
+[Workspace Compositor Specification](../specifications/workspace-compositor.md).
+
+Workspace close has a separate control lifecycle and is not encoded as a
+memory-report field. An idle target transitions directly to `Closed`; a live
+target first returns `Pending` and arms a kill confirmation without tearing
+down sessions. Repeating close for that same target returns `Closed` and tears
+down its sessions. `Esc` or the explicit cancel path returns to the ordinary
+state without closing. A pending arm is replaced when another workspace is
+armed, and unknown workspace indices fail closed. These control-plane semantics
+are present at `bitty` `1c68de25`, which includes merged #2183 (CTX-1269);
+they remain experimental, `Implemented-only`, and pending independent
+verification.
+
 ## Instance targeting and environment
 
 Status: **candidate contract.**
@@ -282,15 +456,20 @@ not accept the rest of the tree or its other subtrees.
 Status: **implemented-only evidence** from `bitty` PR #2153 and PR #2157
 (0.0.24); this does not make the broader CLI candidate contract stable.
 
+Profile-backed `bitty init` from Core issue #2187 is explicitly deferred to
+the post-0.0.24 release-tail gate. It is a future P0/P1 release-preparation
+item, not a current implementation or contract, and this page does not claim
+that the wizard creates or selects profiles.
+
 - The interactive TTY wizard uses single-keypress navigation for option
   pickers. Arrow keys and `j`/`k` move immediately, Enter selects the current
   entry, and the bounded escape-sequence reader preserves a lone Escape as
   cancel without treating a partial CSI/SS3 sequence as a separate answer.
   Non-TTY input keeps the line-oriented path.
-- The ASCII mascot greeting and `--mascot` flag were removed. `--no-splash`
-  remains the one-launch suppression for the normal first-run splash; machine
-  flows such as `--headless` and `--test-mode` remain splash-free. `bitty init`
-  now starts with the setup prompt and no mascot output.
+- The ASCII mascot greeting, `--mascot`, and `--no-splash` were removed.
+  Core `b99059bc` (PR #2197), present at `1c68de25`, also removes the splash
+  code and first-run marker lifecycle. `bitty init` starts with the setup
+  prompt and no mascot output; no splash-suppression option remains.
 - The wizard still writes only the documented configuration surface and keeps
   its bounded-attempt and fail-closed behavior. These are implementation
   observations, not an acceptance of the candidate CLI grammar.

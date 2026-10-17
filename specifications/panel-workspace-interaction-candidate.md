@@ -11,6 +11,8 @@ sidebar_order: 37
 
 # Panel and Workspace Interaction (Candidate)
 
+## Document status
+
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
 > **Compatible**, and not normative. This document is a design record for the
 > recorded Panel/Workspace interaction direction: the part the Bitty terminal
@@ -19,6 +21,11 @@ sidebar_order: 37
 > no accepted source it cites, and makes no implementation claim. Gesture
 > spellings, geometry bounds, Bar placement values, and Lua shapes repeated here
 > are direction, not contract.
+
+ADR 0014 already settles presentation ownership, including PW-10 panel tabs:
+it is plugin policy over Core primitives. The historical Core-chrome
+alternative retained below is an unaccepted deviation, not an open ownership
+choice. Gesture, geometry, persistence, and API details remain candidate.
 
 ## Purpose and scope
 
@@ -36,7 +43,8 @@ In scope (all **Candidate** unless cited otherwise):
 
 - PW-1: `Mod`+left-drag Panel repositioning and `Mod`+edge/corner drag free
   resizing with Core-validated bounds inside one Workspace.
-- PW-2: `Mod`+V tiled/floating toggle confined to the Bitty surface.
+- PW-2: tiled/floating toggle confined to the Bitty surface; the historical
+  `Mod`+V proposal is superseded by the recorded `Mod`+A implementation below.
 - PW-3: animated open, close, move, resize, workspace switch, and float-toggle
   transitions.
 - PW-4: Bar edge placement, height, colors, indicator color, animations,
@@ -86,7 +94,26 @@ unit is a `View`/Panel, `Window` names only the native OS window owned by
 handle, native surface, or OS window identifier
 ([No window leak](workspace-compositor.md#no-window-leak)).
 
-## Status vocabulary
+## Normative sources this specification must not weaken
+
+- [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/55f540a8c7236e757b6f4cbf21a4c3ce49e92327/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md)
+  assigns PW-10 panel tabs to plugin policy, never Core chrome; commands and
+  workspace state remain Core mechanisms, including in safe mode.
+- The Workspace Compositor and Panel Runtime contracts linked above retain
+  identity, atomic interaction, focus, lifecycle, and no-window-leak rules.
+- The Security Overview, Plugin Platform, and Isolation Resource contracts
+  linked below retain capability checks, bounded data, and hot-path exclusion.
+  Candidate gestures and Lua shapes create no authority.
+
+## Terminology
+
+- **Panel / View / Workspace**: distinct application, presentation attachment,
+  and workspace concepts under the owning identity contracts; no term denotes
+  an OS window or a transferable native handle.
+- **Bar / tab strip**: optional plugin presentation over Core state and
+  commands; Core validates generic mounted-surface geometry.
+
+### Status vocabulary
 
 | Status            | Meaning in this document                                                             |
 | ----------------- | ------------------------------------------------------------------------------------ |
@@ -335,10 +362,11 @@ Terminal-side conclusions:
 - The Bar is presentation, never Terminal Truth: it composes declarative status
   segments and never reads or mutates grid, cursor, modes, scrollback, or IPC
   policy; its modules keep their own cadence and failure posture.
-- The Workspace area composition maps to accepted Core-owned decoration:
-  `gaps_out` insets the Workspace tiling area within the `Window`, so a Bar edge
-  necessarily reduces the area available to the compositor. Bar geometry is
-  Core-owned presentation; no plugin or `LayoutProvider` sets it.
+- The Workspace area composition maps to generic Core-owned band geometry:
+  `gaps_out` insets the Workspace tiling area within the `Window`, so a mounted
+  Bar edge may reduce the area available to the compositor. This mechanism
+  does not make Bar presentation Core-owned; plugin policy selects and mounts
+  the surface, and no plugin or `LayoutProvider` mutates Core geometry.
 - Colors, indicator color, and active-workspace color compose with the accepted
   appearance surface (`appearance.theme`, `decoration.border_color*`,
   `appearance.animations.*` in the
@@ -353,7 +381,7 @@ retained `workspace.show_bar`; the Workspace area, decoration insets, and PTY
 geometry are recomputed per edge by the band geometry and reflow rules there
 (four edges defined, `top`/`bottom` planned for v0.1). The earlier
 `bitty --safe` minimal-bar wording is superseded by
-[ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md): safe mode does not load the optional bar replacement; the Core fallback remains available. These resolutions are candidate,
+[ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md): safe mode does not load optional bar presentation and no Core fallback is available. The fallback wording above is an unaccepted proposal/deviation from ADR 0014, not current accepted behavior. These resolutions are candidate,
 not accepted.
 
 **Appearance owned by plugins.** Under the candidate
@@ -613,22 +641,27 @@ Terminal-side conclusions:
   for the observed tab affordances (a top tab strip, a per-tab close control,
   tab reordering) only; Bitty's tab model is re-expressed over `PanelId`/
   `ViewId`/`WorkspaceId` as a typed, validated contract candidate.
-- **Supersession note.** The accepted
+- **Supersession note.** The dated catalog history in the accepted
   [Default Distribution RFC](default-distribution-rfc.md) records
   `bitty-terminal.tabs` as a **deprecated alias** of
   `bitty-terminal.workspace` with a legacy `tabline` claim (removal
-  `>= v0.2.0`), and the draft
+  `>= v0.2.0` in that historical plan; the alias was later purged early as
+  recorded there), and the draft
   [Status System Specification](status-system.md#status-module-registry-and-slots)
   fixes a closed v1 module identifier set (`workspace`, `cwd`, `git`, `cpu`,
   `memory`, `network`, `battery`, `clock`) with no `tabline` module. This
   candidate **supersedes nothing and must not revive the deprecated plugin
-  identity**: it records a Core/UI direction for a tab strip as presentation
-  over Panels, not a plugin, not a claim, and not a registry identifier. If the
-  tab bar ever becomes a status module or a slot-claimed surface, that entry
-  belongs to the Status System draft or a successor Bar RFC, not here.
+  identity**. The original Core/UI alternative treated the tab strip as
+  Core chrome rather than plugin content. That alternative is retained only
+  as an **unaccepted historical deviation**: ADR 0014 explicitly assigns
+  PW-10 panel tabs to plugin policy over Core panel and workspace primitives,
+  never Core chrome. The plugin identity, module/slot integration, and API
+  spellings remain for the owning presentation contract; retiring the old
+  alias does not change the accepted owner.
 
-**Open.** Whether the tab bar is Core chrome or a declarative surface owned
-like the Bar (and which document owns it); whether the top edge is fixed or
+**Ownership settled.** The tab strip is optional plugin presentation under
+ADR 0014. **Open.** Which presentation specification defines its details;
+whether the top edge is fixed or
 shares the Bar's edge configurability (PW-4); how the tab strip composes with
 the `Window` top edge when a Bar also occupies it; the close-button hit area,
 confirmation rule, and keyboard equivalent; tab reorder/move gesture details
@@ -667,20 +700,57 @@ observation (a tab click is a focus request, never a second focus mechanism).
 
 ## Relation to existing systems
 
-| Direction                    | Status                                                                                                              | Owning document                                                                                                                                                                                                                                                   |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PW-1 movement and sizing     | Candidate refining accepted drag/resize mechanics with an explicit `Mod`-held gesture; `Mod` spelling Open (OQ-052) | [Workspace Compositor](workspace-compositor.md) (Accepted)                                                                                                                                                                                                        |
-| PW-2 floating mode           | Candidate mapping onto the accepted `PresentationMode` and `Float` overlay tier; transition gate Open               | [Workspace Compositor](workspace-compositor.md) shipped slice, [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                                                               |
-| PW-3 animations              | Move/resize/float-toggle leaves Candidate; open/close/focus/workspace already Accepted; ownership Open              | [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md) (Accepted, `bitty-docs` owner)                                                                                        |
-| PW-4 Bar configurability     | Candidate refining the draft Status System placement contract; geometry and keys in the Chrome Band Contract        | [Status System Specification](status-system.md) (Draft), [Chrome Band Contract](chrome-band-contract-candidate.md) (Candidate)                                                                                                                                    |
-| PW-5 stable identity         | Hierarchy Accepted; restart persistence Open (`RFC-OQ-9`); `ViewId` retirement gap tracked in the invariant set     | [Workspace Compositor](workspace-compositor.md), [Panel Runtime RFC](panel-runtime-rfc.md), [Workspace Panel Invariants](workspace-panel-invariants.md) (Candidate)                                                                                               |
-| PW-6 never-empty Workspace   | Candidate; aligns with tested Implementation-only WS-INV-13; empty-Workspace focus reconciliation Open              | [Workspace Panel Invariants](workspace-panel-invariants.md) (Candidate), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                                                     |
-| PW-7 cross-Workspace moves   | Accepted `move` atomicity; unified `Mod` naming Open (OQ-052); Bar drop target Candidate                            | [Workspace Compositor](workspace-compositor.md) (Accepted)                                                                                                                                                                                                        |
-| PW-8 drag-to-Bar semantics   | Candidate tiling-WM semantics; conflicts with the accepted drag-target set remain Open                              | this document, composed with [Status System Specification](status-system.md) (Draft)                                                                                                                                                                              |
-| PW-9 Lua surface             | Candidate; capability dimensions and API version Owner-pending (OQ-056)                                             | [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) (Accepted posture), [OQ-056](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)                 |
-| PW-10 tab bar and panel tabs | Candidate Core/UI direction; supersedes nothing and must not revive the deprecated `bitty-terminal.tabs` alias      | [Workspace Compositor](workspace-compositor.md) (Accepted), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted), [Default Distribution RFC](default-distribution-rfc.md) (deprecated alias disposition), [Status System Specification](status-system.md) (Draft) |
+| Direction                    | Status                                                                                                                                                 | Owning document                                                                                                                                                                                                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PW-1 movement and sizing     | Candidate refining accepted drag/resize mechanics with an explicit `Mod`-held gesture; `Mod` spelling Open (OQ-052)                                    | [Workspace Compositor](workspace-compositor.md) (Accepted)                                                                                                                                                                                                        |
+| PW-2 floating mode           | Candidate mapping onto the accepted `PresentationMode` and `Float` overlay tier; transition gate Open                                                  | [Workspace Compositor](workspace-compositor.md) shipped slice, [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                                                               |
+| PW-3 animations              | Move/resize/float-toggle leaves Candidate; open/close/focus/workspace already Accepted; ownership Open                                                 | [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md) (Accepted, `bitty-docs` owner)                                                                                        |
+| PW-4 Bar configurability     | Candidate refining the draft Status System placement contract; geometry and keys in the Chrome Band Contract                                           | [Status System Specification](status-system.md) (Draft), [Chrome Band Contract](chrome-band-contract-candidate.md) (Candidate)                                                                                                                                    |
+| PW-5 stable identity         | Hierarchy Accepted; restart persistence Open (`RFC-OQ-9`); `ViewId` retirement gap tracked in the invariant set                                        | [Workspace Compositor](workspace-compositor.md), [Panel Runtime RFC](panel-runtime-rfc.md), [Workspace Panel Invariants](workspace-panel-invariants.md) (Candidate)                                                                                               |
+| PW-6 never-empty Workspace   | Candidate; aligns with tested Implementation-only WS-INV-13; empty-Workspace focus reconciliation Open                                                 | [Workspace Panel Invariants](workspace-panel-invariants.md) (Candidate), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted)                                                                                                                                     |
+| PW-7 cross-Workspace moves   | Accepted `move` atomicity; unified `Mod` naming Open (OQ-052); Bar drop target Candidate                                                               | [Workspace Compositor](workspace-compositor.md) (Accepted)                                                                                                                                                                                                        |
+| PW-8 drag-to-Bar semantics   | Candidate tiling-WM semantics; conflicts with the accepted drag-target set remain Open                                                                 | this document, composed with [Status System Specification](status-system.md) (Draft)                                                                                                                                                                              |
+| PW-9 Lua surface             | Candidate; capability dimensions and API version Owner-pending (OQ-056)                                                                                | [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md) (Accepted posture), [OQ-056](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)                 |
+| PW-10 tab bar and panel tabs | Plugin ownership Accepted by ADR 0014; Core-chrome alternative unaccepted; gestures, geometry, and persistence Candidate; deprecated alias not revived | [Workspace Compositor](workspace-compositor.md) (Accepted), [Panel Runtime RFC](panel-runtime-rfc.md) (Accepted), [Default Distribution RFC](default-distribution-rfc.md) (deprecated alias disposition), [Status System Specification](status-system.md) (Draft) |
 
-## Open items (not global open questions)
+## Security review
+
+The accepted no-window-leak, Terminal Truth, capability, and isolation rules
+apply to every PW slice. Gestures commit only through validated commands;
+queries do not imply control, and plugin presentation cannot write geometry or
+terminal state directly. The historical Core-chrome alternative grants no
+exception. This candidate supplies no independent security acceptance.
+
+## Verification plan
+
+Before accepting any interaction amendment, verify identity preservation,
+atomic source/destination validation, refusal without state change, bounds,
+and command equivalence against the owning compositor and panel contracts.
+Check the zero-plugin/safe-mode baseline separately from enabled plugin
+presentation. PW-1/PW-2/PW-3 source and test observations above are limited to
+their cited slices; they do not prove the remaining candidate gestures,
+cross-platform behavior, persistence, or P0 acceptance. Documentation checks
+and full-page ownership review establish only consistency of this record.
+
+## Alternatives considered
+
+- Core-owned PW-10 strip: the historical alternative is unaccepted and
+  conflicts with ADR 0014. Panel tabs are plugin policy over Core primitives.
+- Revive `bitty-terminal.tabs` or add a status identifier here: excluded by
+  the supersession note and the owning distribution/status contracts.
+- Treat pointer gestures as direct layout writes: incompatible with the
+  accepted atomic command path. Preview, hit zones, and undo detail remain
+  candidates within that boundary.
+
+## Affected contracts
+
+The Relation to existing systems table maps PW-1 through PW-10 to their
+owners. ADR 0014 fixes presentation ownership; this record changes no accepted
+compositor, panel, animation, distribution, or capability contract. Any future
+gesture, persistence, or API amendment must update its owning contract and
+affected documentation together rather than treating this page as acceptance.
+
+## Open points
 
 None of these is a global `OQ`: this document proposes no new contract boundary
 and blocks no current-milestone gate, so under the
@@ -709,9 +779,26 @@ amendment, an RFC-0002 revision, or a persistence RFC settles them:
   capacity, and vertical-edge behavior (PW-7, PW-8);
 - the Lua command/query/event spellings, capability scopes, payload bounds, and
   API version (PW-9, OQ-056);
-- the tab bar ownership, close semantics, reorder/move gestures, tab order and
+- the tab bar's specification home, close semantics, reorder/move gestures, tab order and
   persistence, and its composition with the Bar edge surface (PW-10);
 - the unified `Mod` spelling and conflict behavior (PW-1, PW-7, PW-8, OQ-052).
+
+## Acceptance criteria
+
+- Separate each Accepted rule, Candidate direction, implementation observation,
+  and owner-pending API or persistence choice.
+- Keep PW-10 presentation plugin-owned and identify its Core-chrome alternative
+  as unaccepted throughout status, body, reconciliation, and open points.
+- Preserve Core identity, bounds, command atomicity, no-window-leak, and
+  zero-plugin/safe-mode semantics; revive no retired plugin alias.
+- Require the owning contract's tests and independent review before accepting
+  a new interaction. This candidate records no passing runtime gate.
+
+## P0 Review Sign-off
+
+No sign-off is recorded for this candidate. Capability, isolation, and
+Terminal Truth acceptance remains with the authoritative security contracts
+and the independent review of each future amendment or implementation.
 
 ## References
 

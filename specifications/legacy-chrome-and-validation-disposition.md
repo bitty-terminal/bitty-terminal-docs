@@ -16,8 +16,10 @@ sidebar_order: 72
 Candidate terminal-platform synchronization record. It summarizes accepted
 cross-repository decisions owned by
 [bitty-docs](https://github.com/bitty-terminal/bitty-docs) and records only
-their terminal-side consequences. It decides nothing new, authorizes no
-implementation, and describes no executed removal or relocation. The linked
+their terminal-side consequences. It decides nothing new and authorizes no
+implementation. The original 2026-10-03 plan and the dated source observations
+under Implementation status are separate: observing a removal or relocation
+does not accept its parity, migration, validation, or security evidence. The linked
 sources are normative; where this page and a linked source differ, the linked
 source wins.
 
@@ -37,11 +39,13 @@ source wins.
     retires the `bitty-terminal.tabs` compatibility alias and the bundled
     `bitty-terminal.shell-integration` manifest at a `>= v0.2.0` floor and
     defines the stored-grant migration path.
-- Execution status: not executed. The `bitty` workspace still carries the
-  transitional workspaceline, the compatibility aliases, and the bundled
-  manifests, and `bitty-compat-lab` and `bitty-perf` are still product-workspace
-  members. Relocation is `W-105`; Core-side removal is `W-104`. Every
-  implementation-status page linked below stays candidate.
+- Source status at `bitty` `1c68de25` (2026-10-17): retirement executed in
+  part, including the workspaceline, tabs alias, Core tab-strip projection,
+  and bundled workspace manifest/claim. The catalog contains only
+  shell-integration. The validation suites are no longer product-workspace
+  members and external revision pins exist. These are source observations,
+  not acceptance that `W-104`/`W-105` and all their gates are complete. Every
+  linked implementation-status page retains its own candidate/evidence limits.
 - Frontmatter `status` is `draft` per the repository metadata schema; document
   status is Candidate.
 
@@ -50,7 +54,7 @@ source wins.
 This record gives the terminal-platform corpus one discoverable page that
 reflects the accepted disposition in `W-74`, `W-75`, and ADR 0017, so that the
 architecture, product, and reference pages do not drift while the retirement
-and the validation-suite relocation are still unexecuted. It exists for the
+and the validation-suite relocation evolve. It exists for the
 `W-83` documentation-synchronization deliverable and carries the terminal-side
 entry point for the `W-84` validation-repository relocation guidance.
 
@@ -135,29 +139,30 @@ This record must be read together with, and must not weaken:
 The owner and disposition direction for each legacy path are accepted by
 `W-74`; the authoritative table with source evidence is in
 [`W-74` Legacy Chrome Retirement](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/legacy-chrome-retirement.md).
-The summary below records only the disposition and the owner. Current locations
-are evidence of where the code lives today, not a claim that any disposition has
-been executed.
+The summary below preserves the original 2026-10-03 disposition plan and its
+path names; it is not a current file-presence inventory. The later execution
+observations are recorded separately under Implementation status. No source
+observation satisfies an unrecorded removal gate.
 
-| Legacy area                                                                                                     | Owner                                                                                          | Disposition direction                                                                                                                                                                                                                                                                                                                                                             |
-| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workspace lifecycle and state (`crates/bitty-runtime/src/runtime/workspaces.rs`, lifecycle and command portion) | bitty Core (`W-104`)                                                                           | Retain lifecycle, state, and command handling as a Core mechanism.                                                                                                                                                                                                                                                                                                                |
-| First-party workspace policy path (`crates/bitty-runtime/src/workspace.rs`)                                     | bitty Core (`W-104`)                                                                           | Retire the manifest policy path after parity; re-home pure observation helpers only when no consumer remains.                                                                                                                                                                                                                                                                     |
-| `tabs` alias shim (`crates/bitty-runtime/src/tabs.rs`)                                                          | bitty Core (`W-104`)                                                                           | Deprecate and remove at the documented `>= v0.2.0` alias boundary; do not delete ahead of the window. Executed early under the DEC-0100 owner waiver of the ADR-0017 floor (`bitty#1717` `471b3f9`).                                                                                                                                                                              |
-| Tab-strip projection (`crates/bitty-ui/src/tab_strip.rs`)                                                       | `bar` presentation plugin; Core removal `W-104`                                                | Move panel tabs to plugin policy; retire the Core-side module once parity exists.                                                                                                                                                                                                                                                                                                 |
-| Scratchpad slot (`crates/bitty-ui/src/scratchpad.rs`)                                                           | bitty Core                                                                                     | Retain as a Core hidden slot and state mechanism; visible indicator and toggle UX move to the bar or statusline plugin while the toggle stays a Core workspace command.                                                                                                                                                                                                           |
-| Bundled manifests and claims (`crates/bitty-plugin-host/src/bundled.rs`)                                        | bitty Core (`W-104`); replacement registration is a first-party package                        | Retire the bundled `bitty-terminal.workspace` and `bitty-terminal.tabs` entries after parity; drop the exclusive `workspaceline` and `tabline` claims; keep the workspace commands in the Core command namespace. The `tabs`/`tabline` portion executed early (`bitty#1717` `471b3f9`, DEC-0100 waiver); the `workspace`/`workspaceline` remainder stays open under `bitty#1572`. |
-| Bundled shell-integration manifest                                                                              | bitty Core (`W-104`); replacement is an independently versioned first-party package (ADR 0017) | Retire the bundled `bitty-terminal.shell-integration` manifest at the `>= v0.2.0` floor while keeping the plugin id available through the independent package; Core keeps OSC 7/133 parsing, semantic zones, and Terminal Truth.                                                                                                                                                  |
-| Transitional workspaceline and status-bar presentation (`crates/bitty-runtime/src/runtime/workspaces.rs`)       | bitty Core (`W-104`)                                                                           | Retire the presentation once a first-party presentation plugin covers it; the lifecycle and state stay.                                                                                                                                                                                                                                                                           |
-| Generic chrome band mechanism (`crates/bitty-runtime/src/runtime/band_slots.rs`)                                | bitty Core                                                                                     | Retain: edge reservation, mount routing, stacked band rows, and per-edge geometry are generic, not workspace-specific.                                                                                                                                                                                                                                                            |
-| Presentation-state mechanism (`crates/bitty-ui/src/presentation.rs`)                                            | bitty Core                                                                                     | Retain: presentation mode is mechanism, not chrome.                                                                                                                                                                                                                                                                                                                               |
-| Legacy settings `workspace.show_bar` and `workspace.bar.edge`                                                   | bitty Core (`W-104`); first-party plugin mapping                                               | Deprecate with the transition: map to the plugin settings with a deprecation window or remove alongside the workspaceline; introduce no new Core bar-appearance keys.                                                                                                                                                                                                             |
-| Never-empty guard, stable panel identity, and scene candidates                                                  | owning RFCs                                                                                    | Out of scope for `W-74`; accepted or rejected by their owning RFCs.                                                                                                                                                                                                                                                                                                               |
-| Terminal tab-stop state (`crates/bitty-term-state/src/tabs.rs`)                                                 | bitty Core                                                                                     | Retain: a terminal mechanism unrelated to workspace tabs, listed only to disambiguate the name.                                                                                                                                                                                                                                                                                   |
+| Legacy area                                                                                                     | Owner                                                                                          | Disposition direction                                                                                                                                                                                                                                                |
+| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workspace lifecycle and state (`crates/bitty-runtime/src/runtime/workspaces.rs`, lifecycle and command portion) | bitty Core (`W-104`)                                                                           | Retain lifecycle, state, and command handling as a Core mechanism.                                                                                                                                                                                                   |
+| First-party workspace policy path (`crates/bitty-runtime/src/workspace.rs`)                                     | bitty Core (`W-104`)                                                                           | Retire the manifest policy path after parity; re-home pure observation helpers only when no consumer remains.                                                                                                                                                        |
+| `tabs` alias shim (`crates/bitty-runtime/src/tabs.rs`)                                                          | bitty Core (`W-104`)                                                                           | Deprecate and remove at the documented `>= v0.2.0` alias boundary; do not delete ahead of the window. Executed early under the DEC-0100 owner waiver of the ADR-0017 floor (`bitty#1717` `471b3f9`).                                                                 |
+| Tab-strip projection (`crates/bitty-ui/src/tab_strip.rs`)                                                       | `bar` presentation plugin; Core removal `W-104`                                                | Move panel tabs to plugin policy; retire the Core-side module once parity exists.                                                                                                                                                                                    |
+| Scratchpad slot (`crates/bitty-ui/src/scratchpad.rs`)                                                           | bitty Core                                                                                     | Retain as a Core hidden slot and state mechanism; visible indicator and toggle UX move to the bar or statusline plugin while the toggle stays a Core workspace command.                                                                                              |
+| Bundled manifests and claims (`crates/bitty-plugin-host/src/bundled.rs`)                                        | bitty Core (`W-104`); replacement registration is a first-party package                        | Retire the bundled workspace and tabs entries after parity; drop their exclusive claims; keep Core workspace commands. Later source observations below record the early tabs purge and workspace-manifest removal, without accepting new waivers or gate completion. |
+| Bundled shell-integration manifest                                                                              | bitty Core (`W-104`); replacement is an independently versioned first-party package (ADR 0017) | Retire the bundled `bitty-terminal.shell-integration` manifest at the `>= v0.2.0` floor while keeping the plugin id available through the independent package; Core keeps OSC 7/133 parsing, semantic zones, and Terminal Truth.                                     |
+| Transitional workspaceline and status-bar presentation (`crates/bitty-runtime/src/runtime/workspaces.rs`)       | bitty Core (`W-104`)                                                                           | Retire the presentation once a first-party presentation plugin covers it; the lifecycle and state stay.                                                                                                                                                              |
+| Generic chrome band mechanism (`crates/bitty-runtime/src/runtime/band_slots.rs`)                                | bitty Core                                                                                     | Retain: edge reservation, mount routing, stacked band rows, and per-edge geometry are generic, not workspace-specific.                                                                                                                                               |
+| Presentation-state mechanism (`crates/bitty-ui/src/presentation.rs`)                                            | bitty Core                                                                                     | Retain: presentation mode is mechanism, not chrome.                                                                                                                                                                                                                  |
+| Legacy settings `workspace.show_bar` and `workspace.bar.edge`                                                   | bitty Core (`W-104`); first-party plugin mapping                                               | Deprecate with the transition: map to the plugin settings with a deprecation window or remove alongside the workspaceline; introduce no new Core bar-appearance keys.                                                                                                |
+| Never-empty guard, stable panel identity, and scene candidates                                                  | owning RFCs                                                                                    | Out of scope for `W-74`; accepted or rejected by their owning RFCs.                                                                                                                                                                                                  |
+| Terminal tab-stop state (`crates/bitty-term-state/src/tabs.rs`)                                                 | bitty Core                                                                                     | Retain: a terminal mechanism unrelated to workspace tabs, listed only to disambiguate the name.                                                                                                                                                                      |
 
 ### Compatibility aliases
 
-The `bitty-terminal.tabs` plugin id, the `bitty-terminal.tabs:*` command
+In the original 2026-10-03 plan, the `bitty-terminal.tabs` plugin id, the `bitty-terminal.tabs:*` command
 aliases, the `tabline` claim alias, and the `TABS_*` constants and
 `TabsIntegration` functions are compatibility aliases, not mechanisms. They
 resolve to the canonical workspace names, grant no extra authority, and are
@@ -201,13 +206,16 @@ compatibility-matrix and performance floors).
 
 ### CI and local commands that stay required
 
-The commands below are the current required and local entry points recorded by
+The commands below preserve the original 2026-10-03 required and local entry points recorded by
 `W-75` and the
 [terminal compatibility matrix](../reference/compatibility-matrix.md). They run
-in the `bitty` repository today; after `W-105` they run in the owning validation
+in the pre-relocation `bitty` workspace; the plan moves them to the owning validation
 repository, and the product repository keeps a required check on its change
 path. Local runs use the same suite roster and floors as CI and are never weaker
-than the required check.
+than the required check. They are historical command spellings, not commands
+to run in the current product workspace. The dated source inventory under
+Implementation status identifies the external checkout/pin entry points;
+this page executes no validation suite and accepts no relocation evidence.
 
 Required product-path commands:
 
@@ -246,7 +254,7 @@ cargo bench -p bitty-perf --bench latency_real -- --nocapture
 cargo bench -p bitty-perf --bench idle_real -- --nocapture
 ```
 
-The current required check set on the product change path includes the quality
+The original plan's required check set on the product change path includes the quality
 job (benchmark compile and run plus the parser-throughput regression floor), the
 four Tier 1 platform legs (`linux-x11`, `linux-wayland`, `macos`, `windows`)
 that run the M1 and compatibility matrices, and the `m1-matrix` and
@@ -271,16 +279,19 @@ presentation plugins enabled, including `bitty --safe`:
 
 1. Workspaces are fully usable: every workspace operation works through Core
    commands and key bindings, with no dependency on the plugin system.
-2. Core owns workspace state and semantics and provides the default workspace
-   strip as fallback. A bar plugin may replace that strip with read-only
-   workspace observations and Core commands; failure returns to the fallback.
+2. Core owns workspace state and semantics but provides no workspace-strip
+   fallback. Without a presentation plugin, no workspace band is reserved,
+   including in safe mode. A bar plugin uses read-only workspace observations
+   and Core commands; fallback-strip wording elsewhere is an unaccepted
+   proposal/deviation from ADR 0014.
    Optional tab and sidebar surfaces remain plugin presentation.
 3. The hidden scratchpad slot and its Core toggle command remain available, with
    no visible indicator when no presentation plugin is enabled.
 4. The baseline does not depend on the plugin runtime, event delivery, or
    request queue.
-5. The transitional workspaceline is the only exception while it is still
-   present; it is removed once a first-party presentation plugin reaches parity.
+5. The transitional workspaceline was historical migration state, not an
+   exception to ADR 0014; it has since been removed. Workspace presentation
+   remains plugin-only.
 
 ### Evidence artifacts
 
@@ -300,9 +311,14 @@ the owning validation repository, against the pinned production revision:
 
 ## Deprecation and removal gates
 
-No legacy path is removed until every gate below that applies to it is
-satisfied and recorded. `W-74` satisfies the ownership gate only; it does not
+The original 2026-10-03 removal plan requires that no legacy path be removed
+until every applicable gate below is satisfied and recorded. These obligations
+remain in force for acceptance. `W-74` satisfies the ownership gate only; it does not
 satisfy the parity, review, migration, regression, or documentation gates.
+Subsequent source removals are recorded below even where this page has no
+acceptance evidence for those gates. Their existence neither waives a gate
+nor creates a new exception; the previously recorded DEC-0100 tabs waiver
+remains a historical pointer only.
 
 | Gate                          | Owner                                             | Requirement                                                                                                                                                                   |
 | ----------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -340,7 +356,7 @@ retained mechanism.
 
 | Plan key | Scope                                     | Terminal-platform consequence                                                                                                                                                                                      |
 | -------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `W-83`   | Terminal documentation synchronization    | This page and the affected architecture, product, and reference pages reflect the accepted `W-74`, `W-75`, and ADR 0017 dispositions without claiming execution. `W-83` is a completion prerequisite for `W-104`.  |
+| `W-83`   | Terminal documentation synchronization    | The original plan synchronized the accepted dispositions before `W-104`; later dated inventory records observed execution separately without accepting gate completion.                                            |
 | `W-84`   | Validation-repository relocation guidance | This page is the terminal-platform entry point for the `bitty-compat-lab` and `bitty-perf` relocation guidance accepted by `W-75`; the owning repositories accept the guide before their `CTX-0002` tasks unblock. |
 
 `CTX-0087` also synchronizes the existing pages listed under References below.
@@ -349,14 +365,45 @@ those remain `W-104` and `W-105`.
 
 ## Implementation status
 
-Candidate. No disposition in this page is executed:
+### Original plan snapshot (2026-10-03)
 
-- the transitional workspaceline, the `bitty-terminal.tabs` alias, and the
-  bundled `bitty-terminal.workspace` and `bitty-terminal.shell-integration`
-  manifests are still present in the `bitty` tree;
-- `bitty-compat-lab` and `bitty-perf` are still product-workspace members, and
-  their independent repositories are metadata-only scaffolds;
-- the relocation is `W-105` and the Core-side removal is `W-104`.
+The original synchronization page recorded the transitional workspaceline,
+tabs alias, and bundled workspace/shell-integration manifests as present, and
+the two validation suites as product-workspace members awaiting `W-104` and
+`W-105`. That was a plan-time inventory, superseded by the source observations
+below; it is not the present execution status.
+
+### Source observations (`1c68de25`, 2026-10-17)
+
+- The transitional workspaceline display was removed (`bitty#1721`,
+  `819f286`), the tabs shim was purged early (`bitty#1717`, `471b3f9`,
+  previously recorded DEC-0100 waiver), and the Core tab-strip projection was
+  removed (`bitty#1680`, `34b6d831`). Their absence does not prove replacement
+  parity or cross-platform acceptance.
+- `crates/bitty-plugin-host/src/bundled.rs` contains only
+  `bitty-terminal.shell-integration`; the workspace manifest, its constants,
+  and its bundled claim were removed by `bitty#1734` (`811ba94c`, CTX-0994).
+  The source explicitly retains `workspaceline` claim vocabulary for a future
+  plugin. Removing the bundled claim does not delete that vocabulary or prove
+  any replacement package is registered, enabled, rendered, or accepted.
+- `crates/bitty-runtime/src/workspace.rs` still contains observation/layout
+  helpers. Its presence is a remainder to assess under the original
+  disposition, not evidence that the retired bundled workspace manifest or
+  workspaceline remains.
+- `Cargo.toml` no longer lists `bitty-compat-lab` or `bitty-perf` as workspace
+  members. The relocation landed as `bitty#1684` (`03bfda5c`, W-105).
+  `validation-pins.env` records immutable production and suite revisions;
+  `.github/workflows/ci.yml` checks out external suites and invokes their
+  benchmark/regression and matrix paths. The product justfile's `test`,
+  `m1-matrix`, `compat-matrix`, `compat-freshness`, and `perf-*` entries locate
+  external checkouts. Source wiring is not proof those runs passed, that pins
+  exercise the current proposed product revision, or that branch protection
+  preserves all required gates.
+
+No validation suite, parity campaign, stored-grant migration, or platform test
+was executed for this documentation inventory. Acceptance of the complete
+`W-104`/`W-105` obligations remains with their owning tasks and independent
+evidence; no new waiver or lifecycle promotion follows here.
 
 The implementation-status pages
 [compatibility lab](../product/compat-lab.md),
@@ -370,11 +417,10 @@ candidate. The
 [future boundaries](../architecture/future-boundaries.md) pages remain the
 accepted architecture and candidate-mechanism records they already are.
 
-Execution pointer (`W-104`): the Core-side removal has since executed in
-part — the transitional workspaceline display was removed (`bitty#1721`
-`819f286`) and the `tabs` alias was purged early (`bitty#1717` `471b3f9`);
-the disposition direction above stands, and the manifest/claim remainder
-stays open under `bitty#1572`.
+The bundled shell-integration manifest remains present; its ADR 0017
+retirement is not claimed. The remaining assessment also includes retained helper/disposition coverage and the
+unproven parity, migration, security, and product-path validation obligations,
+not removal of an already absent bundled workspace manifest.
 
 ## Security review
 
@@ -401,12 +447,12 @@ coverage loss for the relocated validation gates.
 
 ## Alternatives considered
 
-| Alternative                                              | Disposition                                                                                                               |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Leave the disposition only in the bitty-docs contracts   | Rejected: terminal-platform readers would have no single routed entry point, and the affected pages could drift silently. |
-| Duplicate the full `W-74` and `W-75` normative text here | Rejected: cross-repository contracts are linked, not copied; this page records only terminal-side consequences.           |
-| Record the disposition as implemented                    | Rejected: no removal or relocation is executed; the pages stay candidate.                                                 |
-| Create a new normative decision on the terminal side     | Rejected: nothing new is decided; the sources own the decisions.                                                          |
+| Alternative                                              | Disposition                                                                                                                                                                               |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Leave the disposition only in the bitty-docs contracts   | Rejected: terminal-platform readers would have no single routed entry point, and the affected pages could drift silently.                                                                 |
+| Duplicate the full `W-74` and `W-75` normative text here | Rejected: cross-repository contracts are linked, not copied; this page records only terminal-side consequences.                                                                           |
+| Treat observed removals as complete contract acceptance  | Rejected: dated source inventory records partial retirement and relocation wiring, while parity, migration, required-gate enforcement, and independent acceptance need separate evidence. |
+| Create a new normative decision on the terminal side     | Rejected: nothing new is decided; the sources own the decisions.                                                                                                                          |
 
 ## Affected contracts
 
@@ -422,15 +468,16 @@ coverage loss for the relocated validation gates.
 The following details are parked with their owning sources and are not reopened
 here:
 
-- first covering presentation plugin and settings mapping, parked to `W-104`
+- remaining first-party presentation parity and settings-mapping evidence, parked to `W-104`
   and the first-party plugin (`W-74`);
 - deprecation-window mechanics, parked to `W-26` and `W-27`;
-- the fate of the candidate tab-strip module, parked to the `bar` plugin RFC
-  and `W-104`;
+- replacement tab-presentation parity after the observed Core module removal,
+  parked to the `bar` plugin RFC and `W-104`;
 - the external coupling and thin required-check mechanisms, `dev-perf`
   resolution, benchmark-baseline placement, mixed M1 roster split, and the local
-  developer entry point, parked to `W-105` and the two validation
-  implementation tasks (`W-75`);
+  developer entry point acceptance, parked to `W-105` and the two validation
+  implementation tasks (`W-75`); source relocation and pin wiring are recorded
+  above but do not satisfy those gates;
 - tab-order scope (`OQ-052`) and the workspace read API, event, capability, and
   command spellings (`OQ-056`).
 
@@ -444,14 +491,19 @@ here:
 - The deprecation and removal gates are stated and linked, including the
   `>= v0.2.0` floor and the stored-grant migration from ADR 0017.
 - The `W-83` and `W-84` traceability and the deprecation links are present.
-- No implementation is described as executed, and every implementation-status
-  page stays candidate.
+- The dated original plan and current source observations are distinguished;
+  observed removals and relocation wiring do not imply parity, a new waiver,
+  completed validation, security sign-off, or `Verified` behavior. Every linked
+  implementation-status page retains its own candidate/evidence limits.
 - No normative content owned by bitty-docs is duplicated as if original, and no
   P0 control is weakened.
 - The document is self-contained, in English, and `just check` passes with zero
   issues.
 
 ## P0 Review Sign-off
+
+The table states required reviews, not completed sign-offs. This source
+inventory records no new security approval or runtime acceptance.
 
 | Role                 | Scope                                                          | Requirement                                                           |
 | -------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------- |

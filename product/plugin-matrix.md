@@ -66,10 +66,11 @@ sidebar_order: 52
   removal landed. The bundled catalog is `bitty-terminal.shell-integration`
   only. Workspace presentation is owned by the first-party `bar` plugin
   (`bitty-terminal.bar`, Waybar-like consolidated bar covering workspaces,
-  statusline, and tabs); Core owns workspace state and semantics and retains
-  the default workspace strip as the fallback presentation. The bar may
-  replace that strip only through read-only workspace observations and Core
-  commands; absence or failure returns to the fallback. Rows below that describe
+  statusline, and tabs); Core owns workspace state and semantics but draws no
+  workspace presentation. The accepted zero-plugin baseline reserves no
+  workspace band; absence or failure of the optional bar does not create a
+  Core fallback. Core-strip fallback wording in later candidate records is an
+  unaccepted proposal/deviation. Rows below that describe
   `bitty-terminal.workspace` as owning the workspaceline remain the dated
   record.
 
@@ -288,11 +289,11 @@ No release ships any plugin enabled-by-default (`v1` enabled set is empty).
 Ordering below is **research build order**, not a date promise. It reflects
 composition coverage and trust cost.
 
-The workspace presentation next step is separate from workspace truth: the
-Core fallback strip remains usable while the first-party `bar` plugin is
-absent, denied, or being repaired. The bar consumes read-only workspace
+Workspace truth remains Core-owned and workspace presentation remains
+plugin-only. The first-party `bar` plugin consumes read-only workspace
 observations and dispatches Core-owned commands; it does not become a second
-workspace state machine.
+workspace state machine. Without a presentation plugin, no workspace strip is
+drawn and no edge band is reserved, including in safe mode.
 
 - **Next (P1)** — validate the Panel platform is useful without privileged
   surfaces:

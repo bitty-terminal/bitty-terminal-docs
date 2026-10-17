@@ -11,6 +11,8 @@ sidebar_order: 10
 
 # Lua configuration and filesystem layout
 
+## Document status
+
 > Status: candidate architecture. Lua is the accepted working direction for
 > user configuration, and experimental `bitty-config` code exists. The
 > two-stage configuration plan, layer stack, merge rules, reload
@@ -20,14 +22,24 @@ sidebar_order: 10
 > filenames, and CLI examples remain candidate contracts pending ADRs; no
 > stable or supported configuration contract is claimed.
 
+## Purpose and scope
+
 Bitty should offer Neovim-like flexibility—`init.lua`, modules, starter
 configurations, profiles, and community distributions—while keeping resolution,
 merging, validation, plugin isolation, and reload behavior deterministic.
+
+## Normative sources this specification must not weaken
 
 Configuration and workspace trust requirements are normative in the
 [security overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) and
 [threat model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md). The layouts proposed here must not
 turn a search path or project file into implicit code execution.
+
+## Terminology
+
+- Configuration root: the environment-derived directory for user configuration.
+- Canonical settings file: the owner-qualified Lua file selected before a short alias.
+- Implemented-only: merged source evidence without independent verification or a stability promise.
 
 ## Accepted direction: use the correct XDG roots
 
@@ -58,7 +70,7 @@ Deleting cache must not remove configuration or persistent state. Logout may
 remove runtime data. Installed packages must not live in a dotfiles-oriented
 configuration directory.
 
-## Candidate user configuration tree
+## User configuration tree
 
 A minimal configuration may contain only:
 
@@ -100,6 +112,14 @@ not installed plugin source. The manifest and lock names are candidates; their
 package semantics are documented in
 [Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md).
 
+The configuration root is not a package or extension-data root. Installed
+plugin packages and other application data belong under the data root; durable
+session and plugin state belongs under the state root; rebuildable indexes and
+compiled artifacts belong under the cache root; and sockets, locks, and
+current-login instance data belong under the runtime root. This separation is
+part of the shipped Core2192 settings path: the per-plugin user file is read
+from the environment-derived configuration root only.
+
 ## Lua modules without a global runtime path
 
 Status: **accepted direction.**
@@ -121,6 +141,76 @@ Plugin B VM -> package B module tree
 `require("config.options")` in the configuration VM resolves user config
 modules. A plugin's private `require("internal")` resolves only inside that
 plugin. Plugin-to-plugin use goes through declared, versioned host services.
+
+### Restricted plugin settings Lua
+
+Status: **implemented-only** (Core2192 settings and Core PR #2198 diagnostics,
+read-only evidence from merged Core `1c68de2545c961790d0a2011340e4a3c04564ab7`).
+A plugin's optional user settings file
+is `<config-root>/plugins/<owner>.<name>.lua`; the file is evaluated as a
+bounded plain-data return table. It is a settings value source, not a plugin
+module and not an authority or capability source.
+
+The settings VM is deliberately narrower than the ordinary plugin runtime. It
+has no host callbacks and no `print`, `tonumber`, `io`, `os`, `debug`,
+`package`, `require`, `load`, `loadfile`, or `dofile` globals. It cannot read
+files, spawn processes, access the network, or reach host objects. A denied
+global or a non-table return fails closed and the lower settings layers remain
+effective.
+Evaluation uses the same RC-1/RC-2 instruction, wall-clock, and memory budget
+model as plugin Lua: RC-1 is 10,000,000 instructions and 50 ms wall time;
+RC-2 is a 32 MiB accounted heap. The
+settings loader caps source bytes at 16 KiB. Plain-data extraction also caps
+nesting at 16 levels, 64 entries per table, 256 values, 2,048 bytes per
+string, and 16 KiB of aggregate output.
+
+Only booleans, integers, strings, and arrays of strings are admitted as plain
+values. A manifest `[settings]` declaration is required for every readable
+key, with at most 32 keys, a lower-case identifier of at most 64 bytes, one
+of `bool`, `int`, `string`, or `string-array`, and a matching shipped default.
+Types are strict: integers are not floats, arrays must be dense string arrays,
+and no coercion is performed. Undeclared or incompatible entries are dropped;
+`bitty.settings.get` rejects an undeclared read with
+`E_SETTINGS_UNDECLARED`. Every generation receives its own declared-key set
+and resolved map, so settings cannot cross plugin boundaries.
+
+The per-plugin settings layers, from lowest to highest, are:
+
+```text
+manifest shipped default < shared host source < canonical Lua file
+```
+
+The Lua file is selected in this order:
+
+1. `<owner>.<name>.lua` is canonical and wins whenever it is present.
+2. `<name>.lua` is a short-name compatibility alias. It is considered only
+   after a complete discovery pass proves that exactly one discovered plugin
+   owns that short name. Collisions, disabled installed claimants, incomplete
+   discovery, invalid candidates, and unavailable discovery fail closed and do
+   not use the alias.
+3. If no usable Lua file exists, the legacy
+   `<owner>.<name>.toml` file is used as a compatibility fallback.
+
+Canonical Lua takes precedence over both the short alias and legacy TOML. A
+present but invalid canonical Lua file does not fall through to an alias or
+TOML file; the plugin keeps running on lower settings layers and the rejection
+is recorded internally. The legacy TOML subset remains data-only and follows
+the same declared-key, strict-type, per-key default behavior. No setting value
+grants capability or changes the machine-managed `bitty-plugins.toml`.
+
+The plugin ecosystem owns the public settings API vocabulary and capability
+boundary; see its [`bitty.settings` reference](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/reference/settings.md)
+and [Lua runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md).
+
+Diagnostics for alias ambiguity, canonical-over-alias shadowing, dropped
+entries, and rejected files are **implemented-only** in merged Core PR
+[#2198](https://github.com/bitty-terminal/bitty/pull/2198) at
+`1c68de2545c961790d0a2011340e4a3c04564ab7`. They are retained on host-owned
+plugin generation state and read by the terminal's startup logging path.
+They are not Lua-visible, independently Verified, or a stable public
+diagnostics contract. See the pinned
+[Core settings loader](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790d0a2011340e4a3c04564ab7/crates/bitty-runtime/src/plugin_runtime/plugin_settings.rs)
+and the separate [Lua and legacy TOML bounds](../reference/configuration-options.md).
 
 A candidate minimal entry point is:
 
@@ -578,9 +668,9 @@ Status: **shipped input** (read-only from `bitty` `origin/main`,
 implementer decision, CTX-0979 `bitty` #1721). `workspace.show_bar` and
 `workspace.bar.edge` are RETAINED as `bar`-plugin-owned input
 (`bitty-terminal.bar`); Core parses but does not use these keys as workspace
-truth. The default workspace strip remains the fallback, including in
-`bitty --safe`; the bar replaces it only through read-only workspace
-observations and Core commands. No
+truth. There is no Core workspace-strip fallback, including in `bitty --safe`;
+a bar presentation plugin uses read-only workspace observations and Core
+commands. With no such plugin, workspace bands reserve zero space. No
 `workspace.bar.colors` or `workspace.bar.pill_align` keys were introduced.
 
 ```lua
@@ -590,17 +680,17 @@ return {
 }
 ```
 
-Per-plugin user files (CTX-1195, `bitty` #2057): the bar plugin declares
+Per-plugin user files (Core2192, `bitty` #2057): the bar plugin declares
 its settings (`show`, `edge`, `show_single`, `name_max_chars`, plus a
 `modules` string array defaulting to `{"workspaces", "clock"}`) in its
 manifest `[settings]`, and a user file at
-`<config-dir>/plugins/<owner>.<name>.toml` overrides the shipped defaults
-through the same source that serves `bitty.settings.get`. Values are the
-user's, authority is the system's: no value grants anything, and settings
-declarations stay out of the manifest hash. The full file grammar, bounds,
-precedence, and read gate live in the
+`<config-dir>/plugins/<owner>.<name>.lua` overrides the shipped defaults
+through the same source that serves `bitty.settings.get`; legacy TOML is only
+the compatibility fallback. Values are the user's, authority is the system's:
+no value grants anything, and settings declarations stay out of the manifest
+hash. The full file grammar, bounds, precedence, and read gate live in the
 [Configuration Model RFC](../specifications/configuration-model-rfc.md#plugin-settings-plane)
-and the [configuration options reference](../reference/configuration-options.md#per-plugin-user-files-pluginstoml).
+and the [configuration options reference](../reference/configuration-options.md#per-plugin-user-files-pluginslua).
 
 ## Appearance knobs (supported reference)
 
@@ -1400,7 +1490,39 @@ plumbing from terminal state, `execution_id` surfacing for Lua-side reconcile,
 exit-code-tolerant handling, binary-safe transport, and the production
 authorizer wiring above are sequel work. Nothing in this section claims them.
 
-## Open questions
+## Security review
+
+The normative security sources above remain authoritative. Restricted plugin
+settings supply values only, with no host authority; file rejection preserves
+lower layers. The merged diagnostics are host-internal implementation evidence,
+not independent security verification or closure of any security risk.
+
+## Verification plan
+
+Compare plugin settings claims with the pinned Core sources in the
+[configuration reference](../reference/configuration-options.md), including
+canonical selection, alias ambiguity, rejected-file fallback, declared-key
+filtering, and Lua versus TOML bounds. Run the repository's documentation,
+link, metadata, language, and hygiene gates. Cross-platform and release claims
+require their own implementation evidence.
+
+## Alternatives considered
+
+The configuration pipeline alternatives and their dispositions are recorded in
+the [Configuration Model RFC](../specifications/configuration-model-rfc.md#pipeline-candidates).
+Ambient module resolution and imperative live mutation remain subject to those
+accepted boundaries and the candidate qualifications above.
+
+## Affected contracts
+
+This page depends on the accepted configuration model, plugin settings API,
+Lua runtime, and security baseline linked above. The settings status and bounds
+correction changes implementation evidence only; it introduces no policy,
+schema, capability, or installation contract.
+
+## Open points
+
+### Open questions
 
 - What exact Lua version/runtime and standard libraries are available in the
   configuration VM?
@@ -1451,3 +1573,24 @@ authorizer wiring above are sequel work. Nothing in this section claims them.
   [OQ-049](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md), and no image key is supported yet.
 - What are the final manifest/lock names, and how do they coexist with Lua
   plugin specifications or distribution imports?
+
+## Acceptance criteria
+
+Configuration claims must retain their accepted, candidate, implemented-only,
+or deferred qualification. Settings limits must match the owning loader and
+parser; rejection must preserve existing precedence and capability boundaries.
+A Verified or stable claim requires separate evidence and acceptance.
+
+## P0 Review Sign-off
+
+This documentation correction records no new P0 sign-off or security-risk
+closure. Independent post-merge review of the correction remains required
+before task acceptance; merged source alone does not establish Verified status.
+
+## References
+
+- [Configuration Model RFC](../specifications/configuration-model-rfc.md).
+- [Configuration options reference](../reference/configuration-options.md),
+  including pinned implementation sources for Lua and legacy TOML settings.
+- [Core PR #2198](https://github.com/bitty-terminal/bitty/pull/2198): merged
+  host-internal settings diagnostics.
