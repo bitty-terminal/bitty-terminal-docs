@@ -117,7 +117,7 @@ Core reserves exactly one chrome band using `ChromeInsets`:
 
 ```text
 +-------------------------------------------------------------------------------+
-|  1  [2]  4   /mnt/data/Workspace/Project        2 Agents   CPU 8%   Fri 03:53 |
+|  1  [2]  4   ./project                          2 Agents   CPU 8%   Fri 03:53 |
 +-------------------------------------------------------------------------------+
 | (Full Terminal Grid - 100% unoccluded content area)                           |
 | $ cargo test --workspace                                                      |
