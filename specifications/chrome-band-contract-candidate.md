@@ -211,11 +211,14 @@ usable = container inset by gaps_out and the accepted decoration insets,
 
 ### Lua-mounted chrome
 
-1. Lua plugins keep `bitty.ui.mount("statusline" | "top" | "bottom" | ...)`
-   with `Text`, `Row`, `Column`, and `List` nodes. `statusline` subtrees render
-   inside the band carrying the Status Module Registry; `top`/`bottom` subtrees
-   render inside the band on that edge. The planned v0.1 host does not create a
-   `left`/`right` band for a mount alone.
+1. Lua plugins keep `bitty.ui.mount("top" | "bottom" | ...)` with `Text`,
+   `Row`, `Column`, and `List` nodes. `top`/`bottom` subtrees render inside the
+   band on that edge. `left` and `right` are accepted slot names, but this
+   build has no vertical band host, so those mounts fail closed with
+   `E_UI_UNAVAILABLE` and create no band. `statusline` is not a slot: Core
+   removed it in CTX-1140 (`bitty#1962`), the name fails as an unknown slot
+   with `E_UI_COMPONENT_INVALID`, and a bar plugin composes status presentation
+   on `bottom` instead.
 2. Core renders mounted subtrees within the existing per-component budgets
    (`UI_MAX_NODES`, `UI_MAX_TEXT_BYTES`, matching `SCN-1` and `SCN-3`) plus a
    **per-band per-frame render cap** (candidate named constant

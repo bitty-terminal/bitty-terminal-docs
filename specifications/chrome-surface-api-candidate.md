@@ -71,7 +71,9 @@ and `statusline` plugin implementations (plugin repositories).
   (accepted): `bitty.ui.mount(slot, component)`, the closed slot set
   (`terminal | top | bottom | left | right | tabline | statusline | overlay`),
   the v1 node subset (`Text | Row | Column | List`), the exclusive `tabline`
-  claim, and "host layout owns placement and decoration".
+  claim, and "host layout owns placement and decoration". The RFC's frozen
+  vocabulary predates the CTX-1140 removal of `statusline`; the current Core
+  build accepts the seven remaining names (see "Current state").
 - [Rich Presentation RFC](rich-presentation-rfc.md) (accepted): `SCN-1`
   (2048 nodes per block) and `SCN-3` (256 KiB text per block).
 - [Workspace Compositor Specification](workspace-compositor.md) (accepted):
@@ -109,8 +111,23 @@ else in this record is implemented.
 - `bitty.ui.mount(slot, tree)` and `bitty.ui.update(handle, tree)` exist behind
   `ui.rich`, with the closed slot set, the `Text`/`Row`/`Column`/`List` nodes,
   and the limits `UI_MAX_DEPTH = 16`, `UI_MAX_NODES = 2048`, and
-  `UI_MAX_TEXT_BYTES = 256 KiB`. Mounted blocks are stored but **never
-  rendered**.
+  `UI_MAX_TEXT_BYTES = 256 KiB` (`bitty@da63e42e`).
+- `top` and `bottom` mounts are retained and painted as edge bands. `overlay`
+  mounts are retained by the Core focusable-overlay host and are not edge
+  bands (CTX-0941).
+- `left` and `right` mounts fail closed with the typed runtime error
+  `E_UI_UNAVAILABLE` because this build has no vertical band host; no handle is
+  returned, no block is stored, and no columns are reserved
+  (`bitty#2234`, CTX-1341).
+- `terminal` mounts fail closed with `E_UI_UNAVAILABLE` (no terminal-attached
+  block host). `tabline` fails closed with `E_UI_UNAVAILABLE` (reserved for
+  panel tabs, PW-10).
+- `statusline` is not a slot in this build. Core removed it as a breaking
+  change in CTX-1140 (`bitty#1962`); the name is rejected as an unknown slot
+  with `E_UI_COMPONENT_INVALID`, and status presentation is a `bottom`-band
+  composition (bar replacement). The accepted Lua Surface RFC still lists
+  `statusline` in its frozen v1 vocabulary, so that accepted text and this
+  implementation fact diverge until the RFC is revised.
 - No Lua workspace read API and no workspace events exist.
 - A Core pill renderer with `workspace.bar.colors` and `workspace.bar.pill_align`
   was attempted and not merged; it is dropped by this record.
@@ -126,16 +143,23 @@ else in this record is implemented.
 
 ### Requesting a band
 
-1. Any plugin holding `ui.rich` requests an edge band by mounting on the
-   `top`, `bottom`, `left`, `right`, or `statusline` slot. The mount is the
-   request; there is no separate band API. The planned v0.1 host honors `top`
-   and `bottom` (and `statusline`, which Core places on the bottom band);
-   `left` and `right` mounts are stored and not placed until vertical bands
-   ship, using the four-edge geometry the Chrome Band Contract already defines.
-2. A mount never supplies coordinates, edge overrides, or thickness. Core
+1. Any plugin holding `ui.rich` requests an edge band by mounting on the `top`
+   or `bottom` slot. The mount is the request; there is no separate band API.
+   Core paints a placed surface on its edge and reserves that edge's exclusive
+   zone.
+2. `left` and `right` are accepted slot names with no vertical band host in
+   this build. A mount on either fails closed at `ui.mount` with the typed
+   runtime error `E_UI_UNAVAILABLE` after the capability and claim gates; no
+   handle is returned and nothing is stored or placed. Vertical bands stay
+   deferred until a host implements the four-edge geometry the Chrome Band
+   Contract already defines.
+3. `statusline` is not a slot: Core removed it in CTX-1140 (`bitty#1962`), and
+   the name fails as an unknown slot with `E_UI_COMPONENT_INVALID`. A bar
+   plugin composes status presentation on `bottom` instead.
+4. A mount never supplies coordinates, edge overrides, or thickness. Core
    derives the surface's thickness from the tree's laid-out extent, clamped to
    `BAND_MAX_THICKNESS_PX`.
-3. **No mount, no band.** When no plugin has a placed surface on an edge, that
+5. **No mount, no band.** When no plugin has a placed surface on an edge, that
    edge reserves zero space. Keyboard workspace switching and every other
    command keep working with no bar at all.
 

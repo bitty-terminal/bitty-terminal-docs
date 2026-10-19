@@ -310,8 +310,9 @@ Retired state (`W-104`, `bitty#1721` `819f286`): the Core workspaceline and
 its transitional band reservation were removed. No Core workspace strip
 replaces them, including in `bitty --safe`; the first-party bar presentation
 plugin uses read-only observations. Core retains workspace lifecycle, state,
-query commands, and generic chrome-band mechanisms. Mounted plugin trees are
-stored but not yet rendered.
+query commands, and generic chrome-band mechanisms. Mounted `top`/`bottom`
+plugin trees paint in their bands; `left` and `right` mounts fail closed with
+`E_UI_UNAVAILABLE` until a vertical band host exists (`bitty#2234`, CTX-1341).
 
 ## Candidate execution-domain model
 
