@@ -348,14 +348,19 @@ to the manifest hash, and settings declarations intentionally stay out of
    32 keys. The legacy TOML subset remains a compatibility fallback only when
    no canonical or eligible alias Lua file is selected. Its separate parser
    bounds are listed in the [configuration reference](../reference/configuration-options.md).
-3. **Precedence and failure.** Per declared key: shipped default, then the
-   shared host source, then canonical Lua — each step gated on strict type
-   agreement with no coercion. A canonical `<owner>.<name>.lua` wins over the
-   unique short alias `<name>.lua`; the alias is admitted only after complete
-   discovery proves one owner and fails closed for collisions, disabled
-   claimants, invalid candidates, or incomplete discovery. A malformed or
-   rejected Lua file falls back wholesale to lower layers and never aborts
-   startup; it does not fall through to an alias or TOML file.
+3. **Precedence and failure.** File selection is canonical Lua, then the
+   unique short alias, then legacy TOML; only the first existing file supplies
+   the file layer. Per declared key, a well-typed file value wins over the
+   shared host source, which wins over the shipped default — each step gated
+   on strict type agreement with no coercion. A canonical
+   `<owner>.<name>.lua` wins over the unique short alias `<name>.lua`; the
+   alias is admitted only after complete discovery proves one owner and fails
+   closed for collisions, disabled claimants, invalid candidates, or
+   incomplete discovery. A malformed or rejected Lua file falls back wholesale
+   to lower layers and never aborts startup; it does not fall through to an
+   alias or TOML file. The file is read at plugin activation and the resolved
+   map is pinned to that generation; no hot reload rereads it, and changes
+   apply on the next activation (for example a process restart).
 4. **Read gate.** `bitty.settings.get` reads only the generation's declared
    set; an undeclared key fails closed with `E_SETTINGS_UNDECLARED`, so
    settings are never a side channel between plugins. Each generation holds
@@ -399,6 +404,11 @@ Every schema change from a reloaded plan lands in exactly one class:
 | Live-reconcilable | Applied by diff-and-reconcile to running instances without restart         |
 | Restart-required  | Accepted and persisted, but effective after the next process start         |
 | Rejected          | Validation failure; previous good plan remains active, diagnostics emitted |
+
+Per-plugin settings files are outside this classification: each is read at
+plugin activation and pinned to that generation, so `bitty ctl config reload`
+does not reread it and a new activation (for example a process restart) is
+required before an edit takes effect.
 
 Contract obligations: the classification is declared by the schema (never
 inferred at runtime); a reload containing any restart-required change reports

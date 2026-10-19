@@ -101,6 +101,10 @@ only when complete discovery proves that exactly one plugin owns `<name>`.
 Ambiguous aliases, disabled installed claimants, invalid candidates, and
 incomplete discovery fail closed. The canonical file wins over the alias.
 
+The file layer is selected in this order: canonical Lua, then the unique short
+alias, then legacy TOML. Only the first existing file is read; a present but
+invalid Lua file does not fall through to the alias or TOML.
+
 The Lua loader sets `PlainConfigLimits.source_bytes` to 16 KiB and uses the
 remaining plain-data limits below. The generic evaluator's source default is
 64 KiB; it does not override this narrower plugin settings loader cap.
@@ -118,8 +122,8 @@ remaining plain-data limits below. The generic evaluator's source default is
 | Manifest declarations   | at most 32 keys; names at most 64 bytes         | invalid manifest rejected                          |
 | Type agreement          | strict, no coercion; undeclared keys unreadable | lower layer for that key / `E_SETTINGS_UNDECLARED` |
 
-Precedence per declared key: shipped default < shared host source < canonical
-Lua file. A wrong-typed value fails to the lower layer for that key; a
+Precedence per declared key: shipped default < shared host source < selected
+user file. A wrong-typed value fails to the lower layer for that key; a
 malformed or rejected Lua file falls back wholesale and never aborts startup.
 If neither a canonical nor an eligible alias Lua file is selected, legacy
 `<owner>.<name>.toml` is used as a compatibility fallback with the same strict
@@ -131,6 +135,12 @@ declaration and type rules, but its own parser bounds:
 | Keys per file                         | at most 64; duplicates rejected                        | rejected file uses lower layers |
 | String values                         | at most 512 bytes, no NUL                              | lower layer for that key        |
 | String arrays                         | at most 32 items, each at most 128 bytes, strings only | lower layer for that key        |
+
+The selected file is read when the plugin activates, and its resolved
+declared-key map is pinned to that generation. Editing it does not hot-reload
+the plugin or its settings; the new values apply on the next activation of
+that plugin (for example a process restart). `bitty ctl config reload` and the
+automatic `init.lua` file poll do not reread per-plugin settings files.
 
 `bitty-plugins.toml` stays machine-only. Core PR
 [#2198](https://github.com/bitty-terminal/bitty/pull/2198) diagnostics for alias
