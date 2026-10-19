@@ -102,7 +102,7 @@ so that Rust may refactor freely while the Lua surface stays stable:
 ```lua
 -- Accepted v1 semantic API spellings (ADR 0009; Plugin API v1 Lua Surface RFC).
 bitty.terminal.snapshot({ scope = "semantic" })
-bitty.ui.mount("statusline", component)
+bitty.ui.mount("bottom", component)
 bitty.services.get("ai.chat", { version = ">=2.0" })
 ```
 

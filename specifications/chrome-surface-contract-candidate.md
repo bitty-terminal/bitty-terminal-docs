@@ -122,8 +122,10 @@ is accepted by [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main
    A plugin never takes authority from the user or the safety policy.
 5. **Chrome slots are admitted, bounded, and closed.** v1 admits the closed slot
    set of the accepted Lua Surface RFC. The tabline slot is an exclusive
-   declaration (one declarant); status components may layer. No slot admits
-   arbitrary rendering, native handles, or global coordinates.
+   declaration (one declarant). A host may reject an admitted slot it does not
+   present; rejection is fail-closed at `ui.mount` with `E_UI_UNAVAILABLE`,
+   never a stored-but-unpainted mount. No slot admits arbitrary rendering,
+   native handles, or global coordinates.
 6. **No chrome surface is a focus target.** Focus belongs to a panel, a view, or
    an overlay; a chrome surface may show the focused item but never receives
    keyboard or IME input itself. A pointer interaction on chrome routes through
@@ -152,16 +154,25 @@ The per-slot envelopes and fragment rules below are candidate, except where
 a shipped or accepted basis is cited. They consolidate the `bitty` CTX-0429
 design record (issue #688) so the candidate text has one canonical home;
 `OQ-056` owns which dimensions get contracts and in which API version, and
-`OQ-082` owns streaming. No `mount` implementation is claimed: the host Lua
-bridge has no mount path yet (CTX-0428, ready, not started).
+`OQ-082` owns streaming. Host support is asymmetric in the `bitty` build at
+`bitty@da63e42e`: `top`/`bottom` bands and the `overlay` host are implemented,
+while `left`, `right`, `tabline`, and `terminal` have no host and fail closed
+at mount. The envelopes below remain candidate.
 
-| Slot                                         | Envelope                                                                                                                                                                                                                            | Conflict resolution                                                                                                                                         |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `statusline`                                 | Candidate generic envelope (formerly shipped; the Core helper was removed in CTX-0922 and the envelope now lives in the Lua `statusline` plugin): at most 8 fragments, each at most 64 chars, 128 chars total, joined with `&#124;` | Overflow truncates at fragment boundary from the tail; one invalid fragment fails that mount or update only (`E_UI_COMPONENT_INVALID`), never the whole bar |
-| `overlay`                                    | Shipped: text truncated at char boundary to 128; at most 4 non-modal plus 1 modal per window (`4+1`)                                                                                                                                | Shipped fail-closed typed errors (`OverlayBusy`, `TooManyOverlays`); no silent eviction, no last-wins replacement                                           |
-| `tabline`                                    | Shipped claim semantics: the canonical workspace claim is `workspaceline`; `tabline` survives only as a deprecated alias (removal at or after v0.2.0)                                                                               | A second claimant is rejected fail-closed with a diagnostic; the incumbent keeps the slot                                                                   |
-| `terminal`, `top`, `bottom`, `left`, `right` | Scene bounds only (`SCN-2` depth 32, accepted Rich Presentation bound); no plugin-set geometry                                                                                                                                      | Host layout owns placement and decoration; geometry conflicts are impossible by construction                                                                |
-| `palette` (effective, via `overlay`)         | Candidate (formerly shipped; now in the Lua `palette` plugin): per-panel command bound 32, query and entry text within the 128-char overlay bound, duplicates rejected; at most one effective picker per invocation                 | A second concurrent picker invocation is rejected or queued behind the active one; overlay exhaustion still fails closed per the `4+1` rule                 |
+| Slot                                 | Envelope                                                                                                                                                                                                            | Conflict resolution                                                                                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `top`, `bottom`                      | Scene bounds only (`SCN-2` depth 32, accepted Rich Presentation bound); no plugin-set geometry; band is painted while a surface is mounted                                                                          | Host layout owns placement and decoration; geometry conflicts are impossible by construction                                                             |
+| `left`, `right`                      | Not hosted: this Core build has no vertical band host, so no vertical band geometry is reserved                                                                                                                     | Mount fails closed with the typed runtime error `E_UI_UNAVAILABLE`; no block is stored, so a slot can never be admitted and then silently unpainted      |
+| `terminal`                           | Not hosted: no terminal-attached block host exists                                                                                                                                                                  | Mount fails closed with `E_UI_UNAVAILABLE`; no block is stored                                                                                           |
+| `overlay`                            | Shipped: text truncated at char boundary to 128; at most 4 non-modal plus 1 modal per window (`4+1`)                                                                                                                | Shipped fail-closed typed errors (`OverlayBusy`, `TooManyOverlays`); no silent eviction, no last-wins replacement                                        |
+| `tabline`                            | Shipped claim semantics: the canonical workspace claim is `workspaceline`; `tabline` survives only as a deprecated alias (removal at or after v0.2.0)                                                               | A second claimant is rejected fail-closed with a diagnostic; the incumbent keeps the slot; a `tabline` mount itself fails closed with `E_UI_UNAVAILABLE` |
+| `palette` (effective, via `overlay`) | Candidate (formerly shipped; now in the Lua `palette` plugin): per-panel command bound 32, query and entry text within the 128-char overlay bound, duplicates rejected; at most one effective picker per invocation | A second concurrent picker invocation is rejected or queued behind the active one; overlay exhaustion still fails closed per the `4+1` rule              |
+
+`statusline` is not a v1 slot in the current Core build: it was removed as a
+breaking change in CTX-1140 (`bitty#1962`) and the name now fails as an unknown
+slot with `E_UI_COMPONENT_INVALID`. The former status-fragment envelope belongs
+to the separate `statusline` plugin, which composes on the `bottom` band (bar
+replacement); it creates no slot of its own.
 
 Fragment composition (candidate): one mount per fragment; render order is
 ascending mount sequence (`update` preserves position, remount appends at
@@ -173,11 +184,11 @@ high-frequency updates are excluded (`OQ-082` stays open); mounted fragments
 never claim focus, never receive input routing, and never graduate into
 panels (accepted `LUA-OQ-11` boundary restated).
 
-A future `StatusProvider` compiles to one `statusline`-slot mount per
-fragment under the rules above; a `left` / `center` / `right` vocabulary, if
-ever adopted, describes host-owned intra-bar regions, never additional mount
-slots. The provider interface name, version, metadata, and filtering
-protocol stay open behind a capability-gated host surface when defined.
+A future `StatusProvider` compiles to one `bottom`-slot mount per fragment
+under the rules above; a `left` / `center` / `right` vocabulary, if ever
+adopted, describes host-owned intra-bar regions, never additional mount
+slots. The provider interface name, version, metadata, and filtering protocol
+stay open behind a capability-gated host surface when defined.
 
 ## Chrome-side consequences of the candidate UI runtime
 

@@ -304,10 +304,12 @@ provides generic host mechanisms only; named bars are plugin compositions on
 them (see the draft
 [Chrome Surface API](chrome-surface-api-candidate.md)):
 
-- **Edge surfaces (bands)** — `top`, `bottom`, `left`, `right`, and
-  `statusline` mounts that reserve space only while a plugin mounts a tree,
-  stack deterministically per edge, render within budgets, and route clicks to
-  registered commands.
+- **Edge surfaces (bands)** — `top` and `bottom` mounts that reserve space only
+  while a plugin mounts a tree, stack deterministically per edge, render within
+  budgets, and route clicks to registered commands. `left` and `right` are
+  accepted slot names with no vertical band host yet, so mounts fail closed
+  with `E_UI_UNAVAILABLE`; `statusline` is not a slot (bar replacement) and
+  status presentation composes on the `bottom` band.
 - **`OverlayRoot`** — the host-owned root for transient overlays such as the
   command palette, which-key help, and jump labels.
 - **Notification primitive** — the notification and attention-badge
