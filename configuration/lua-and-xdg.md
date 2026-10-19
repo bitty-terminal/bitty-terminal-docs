@@ -177,7 +177,8 @@ and resolved map, so settings cannot cross plugin boundaries.
 The per-plugin settings layers, from lowest to highest, are:
 
 ```text
-manifest shipped default < shared host source < canonical Lua file
+manifest shipped default < shared host source < selected user file
+selected user file: canonical Lua > short alias > legacy TOML
 ```
 
 The Lua file is selected in this order:
@@ -188,7 +189,7 @@ The Lua file is selected in this order:
    owns that short name. Collisions, disabled installed claimants, incomplete
    discovery, invalid candidates, and unavailable discovery fail closed and do
    not use the alias.
-3. If no usable Lua file exists, the legacy
+3. If neither Lua file is present, the legacy
    `<owner>.<name>.toml` file is used as a compatibility fallback.
 
 Canonical Lua takes precedence over both the short alias and legacy TOML. A
@@ -197,6 +198,12 @@ TOML file; the plugin keeps running on lower settings layers and the rejection
 is recorded internally. The legacy TOML subset remains data-only and follows
 the same declared-key, strict-type, per-key default behavior. No setting value
 grants capability or changes the machine-managed `bitty-plugins.toml`.
+
+The selected file is read when the plugin activates, and its resolved map is
+pinned to that generation. Editing it does not hot-reload the plugin or its
+settings; the new values apply on the next activation of that plugin (for
+example after a process restart). `bitty ctl config reload` and the automatic
+`init.lua` file poll do not reread per-plugin settings files.
 
 The plugin ecosystem owns the public settings API vocabulary and capability
 boundary; see its [`bitty.settings` reference](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/reference/settings.md)
@@ -1061,6 +1068,11 @@ Shipped leaf inventory:
   applying it.
 - Unknown and undeclared keys are rejected by validation; the previous good
   plan stays active (`should_retain_previous`).
+- Per-plugin settings files are outside this inventory and outside the live
+  reload path: each is read at plugin activation and its resolved map is
+  pinned to that generation. `bitty ctl config reload` and the file poll do
+  not reread them; a new activation (for example a process restart) applies
+  edits. See [Restricted plugin settings Lua](#restricted-plugin-settings-lua).
 
 ## Starters and distributions
 
