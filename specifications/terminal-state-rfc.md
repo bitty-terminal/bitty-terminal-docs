@@ -163,7 +163,9 @@ After each applied action, terminal state satisfies all of:
    cells with the trailing half marked as spacer; no orphan spacers exist.
 3. **Cursor integrity**: the cursor points at a leading cell, never a wide
    spacer's second half; movement onto wide chars follows a single documented
-   rule.
+   rule. CUF and CUB counts are columns: the destination is `col ± n` clamped
+   to the margin, and a destination landing on a trailing spacer snaps to its
+   lead, so a wide pair's spacer is never an extra movement step.
 4. **Scrollback monotonicity**: lines enter scrollback only via scroll-under-
    region operations; pruning removes oldest first; scrollback contents are
    immutable once written.
