@@ -14,7 +14,7 @@ sidebar_order: 20
 > Status: draft, source-qualified guide. The extension and spawn procedures
 > were inspected read-only against merged `bitty` source (confinement
 > `2a3fddaf`, spawn ledger `a89f51a5`, source transparency `9a5296b9`;
-> 2026-10-12). The activation column describes `5a43e95d` (PR #2276
+> 2026-10-12). The activation column describes `da4b9a77` (PR #2276
 > follow-ups, 2026-10-20). The plugin install/enable procedure below describes
 > `1c52ba7617e4c42d2fde06c5b318ebefc54aec3b` (PR #2212). The behavior is
 > experimental (`Implemented`-only, never `Verified`): this guide describes
