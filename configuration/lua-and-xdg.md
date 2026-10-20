@@ -725,22 +725,27 @@ blur remain `Open`). The accepted animation contract is the
 [Panel Animations and Effects RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md)
 (accepted; OQ-040 closed 2026-09-12 and shipped in `3c5878e` CTX-0341).
 
-| Key                         | Default                        | Range or values                                                             |
-| --------------------------- | ------------------------------ | --------------------------------------------------------------------------- |
-| `appearance.theme`          | `bitty-dark` (alias `dark`)    | preset name, alias, or dual `light:<name>,dark:<name>`; unknown fail closed |
-| `theme` (alias)             | unset                          | `appearance.theme` wins                                                     |
-| `appearance.colors.*`       | unset                          | complete inline palette, `#RRGGBB`-only                                     |
-| `font.family`               | `JetBrainsMono Nerd Font`      | non-empty, `<= 128` bytes                                                   |
-| `font.size`                 | `12.0`                         | `(0, 128]`                                                                  |
-| `font.line_height`          | `1.375`                        | `[1.0, 2.0]`                                                                |
-| `font.letter_spacing`       | `2.0`                          | `[0.0, 8.0]`                                                                |
-| `window.opacity`            | `1.0`                          | `[0.0, 1.0]` whole window                                                   |
-| `window.padding`            | `8`                            | `0..=64` logical px                                                         |
-| `window.radius_px`          | `0`                            | `0..=24` physical px (no-op S0)                                             |
-| `layout.gaps_in`/`gaps_out` | `0`/`0`                        | `0..=16` cells                                                              |
-| `layout.resize_step`        | `0.05`                         | `0.01..=0.20` split-ratio delta per keypress, fail-closed, live             |
-| `decoration.*`              | see decoration reference above | logical px                                                                  |
-| `scrollbar.mode`/`width`    | `hidden`/`8`                   | `hidden`/`always`/`auto`, `1..=32`                                          |
+| Key                          | Default                        | Range or values                                                             |
+| ---------------------------- | ------------------------------ | --------------------------------------------------------------------------- |
+| `appearance.theme`           | `bitty-dark` (alias `dark`)    | preset name, alias, or dual `light:<name>,dark:<name>`; unknown fail closed |
+| `theme` (alias)              | unset                          | `appearance.theme` wins                                                     |
+| `appearance.colors.*`        | unset                          | complete inline palette, `#RRGGBB`-only                                     |
+| `font.family`                | `JetBrainsMono Nerd Font`      | non-empty, `<= 128` bytes                                                   |
+| `font.size`                  | `12.0`                         | `(0, 128]`                                                                  |
+| `font.line_height`           | `1.375`                        | `[1.0, 2.0]`                                                                |
+| `font.letter_spacing`        | `2.0`                          | `[0.0, 8.0]`                                                                |
+| `window.opacity`             | `1.0`                          | `[0.0, 1.0]` whole window                                                   |
+| `window.padding`             | `8`                            | `0..=64` logical px                                                         |
+| `window.radius_px`           | `0`                            | `0..=24` physical px (no-op S0)                                             |
+| `window.blur_radius`         | `0`                            | only `0`; non-zero fails closed (OQ-038)                                    |
+| `window.background_image`    | unset                          | absolute or `~` path under `decoration.background_image_roots`              |
+| `window.background_fit`      | `fill`                         | `fill`/`fit`/`center`/`tile`/`stretch`                                      |
+| `window.background_opacity`  | `1.0`                          | `[0.0, 1.0]` image-alpha dim                                                |
+| `window.background_position` | `center`                       | nine CSS positions; only `fit`/`center`                                     |
+| `layout.gaps_in`/`gaps_out`  | `0`/`0`                        | `0..=16` cells                                                              |
+| `layout.resize_step`         | `0.05`                         | `0.01..=0.20` split-ratio delta per keypress, fail-closed, live             |
+| `decoration.*`               | see decoration reference above | logical px                                                                  |
+| `scrollbar.mode`/`width`     | `hidden`/`8`                   | `hidden`/`always`/`auto`, `1..=32`                                          |
 
 The built-in preset names, aliases, and dark/light categories are listed in the
 [theme preset catalog](themes.md); the full 30-preset catalog resolves today.
@@ -761,8 +766,12 @@ valid set (CTX-0951, `bitty` #1687; closes
 
 - The gap layers compose: effective gap =
   `decoration.gap * DPI_scale + layout.gap_cells * cell_axis` (CTX-0333).
-- `window.opacity` is whole-window, not per-surface or background-only; a
-  per-surface or background-only knob and blur remain design-only (OQ-038).
+- `window.opacity` is whole-window, not per-surface or background-only.
+  `window.background_opacity` is the separate image-alpha dim: it applies
+  before the image is blended over the theme background, then
+  `window.opacity` scales the finished premultiplied surface once. A blur
+  contract remains design-only (OQ-038): `window.blur_radius` accepts only
+  `0` and rejects a non-zero value at validation with a typed diagnostic.
 - Label position (OQ-036) and frame/margin-line color (OQ-037) have no config
   key yet; do not document them as supported.
 - Focused/idle outline colors (OQ-039) shipped with `bitty` PR #572 (merge

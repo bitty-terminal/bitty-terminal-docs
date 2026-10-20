@@ -200,11 +200,36 @@ and [TOML parser](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790
 
 ### `window`
 
-| Key path           | Type    | Default | Valid range                                                    | Fail-closed                  | Reload |
-| ------------------ | ------- | ------- | -------------------------------------------------------------- | ---------------------------- | ------ |
-| `window.opacity`   | float   | `1.0`   | finite, `[0.0, 1.0]`                                           | reject layer / reject reload | live   |
-| `window.padding`   | integer | `8`     | `[0, 64]` logical px                                           | reject layer / reject reload | live   |
-| `window.radius_px` | integer | `0`     | `[0, 24]` physical px (parsed no-op in S0: zero render effect) | reject layer / reject reload | live   |
+| Key path                     | Type    | Default  | Valid range                                                                                                                                        | Fail-closed                  | Reload |
+| ---------------------------- | ------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------ |
+| `window.opacity`             | float   | `1.0`    | finite, `[0.0, 1.0]`                                                                                                                               | reject layer / reject reload | live   |
+| `window.padding`             | integer | `8`      | `[0, 64]` logical px                                                                                                                               | reject layer / reject reload | live   |
+| `window.radius_px`           | integer | `0`      | `[0, 24]` physical px (parsed no-op in S0: zero render effect)                                                                                     | reject layer / reject reload | live   |
+| `window.blur_radius`         | integer | `0`      | only `0`; non-zero rejects with `window.blur_radius` (OQ-038 has no accepted blur design)                                                          | reject layer / reject reload | live   |
+| `window.background_image`    | string  | unset    | absolute or `~`-anchored, non-empty, at most 4096 bytes, no NUL; root trust, format, and decode belong to the loader                               | reject layer / reject reload | live   |
+| `window.background_fit`      | string  | `fill`   | `fill` \| `fit` \| `center` \| `tile` \| `stretch` (exact, case-sensitive)                                                                         | reject layer / reject reload | live   |
+| `window.background_opacity`  | float   | `1.0`    | finite, `[0.0, 1.0]`; image-alpha dim only                                                                                                         | reject layer / reject reload | live   |
+| `window.background_position` | string  | `center` | `center` \| `top-left` \| `top` \| `top-right` \| `left` \| `right` \| `bottom-left` \| `bottom` \| `bottom-right`; only `fit`/`center` observe it | reject layer / reject reload | live   |
+
+#### Window background fit and opacity
+
+`window.background_image` paints behind the grid over the **whole live
+surface**, including `window.padding`; it is re-sized from the surface extent
+on every window resize, split/layout change, DPI change, and move. The default
+`fill` is uniform cover: aspect ratio is preserved, both axes are covered, and
+the overflow is cropped evenly from the center, so there are no edge gaps and
+no distortion. `fit` is uniform contain (full image, letterboxed, position
+honored); `center` and `tile` keep native pixels scaled by the DPI factor;
+`stretch` scales non-uniformly onto the whole surface.
+
+`window.background_opacity` multiplies the image alpha when the image is
+blended over the theme background. `window.opacity` then scales the finished
+premultiplied window once for the compositor. The order is fixed, the knobs are
+independent, and a single value is never applied twice to the same layer.
+
+`window.blur_radius` is schema-present for a future platform-blur contract, but
+OQ-038 is unresolved: the shipped loader accepts only `0` and rejects a
+non-zero value at validation with a typed `window.blur_radius` diagnostic.
 
 ### `terminal`
 
