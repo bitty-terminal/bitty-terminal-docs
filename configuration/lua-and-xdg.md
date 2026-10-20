@@ -102,6 +102,7 @@ $XDG_CONFIG_HOME/bitty/
 │   ├── development.lua
 │   └── ai.lua
 └── profiles/
+    ├── default.lua
     ├── minimal.lua
     ├── coding.lua
     └── remote.lua
@@ -378,8 +379,9 @@ missing/illegal parents fail closed, 16-hop cap.
 Shipped mechanics:
 
 - Named profiles live at `$XDG_CONFIG_HOME/bitty/profiles/<name>.lua`.
-- Selection is `--profile NAME`, else `BITTY_PROFILE`; a missing, empty, or
-  whitespace-only value means no profile.
+- Selection is `--profile NAME`, else `BITTY_PROFILE`, else the persisted
+  selector in `init.lua`; a missing, empty, or whitespace-only launch value
+  means absent.
 - Names allow `[A-Za-z0-9_-]` only (no paths, no extensions) and at most 64
   bytes; anything else fails closed. System-wide `XDG_CONFIG_DIRS` is never
   consulted for profiles.
@@ -388,6 +390,34 @@ Shipped mechanics:
   [Layers and precedence](#layers-and-precedence)).
 - A requested-but-missing or invalid profile fails closed (exit 2); a bare
   launch with no profile request keeps working.
+
+Persisted selection (CTX-1404, issue #2187) is a versioned User-layer
+envelope, implemented by `bitty init`:
+
+```lua
+-- $XDG_CONFIG_HOME/bitty/init.lua
+return {
+    format = "bitty-profile-v1",
+    profile = "default",
+    -- User overrides belong here and win over the selected profile.
+    window = { opacity = 0.95, padding = 8 },
+}
+```
+
+- The exact `format = "bitty-profile-v1"` discriminator is required. An
+  unmarked `init.lua` is a legacy plain configuration; a bare `profile` key
+  without the discriminator stays undeclared.
+- Selection order is `--profile` > `BITTY_PROFILE` > persisted selector. A
+  broken explicit selection fails closed instead of falling back to the
+  selector; an explicit launch selection never rewrites the selector.
+- The selected chain is not loaded in addition to an explicit chain, and the
+  selector adds no value layer: User overrides remain above the whole profile
+  chain.
+- `extends` stays profile-layer-only. The selector is not a profile parent.
+- Selecting or creating a profile does not install, enable, grant, or fetch a
+  plugin; profile declarations are configuration data only.
+- Safe startup (`--safe`) still returns the built-in safe configuration
+  before reading any selector, profile, or parent.
 
 Shipped: profile composition via single-parent `extends` chains
 with cycle detection (base-first, 16-hop cap, fail-closed);
@@ -417,6 +447,59 @@ grammar remains open.
 The shipped launch form is `bitty --profile coding` (or `BITTY_PROFILE=coding`)
 as specified above; the grammar-ownership question is closed by that shipment
 and only multi-parent `extends` stays open.
+
+## Profile-backed initialization
+
+Status: **implemented-only** on `bitty` `main` after issue #2187 (CTX-1404);
+the profile model above remains the shipped contract.
+
+`bitty init` writes `profiles/default.lua` plus a thin `init.lua` selector.
+`bitty init --profile NAME` writes only `profiles/NAME.lua` and does not
+activate it. Activation is explicit:
+
+```bash
+bitty init
+bitty init --yes
+bitty init --yes --profile work
+bitty config profile use work
+bitty config profile list
+bitty config profile show work
+bitty config profile path work
+bitty init --migrate
+```
+
+- A fresh profile-backed init publishes the profile before the selector.
+  A crash before selector publication leaves the previous configuration
+  usable and never auto-selects the orphan.
+- Writes validate the generated Lua first. New files use exclusive creation;
+  replacements write and sync a sibling temporary file, then rename over the
+  target. Existing bytes go to a collision-free `<file>.bak[.N]` sibling
+  created with exclusive creation, so the sole recovery copy is not
+  overwritten.
+- A complete legacy `init.lua` is never silently replaced or reinterpreted,
+  including with `--force`. `bitty init --migrate` copies the complete source
+  bytes to `profiles/default.lua`, validates the profile, compares the
+  effective values with the pre-migration configuration, and only then
+  replaces `init.lua` with the selector. The legacy bytes remain in the
+  selector backup.
+- `bitty config profile use NAME` validates the name, the whole profile chain,
+  and the prospective selector before mutation. It rewrites only the
+  `profile = "..."` value, preserving comments and user overrides, and keeps
+  a backup of the previous selector.
+- `--profile NAME` combined with `--config`/`BITTY_CONFIG` is refused as
+  ambiguous. `BITTY_PROFILE` is never an output target.
+- When a persisted selector lives in an explicit `--config`/`BITTY_CONFIG`
+  file, its profile directory is the sibling `profiles/` directory of that
+  file (the same location `bitty init` writes). One-launch `--profile` and
+  `BITTY_PROFILE` continue to resolve under the user config root.
+- `config profile list` reads directory metadata only (no Lua evaluation);
+  `show` loads the bounded `extends` chain; `path` validates the name and
+  prints the resolved path without creating it.
+- `--force` is an explicit reset of the named generated file, with backups;
+  a default run refuses an existing target instead of guessing. Lossless
+  merge into arbitrary hand-edited Lua is not part of this slice: the wizard
+  never serializes a typed plan back over source, so edit the profile
+  directly or use an explicit reset.
 
 ## Shipped CLI overrides, setup wizard, and logging defaults
 
@@ -1272,14 +1355,14 @@ Notes on the candidate mapping:
 
 Configuration and runtime paths are controllable through explicit environment variables alongside CLI flags:
 
-| Variable                      | Target and semantics                   | Precedence and scope                                                                   |
-| ----------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------- |
-| `BITTY_CONFIG`                | Explicit configuration file path       | `--config <PATH>` > `BITTY_CONFIG` > probed defaults; fails closed (exit 2) if missing |
-| `BITTY_PROFILE`               | Named configuration profile            | `--profile <NAME>` > `BITTY_PROFILE` > unprofiled base; loads `profiles/<name>.lua`    |
-| `BITTY_SOCKET`                | IPC socket or named pipe path override | Overrides platform-default runtime socket / named pipe path                            |
-| `BITTY_PLUGIN_DIR`            | Plugin search and load root override   | Local plugin testing and staging                                                       |
-| `BITTY_LOG` / `BITTY_VERBOSE` | Logging filter and verbosity           | `--log-level` > `--verbose`/`BITTY_VERBOSE=1` > `BITTY_LOG` > default quiet            |
-| `BITTY_FAIL_LOUD`             | Abort immediately on startup fault     | Turns shell or IPC startup errors into fatal aborts (exit 1)                           |
+| Variable                      | Target and semantics                   | Precedence and scope                                                                                                           |
+| ----------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `BITTY_CONFIG`                | Explicit configuration file path       | `--config <PATH>` > `BITTY_CONFIG` > probed defaults; fails closed (exit 2) if missing                                         |
+| `BITTY_PROFILE`               | Named configuration profile            | `--profile <NAME>` > `BITTY_PROFILE` > persisted `init.lua` selector; loads `profiles/<name>.lua`; never an init output target |
+| `BITTY_SOCKET`                | IPC socket or named pipe path override | Overrides platform-default runtime socket / named pipe path                                                                    |
+| `BITTY_PLUGIN_DIR`            | Plugin search and load root override   | Local plugin testing and staging                                                                                               |
+| `BITTY_LOG` / `BITTY_VERBOSE` | Logging filter and verbosity           | `--log-level` > `--verbose`/`BITTY_VERBOSE=1` > `BITTY_LOG` > default quiet                                                    |
+| `BITTY_FAIL_LOUD`             | Abort immediately on startup fault     | Turns shell or IPC startup errors into fatal aborts (exit 1)                                                                   |
 
 Precedence order for the configuration file is strict:
 

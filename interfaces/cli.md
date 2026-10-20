@@ -499,10 +499,11 @@ see [Review Extension Source and Consent](../how-to/review-extension-source-and-
 Status: **implemented-only evidence** from `bitty` PR #2153 and PR #2157
 (0.0.24); this does not make the broader CLI candidate contract stable.
 
-Profile-backed `bitty init` from Core issue #2187 is explicitly deferred to
-the post-0.0.24 release-tail gate. It is a future P0/P1 release-preparation
-item, not a current implementation or contract, and this page does not claim
-that the wizard creates or selects profiles.
+Profile-backed `bitty init` from Core issue #2187 is implemented (CTX-1404):
+a bare run writes `profiles/default.lua` plus a thin versioned `init.lua`
+selector. `bitty init --profile NAME` writes only `profiles/NAME.lua` and
+does not activate it; activation is the explicit
+`bitty config profile use NAME` operation.
 
 - The interactive TTY wizard uses single-keypress navigation for option
   pickers. Arrow keys and `j`/`k` move immediately, Enter selects the current
@@ -513,6 +514,18 @@ that the wizard creates or selects profiles.
   Core `b99059bc` (PR #2197), present at `1c68de25`, also removes the splash
   code and first-run marker lifecycle. `bitty init` starts with the setup
   prompt and no mascot output; no splash-suppression option remains.
+- `--profile NAME` combined with `--config`/`BITTY_CONFIG` is refused as
+  ambiguous. `BITTY_PROFILE` is a one-launch input and never selects the init
+  output target. Named-profile writes run no plugin, component, fetch, or
+  shell-init follow-up.
+- A legacy `init.lua` without the versioned selector envelope is never
+  replaced implicitly, including with `--force`. `bitty init --migrate`
+  copies complete legacy bytes to `profiles/default.lua`, validates the
+  profile, compares effective values, then rewrites `init.lua` as the
+  selector and keeps a recoverable backup.
+- Generated files validate before mutation. New files use exclusive creation;
+  replacements write and sync a sibling temporary file then rename over the
+  target; backups use `<file>.bak[.N]` exclusive creation.
 - The wizard still writes only the documented configuration surface and keeps
   its bounded-attempt and fail-closed behavior. These are implementation
   observations, not an acceptance of the candidate CLI grammar.
@@ -579,12 +592,31 @@ bitty config show --source
 bitty config defaults
 bitty config diff
 bitty config reload
+bitty config profile list
+bitty config profile show NAME
+bitty config profile use NAME
+bitty config profile path NAME
 ```
 
 `config check` should evaluate configuration in a fresh configuration VM,
 produce and validate a typed plan, and avoid creating a GUI. `config show`
 should show effective values, while `--source` explains which layer and file
 provided each value.
+
+`config profile` is implemented (CTX-1404, issue #2187) as a local,
+pre-runtime surface:
+
+- `list` reads bounded directory metadata and evaluates no Lua.
+- `show NAME` loads and validates the single-parent `extends` chain and
+  prints profile-only values with source attribution.
+- `use NAME` validates the name, chain, and prospective selector, then
+  rewrites only the `profile = "..."` value in the existing selector,
+  preserving comments and user overrides. It keeps a recoverable backup and
+  never reloads a running instance or mutates plugin/component state.
+- `path NAME` validates the name grammar and prints the resolved path without
+  creating it or evaluating Lua.
+- A legacy `init.lua` without the versioned selector envelope is refused;
+  `bitty init --migrate` is the explicit conversion path.
 
 Path and configuration architecture are documented in
 [Lua and XDG configuration](../configuration/lua-and-xdg.md).
