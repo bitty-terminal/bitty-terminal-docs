@@ -205,6 +205,16 @@ settings; the new values apply on the next activation of that plugin (for
 example after a process restart). `bitty ctl config reload` and the automatic
 `init.lua` file poll do not reread per-plugin settings files.
 
+Users do not need to read Core sources to find or create the file.
+`bitty plugin config show <id>` prints the declared schema, the candidate and
+selected paths, and every effective value with its serving layer, without
+creating a plugin VM. `bitty plugin config scaffold <id>` writes a commented
+canonical Lua template from the manifest defaults only; it refuses to
+overwrite without `--force`, refuses symlinked targets, and commits atomically
+inside the configuration root. See the
+[per-plugin user files reference](../reference/configuration-options.md#inspecting-and-scaffolding-settings)
+for the exact output, flags, and failure behavior.
+
 The plugin ecosystem owns the public settings API vocabulary and capability
 boundary; see its [`bitty.settings` reference](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/reference/settings.md)
 and [Lua runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/lua-runtime-rfc.md).
