@@ -274,12 +274,14 @@ region { id, kind }, start_col, end_col, version }` records through
    registration wins where spans overlap ("topmost/last-registered"), and
    the emitted table is disjoint by construction. A column outside every
    region is unclaimed chrome.
-5. Click dispatch carries the region id under `region` and the button
-   spelling (`left`, `right`, `middle`) under `button`; scroll dispatch
-   carries `region` and the host-computed `delta`. Both merge last and
-   overwrite declared entries of the same names. Bands consume left,
-   right, and middle presses and releases, so chrome can never paste the
-   clipboard; back and forward fall through unchanged. No capability is
+5. A region-aware click carries the region id under `region` and the button
+   spelling (`left`, `right`, `middle`) under `button`; a region-aware
+   scroll carries `region` and the host-computed `delta`. Both merge last
+   and overwrite declared entries of the same names. A span without a
+   region keeps its pre-2248 payload exactly and routes only the primary
+   button, so existing strict command schemas stay valid. Bands consume
+   left, right, and middle presses and releases, so chrome can never paste
+   the clipboard; back and forward fall through unchanged. No capability is
    added: the command still needs its declared grants.
 6. A queued action is fenced by the presented band origin (plugin
    generation, mount handle, slot, version, edge, row); a remount, edge

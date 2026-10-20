@@ -264,8 +264,10 @@ usable = container inset by gaps_out and the accepted decoration insets,
    releases on a band row are Core chrome: the matching release dispatches
    the region's command with `button = "left" | "right" | "middle"`, and a
    non-matching release is consumed without disturbing the armed gesture.
-   Right and middle presses therefore never paste the clipboard behind a
-   band. Back and forward buttons fall through unchanged.
+   A legacy span without a region keeps its primary-button-only dispatch
+   and its original args payload. Right and middle presses therefore never
+   paste the clipboard behind a band. Back and forward buttons fall through
+   unchanged.
 8. **Deterministic resolution and bounds.** A pointer column resolves to
    exactly one region; where regions overlap, the last-registered (topmost)
    region wins. A band may emit at most `BAND_MAX_REGIONS` (`64`) distinct
