@@ -178,7 +178,8 @@ All modules satisfy:
    the band, and dispatches the region id plus `button` or `delta` through
    the existing bounded queue and command registry. A right or middle click
    is delivered to a module that declares the binding and never reaches a
-   clipboard paste.
+   clipboard paste; a module without a region keeps primary-only dispatch
+   and its pre-2248 args payload.
 3. A band may emit at most `BAND_MAX_REGIONS` (`64`) distinct regions;
    above the cap the whole region table is refused fail-closed. Where
    declarations overlap, the last-registered (topmost) region wins. A region
