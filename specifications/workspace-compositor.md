@@ -565,12 +565,14 @@ What merged, exactly:
     beside it at a balanced `0.5` split, selecting the nearest normalized
     edge (horizontal preferred on an exact tie, left/top preferred on an
     equal pair). Self, background, and overlay-tier drops are no-ops. `Esc`,
-    pointer leave, window focus loss, and mid-drag close cancel with the
-    pre-drag tree byte-identical; only the committed layout resizes a PTY.
-    Focus follows the dragged panel, and a committed drop arms the existing
-    move transition (chrome ring only; terminal content is never
-    interpolated). Dispatch order is release then press with consuming
-    guards.
+    pointer leave, and window focus loss cancel without committing and
+    restore the pre-drag tree; any mid-drag layout install (close, zoom,
+    workspace switch) abandons the drop while keeping that install's own
+    tree, so a stale release can never commit against the new tree. Only a
+    committed drop resizes a PTY. Focus follows the dragged panel, and a
+    committed drop arms the existing move transition (chrome ring only;
+    terminal content is never interpolated). Dispatch order is release then
+    press with consuming guards.
 
     Bounded subset and deviations from Hyprland: the ghost keeps the source
     tile size and the untouched tiled layout stays behind it (Hyprland floats
