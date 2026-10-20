@@ -11,25 +11,39 @@ sidebar_order: 11
 
 # Theme presets
 
-> Status: **shipped catalog.** All 30 built-in presets below (20 dark, 10
-> light) resolve in `bitty` today. The catalog is compiled into the binary in
+## Status and provenance
+
+> Status: **shipped catalog and shipped inline palette.** All 30 built-in
+> presets below (20 dark, 10 light) resolve in `bitty` today, and the inline
+> `appearance.colors` table is a shipped, complete alternative to a preset.
+> The catalog is compiled into the binary in
 > `bitty` `crates/bitty-config/src/theme.rs` and belongs to `bitty` CarryCtx
 > task `CTX-0350` (PR #578, merge commit `20cd735`; the AC-2 outline-contrast
 > correction shipped in PR #586, merge commit `a7d9e6a`). The names, aliases,
 > dark/light categories, source URLs, and exact palette values are pinned by
 > fail-closed catalog tests in `bitty`, so this page is reference data, not a
-> provisional target. Only built-in presets exist: there is still no theme file
-> loading, and custom/user themes remain unsupported and open (OQ-047). The
-> owning configuration contract remains the
+> provisional target. Theme **files** are still unsupported (OQ-047); the
+> inline table is the only custom-palette surface. The owning configuration
+> contract remains the
 > [Configuration Model RFC](../specifications/configuration-model-rfc.md) and
 > the accepted [Appearance Configuration RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md)
-> (OQ-039); the catalog adds documented data, not new configuration semantics.
+> (OQ-039); this page documents shipped data and the shipped inline schema.
 
-Bitty resolves terminal colors from a **built-in preset registry**. A preset is
-a fixed set of window background, foreground, cursor, selection, focused/idle
-outline tokens, and the 16 ANSI colors. The registry is compiled into the
-binary (`bitty` `crates/bitty-config/src/theme.rs`); there is no theme file
-loading today. `bitty list themes` enumerates the shipped catalog.
+## Purpose and scope
+
+This reference documents the shipped preset catalog, the shipped inline
+`appearance.colors` schema, and the exact roles a theme owns versus the roles
+derived from it. It does not define a theme-file format, plugin theme
+contribution, or any ownership outside the terminal palette; those remain open
+questions stated at the end.
+
+Bitty resolves terminal colors from a **built-in preset registry** or a
+complete inline palette. A theme owns the window background, default
+foreground, cursor, selection background, and the 16 ANSI colors. Presets also
+carry the focused/idle outline tokens; an inline palette keeps the selected
+preset's outline tokens. The registry is compiled into the binary
+(`bitty` `crates/bitty-config/src/theme.rs`); there is no theme file loading
+today. `bitty list themes` enumerates the shipped catalog.
 
 ## Selecting a theme
 
@@ -81,15 +95,17 @@ Resolution rules (shipped behavior, `bitty` `crates/bitty-config/src/types.rs`
 | malformed dual shape                  | fail-closed validation error naming the expected shape             |
 
 `appearance.theme` is declared reload class `Live` in the config layer
-(CTX-0295), so a valid change is diffed and reconciled in the effective
-configuration rather than rejected as restart-required; the running-app
-theme/font hot-swap path is still a tracked follow-up. Unknown names fail
-closed at load and reload validation with a diagnostic naming the valid preset
-set (run `bitty list themes` for the catalog); they never silently fall back.
-The compiled-in `resolve_theme` fallback to `bitty-dark` with a stderr warning
-remains only as runtime last-resort for values that bypass validation. A
-`#RRGGBB`/`#RRGGBBAA` color value is never accepted here — only a preset name,
-alias, or dual pair.
+(CTX-0295) and the running app adopts it without restart (CTX-0898): the
+resolved palette is installed on the renderer and the window surface, and one
+full redraw repaints existing grid cells, scrollback viewports, the selection
+overlay, the cursor, and cached shaped glyphs on the next presented frame.
+Unknown names fail closed at load and reload validation with a diagnostic
+naming the valid preset set (run `bitty list themes` for the catalog); they
+never silently fall back. The compiled-in `resolve_theme` fallback to
+`bitty-dark` with a stderr warning remains only as runtime last-resort for
+values that bypass validation. A `#RRGGBB`/`#RRGGBBAA` color value is never
+accepted here — only a preset name, alias, or dual pair; custom colors use the
+inline table below.
 
 ### Dual light/dark selection (shipped)
 
@@ -218,18 +234,99 @@ repository at the time of writing. License text is not bundled; only names and
 attribution are recorded. The catalog is additive: adding a family requires its
 source URL and license here and in the registry.
 
-## Custom and third-party themes
+## Inline custom palette (`appearance.colors`)
 
-Custom and user-supplied themes are **not supported**. There is no theme file
-format, no `$XDG_DATA_HOME/bitty/themes/` or `$XDG_CONFIG_HOME/bitty/themes/`
-loading path, and no plugin theme contribution contract today. The `themes/`
-directory is reserved in the [XDG data layout](lua-and-xdg.md#data-state-cache-and-runtime-layouts)
-but is inert. Selecting an unknown name fails closed at validation; it does not
-load a file.
+`appearance.colors` is a complete inline palette. It is not a theme file and
+it does not read any path: the table is evaluated from the already-trusted
+`init.lua`/`config.lua` configuration layer and becomes the terminal palette
+directly (CTX-0392, issue #648; completed as a first-class preset alternative
+in issue #2333). Presets are shorthand over the same terminal roles.
 
-Whether user themes, a file schema, or plugin-supplied themes enter scope is an
-open question; see below. Do not document or rely on a custom-theme path until
-a reviewed contract defines its schema, load path, and trust model.
+```lua
+return {
+    appearance = {
+        -- Optional: the base preset keeps its focused/idle outline tokens and
+        -- is the fallback for any future theme-owned chrome role.
+        theme = "bitty-dark",
+        colors = {
+            background = "#0b1020",
+            foreground = "#e6e6fa",
+            cursor = "#ff2e88",
+            selection = "#24304a",
+            ansi = {
+                "#101020", "#ff5555", "#50fa7b", "#f1fa8c",
+                "#7aa2f7", "#ff79c6", "#8be9fd", "#c0caf5",
+                "#414868", "#ff6e6e", "#69ff94", "#ffffa5",
+                "#d6acff", "#ff92df", "#a4ffff", "#ffffff",
+            },
+        },
+    },
+}
+```
+
+Schema and validation rules (shipped, fail-closed):
+
+| Field                          | Type                | Requirement                                                     |
+| ------------------------------ | ------------------- | --------------------------------------------------------------- |
+| `appearance.colors`            | table               | Closed table; unknown keys reject the layer.                    |
+| `appearance.colors.background` | string              | Required. Canonical `#RRGGBB` (no alpha, shorthand, or names).  |
+| `appearance.colors.foreground` | string              | Required. Canonical `#RRGGBB`.                                  |
+| `appearance.colors.cursor`     | string              | Required. Canonical `#RRGGBB`.                                  |
+| `appearance.colors.selection`  | string              | Required. Canonical `#RRGGBB`.                                  |
+| `appearance.colors.ansi`       | array of 16 strings | Required. Exactly 16 canonical `#RRGGBB` entries, indices 0–15. |
+
+Every role is required. A partial table is **not** merged with the preset and
+does not fall back per role: a missing role, a wrong-length `ansi` array, or a
+non-canonical hex leaf rejects the whole layer or reload with a typed
+diagnostic naming the exact field (for example
+`appearance.colors.ansi[7]`). The previous theme is never partially retained.
+`appearance.colors` is reload class `Live` and the same redraw path applies as
+for a preset switch.
+
+The inline palette owns the terminal roles it declares. The focused/idle
+outline pair stays owned by the selected preset (or explicit
+`decoration.border_color*` keys), and glow/shadow/tint/fade stay explicit
+style configuration, so a custom table cannot silently rewrite those tokens.
+Chrome accents that are _derived_ from terminal roles (below) do follow the
+custom palette, because they are computed from its colors.
+
+## Which roles a theme controls
+
+| Surface                                  | Source                                                                               |
+| ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| Window clear and default cell background | `background`                                                                         |
+| Default glyph/foreground text            | `foreground`                                                                         |
+| ANSI 0–15, normal and bright             | `ansi[0..15]` (OSC 4 can override individual entries live)                           |
+| Block cursor fill                        | `cursor`                                                                             |
+| Selection background                     | `selection`                                                                          |
+| Selected glyph foreground                | Derived: the cell's own foreground (default or ANSI), unchanged                      |
+| Scrollbar thumb                          | Derived: `foreground` at reduced alpha                                               |
+| URL-hover underline                      | Derived: `foreground`                                                                |
+| Leader hint pills                        | Derived: `selection` ground + `foreground` label                                     |
+| Plugin chrome bands                      | `foreground` / `background` / `cursor` / `selection` tokens, plus `accent` = ANSI 12 |
+| Pending paste / close-confirm banner     | Derived: ANSI 3 ground + black/white text chosen for contrast                        |
+| Help panel                               | Derived: `selection` ground, ANSI 12 ring, `foreground` text                         |
+| IME preedit                              | Derived: `selection` ground, `cursor` underline/caret, `foreground` glyphs           |
+| Focused/idle View outline                | Preset outline tokens, or explicit `decoration.border_color*` keys                   |
+| Window/panel glow, shadow, tint, fade    | Explicit `appearance.style` / `decoration` keys, never a theme                       |
+
+The table is the complete ownership statement: a theme never changes layout,
+input, Terminal Truth, or a role listed as explicit configuration.
+
+## Custom and third-party theme files
+
+Theme **files** and third-party theme packages are **not supported**. There is
+no theme file format, no `$XDG_DATA_HOME/bitty/themes/` or
+`$XDG_CONFIG_HOME/bitty/themes/` loading path, and no plugin theme contribution
+contract today. The `themes/` directory is reserved in the
+[XDG data layout](lua-and-xdg.md#data-state-cache-and-runtime-layouts) but is
+inert. Selecting an unknown name fails closed at validation; it does not load a
+file. The inline `appearance.colors` table is the supported custom-palette
+surface.
+
+Whether theme files, a file schema, or plugin-supplied themes enter scope is an
+open question; see below. Do not document or rely on a theme-file path until a
+reviewed contract defines its schema, load path, and trust model.
 
 ## Status and open questions
 
@@ -242,8 +339,9 @@ open questions and are registered rather than decided in this page:
 - **OQ-046 — category selection.** Is a preset's `Dark`/`Light` category
   exposed as a selectable or queryable config surface, or is it non-selectable
   documentation metadata only?
-- **OQ-047 — custom themes.** Are user-authored or third-party theme files
-  supported, and if so what is the schema, load path, and trust model?
+- **OQ-047 — custom theme files.** The inline `appearance.colors` palette is
+  shipped; this question covers user-authored or third-party theme **files**
+  and asks what schema, load path, and trust model they would use.
 - **OQ-048 — automatic light/dark switching (partially shipped).** Dual
   `light:<name>,dark:<name>` OS-appearance switching shipped in `bitty`
   CTX-0951 (PR #1687): the key is the `appearance.theme` dual string and the
