@@ -27,10 +27,11 @@ this document, and the adapter implementation (`CTX-0003`) and Core integration
 (`W-142` / `CTX-0935`) are named downstream owners only; their content is not
 decided here. The document does not describe implemented behavior, does not
 authorize shipped, stable, normative, or compatibility-guaranteed behavior, and
-does not weaken any normative security control. The one class of source-level
-evidence this document records is the existing `bitty-ui` accessibility
-artifacts reviewed read-only against the workspace `bitty` checkout; they are
-`Implemented-only`, never `Verified`, and are not the accepted host adapter.
+does not weaken any normative security control. The source-level evidence it
+records is `Implemented-only` and never `Verified`: the Core host seam in
+`bitty-ui` (`a11y_host.rs`) and the extension's published bounded snapshot
+model and `SnapshotHost` contract. That evidence is not a platform adapter:
+only a headless backend exists, so no assistive technology sees a Bitty tree.
 Frontmatter `status` is `accepted` per the repository metadata schema;
 document status is Accepted.
 
@@ -156,14 +157,14 @@ The table states the accepted split from ADR 0016 Boundary 3 and who owns each
 side. The **Status** column is authoritative for whether a row is accepted
 contract, decided direction, implemented-only evidence, or open.
 
-| Side                                        | Owns                                                                                                                                                                                         | Status                            |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| Core mechanism                              | Accessibility baseline as a normative obligation; projection derivation; scene, terminal, and chrome mapping; focus-order rule; announcements; reduced-motion and contrast respect; privacy. | Accepted (ADR 0016)               |
-| Core mechanism                              | Correct focus and terminal-state association: a focus move reports the destination that actually holds focus.                                                                                | Accepted (ADR 0016)               |
-| `bitty-a11y` platform adapter               | Assistive-technology backends (AT-SPI/D-Bus, Windows UI Automation, macOS Accessibility), exposure mechanics, snapshot serialization, and the controlled action-dispatch adapter.            | Accepted boundary (ADR 0016)      |
-| `bitty-a11y` platform adapter               | Element-handle mapping to platform objects, platform permission handling, and the platform event stream.                                                                                     | Decided direction (this contract) |
-| Existing `bitty-ui` accessibility artifacts | The projection, tree, announcements, settings, and invalidation primitives listed under "Implementation status".                                                                             | Implemented-only evidence         |
-| Forbidden                                   | Private first-party bypass, raw PTY, GPU, or window handle, input hot-path callback, Event-Bus publication of the projection, persisted projection.                                          | Accepted (ADR 0016, ADR 0015)     |
+| Side                                        | Owns                                                                                                                                                                                            | Status                            |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Core mechanism                              | Accessibility baseline as a normative obligation; projection derivation; scene, terminal, and chrome mapping; focus-order rule; announcements; reduced-motion and contrast respect; privacy.    | Accepted (ADR 0016)               |
+| Core mechanism                              | Correct focus and terminal-state association: a focus move reports the destination that actually holds focus.                                                                                   | Accepted (ADR 0016)               |
+| `bitty-a11y` platform adapter               | Assistive-technology backends (AT-SPI/D-Bus, Windows UI Automation, macOS Accessibility), exposure mechanics, snapshot serialization, and the controlled action-dispatch adapter.               | Accepted boundary (ADR 0016)      |
+| `bitty-a11y` platform adapter               | Element-handle mapping to platform objects, platform permission handling, and the platform event stream.                                                                                        | Decided direction (this contract) |
+| Existing `bitty-ui` accessibility artifacts | The Core host seam (`a11y_host.rs`) over the extension snapshot model, plus terminal projection, focus association, settings, and invalidation primitives listed under "Implementation status". | Implemented-only evidence         |
+| Forbidden                                   | Private first-party bypass, raw PTY, GPU, or window handle, input hot-path callback, Event-Bus publication of the projection, persisted projection.                                             | Accepted (ADR 0016, ADR 0015)     |
 
 Consequences of the split:
 
@@ -457,29 +458,49 @@ partial snapshot, a truncated name, or a privileged path.
 - **Accepted**: ADR 0016 Boundary 3 ownership split; this contract as its
   terminal-side elaboration. This authorizes no implementation and no
   extraction.
-- **Implemented-only evidence** (`bitty` revision `5670d9ae42a0`, crates
-  `bitty-ui`): `crates/bitty-ui/src/a11y.rs` (scene-to-role mapping with
-  fail-closed unmapped kinds; terminal exposure with the stated fidelity
-  boundary; chrome exposure excluded from the tab order; the read-only,
-  builder-scoped accessibility tree with node bounds; the coalescing,
-  rate-limited announcement queue; reduced-motion and high-contrast settings
-  composed without plugin input; invalidation-driven refresh with no timer),
-  `crates/bitty-ui/src/uitree.rs` (stable `UiNodeId`, monotonic revision,
-  identity-set diff of added, removed, and updated nodes, no bump on identical
-  resubmission), `crates/bitty-ui/src/focus.rs` (deterministic `ViewId`-keyed
-  focus routing), and `crates/bitty-ui/tests/a11y_baseline.rs` (pinned baseline
-  tests). These are not `Accepted`, not `Verified`, and not wired to an
-  accepted adapter.
+- **Implemented-only evidence, Core model seam** (`bitty` PR #2342,
+  2026-10-20, crates `bitty-ui`): `crates/bitty-ui/src/a11y_host.rs`
+  implements `bitty_a11y::SnapshotHost` over the live terminal snapshot
+  (readable text runs from the same grid truth the renderer consumes, cursor
+  position and visibility, chrome and scene push-through, focus label
+  resolution, bounded announcements) with the stated fidelity boundary,
+  core-owned reduced-motion and high-contrast settings, and no retained
+  `Snapshot`/`HandleMap`/`ElementHandle`/`FocusOwner` beyond one ingest.
+  `crates/bitty-ui/src/uitree.rs` consumes the extension `Role` vocabulary
+  (stable `UiNodeId`, monotonic revision, identity-set diff unchanged), and
+  `crates/bitty-ui/tests/a11y_baseline.rs` pins the seam: byte-exact
+  text/row round-trip, accessibility tab order and focus association, the
+  4096-node and 256-name/announcement ceilings, stale-generation rejection
+  with nothing swapped, the no-backend permission-denied fallback, and
+  dropped-field structural failure. The parallel Core model
+  `crates/bitty-ui/src/a11y.rs` is retired; the extension owns snapshot
+  semantics, bounds, and the `Adapter` seam. These are not `Accepted`, not
+  `Verified` as platform exposure, and not independently reviewed.
+- **Implemented-only evidence, extension side** (`bitty-a11y`, zero
+  dependencies, `forbid(unsafe)`): the bounded model and host contract
+  (`SnapshotBuilder`, `Adapter::ingest_host`, `Adapter::expose_to`), 32 crate
+  tests, and the `HeadlessBackend`. Only a headless backend ships.
+- **Deliberate fence change**: the W-147 small-core graph fence records
+  `bitty-a11y` as a snapshot-model seam consumed only by `bitty-ui`
+  (`crates/bitty-ui/src/a11y_host.rs` is the only Core source that may name
+  it); it is not a composition-root mechanics edge and grants no input, PTY,
+  GPU, window, or routing authority. This is a model dependency, not platform
+  exposure: unlinking the adapter crate remains a build-level change, while
+  disabling the runtime adapter removes exposure only.
 - **Decided direction, not in code**: the platform adapter backends and
-  exposure mechanics, the controlled action interface and activation dispatch,
-  cross-generation element identity/fencing as a host contract, and
-  adapter-facing snapshot serialization.
-- **Not started**: the `bitty-a11y` repository and adapter (`CTX-0003`), and
-  the Core extraction and integration (`W-142` / `CTX-0935`).
-- **Open**: the exact role vocabulary and whether it follows a platform
-  convention by name or by mapping table, whether terminal text runs carry
-  styling attributes, the announcement coalescing time window, the contrast
-  floor owner, and the accepted numeric ceilings.
+  exposure mechanics (AT-SPI/D-Bus, Windows UI Automation, macOS AX), runtime
+  construction and refresh of the `Adapter` from the running application, the
+  controlled action interface and activation dispatch, and adapter-facing
+  snapshot serialization.
+- **Not started**: the platform backends (`bitty-a11y` `CTX-0003`) and the
+  runtime adapter call site. No screen reader sees a Bitty tree today: the
+  model seam is bound, but no AT-SPI/UIA/AX backend exists and only
+  `HeadlessBackend` is exercised.
+- **Open**: independent acceptance and security review of the extension and
+  of this binding; the role vocabulary's platform-convention mapping; whether
+  terminal text runs carry styling attributes; the announcement coalescing
+  time window; the contrast floor owner; and the accepted numeric ceilings
+  (the adapter currently fixes 256/4096/256/8 as implemented-only values).
 
 ## Security review
 
