@@ -14,8 +14,8 @@ sidebar_order: 20
 > Status: draft, source-qualified guide. The extension and spawn procedures
 > were inspected read-only against merged `bitty` source (confinement
 > `2a3fddaf`, spawn ledger `a89f51a5`, source transparency `9a5296b9`;
-> 2026-10-12). The activation column describes `470c20ab` (PR #2276,
-> 2026-10-20). The plugin install/enable procedure below describes
+> 2026-10-12). The activation column describes `da4b9a77` (PR #2276
+> follow-ups, 2026-10-20). The plugin install/enable procedure below describes
 > `1c52ba7617e4c42d2fde06c5b318ebefc54aec3b` (PR #2212). The behavior is
 > experimental (`Implemented`-only, never `Verified`): this guide describes
 > what the current code does, not a stable or supported contract. No
@@ -64,21 +64,26 @@ bitty extension list --format json
 `bitty plugin list` shows source, state, pin status, and granted versus
 requested capabilities per plugin. `bitty extension list` shows name,
 version, active-version marker, source tier (`user` wins over `system`),
-ABI compat, activation state, and path per component. There is no
-dedicated `consent list` verb: `list` plus `info` below are the consent
-inventory.
+ABI compat, last recorded activation transition, and path per component.
+There is no dedicated `consent list` verb: `list` plus `info` below are
+the consent inventory.
 
-The activation column reports the last transition the component broker
-recorded for that component name: `installed` (nothing recorded yet),
-`active`, `stopped`, `crashed`, or `denied:<class>`. The class names are
-the stable host error names (`capability_denied`, `plugin_not_active`,
-`component_grant_invalid`, `component_untrusted`,
+The `LAST ACTIVATION` column reports the last transition the component
+broker recorded for that component name: `installed` (nothing recorded
+yet), `active`, `stopped`, `crashed`, or `denied:<class>`. The class
+names are the stable host error names (`capability_denied`,
+`plugin_not_active`, `component_grant_invalid`, `component_untrusted`,
 `component_unavailable`), so a denied entry matches the error Bitty
 prints for the same refusal. The value is last-recorded diagnostics, not
 a liveness probe: `active` means the broker recorded a spawn, not that
 the process is alive right now, and it describes the component name, not
-one version when several are installed. `--format json` reports the same
-value as `activation`, plus `activation_class` for denials.
+one version when several are installed. The table prints it once, on
+the active-version row (or the first row when `current` names no
+installed version). Records live in
+`$XDG_STATE_HOME/bitty/extensions/<name>/activation`, so the label covers
+a system-only install and survives a reinstall; a legacy record beside
+`current` is read as a fallback. `--format json` reports the same value
+as `activation`, plus `activation_class` for denials.
 
 ## 2. Inspect what authority a plugin holds
 
