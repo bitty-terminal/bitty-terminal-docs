@@ -132,8 +132,11 @@ lists them in one place and the host works with the list empty.
 ### Extension install roots
 
 ```text
-$XDG_DATA_HOME/bitty/extensions/<name>/<version>/
-└── bitty-<name> (+ bitty-component.toml at pack time)
+$XDG_DATA_HOME/bitty/extensions/<name>/
+├── current                       # active version, one line ("0.0.23\n")
+├── activation                    # last recorded activation, one line (user tier)
+└── <version>/
+    └── bitty-<name> (+ bitty-component.toml at pack time)
 // typical: ~/.local/share/bitty/extensions/net/0.0.23/
 
 /usr/lib/bitty/extensions/<name>/<version>/
@@ -143,6 +146,22 @@ $XDG_DATA_HOME/bitty/extensions/<name>/<version>/
 - The user root (`$XDG_DATA_HOME/bitty/extensions/`, normally
   `~/.local/share/bitty/extensions/`) wins over the system root
   (`/usr/lib/bitty/extensions/`, or platform equivalent) on collision.
+- `current` names the version the host should run for that component
+  name, one line of text; `bitty extension remove <name> <version>`
+  drops it when it removed the named version, and a name with no
+  complete version directory lists as missing rather than running.
+- `activation` is the last activation the component broker recorded for
+  that component name: one bounded `v1 <state>` line, one of `installed`,
+  `active`, `stopped`, `crashed`, or `denied:<class>`. It is a
+  diagnostics projection of the broker's transitions, written only in
+  the writable user tier (the system tier stays read-only, so a
+  system-only install has no record and lists as `installed`), and it is
+  not a second state store: `bitty extension list` reads it, and no
+  execution decision depends on it. A record the host cannot read safely
+  (symlink, non-regular file, over 64 bytes, or malformed) reads as
+  "nothing recorded" instead of as an unearned state, and removing the
+  component's last version removes the record so a reinstall starts from
+  `installed`.
 - `bitty extension list` enumerates installed units across both tiers;
   removal of a system-wide install belongs to the system package
   manager, never to the user-side remove path.
