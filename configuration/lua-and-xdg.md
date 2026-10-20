@@ -752,12 +752,14 @@ malformed dual values fail closed at validation with a diagnostic naming the
 valid set (CTX-0951, `bitty` #1687; closes
 [bitty-terminal-docs#190](https://github.com/bitty-terminal/bitty-terminal-docs/issues/190).
 
-- Inline custom palette (CTX-0392; read-only from `bitty` `origin/main` at
+- Inline custom palette (CTX-0392, completed as a first-class preset
+  alternative in issue #2333; read-only from `bitty` `origin/main` at
   `c64dd1e`): `appearance.colors` carries `background`, `foreground`,
   `cursor`, `selection`, plus exactly 16 `ansi` hex strings. Every leaf is
   `#RRGGBB`-only; a missing, short, long, or malformed leaf rejects the whole
-  reload fail-closed, never a partial palette. No file path is accepted
-  (OQ-047 stays open).
+  reload fail-closed, never a partial palette, and the diagnostic names the
+  exact leaf. This table is the supported custom-color surface; no file path
+  is accepted (OQ-047 theme files stay open).
 
 - The gap layers compose: effective gap =
   `decoration.gap * DPI_scale + layout.gap_cells * cell_axis` (CTX-0333).
@@ -1190,11 +1192,13 @@ $XDG_RUNTIME_DIR/bitty/
 
 Installed themes belong in data; a user's own theme source may live in config.
 No theme-file loading path is implemented yet: the 30 built-in presets are
-compiled into the binary and selected through `appearance.theme`, while
-custom/user themes are unsupported. The reserved `themes/` directory above is
-inert, so treat it as a candidate layout only. See the
-[theme preset catalog](themes.md) for the shipped presets and the open
-questions on custom themes and category selection. Cache is rebuildable.
+compiled into the binary and selected through `appearance.theme`, while inline
+`appearance.colors` is the supported custom-color surface and theme files stay
+unsupported. The reserved `themes/` directory above is inert, so treat it as a
+candidate layout only. See the
+[theme preset catalog](themes.md) for the shipped presets, the inline palette
+schema, and the open questions on theme files and category selection. Cache is
+rebuildable.
 Runtime sockets and locks belong to the login session, while sessions and
 layouts intended to survive restart belong in state.
 
@@ -1204,8 +1208,10 @@ A candidate live-reload path for wallpaper-derived palettes extends
 `palette[0..15]`, then runs `bitty ctl theme reload`; Core applies the new
 palette in a single render pass with no tearing, black frame, or PTY reset.
 Dynamic palette sequences (`OSC 4`) and dynamic foreground/background
-(`OSC 10`/`OSC 11`) remain separate follow-up work, and the file schema,
-reload class, and generated-file ownership are undecided.
+(`OSC 10`/`OSC 11`) are shipped behind the default-deny
+`set_osc_color_set_allowed` capability gate (CTX-0381, CTX-0392); the
+candidate file-based generator still needs its own file schema, reload class,
+and generated-file ownership decision.
 
 ## Cross-platform paths
 
