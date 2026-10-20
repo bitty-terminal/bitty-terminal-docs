@@ -355,15 +355,19 @@ merged into `bitty` `origin/main`; it does not accept the candidate sections
 above and claims no `Verified`/`Compatible` status.
 
 - **Mod+drag tiled move** (`bitty` #1707 `c0fa9b1f`, CTX-0966, closes `bitty`
-  #1694): Mod (Alt/Super) + left-drag grabs the tiled leaf under the cursor
-  via `DragMoveSession`; motion tracks the advisory preview live without
-  mutating the tree. Release re-parents with nearest-edge docking and
-  position-based sizing (ratio from drop position, clamped to `0.10`/`0.90`;
-  ties to horizontal/first; self/background no-op). Focus follows the
+  #1694; preview/reflow #2337, CTX-1399): Mod (Alt/Super) + left-drag grabs
+  the tiled leaf under the cursor via `DragMoveSession`. Pointer-down arms a
+  present-only ghost plus candidate highlight; motion moves the ghost
+  without mutating the tree. Release commits exactly one reflow: a center
+  target swaps the two panels in place, an edge target inserts beside it at
+  a balanced `0.5` split (nearest normalized edge; horizontal then left/top
+  on ties). Self/background/overlay drops are no-ops. `Esc`, pointer leave,
+  and focus loss cancel without committing; any layout install mid-drag
+  (close, zoom, workspace switch) abandons the drop and keeps that
+  install's own tree, so a stale release cannot commit. Focus follows the
   dragged panel. Dispatch order is release (thumb, alt, border, tiled) then
-  press (alt-float, tiled, border) with consuming guards; leave cancels and
-  mid-drag close fails soft. `Super`+border is gated to plain-only like Alt
-  to avoid Mod conflict. Evidence:
+  press (alt-float, tiled, border) with consuming guards. `Super`+border is
+  gated to plain-only like Alt to avoid Mod conflict. Evidence:
   `crates/bitty-ui/src/drag.rs`,
   `crates/bitty-runtime/src/runtime/input.rs`,
   `crates/bitty-runtime/tests/tiled_drag_move.rs` (8 pins).

@@ -191,13 +191,17 @@ step commits immediately, and how undo composes with the accepted
 every-interaction-is-undoable rule.
 
 **Shipped evidence (does not accept this candidate).** `bitty` `origin/main`
-ships Mod+drag tiled move with Hyprland-like drop (CTX-0966, `bitty` #1707)
-and border-drag resize (UX-02, `bitty-ui::drag`): Mod (Alt/Super) +
-left-drag grabs the tiled leaf via `DragMoveSession`, motion tracks the
-advisory preview without mutating the tree, and release re-parents with
-nearest-edge docking and position-based sizing (ratio from drop position,
-clamped to `0.10`/`0.90`; ties to horizontal/first; self/background
-no-op). Border-drag uses a `1`-cell edge/corner hit area
+ships Mod+drag tiled move with Hyprland-style preview and reflow (CTX-0966,
+`bitty` #1707; #2337, CTX-1399) and border-drag resize (UX-02,
+`bitty-ui::drag`): Mod (Alt/Super) + left-drag grabs the tiled leaf via
+`DragMoveSession`; pointer-down arms a present-only ghost and candidate
+highlight, motion moves it without mutating the tree, and release commits
+exactly one reflow (center target swaps in place; edge target inserts at a
+balanced `0.5` split with the nearest normalized edge winning and
+horizontal/left-top ties). Self/background/overlay drops are no-ops;
+`Esc`, leave, and focus loss cancel, while any mid-drag layout install
+(close, zoom, workspace switch) abandons the drop and keeps the install's
+tree. Border-drag uses a `1`-cell edge/corner hit area
 (`RESIZE_HANDLE_CELLS`): tiled leaves adjust the adjacent split ratio
 through `resize_split_by_drag` (clamped to `[MIN_RATIO, MAX_RATIO]`),
 floating leaves adjust their rect via `resize_floating_rect` (clamped to
