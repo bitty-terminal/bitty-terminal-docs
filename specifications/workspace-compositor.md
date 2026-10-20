@@ -551,15 +551,41 @@ What merged, exactly:
     collapses to base. Evidence: `crates/bitty-config/src/types.rs`,
     `crates/bitty-ui/src/layout.rs`,
     `crates/bitty-terminal/src/chrome_keys.rs`.
-12. **Mod+drag tiled move with Hyprland-like drop** (`bitty` #1707
-    `c0fa9b1f`, CTX-0966, closes `bitty` #1694): Mod (Alt/Super) +
-    left-drag grabs the tiled leaf under the cursor via `DragMoveSession`;
-    motion tracks the advisory preview live without mutating the tree.
-    Release re-parents with nearest-edge docking and position-based sizing
-    (ratio from drop position, clamped to `0.10`/`0.90`; ties to
-    horizontal/first; self/background no-op). Focus follows the dragged
-    panel. Dispatch order is release then press with consuming guards;
-    leave cancels and mid-drag close fails soft.
+12. **Mod+drag tiled move with Hyprland-style preview and reflow** (`bitty`
+    #1707 `c0fa9b1f`, CTX-0966, closes `bitty` #1694; **#2337**, CTX-1399):
+    Mod (Alt/Super) + left-drag grabs the tiled leaf under the cursor via
+    `DragMoveSession`. Pointer-down immediately arms a bounded,
+    **present-only** ghost of the dragged panel plus the candidate-tile
+    highlight; motion moves the ghost one-to-one with the pointer from the
+    grab point (clamped inside the container) while solver geometry, leaf
+    grids, and PTY winsizes stay byte-identical. Release commits exactly one
+    reflow through `set_layout`: a **center** target (the middle half of the
+    target rect on both axes, boundaries inclusive) swaps the two panels in
+    place with split axes and ratios untouched; an **edge** target inserts
+    beside it at a balanced `0.5` split, selecting the nearest normalized
+    edge (horizontal preferred on an exact tie, left/top preferred on an
+    equal pair). Self, background, and overlay-tier drops are no-ops. `Esc`,
+    pointer leave, window focus loss, and mid-drag close cancel with the
+    pre-drag tree byte-identical; only the committed layout resizes a PTY.
+    Focus follows the dragged panel, and a committed drop arms the existing
+    move transition (chrome ring only; terminal content is never
+    interpolated). Dispatch order is release then press with consuming
+    guards.
+
+    Bounded subset and deviations from Hyprland: the ghost keeps the source
+    tile size and the untouched tiled layout stays behind it (Hyprland floats
+    and shrinks the dragged tiled window, which reflows its siblings during
+    the gesture); no drag threshold (feedback starts on pointer-down); no
+    `smart_split` parent-orientation selection (this subset uses the nearest
+    normalized edge directly, equivalent to the optional
+    `precise_mouse_move`/`smart_split` placement); no corner-quadrant
+    position sizing, snap, drag-into-group, monitor-edge reassignment, or
+    cross-workspace drop in this gesture. Full dwindle parity is out of
+    scope. Evidence: `crates/bitty-ui/src/drag.rs`,
+    `crates/bitty-ui/src/layout.rs` (`swap_leaves`),
+    `crates/bitty-runtime/src/runtime/mouse_chrome.rs`,
+    `crates/bitty-runtime/tests/tiled_drag_move.rs`.
+
 13. **Panel move/resize/drag animations** (`bitty` #1709 `fceb9bbb`,
     CTX-0967, closes `bitty` #1696): `AnimationKind` gains
     move/resize/drag with 7-slot policy, bounded `0..=500` ms durations
