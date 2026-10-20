@@ -145,9 +145,11 @@ section is a historical record, not a description of the `c6db24d` tree.
 - **Implemented but not yet Verified**: `rich` (ImageStore/scene OQ-008/015/016,
   Kitty chunked intake `1fc6294`), `ipc` (bounded framing 256 KiB, wire v1,
   peer-credential auth, scopes OQ-018, profiling/ctl surface through `491c567`),
-  `resolver` (single-version convergence, source-class provenance H-A/H-B/H-C,
-  yank/prerelease `yanked (locked)` OQ-022/026-029) with compat-lab/perf
-  verification crates added after `be3bdb4`; risk register remains `Open` except `R-005`/`R-006`/`R-007`
+  with compat-lab/perf verification crates added after `be3bdb4`; dependency
+  resolution was retired from Core under bitty#1999 (W-72 assigns it to the
+  external `bitty-plugin-manager`; its registry solving remains pending), so no
+  Core resolver implementation is claimed. The risk register remains `Open`
+  except `R-005`/`R-006`/`R-007`
   `Mitigated` at `d4d75e9`, matrix `Mitigated` for those three. `R-004` clipboard
   (`23` `suspicious_paste` + `13` `paste` unit + `4` remediation at
   `7a4ee41`, baseline `19` at `de134ec`) is `Implemented` but explicitly `Open`
