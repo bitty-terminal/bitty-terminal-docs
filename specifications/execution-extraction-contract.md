@@ -541,71 +541,55 @@ Core retains the following mechanisms and may not delegate the trust decision:
 
 ## Current implementation status
 
-No part of this contract is implemented as the extracted extension or as the
-public host contract. There is no `bitty-execution` runtime, no published
-execution crate, and no accepted trait, wire, or manifest surface. The
-`bitty-execution` repository is a metadata-only scaffold and is not evidence
-of implementation. This document does not authorize the extraction.
+The extracted supervisor exists as `bitty-execution` v0.0.1: the crate landed
+in PR #7 and completed independent verification in Issue #1. The accepted
+contract shapes are implemented there (the job model, the capacity-bounded
+registry, principal-scoped operations, structured outcomes and typed cancel,
+bounded output, persistence/recovery, OOM evidence, delivery, and the
+sidecar-supervision contract). That implementation is separate from the public
+host contract this page defines; the crate and this document do not by
+themselves constitute a published plugin-facing execution API.
 
-Source-reviewed `Implemented-only` Core-internal evidence exists in the
-`bitty` repository under `crates/bitty-runtime/src/execution/`, the behavior
-the extraction would later replace. It is not `Verified`, not `Compatible`,
-not the extension, and not the public host contract. The evidence was read
-from the workspace `bitty` checkout at short revision `5670d9ae`
-(2026-10-02, `main`) and is bounded to source inspection:
+Core integration is `Implemented-only` under bitty#2249 (CTX-1403). The
+`bitty-runtime` `execution_jobs` seam links the extracted registry and routes
+the tool/plugin spawn surface through it:
 
-- `model.rs`: `JobId`, `JobSpec` (`argv`-first with `with_cwd`/`with_env`), the
-  `JobLifetime` and `JobKind` enums, `JobIo` (pipe default, PTY opt-in),
-  `JobTimeouts` (hard/idle/retention), `JobOrigin`, `JobPrincipal`,
-  `JobOperation` (the eight independent capabilities), `JobGrant`, `JobState`,
-  `JobEvent`, `JobSnapshot`, `JobCancel`, and the `JobError` failure set
-  including `Denied`, `RegistryFull`, `RateLimited`, `InvalidRead`,
-  `InvalidWrite`, `InvalidCancel`, `GrantsFull`, `SecureInputDenied`,
-  `CommandRiskDenied`, and `CommandRiskNeedsConsent`.
-- `outcome.rs`: `ExecutionOutcome` (`Success`, `ExitCode`, `Signaled`,
-  `SpawnFailed`, `Cancelled`, `TimedOut`, `OomKilled`, `SupervisorLost`,
-  `Unknown`), `ExecutionGeneration`, `ExecutionHandle`, `CancelMode`,
-  `CancelRequest`, `CancelOutcome` (including `StaleGeneration`), and
-  `CancelReceipt`.
-- `registry.rs`: the capacity-bounded `JobRegistry` with
-  `DEFAULT_MAX_JOBS = bitty_ipc::execution::MAX_TRACKED_EXECUTIONS` (`64`),
-  principal-scoped `spawn_as`/`get_as`/`list_as`/`read_output_as`/
-  `write_input_as`/`signal_as`/`cancel_as`/`attach_as`/`transfer_as`, the
-  role and command-risk interlocks before tracking, and the owned-tree kill
-  path.
-- `output.rs`: `MAX_OUTPUT_BYTES_PER_JOB` (`256 KiB`), `MAX_READ_BYTES`
-  (`1 MiB`), `MAX_READ_LINES` (`10 000`), the `ReadOutput` tail/filter shape,
-  and the metadata-only `OutputIndex`.
-- `persistence.rs`: `JobStore`, the versioned manifest, `reconcile`,
-  `ResumeDecision`, `ResumeCursor`, `IdAllocator`, and the explicit
-  non-goals that grants are not persisted and adoption never respawns.
-- `supervisor.rs`: `adoption_plan`, `AdoptionKind` (surviving facts versus
-  explicit respawn), and the daemon/handoff scaffolding.
-- `oom.rs`, `cgroup.rs`, `process_tree.rs`, `sensitive_input.rs`,
-  `retention.rs`, and `delivery.rs`: per-job OOM evidence, opt-in cgroup
-  accounting, kill scope, the sensitive-input interlock, retention policy, and
-  the critical/observation delivery split.
+- the plugin `process.spawn` path and the IPC execution provider create a real
+  `JobRegistry` job instead of a Core-local one-shot supervisor;
+- the registry mints the `JobId`, owns the lifecycle (`Queued` -> `Running` ->
+  `Done(outcome)`), bounded output, and owned-tree cancellation;
+- the existing `process.spawn:<family>` scope, explicit effect opt-in, consent
+  ledger, and CTX-1151 Landlock exec confinement are applied before registry
+  tracking;
+- registry refusals map to the existing typed `bitty-ipc` failure set and fail
+  closed; there is no direct `std::process::Command` fallback;
+- PTY shells are deliberately not routed through the registry, and the v1 Lua
+  `process.spawn` signature is unchanged.
 
-Tests exist under `crates/bitty-runtime/tests/` (`job_supervisor.rs`,
-`job_capability_ops.rs`, `job_outcomes_cancel.rs`, `job_output_delivery.rs`,
-`job_persistence_supervisor.rs`, and `execution_job_cgroup_oom.rs`). This
-document does not assert that the suite is green; their presence is bounded
-source evidence and the parity gate belongs to the integration and
-verification tasks.
+The integration evidence is source and test level only: the #2249 branch adds
+Core lifecycle/cancel/registry-rejection/one-spawn tests and a source guard
+against direct command or pid-kill paths, and preserves the existing spawn
+surface suite. It is not `Verified` until its independent review and CI gates
+pass.
 
-Known gaps a `bitty-execution` implementation and the Core integration must
-close; none weakens a control, and none is authorization:
+Still open, and not implied by the integration:
 
-- The reviewed supervisor is in-process Core code, not an independent crate or
-  the public host contract.
-- The Windows process backend is planned in the draft execution-host direction
-  and is not verified here; the Linux/macOS owned-tree backends and the opt-in
-  cgroup OOM evidence are the only backend evidence read.
-- OOM classification outside cgroup-delegated Linux reports unknown by
-  design; non-Linux budget parity is not established.
-- Needs-input signaling, the terminal-side job view, and multi-principal
-  visibility composition have no accepted terminal-side contract yet.
-- Phase 3 detached supervision is scaffold-level only and unaccepted.
+- the plugin-facing job surface (`spawn_as`/`list_as`/`read_output_as`/
+  `cancel_as`/`attach_as` under per-operation capabilities) is a separate
+  accepted API decision; v1 Lua remains synchronous;
+- the Windows process backend, non-Linux budget parity, and non-Linux
+  confinement mechanisms are not established here; admitted tool spawns
+  outside Linux remain fail-closed;
+- OOM classification outside cgroup-delegated Linux reports unknown by design;
+- needs-input signaling, the terminal-side job view, and multi-principal
+  visibility composition have no accepted terminal-side contract yet;
+- phase 3 detached supervision is scaffold-level only and unaccepted;
+- linking the extracted crate carries its pinned Core dependency set alongside
+  the workspace path crates; deduplicating that pin is follow-up work, not a
+  contract change.
+
+This page remains the accepted contract and is not itself the public host
+contract. It does not authorize the phase 2 or phase 3 surfaces above.
 
 ## Security review
 
