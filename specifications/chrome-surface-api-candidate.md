@@ -248,6 +248,45 @@ else in this record is implemented.
    newest past the cap. Routing, the drain contract, and the counters live
    in the [Chrome Band Contract](chrome-band-contract-candidate.md).
 
+### Per-item hit regions
+
+1. A click or scroll binding may declare one optional region identity:
+   `region = { id = "<bounded id>", kind = "module" | "item" }` (candidate
+   spelling, `bitty` #2248). `id` is 1-64 bytes of `[a-z0-9._:-]`; `kind`
+   defaults to `module`; an unknown id or kind rejects the mount with
+   `E_UI_COMPONENT_INVALID`. The region lives beside the binding, so one
+   span can carry click and scroll under one identity; declaring different
+   regions on the two bindings rejects the mount.
+2. Core derives the rectangle. A plugin never supplies coordinates: the
+   host flattens the tree through the paint path, gives every declared
+   region the display-cell span of its runs, clips it to the painted window
+   width, and merges adjacent runs with the same identity into one item. A
+   module composed of several leaves (icon plus label) is therefore one
+   region, not one region per leaf.
+3. Core emits a bounded table of `{ plugin_id, edge, visible_index, row,
+region { id, kind }, start_col, end_col, version }` records through
+   `Runtime::band_item_regions`. At most `BAND_MAX_REGIONS` (`64`) distinct
+   regions per band; a band above the cap fails closed as a whole (no click
+   or scroll on it routes, the frame still paints, and the overflow is
+   counted). Regions are derived from the current tree on demand, so a
+   remount or reflow can never expose stale geometry.
+4. Hit-testing maps a pointer column to exactly one region: later
+   registration wins where spans overlap ("topmost/last-registered"), and
+   the emitted table is disjoint by construction. A column outside every
+   region is unclaimed chrome.
+5. Click dispatch carries the region id under `region` and the button
+   spelling (`left`, `right`, `middle`) under `button`; scroll dispatch
+   carries `region` and the host-computed `delta`. Both merge last and
+   overwrite declared entries of the same names. Bands consume left,
+   right, and middle presses and releases, so chrome can never paste the
+   clipboard; back and forward fall through unchanged. No capability is
+   added: the command still needs its declared grants.
+6. A queued action is fenced by the presented band origin (plugin
+   generation, mount handle, slot, version, edge, row); a remount, edge
+   move, or replacement version refuses the action before dispatch. No
+   plugin VM is entered on the input path; region emission and hit-testing
+   are pure data walks over the mounted tree.
+
 ### Overlay input pump and modifier channel
 
 1. A plugin that mounted a block into the focusable `overlay` slot claims
@@ -439,7 +478,10 @@ bounds; this record fixes only the shape.
    oversized click arguments, and unlisted commands reject the mount.
 4. Hit-test tests: a click on a bound node dispatches its command through the
    registry using presented-frame geometry; clicks never move focus or reach
-   the grid.
+   the grid. Region tests cover the kind/rect round trip, adjacent merge,
+   overlapping tie-break, click/scroll routing to the right item, right and
+   middle clicks never pasting, overflow fail-closed, and stale-version
+   refusal.
 5. Capability tests: `bitty.workspace.list()` and `workspace.*` events fail
    without `workspace.read`; mutation commands fail without
    `workspace.control`.
