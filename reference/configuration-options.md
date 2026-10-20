@@ -142,6 +142,36 @@ the plugin or its settings; the new values apply on the next activation of
 that plugin (for example a process restart). `bitty ctl config reload` and the
 automatic `init.lua` file poll do not reread per-plugin settings files.
 
+### Inspecting and scaffolding settings
+
+Status: **implemented-only** (Core PR
+[#2299](https://github.com/bitty-terminal/bitty/pull/2299)). The CLI never
+creates or runs the plugin VM.
+
+`bitty plugin config show <id>` prints the declared `[settings]` schema (key,
+type, shipped default, and the description field when a schema carries one),
+the canonical Lua, short-alias, and legacy TOML candidate paths with
+present/absent state, which file the resolver selected, and every effective
+value with the layer that served it (`manifest-default`, `host`, or
+`user-file`). The selected file is evaluated by the bounded plain settings VM
+described above, exactly as activation evaluates it. The report is available
+as a versioned JSON envelope with `--format json` or `--json`.
+
+`bitty plugin config scaffold <id>` writes a commented template to the
+canonical `<config-dir>/plugins/<owner>.<name>.lua` path using only the
+manifest's declared keys and shipped defaults; no values are invented and no
+Lua file is executed to produce it. `--init` is an alias for `scaffold`. The
+command refuses an existing file without `--force`, always refuses a symlinked
+target or symlinked `plugins/` directory, writes only inside the
+environment-derived config root, and commits atomically with an owner-only
+file mode.
+
+Inspection fails closed with a non-zero exit after printing the report when the
+selected file is rejected, or when it carries keys the manifest does not
+declare or values whose type disagrees. Unknown plugin ids, unreadable stored
+schemas, an existing scaffold target without `--force`, unsafe paths, and
+symlinked targets are typed errors, never partial writes.
+
 `bitty-plugins.toml` stays machine-only. Core PR
 [#2198](https://github.com/bitty-terminal/bitty/pull/2198) diagnostics for alias
 ambiguity, canonical-over-alias shadowing, dropped entries, and rejected files
