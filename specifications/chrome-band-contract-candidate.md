@@ -251,6 +251,31 @@ usable = container inset by gaps_out and the accepted decoration insets,
 5. Lua event names for band clicks and drops remain owner-pending
    ([OQ-056](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md));
    this record defines the command-registry path only.
+6. **Per-item regions.** One band block may declare several hit regions, one
+   per module or item, by adding
+   `region = { id = "<bounded id>", kind = "module" | "item" }` beside an
+   `on_click`/`on_scroll` binding. Core derives each region's one-row
+   display-cell rectangle from the same flattened spans the renderer paints,
+   clips it to the band rectangle, and merges adjacent spans with one
+   identity. A plugin never supplies coordinates, and the region grants no
+   new capability; dispatch still runs a registered command with its usual
+   grants.
+7. **Buttons and ownership parity.** Left, right, and middle presses and
+   releases on a band row are Core chrome: the matching release dispatches
+   the region's command with `button = "left" | "right" | "middle"`, and a
+   non-matching release is consumed without disturbing the armed gesture.
+   Right and middle presses therefore never paste the clipboard behind a
+   band. Back and forward buttons fall through unchanged.
+8. **Deterministic resolution and bounds.** A pointer column resolves to
+   exactly one region; where regions overlap, the last-registered (topmost)
+   region wins. A band may emit at most `BAND_MAX_REGIONS` (`64`) distinct
+   regions; above the cap the whole band's region table is refused
+   fail-closed (no click or scroll routes, the frame still presents, and the
+   overflow is counted). Regions are rebuilt from the current tree on every
+   hit-test, and every queued action carries the presented band origin
+   (generation, mount handle, slot, version, edge, row), so a reflow,
+   remount, or replacement version refuses a stale region before dispatch.
+   Neither emission nor hit-testing enters a plugin VM.
 
 ### Wheel scroll routing
 
@@ -334,7 +359,11 @@ influence band thickness or edge.
    `BandScrollRequest` with the host `delta`, a burst coalesces into one
    dispatch, overflow past `BAND_SCROLL_QUEUE_MAX` drops the newest and
    counts it, and unbound rows fall through to the viewport path.
-9. `just check` passes for this document and every linked update.
+9. A region test asserting the id/kind/rect round trip, adjacent-span
+   merge, overlapping last-registered tie-break, click and scroll routing to
+   the correct item, right/middle no-clipboard behavior, a `65`-region band
+   routing nothing, and a version bump refusing an armed region gesture.
+10. `just check` passes for this document and every linked update.
 
 ## Alternatives considered
 

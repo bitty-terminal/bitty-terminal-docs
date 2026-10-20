@@ -167,6 +167,26 @@ All modules satisfy:
 3. **Deterministic ordering**: within a slot, render order equals registry
    declaration order; cross-slot layout is `left` then `center` then `right`.
 
+### Module interaction and hit regions
+
+1. Every interactive module declares a region identity beside its click or
+   scroll binding: `region = { id = "<module id>", kind = "module" }`. An
+   item inside a module (one workspace capsule, one window entry) uses
+   `kind = "item"` and a stable item id. The module stays declarative and
+   never supplies coordinates.
+2. Core derives the one-row rectangle from the painted spans, clips it to
+   the band, and dispatches the region id plus `button` or `delta` through
+   the existing bounded queue and command registry. A right or middle click
+   is delivered to a module that declares the binding and never reaches a
+   clipboard paste.
+3. A band may emit at most `BAND_MAX_REGIONS` (`64`) distinct regions;
+   above the cap the whole region table is refused fail-closed. Where
+   declarations overlap, the last-registered (topmost) region wins. A region
+   resolved under a superseded band version cannot dispatch against the
+   replacement tree.
+4. No module code runs on the input path: emission and hit-testing are
+   bounded data walks over the mounted tree.
+
 ### Module contracts (illustrative shapes)
 
 ```rust
