@@ -178,18 +178,21 @@ The Core mechanism names are **accepted**:
 These names are decided direction, not existing Rust types. The `bitty`
 workspace contains no type named `TargetEngine` or `AnnotationEngine`. The
 `LabelAllocator` name does exist in code as
-`bitty-ui::beacon_label::LabelAllocator`, and the following artifacts exist as
-**Implemented-only** evidence for parts of the mechanism (present in
-`crates/bitty-ui/src/beacon_*.rs` and exported from `crates/bitty-ui/src/lib.rs`):
+`bitty-ui::label_allocator::LabelAllocator`, and the following artifacts exist
+as **Implemented-only** evidence for parts of the mechanism (present in
+`crates/bitty-ui/src/{targeting,target_provider,target_dispatch,label_allocator,annotation_layer}.rs`
+and exported from `crates/bitty-ui/src/lib.rs`):
 
-| Code artifact                                                                                             | Maps to the accepted mechanism                                   | Status           |
-| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------- |
-| `TargetRegistry`, `TargetRef` with `PanelRef`/`WorkspaceRef`/`CommandBlockRef`/`UiNodeRef`/`LinkRef`      | `TargetEngine` target registry and handles                       | Implemented-only |
-| `TargetError::UnknownTarget`, `TargetError::StaleTarget`, `TargetError::TooManyTargets`                   | `TargetEngine` fail-closed target safety                         | Implemented-only |
-| `TargetProvider`, `ProviderMediator`, `ProviderTier`, `TargetSnapshot`, `SnapshotEntry`, `ProviderTarget` | `TargetEngine` provider registration and composition             | Implemented-only |
-| `BeaconDispatcher`, `DispatchError`                                                                       | Command-dispatch bridge (returns a typed command, executes none) | Implemented-only |
-| `LabelAllocator`, `LabelPolicy`, `LabelError`                                                             | `AnnotationEngine` label allocation                              | Implemented-only |
-| `BeaconAnnotationLayer`, `BeaconAnnotation`, `AnnotationLayerError`                                       | `AnnotationEngine` annotation layer                              | Implemented-only |
+| Code artifact                                                                                             | Maps to the accepted mechanism                                   | Status                         |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------ |
+| `TargetRegistry`, `TargetRef` with `PanelRef`/`WorkspaceRef`/`CommandBlockRef`/`UiNodeRef`/`LinkRef`      | `TargetEngine` target registry and handles                       | Implemented-only               |
+| `TargetError::UnknownTarget`, `TargetError::StaleTarget`, `TargetError::TooManyTargets`                   | `TargetEngine` fail-closed target safety                         | Implemented-only               |
+| `TargetProvider`, `ProviderMediator`, `ProviderTier`, `TargetSnapshot`, `SnapshotEntry`, `ProviderTarget` | `TargetEngine` provider registration and composition             | Implemented-only               |
+| `CoreTargetProvider`, `TargetSource`, `CoreTargetInfo`, `TargetAnchorSummary`                             | `TargetEngine` live Core target enumeration and anchors          | Implemented-only (issue #2253) |
+| `BeaconDispatcher`, `DispatchError`                                                                       | Command-dispatch bridge (returns a typed command, executes none) | Implemented-only               |
+| `LabelAllocator`, `LabelPolicy`, `LabelError`                                                             | `AnnotationEngine` label allocation                              | Implemented-only               |
+| `HintAnnotationLayer`, `HintAnnotationSpec`, `HintAnnotation`, `AnnotationLayerError`                     | `AnnotationEngine` annotation layer and deterministic hit test   | Implemented-only               |
+| `PluginRuntime::target_annotations`, `Runtime::set_target_annotations`, `Runtime::target_annotation_at`   | `AnnotationEngine` present-time channel and read-only hit test   | Implemented-only (issue #2253) |
 
 No accepted host API reaches these artifacts yet, and this contract does not
 claim one. `W-29` owns the public host surface, `W-30` owns the retirement of
@@ -303,6 +306,18 @@ Label allocation is a Core mechanism with Lua-configurable policy:
 - **No plugin drawing.** Plugins contribute target metadata; Core renders the
   annotation. No plugin draws into the layer directly.
 
+**Implemented-only (issue #2253).** The layer carries the target kind, owning
+workspace, and screen rectangle per annotation in addition to the label and
+label anchor. `HintAnnotationLayer::hit_test` resolves a window cell to the
+last painted annotation, so overlapping regions are deterministic and
+mutation-safe. `PluginRuntime::target_annotations` publishes the active
+session's batch through a runtime-shared channel; the application pushes it
+into `Runtime::set_target_annotations` once per cold tick, the present path
+paints one bounded overlay layer, and `Runtime::target_annotation_at` exposes a
+read-only pointer hit test. Dispatch, cancel, timeout, direct overlay release,
+and unload clear the batch and bindings atomically. This is evidence of a
+mechanism shape, not an accepted host API.
+
 Scene-layer ownership, z-order relative to the selection and IME layers, and
 animation policy remain Open with the terminal-side scene contract.
 
@@ -350,20 +365,22 @@ host API:
 
 ## Budgets
 
-The following bounds are observed in the `bitty-ui` beacon artifacts today.
-They are **Implemented-only** values, not accepted ceilings; `W-29` owns the
-accepted budget contract, and this page does not freeze them.
+The following bounds are observed in the `bitty-ui` targeting and annotation
+artifacts today. They are **Implemented-only** values, not accepted ceilings;
+`W-29` owns the accepted budget contract, and this page does not freeze them.
 
-| Bound                   | Observed value | Applies to                      |
-| ----------------------- | -------------- | ------------------------------- |
-| Targets per kind        | 1024           | Registry kind table             |
-| Targets per snapshot    | 1024           | One cold-path collection        |
-| Providers per mediator  | 64             | Registered providers            |
-| Provider name length    | 32             | Provider name grammar           |
-| Annotations per session | 1024           | Single batched annotation layer |
-| Labels per allocation   | 1024           | Label allocator input           |
-| Label charset length    | 64             | Home and overflow pools         |
-| Bindings per dispatcher | 1024           | Label-to-command bindings       |
+| Bound                   | Observed value | Applies to                          |
+| ----------------------- | -------------- | ----------------------------------- |
+| Targets per kind        | 1024           | Registry kind table                 |
+| Targets per snapshot    | 1024           | One cold-path collection            |
+| Target anchors          | 1024           | One live panel/workspace collection |
+| Providers per mediator  | 64             | Registered providers                |
+| Provider name length    | 32             | Provider name grammar               |
+| Annotations per session | 1024           | Single batched annotation layer     |
+| Hint label length       | 16 bytes       | Annotation label validation         |
+| Labels per allocation   | 1024           | Label allocator input               |
+| Label charset length    | 64             | Home and overflow pools             |
+| Bindings per dispatcher | 1024           | Label-to-command bindings           |
 
 The mechanism must fail closed at a bound: an oversized collection fails before
 any insert, an over-capacity allocation is rejected, and an over-count layer is
@@ -426,10 +443,17 @@ silent dispatch, or a privileged path.
 
 - **Accepted**: the mechanism/policy split, the `TargetEngine` and
   `AnnotationEngine` names, and the retained fences, by ADR 0018.
-- **Implemented-only**: the `bitty-ui` beacon artifacts listed under
+- **Implemented-only**: the `bitty-ui` targeting and annotation artifacts
+  listed under
   [Core mechanism names and implementation status](#core-mechanism-names-and-implementation-status).
   They are not `Accepted`, not `Verified`, and not wired to an accepted host
   API.
+- **Implemented-only (issue #2253)**: live panel/workspace target anchors with
+  stable panel identity, identity/workspace/rectangle fields in the target
+  snapshot, one Core-rendered present-time annotation layer, deterministic
+  region hit testing, and single-shot teardown on dispatch, cancel, timeout,
+  direct overlay release, and unload. The Lua wire shape, capability
+  dimensions, and scene z-order remain candidate.
 - **Decided direction, not in code**: the `TargetEngine` and `AnnotationEngine`
   type names, the public host API (`W-29`), and the policy retirement (`W-30`).
 - **Not started**: the `beacon` plugin package, its page set, and its
