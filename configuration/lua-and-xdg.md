@@ -769,9 +769,12 @@ valid set (CTX-0951, `bitty` #1687; closes
 - `window.opacity` is whole-window, not per-surface or background-only.
   `window.background_opacity` is the separate image-alpha dim: it applies
   before the image is blended over the theme background, then
-  `window.opacity` scales the finished premultiplied surface once. A blur
-  contract remains design-only (OQ-038): `window.blur_radius` accepts only
-  `0` and rejects a non-zero value at validation with a typed diagnostic.
+  `window.opacity` scales the finished premultiplied surface once. The window
+  background tier is sized from the live surface (stable across splits and
+  pane moves); the per-view tier is sized from each leaf's content frame and
+  re-fits on split, divider move, pane move, and resize. A blur contract
+  remains design-only (OQ-038): `window.blur_radius` accepts only `0` and
+  rejects a non-zero value at validation with a typed diagnostic.
 - Label position (OQ-036) and frame/margin-line color (OQ-037) have no config
   key yet; do not document them as supported.
 - Focused/idle outline colors (OQ-039) shipped with `bitty` PR #572 (merge

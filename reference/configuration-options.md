@@ -214,13 +214,17 @@ and [TOML parser](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790
 #### Window background fit and opacity
 
 `window.background_image` paints behind the grid over the **whole live
-surface**, including `window.padding`; it is re-sized from the surface extent
-on every window resize, split/layout change, DPI change, and move. The default
-`fill` is uniform cover: aspect ratio is preserved, both axes are covered, and
-the overflow is cropped evenly from the center, so there are no edge gaps and
-no distortion. `fit` is uniform contain (full image, letterboxed, position
-honored); `center` and `tile` keep native pixels scaled by the DPI factor;
-`stretch` scales non-uniformly onto the whole surface.
+surface**, including `window.padding`. The window tier uses the live surface
+as its destination frame: it is stable across splits and pane moves, and is
+re-derived on every window resize and DPI change. The per-view tier
+(`decoration.background_image` and `views.<selector>.background_image`) uses
+that leaf's content frame instead, so it re-fits on a split, divider move,
+pane move, and window resize. The default `fill` is uniform cover: aspect
+ratio is preserved, both axes are covered, and the overflow is cropped evenly
+from the center, so there are no edge gaps and no distortion. `fit` is uniform
+contain (full image, letterboxed, position honored); `center` and `tile` keep
+native pixels scaled by the DPI factor; `stretch` scales non-uniformly onto
+the whole surface.
 
 `window.background_opacity` multiplies the image alpha when the image is
 blended over the theme background. `window.opacity` then scales the finished
