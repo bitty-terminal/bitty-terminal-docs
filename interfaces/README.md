@@ -23,9 +23,10 @@ in the linked pages; this index carries no duplicate normative prose.
 
 ## Authority and status
 
-All three pages are candidate contracts; experimental implementation exists, but
-no stable or supported public contract is claimed. Accepted detail is recorded
-in the [CLI Contract RFC](../specifications/cli-contract-rfc.md)
+All four pages are candidate contracts; experimental implementation exists, but
+no stable or supported public contract is claimed. No configuration dashboard
+exists in `bitty` yet: that page is a plugin contract. Accepted detail is
+recorded in the [CLI Contract RFC](../specifications/cli-contract-rfc.md)
 and the [Rich Presentation RFC](../specifications/rich-presentation-rfc.md);
 these interface pages must not be read as stable, `Compatible`, or released
 behavior.

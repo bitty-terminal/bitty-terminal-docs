@@ -183,9 +183,11 @@ implemented.
   session key. This record speaks the accepted identity vocabulary and treats
   the encoding transition as owned by the
   [Panel Placement Decision](panel-placement-decision.md).
-- The 0.0.25 configuration dashboard is Core-owned presentation: a near-full
-  panel overlay painted by Core with its own modal key handling, not a plugin
-  and not a `bitty.ui` surface (`interfaces/configuration-dashboard-candidate.md`).
+- The configuration dashboard is **plugin-owned and not shipped**: the
+  Core-panel prototype was withdrawn before merge (`bitty` #2390, 2026-10-21;
+  `bitty` #2380 re-scoped to a `0.1.0` plugin). No dashboard code exists in
+  `bitty` `main`, and this record assumes no Core-owned dashboard precedent
+  (`interfaces/configuration-dashboard-candidate.md`).
 - DevTools is notification-only: its manifest requests `debug.inspect`,
   `debug.trace`, and `platform.notify`, and no `ui.*` capability.
 - The bar is composed on the `bottom` band by a plugin mount; it is not panel
@@ -293,12 +295,12 @@ no PTY, signal, or file field:
 
 ### Capability gates
 
-| Authority                                      | Capability                   | Status                | Notes                                                                                         |
-| ---------------------------------------------- | ---------------------------- | --------------------- | --------------------------------------------------------------------------------------------- |
-| Declarative scene rendering                    | `ui.rich`                    | Accepted v1           | Same node set and budgets as `ui.mount`/`ui.update`.                                          |
-| Panel content presentation and input ownership | `ui.panel`                   | **New, candidate v2** | One grant couples the surface and the keys; no separate focus grant (see rationale below).    |
-| Placement, geometry, pointer, PTY, filesystem  | none                         | —                     | No identifier exists and none is implied. A plugin holding `ui.panel` gains no other family.  |
-| Safe mode                                      | no third-party plugin loaded | Accepted invariant    | `bitty --safe` never reaches this surface. The Core dashboard may use the internal mechanism. |
+| Authority                                      | Capability                   | Status                | Notes                                                                                        |
+| ---------------------------------------------- | ---------------------------- | --------------------- | -------------------------------------------------------------------------------------------- |
+| Declarative scene rendering                    | `ui.rich`                    | Accepted v1           | Same node set and budgets as `ui.mount`/`ui.update`.                                         |
+| Panel content presentation and input ownership | `ui.panel`                   | **New, candidate v2** | One grant couples the surface and the keys; no separate focus grant (see rationale below).   |
+| Placement, geometry, pointer, PTY, filesystem  | none                         | —                     | No identifier exists and none is implied. A plugin holding `ui.panel` gains no other family. |
+| Safe mode                                      | no third-party plugin loaded | Accepted invariant    | `bitty --safe` never reaches this surface. No Core-owned surface uses the same mechanism.    |
 
 `ui.panel` is deliberately **one** grant, not `ui.panel` plus `ui.panel.focus`.
 For a focusable overlay, presentation and capture can be separate because the
@@ -610,7 +612,7 @@ error, because "band as panel content" is a category mistake, not a preference.
 | Resource exhaustion                  | v1 scene budgets, one surface per panel and per generation, 256-event queue, 4096-byte events, per-plugin budgets.                 |
 | Silent capability growth             | New `ui.panel` id only, deny by default, manifest-hash-bound grant, no wildcard, no first-party bypass.                            |
 | Audit gaps                           | Two observation-only events and bounded doctor counters; no content payloads.                                                      |
-| Safe mode                            | Third-party plugins never load; the Core dashboard may use the same internal mechanism without a capability.                       |
+| Safe mode                            | Third-party plugins never load; no Core-owned surface uses the same mechanism.                                                     |
 
 Fail-closed properties:
 
@@ -699,21 +701,19 @@ headless acceptance evidence only.
 | [Configuration Model RFC](configuration-model-rfc.md)                                                                                | Candidate consequence: `views.<selector>` matching must use the durable content kind, not the transient GUI kind.     |
 | [Panel Content Scene Path Decision](panel-content-scene-path-decision.md)                                                            | Hard dependency: the Scene path must be consumed by the present path before this contract can be implemented.         |
 | [Panel Placement Decision](panel-placement-decision.md)                                                                              | Unchanged direction; this record explicitly keeps placement out of plugin authority.                                  |
-| [Configuration dashboard (Candidate)](../interfaces/configuration-dashboard-candidate.md)                                            | Migration target for the Core-owned dashboard; no capability or plugin packaging required for the 0.0.25 behavior.    |
+| [Configuration dashboard (Plugin) (Candidate)](../interfaces/configuration-dashboard-candidate.md)                                   | Plugin-owned migration target; it uses this mechanism through `ui.rich`/`ui.panel`, not a Core-internal path.         |
 | [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)                                | New capability and input-routing branch require the `P0` security review.                                             |
 
 ## Migration
 
-1. **Dashboard (bitty#2380).** The shipped 0.0.25 dashboard is Core-owned
-   presentation. It should move onto the same content-kind mechanism without
-   becoming a plugin: Core presents its own GUI content, records the displaced
-   terminal, and uses the same focus/input/restore rules without a capability
-   grant. The existing `toggle_dashboard` action, sections, bounds, writes, and
-   confirmations are preserved; the near-full-panel overlay painting is
-   replaced by panel content with the same internal padding. Because the
-   dashboard candidate rejects a bundled Lua payload for 0.0.25 (OQ-D4), the
-   plugin packaging remains deferred and is not a prerequisite for this
-   migration.
+1. **Dashboard (bitty#2380).** The configuration dashboard is a `0.1.0`
+   first-party plugin; the Core-panel prototype was withdrawn before merge
+   (`bitty` #2390). It uses this mechanism like any other plugin: `ui.rich`
+   plus `ui.panel`, the read-only projection (`bitty` #2396), and the
+   `config.manage` capability (`bitty` #2393) for writes. There is no
+   Core-internal GUI-content path and no capability-free Core surface to
+   preserve; the section set, bounds, and confirmations in the dashboard
+   candidate are plugin requirements.
 2. **DevTools.** DevTools stays notification-only in 0.0.25. When it gains a
    UI, it uses `bitty.ui.panel.*` with `ui.rich` and `ui.panel`; no forced
    change now, and its existing `debug.*` grants are unchanged.
@@ -743,7 +743,7 @@ Each item is a concrete acceptance decision, not an open-ended question.
 | D8  | Event kinds: add `panel.content.released` and `panel.content.input-available` to the closed set?    | Yes, both observation-only, mirroring `overlay.released`/`overlay.input.available`.                                           |
 | D9  | Appearance selectors: evaluate against the durable content kind or the transient one?               | Durable kind; a content swap never changes decoration or background.                                                          |
 | D10 | Empty/browser/no-PTY targets: refuse `present` unless a live terminal content owner exists?         | Yes; a pane session or the runtime-global primary PTY both qualify; leaves without a PTY owner fail `E_UI_PANEL_UNAVAILABLE`. |
-| D11 | Dashboard migration: Core-internal mechanism now, plugin packaging later?                           | Yes; preserves shipped behavior and avoids the rejected bundled-Lua path.                                                     |
+| D11 | Dashboard migration: Core-internal mechanism or plugin over `ui.panel`?                             | Plugin over `ui.panel`; no Core-internal GUI-content path. The Core prototype was withdrawn (`bitty` #2390).                  |
 | D12 | Scene-path sequencing: is the present-path consumer a hard prerequisite?                            | Yes; the contract cannot ship before the Scene path paints panel content (OQ-051 direction).                                  |
 | D13 | Accessibility: what is the focus announcement and screen-reader description for GUI content?        | Follow-up required before acceptance; no accessibility claim in this record.                                                  |
 | D14 | Restore reflow: confirm "state preserved, visible reflow per the existing algorithm" is sufficient. | Yes; the exact algorithm remains the Terminal State RFC's open point.                                                         |
@@ -776,8 +776,8 @@ This record is complete when:
    input-routing branch.
 5. The affected-contracts table matches the edits made in the same wave,
    including the capability and event-kind amendments in the plugin corpus.
-6. The dashboard migration note matches the shipped 0.0.25 behavior and the
-   dashboard candidate's OQ-D4 disposition.
+6. The dashboard migration note matches the plugin-owned placement and the
+   dashboard candidate's re-scope, not a withdrawn Core surface.
 
 ## P0 Review Sign-off
 
@@ -819,8 +819,8 @@ This record is complete when:
   geometry and reflow.
 - [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md)
   — Core mechanism, plugin-only presentation.
-- [Configuration dashboard (Candidate)](../interfaces/configuration-dashboard-candidate.md)
-  — the 0.0.25 dashboard and its deferred capability.
+- [Configuration dashboard (Plugin) (Candidate)](../interfaces/configuration-dashboard-candidate.md)
+  — the plugin surface and its deferred capability.
 - [bitty#2388](https://github.com/bitty-terminal/bitty/issues/2388) — the owner
   design request.
 - [bitty#2380](https://github.com/bitty-terminal/bitty/issues/2380) — the
