@@ -332,19 +332,25 @@ and the same rules by the `bitty-config` catalog tests (which run in CI) and by
 `bitty config check`; the two cannot disagree because they call the same
 `contrast_checks` function.
 
-| Role                                   | Floor                                 | Why                                                                                                                                                   |
-| -------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Default foreground on background       | 4.5:1 (AA normal text)                | Body text and prompts.                                                                                                                                |
-| ANSI 1–6 and 9–14 on background        | 4.5:1                                 | Syntax highlighting, `ls --color`, diffs, Vim.                                                                                                        |
-| ANSI 7/15 on background (dark presets) | 4.5:1                                 | White/bright-white are text roles on dark.                                                                                                            |
-| ANSI 0/8, and 7/15 on light presets    | 1.2:1 or an explicit background alias | Surface/neutral tokens, never body text.                                                                                                              |
-| Cursor fill on background              | 4.5:1                                 | The cursor is a solid block cue; a block cannot also clear 3:1 against a 4.5:1 foreground, so the glyph-under-cursor rendering is a separate concern. |
-| Foreground on selection                | 4.5:1                                 | Selected text keeps its own foreground.                                                                                                               |
-| Selection fill on background           | 1.3:1                                 | The selection must stay visible without relying on text color.                                                                                        |
-| Cursor fill on selection               | 3:1 (AA large/UI)                     | IME preedit underline and caret over the preedit ground.                                                                                              |
-| Help-panel ring on selection           | 3:1 (AA non-text)                     | Panel boundary and focus cue. The ring is ANSI 12, falling back to ANSI 4, ANSI 6, then the foreground.                                               |
-| Banner text on ANSI 3                  | 4.5:1                                 | Pending-paste/close-confirm text is derived black or white, whichever measures higher.                                                                |
-| Focused View outline on background     | 3:1                                   | AC-1 (RFC-0001/OQ-039); AC-2 additionally holds against the idle outline.                                                                             |
+| Role                                   | Floor                                    | Why                                                                                                                                                   |
+| -------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Default foreground on background       | 4.5:1 (AA normal text)                   | Body text and prompts.                                                                                                                                |
+| ANSI 1–6 and 9–14 on background        | 4.5:1                                    | Syntax highlighting, `ls --color`, diffs, Vim.                                                                                                        |
+| ANSI 7/15 on background (dark presets) | 4.5:1                                    | White/bright-white are text roles on dark.                                                                                                            |
+| ANSI 0/8, and 7/15 on light presets    | advisory 1.2:1, reported but never gated | Surface/neutral tokens, never body text. Canonical palettes may deliberately keep them close to the background.                                       |
+| Cursor fill on background              | 4.5:1                                    | The cursor is a solid block cue; a block cannot also clear 3:1 against a 4.5:1 foreground, so the glyph-under-cursor rendering is a separate concern. |
+| Foreground on selection                | 4.5:1                                    | Selected text keeps its own foreground.                                                                                                               |
+| Selection fill on background           | 1.3:1                                    | The selection must stay visible without relying on text color.                                                                                        |
+| Cursor fill on selection               | 3:1 (AA large/UI)                        | IME preedit underline and caret over the preedit ground.                                                                                              |
+| Help-panel ring on selection           | 3:1 (AA non-text)                        | Panel boundary and focus cue. The ring is ANSI 12, falling back to ANSI 4, ANSI 6, then the foreground.                                               |
+| Banner text on ANSI 3                  | 4.5:1                                    | Pending-paste/close-confirm text is derived black or white, whichever measures higher.                                                                |
+| Focused View outline on background     | 3:1                                      | AC-1 (RFC-0001/OQ-039); AC-2 additionally holds against the idle outline.                                                                             |
+
+Neutral surface tokens below the advisory floor are reported as
+`theme.contrast.advisory.*` and never turn `theme.contrast.result` into a
+failure: several canonical palettes intentionally place ANSI 0 near a dark
+background (or ANSI 15 near a light one), and that is a surface choice rather
+than unreadable text.
 
 Two rules protect palette identity while the contrast repairs are applied:
 
@@ -500,11 +506,11 @@ the catalog tests.
 | `one-light`            | `ansi[1]`   | `#D23B32` | `#DE3E35` | text contrast, hue preserved                                               |
 | `one-light`            | `ansi[2]`   | `#378233` | `#3F953A` | text contrast, hue preserved                                               |
 | `one-light`            | `ansi[3]`   | `#82714D` | `#D2B67C` | text contrast, hue preserved                                               |
-| `one-light`            | `ansi[6]`   | `#0B6E85` | `#3F953A` | text contrast, hue preserved                                               |
+| `one-light`            | `ansi[6]`   | `#0B6E85` | `#3F953A` | cyan separated from green (upstream aliases the two families)              |
 | `one-light`            | `ansi[9]`   | `#D23B32` | `#DE3E35` | text contrast, hue preserved                                               |
 | `one-light`            | `ansi[10]`  | `#378233` | `#3F953A` | text contrast, hue preserved                                               |
 | `one-light`            | `ansi[11]`  | `#82714D` | `#D2B67C` | text contrast, hue preserved                                               |
-| `one-light`            | `ansi[14]`  | `#0B6E85` | `#3F953A` | text contrast, hue preserved                                               |
+| `one-light`            | `ansi[14]`  | `#0B6E85` | `#3F953A` | cyan separated from green (upstream aliases the two families)              |
 | `ayu-dark`             | `selection` | `#234E7D` | `#409FFF` | selection ground kept as a fill (Ghostty often uses an inverse foreground) |
 | `ayu-mirage`           | `selection` | `#2D5787` | `#409FFF` | selection ground kept as a fill (Ghostty often uses an inverse foreground) |
 | `ayu-light`            | `cursor`    | `#9C681F` | `#FFAA33` | cursor visibility (4.5:1 block floor and 3:1 on the selection)             |
