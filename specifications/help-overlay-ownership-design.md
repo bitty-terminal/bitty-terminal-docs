@@ -225,12 +225,17 @@ diagnostics.
 
 ### Caps, ordering, and truncation
 
-- At most `256` rows per call (`KEYMAP_LIST_MAX_ROWS`) and `1024` total rows
-  (`KEYMAP_LIST_MAX_TOTAL`, matching `MAX_KEYMAPS`).
+- At most `256` rows per call (`KEYMAP_LIST_MAX_ROWS`).
+- At most `1024` addressable rows per full scan (`KEYMAP_LIST_MAX_TOTAL`). This
+  is a read cap, not the registry's theoretical maximum: the resolved table can
+  carry up to `MAX_KEYMAPS` user entries plus the shipped defaults, and rows
+  beyond the cap are not addressable through this API. `truncated = true`
+  reports that a tail exists.
 - At most `65536` bytes of serialized result per call
   (`KEYMAP_LIST_MAX_BYTES`); when the byte cap is reached, deterministic tail
   truncation drops whole rows and sets `truncated = true`.
-- `total` is the number of rows in the resolved table, not the number returned.
+- `total` is the number of addressable rows (capped at
+  `KEYMAP_LIST_MAX_TOTAL`), not the number returned.
 - Rows are returned in resolved-table order. The plugin may sort for display,
   but the host order is stable and deterministic.
 - `offset` beyond `total` returns an empty `entries` array, `total`, and
