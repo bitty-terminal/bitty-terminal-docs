@@ -394,6 +394,15 @@ Bindable actions: `goto_split:<left|right|up|down>`,
 two are shipped defaults missing from the code module docs
 ([bitty#1327](https://github.com/bitty-terminal/bitty/issues/1327)).
 
+`toggle_help` (alias `show_help`) is still a Core action in the current source.
+The decided direction moves the help/which-key panel to a first-party plugin
+with a plugin command and plugin-suggested chords; once that migration ships,
+the two spellings and the four default help chords leave the Core catalog, and
+a user binding must target the plugin command. The migration is not shipped
+yet, so the current catalog above remains accurate. The ownership design and
+removal plan are the
+[Help and Which-Key Overlay Ownership Design](../specifications/help-overlay-ownership-design.md).
+
 `toggle_floating` flips the focused panel between tiled and floating
 through the `bitty.workspace:floating-toggle` primitive
 (`bitty-ui::presentation::toggle_floating`). The shipped default is

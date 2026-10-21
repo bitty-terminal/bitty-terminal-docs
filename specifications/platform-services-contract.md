@@ -201,18 +201,18 @@ raw window, GPU, or PTY handle crosses the boundary.
 
 Ownership at a glance:
 
-| Concern                          | Adapter owns                                        | Core retains                                                        |
-| -------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------- |
-| Notification intake and parsing  | Nothing                                             | OSC classification, bounds, inert-on-unknown, no hot-path callback  |
-| Notification redaction and rate  | Nothing                                             | Control stripping, whitespace normalization, length and rate bounds |
-| Notification display handoff     | OS notification backend and its platform permission | Admitted, sanitized `DesktopNotification` handed to the sink        |
-| Notification presentation policy | Which events notify, message text, silence rules    | Default-deny permission and consent gate                            |
-| URL parsing and validation       | Nothing                                             | `OSC 8` parse, scheme allowlist, validated arguments, no shell      |
-| URL activation and consent       | Nothing                                             | Gesture minting and consumption, revalidation, veto and timeout     |
-| URL OS hand-off                  | Handler selection and spawn                         | The validated URI only; no shell; refusal counted                   |
-| Blur application                 | Window/compositor API and platform gating           | Permission gate; blur is never a generic background service         |
-| Window focus events              | Platform focus reporting                            | Terminal-state association (focus reporting, IME, drags, cursor)    |
-| Capability and consent           | Declaration and platform permission state           | Grant, revocation, attribution, safe mode, fail-closed              |
+| Concern                          | Adapter owns                                                                           | Core retains                                                               |
+| -------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Notification intake and parsing  | Nothing                                                                                | OSC classification, bounds, inert-on-unknown, no hot-path callback         |
+| Notification redaction and rate  | Nothing                                                                                | Control stripping, whitespace normalization, length and rate bounds        |
+| Notification display handoff     | OS notification backend and its platform permission                                    | Admitted, sanitized `DesktopNotification` handed to the sink               |
+| Notification presentation policy | Which events notify, message text, silence rules, and whether the OS path is requested | Default-deny permission and consent gate; the in-grid banner display floor |
+| URL parsing and validation       | Nothing                                                                                | `OSC 8` parse, scheme allowlist, validated arguments, no shell             |
+| URL activation and consent       | Nothing                                                                                | Gesture minting and consumption, revalidation, veto and timeout            |
+| URL OS hand-off                  | Handler selection and spawn                                                            | The validated URI only; no shell; refusal counted                          |
+| Blur application                 | Window/compositor API and platform gating                                              | Permission gate; blur is never a generic background service                |
+| Window focus events              | Platform focus reporting                                                               | Terminal-state association (focus reporting, IME, drags, cursor)           |
+| Capability and consent           | Declaration and platform permission state                                              | Grant, revocation, attribution, safe mode, fail-closed                     |
 
 ## Notification service
 
@@ -305,11 +305,19 @@ the embedder opt-in, not the accepted plugin capability contract.
 - **Core retains:** intake classification and parsing; bounds; redaction
   (control stripping, normalization, length bounds, no-logging); the `RC-8`
   rate limiter; the bounded queue; the default-deny permission and consent
-  gate; the in-grid banner; and the decision to admit or refuse.
+  gate; the in-grid banner display floor; and the decision to admit or refuse.
 - **The adapter owns:** the OS notification backend and its platform
   permission, delivery mechanics, and the presentation policy of which events
   notify, message text, and silence rules. The adapter is optional and its
   absence removes OS delivery only.
+
+The in-grid banner is the display of the Core notification primitive, not a
+plugin-composed presentation surface. It is bounded, transient, paint-only, and
+has no plugin slot, hit region, or per-surface appearance settings. The plugin
+side owns whether an event notifies and what it says; it does not paint,
+replace, or suppress the admitted banner. The ownership disposition, including
+the rejected plugin-owned alternative and the safe-mode floor, is the
+[Notification Banner Ownership Decision](notification-banner-ownership-decision.md).
 
 ### Display handoff
 
@@ -546,7 +554,8 @@ Across all three services, Core retains the mechanism extraction cannot remove:
   (`P0-AC-009`).
 - **Notification redaction and rate bounds**: control stripping, whitespace
   normalization, length bounds, no raw-payload logging, the `RC-8` rate
-  limiter, the bounded queue, and the in-grid banner floor.
+  limiter, the bounded queue, and the in-grid banner display floor (transient,
+  paint-only, and non-composable).
 - **Terminal-state association**: focus and blur events are reflected in
   authoritative terminal state (focus reporting, IME preedit cleanup, drag
   teardown, cursor visibility) for the pane that actually holds focus.
@@ -780,6 +789,7 @@ following, including the negative-path evidence that this contract obligates.
 | Contract                                                                                                                                                                                                                                                                  | Effect                                                                                                             |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)                                                                                                           | Consumed as the accepted boundary; this contract records its terminal-side consequences and decides them.          |
+| [Notification Banner Ownership Decision](notification-banner-ownership-decision.md)                                                                                                                                                                                       | Confirms the in-grid banner as the notification primitive's display floor and fixes the plugin policy split.       |
 | [ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)                                                                                                                                       | The bootstrap fence is inherited unchanged.                                                                        |
 | [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md) (draft)                                                                                                                                                                                                 | Records the implemented-only bell/notification and OSC 8 findings this contract bounds; its status is not flipped. |
 | [Terminal State RFC](terminal-state-rfc.md) (accepted)                                                                                                                                                                                                                    | Unchanged; focus/blur association is reflected in Terminal Truth and presentation is never truth.                  |
@@ -870,6 +880,9 @@ Signed: independent security review (sign-off recorded), docs-curator review (ap
 - [ADR 0015 - Small-Core Extraction
   Boundaries](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
   - the bootstrap fence inherited here.
+- [Notification Banner Ownership Decision](notification-banner-ownership-decision.md)
+  - the accepted ownership disposition for the in-grid banner and its
+    safe-mode and no-OS display floor.
 - [Small-core refactor execution
   handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md)
   - the `W-136` focused contract and the `W-145` extraction disposition.

@@ -58,6 +58,8 @@ shipped, stable, or compatibility-guaranteed behavior:
 | [Graphics Extraction Contract](graphics-extraction-contract.md)                                                                                  | — (W-133 focused contract)                                                    | Accepted |
 | [Platform Services Contract](platform-services-contract.md)                                                                                      | — (W-136 focused contract; does not close OQ-076/OQ-038)                      | Accepted |
 | [Small-Core Capability Floor](small-core-capability-floor.md)                                                                                    | — (0.0.23 gate bitty#2059; closes no OQ)                                      | Accepted |
+| [Notification Banner Ownership Decision](notification-banner-ownership-decision.md)                                                              | — (bitty#2398 ownership disposition; closes no OQ)                            | Accepted |
+| [Help and Which-Key Overlay Ownership Design](help-overlay-ownership-design.md)                                                                  | — (bitty#2397 ownership design; API spellings under OQ-056)                   | Accepted |
 
 The following drafts are under review and do not authorize shipped, stable, normative, or compatibility-guaranteed behavior; experimental implementation may exist as review evidence (`Draft -> Experimental Implementation -> Accepted -> Verified -> Compatible`):
 
