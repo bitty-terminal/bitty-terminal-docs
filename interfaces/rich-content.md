@@ -290,15 +290,19 @@ candidate contract: nothing here becomes a stable or supported API by virtue
 of those experimental milestones, and Sixel, iTerm2 inline images, animation,
 and the structured transports below remain unimplemented.
 
-Current model boundary (2026-09-16, `bitty` `origin/main` `e8dc9e5`):
-`RichBlock` and `SceneNode` (`crates/bitty-rich/src/scene.rs`), plus the
-fragment-to-`RichBlock` projection (`crates/bitty-rich/src/projection.rs`),
-exist only as headless in-memory models in `bitty-rich`. No scene graph
-reaches the grid or the GPU present path; `bitty-render` consumes cell
-snapshots from `bitty-term-state` and drives the Kitty image texture upload
-and blit path, and it has no `bitty-rich` dependency edge. The composition
-described in this document therefore remains a design target rather than
-wired behavior.
+Current model boundary (2026-10-21, `bitty` `origin/main` `f246dc55`):
+`RichBlock` and `SceneNode` (`crates/bitty-rich/src/scene.rs`) exist only as
+headless in-memory models in `bitty-rich`. The fragment-to-`RichBlock`
+projection that previously sat beside them
+(`crates/bitty-rich/src/projection.rs`) was retired under `bitty#2117`
+(CTX-1412): no Core path consumed it, and it was the only reason
+`bitty-rich` carried a production dependency edge to the extracted
+`bitty-ipc` repository. No scene graph reaches the grid or the GPU present
+path; `bitty-render` consumes cell snapshots from `bitty-term-state` and
+drives the Kitty image texture upload and blit path, and it has no
+`bitty-rich` dependency edge. The composition described in this document
+therefore remains a design target rather than wired behavior; a future
+fragment ingestion path belongs to the extension side of the seam.
 
 ## Security review
 
