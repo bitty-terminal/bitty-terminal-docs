@@ -309,9 +309,20 @@ custom palette, because they are computed from its colors.
 | IME preedit                              | Derived: `selection` ground, `cursor` underline/caret, `foreground` glyphs           |
 | Focused/idle View outline                | Preset outline tokens, or explicit `decoration.border_color*` keys                   |
 | Window/panel glow, shadow, tint, fade    | Explicit `appearance.style` / `decoration` keys, never a theme                       |
+| Visual bell flash strip                  | Intentionally fixed: translucent amber accent, never a theme role                    |
 
 The table is the complete ownership statement: a theme never changes layout,
-input, Terminal Truth, or a role listed as explicit configuration.
+input, Terminal Truth, a role listed as explicit configuration, or the one
+surface listed as intentionally non-themed.
+
+The bounded visual-bell flash is that surface. With `terminal.bell` set to
+`visual` (the default) or `both`, the runtime paints a one-cell-high,
+translucent amber strip (`BELL_FLASH_BG` in
+`bitty` `crates/bitty-runtime/src/runtime/present.rs`) on the focused view's
+top edge for 120 ms. It is a transient attention signal over content rather
+than a preset-owned chrome surface, so it keeps the same amber under every
+preset and every `appearance.colors` palette and a theme switch never
+recolors it.
 
 ## Custom and third-party theme files
 
