@@ -1,6 +1,6 @@
 ---
-title: Configuration dashboard (Candidate)
-description: Core-owned configuration panel for profile theme font decoration plugins settings and extensions with the deferred config.manage write contract
+title: Configuration dashboard (Plugin) (Candidate)
+description: Plugin-owned configuration and status panel with read-only Core state queries and the deferred typed write contract
 category: specifications
 audience: mixed
 document_type: specification
@@ -9,37 +9,44 @@ website_publish: true
 sidebar_order: 37
 ---
 
-# Configuration dashboard (Candidate)
+# Configuration dashboard (Plugin) (Candidate)
 
 ## Document status
 
-> Status: **draft candidate**. The read-only surface and the two bounded writes
-> described under "Shipped MVP" exist in `bitty` `0.0.25` and carry
-> implementation evidence in that repository. The `config.manage` host
-> capability, its typed methods, and any persisted theme/profile/dashboard
-> write are **candidate** and authorize nothing: no capability id is accepted,
-> no Lua surface exists, and no security review has signed them off. This
-> document weakens no accepted source it cites.
+> Status: **draft candidate**. Presentation belongs to plugins/extensions; Core
+> owns mechanism only. The dashboard is a **plugin** (`bitty-terminal.dashboard`),
+> not a Core surface. An earlier Core UI implementation was drafted and
+> withdrawn without merging; it is not shipped, and no Core presentation code
+> for this feature exists.
+>
+> The read-only Core query this plugin needs (`bitty.runtime.inspect`, issue
+> bitty#2396) and the typed write capability (`config.manage`, issue bitty#2393)
+> are **candidate**. This document authorizes nothing by itself: no capability
+> id is accepted, no Lua surface exists, and no security review has signed them
+> off. It weakens no accepted source it cites.
 
 ## Purpose and scope
 
-Users who do not want to edit `init.lua` or drive the CLI still need to answer
-four questions: what configuration is active, which plugins are installed and
+Users who do not want to edit `init.lua` or drive the CLI need to answer four
+questions: what configuration is active, which plugins are installed and
 enabled, what one plugin's settings are, and where the files live. The
-configuration dashboard is a single full-panel surface for those answers, opened
-from a keybinding the user binds explicitly.
+configuration dashboard plugin answers them in one full-panel overlay using the
+accepted plugin UI surface.
 
 In scope:
 
-- D-1: the shipped read-only sections and their bounds;
-- D-2: the two writes the MVP performs, each through an existing Core path;
-- D-3: the deferred `config.manage` capability that would allow persisted
-  theme/profile/settings writes, with typed methods, bounds, consent, atomic
-  user-layer write rules, and the security review it must pass.
+- P-1: the plugin surface, its read-only sections, bounds, and fail-closed
+  behavior (acceptance criteria, not shipped code);
+- P-2: the read-only Core state query the plugin consumes, with its capability
+  and security constraints;
+- P-3: the deferred `config.manage` capability that would allow persisted
+  writes, with typed methods, bounds, consent, atomic user-layer write rules,
+  and the security review it must pass.
 
-Out of scope: arbitrary file editing, shell execution, network access, plugin
-installation from the panel, live profile switching, and any plugin-visible
-dashboard API. Those stay separate decisions.
+Out of scope: Core-owned dashboard presentation, arbitrary file editing, shell
+execution, network access, plugin installation from the panel, live profile
+switching, and any dashboard-specific Core UI component. Those stay separate
+decisions.
 
 ## Normative sources this specification must not weaken
 
@@ -48,7 +55,7 @@ dashboard API. Those stay separate decisions.
   the capability vocabulary (`bitty-plugin-host::capability`): deny by default,
   closed identifiers, no wildcard, no first-party bypass.
 - [CLI contract RFC](../specifications/cli-contract-rfc.md): the `bitty config`,
-  `bitty plugin`, and `bitty extension` verbs remain the authority the panel
+  `bitty plugin`, and `bitty extension` verbs remain the authority the plugin
   reads.
 - [Lua configuration and XDG layout](../configuration/lua-and-xdg.md): one user
   layer, `CLI > file > profile > defaults`.
@@ -60,123 +67,83 @@ dashboard API. Those stay separate decisions.
 
 | Term            | Meaning                                                                                           |
 | --------------- | ------------------------------------------------------------------------------------------------- |
-| Panel           | The Core-owned full-panel overlay described here.                                                 |
-| Snapshot        | Plain, bounded data the app builds on a cold path and hands to the runtime.                       |
-| Intent          | A typed row action (`preview theme`, `set plugin enabled`) the app applies after confirmation.    |
-| Session consent | The second `Enter` on the same row; any move cancels it.                                          |
+| Plugin          | `bitty-terminal.dashboard`, an official package installed through the normal plugin pipeline.     |
+| State query     | The read-only, bounded Core call the plugin consumes (`bitty.runtime.inspect`).                   |
+| Session consent | The second `Enter` on the same row in the plugin UI; any move cancels it.                         |
 | User layer      | `$XDG_CONFIG_HOME/bitty/init.lua` and its sibling plugin files, never a profile or a system path. |
 
-## D-1 Shipped surface (0.0.25)
+## P-1 Plugin surface (acceptance criteria)
 
 ### Shape
 
-The panel is a near-full-panel overlay on the focused view (one-cell margin,
-minimum 30×9 cells; below that it paints a `terminal too small` hint, keeps the
-state open, and paints the real panel after a resize). It is Core presentation
-state: fills and glyphs only, never grid truth, scrollback, layout, focus, or
-terminal state.
+A near-full-panel focusable overlay (`ui.overlay.focus`, the accepted W-01
+capture contract) opened by the plugin's command. The plugin paints
+through `bitty.ui.overlay.update`; it holds no terminal-grid authority.
 
-| Section     | Rows                                                                                                                                                                                                            | Source                                                |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Overview    | profile, resolved theme + layer, font family/size, decoration geometry, config path, one row per built-in theme preset                                                                                          | effective config, live runtime values, startup paths  |
-| Plugins     | one row per bundled catalog entry and installed record: state, source, version                                                                                                                                  | managed plugin manifest + package store index         |
-| Settings    | one row per declared setting: current value, shipped default, source (`user`/`default`)                                                                                                                         | manifest `[settings]` schema + the plugin's user file |
-| Profiles    | `default` plus every valid `profiles/<name>.lua` with the active marker                                                                                                                                         | profiles directory                                    |
-| Extensions  | per installed extension: active version + tier + ABI, descriptor digest, target path, last-recorded activation, liveness, trust, and the exact install/update/remove CLI command (read-only)                    | component inventory + activation records              |
-| Diagnostics | application version, profile and its source layer (`cli`/`env`/`none`), config file and directory, plugin ledger, plugin store, extension user/system roots, extension state root, with present/missing markers | startup-resolved sources                              |
+| Section     | Rows                                                                                                                                                                                                                              |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overview    | profile, resolved theme + layer, font family/size, decoration geometry, config path                                                                                                                                               |
+| Plugins     | one row per bundled catalog entry and installed record: state, source, version                                                                                                                                                    |
+| Settings    | one row per declared setting of every installed plugin: current value, shipped default, source (`user`/`default`)                                                                                                                 |
+| Profiles    | `default` plus every valid `profiles/<name>.lua` with the active marker                                                                                                                                                           |
+| Extensions  | per extension: active version, tier, ABI, descriptor digest, target path, last-recorded activation, liveness (explicitly not probed), trust derived from that record, and the exact install/update/remove CLI command (read-only) |
+| Diagnostics | app version; config file and directory; plugin ledger; plugin store; extension user/system roots; extension state root; profile and theme source layers; each path marked present/missing                                         |
 
-### Opening and navigation
+A read-only Overview/Plugins/Extensions/Diagnostics slice is the MVP; Settings,
+Profiles, and any write row stay read-only until P-3 lands.
 
-There is no shipped default chord: the action never enters `DEFAULT_KEYMAPS`,
-so a fresh configuration keeps Normal Mode byte-identical. The user opts in:
+### Navigation and bounds
 
-```lua
-keymaps = {
-    { chord = "alt+c", action = "toggle_dashboard", context = "global" },
-}
-```
+`j`/`k` (or arrows) move, `h`/`l` (or left/right, Tab) change section, `1`–`6`
+jump, `g`/`G` first/last, `PageUp`/`PageDown` page, `Enter` activates, `r`
+reloads the state query, and `q`/`Esc` closes. The plugin owns the overlay
+capture while open; nothing typed reaches the shell.
 
-`toggle_dashboard` (aliases `config_dashboard`, `dashboard`) toggles the panel
-and is also reachable from any surface that dispatches chrome actions
-(`ChromeAction::ToggleDashboard`). The open is refused while a plugin overlay
-holds transient input capture, so two surfaces never compete for the same keys.
+Bounds: at most 128 rows per section, 96 bytes per ordinary string, 240 bytes
+per path (long macOS temp roots must not clip the marker or executable name),
+and a full state query at most 64 KiB. Rows past the cap are replaced by a
+visible `+N more` note. A view too small for a legible panel shows
+`terminal too small` instead of consuming keys invisibly.
 
-While open the panel is modal for **unmodified** keys: `j`/`k` (or arrows) move,
-`h`/`l` (or left/right, Tab) changes section, `1`–`6` jump, `g`/`G` jump to the
-first/last row, `PageUp`/`PageDown` page, `Enter` activates, `r` reloads the
-snapshot, and `q`/`Esc` closes. Chorded presses (Ctrl/Alt/Super) stay with the
-user keymap, which is how the toggle chord closes the panel again. Nothing typed
-while open reaches the shell.
+### Fail-closed
 
-### Bounds and fail-closed rules
+Every section either renders bounded data or `unavailable: <reason>`. An
+unreadable managed manifest, store index, profiles directory, or extension root
+must never read as "none installed". The plugin reads no environment dump,
+credential, token, or process command line, so it cannot leak a secret.
 
-| Bound               | Value                    | Effect                                             |
-| ------------------- | ------------------------ | -------------------------------------------------- |
-| rows per section    | 128                      | tail replaced by a visible `+more` note row        |
-| label / value bytes | 48 / 96                  | truncated on a character boundary with an ellipsis |
-| note bytes          | 96                       | truncated on a character boundary                  |
-| snapshot rebuild    | open, `r`, after a write | no polling, no per-frame I/O                       |
+## P-2 Read-only Core state query (candidate)
 
-A section whose source fails (unreadable managed manifest, unreadable store
-index, missing config root, unreadable profiles directory) renders
-`unavailable: <reason>` and exposes **no** actionable row. An empty result is
-reported as an empty result ("none installed"), never conflated with a failure.
-The panel reads no environment dump, credential, token, or process command line,
-so it cannot leak a secret by construction.
+Core provides one typed query; the plugin supplies no paths and gets no
+authority beyond reading this snapshot.
 
-## D-2 Shipped writes (0.0.25)
+| Field         | Content                                                                                                                                                                | Bounds     |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `diagnostics` | app version; config file/dir; plugin ledger; store root; extension user/system roots and state root; profile name + source layer; theme name + layer; font; decoration | 240 B/path |
+| `plugins`     | `(id, name, version, source, enabled, recorded)`                                                                                                                       | 128 rows   |
+| `settings`    | `(plugin_id, key, current, default, source)` where source is `default`/`user`/`host` from the existing settings resolver                                               | 256 rows   |
+| `extensions`  | `(name, version, tier, abi_compatible, sha256, executable_path, activation, trust)`                                                                                    | 64 rows    |
+| `profiles`    | names + active marker                                                                                                                                                  | 64 rows    |
 
-Every write is typed, confirmed in-panel, and routed through a mutation path
-that already exists. The runtime performs none of them: it returns an intent and
-the app applies it.
+Rules:
 
-### Theme preview (non-persisting)
+1. Capability: the accepted `runtime.inspect` head (deny by default, hash-bound
+   grant). No new capability family unless the security review splits read from
+   `runtime.configure`.
+2. No argument is a path, command, URL, or raw Lua text.
+3. No write, no executable hashing on the call path, no environment or
+   credential read. `activation` is the last recorded state, never a liveness
+   probe; `trust` is a projection of that record.
+4. An unreadable source returns a typed per-section error, never an empty list.
+5. 16 calls/s per generation, 10 ms per call, 64 KiB total payload;
+   `--safe` returns the built-in configuration only and reads no third-party
+   store tree.
 
-Selecting a preset header row and pressing `Enter` twice calls
-`Runtime::preview_theme_preset`, which validates the name against the closed
-preset registry, then live-applies the palette through `set_theme_palette` —
-exactly the `bitty.theme.preview` path. No file is written. The Overview labels
-the result `live preview, not saved` and the persisted layer label returns on
-the next config reload or restart. An unknown name is refused with the palette
-untouched.
-
-### Plugin enable / disable (persisting, atomic)
-
-A bundled plugin row with a managed record reveals `SetPluginEnabled`. The app
-calls the managed-manifest enable/disable path the `bitty plugin enable|disable`
-CLI owns: load → re-check the recorded pin and granted set → mutate → the
-existing atomic write (temporary file, `fsync`, rename, `.bak`, owner-only
-mode). The CLI's checks are unchanged, so a manifest whose pin or grants moved
-is refused with the CLI's diagnostic instead of written. An unknown record is
-refused, and no file is created.
-
-### Safe mode
-
-Under `--safe` the panel installs no external sources: it renders the live
-built-in config, lists the static bundled catalog read-only, reports Settings,
-Profiles, and Extensions as unavailable, and refuses every plugin write with a
-warning. Safe recovery never reads the third-party store tree to fill a panel.
-
-### Read-only by design
-
-Profiles list and switch semantics are restart-scoped today (a launch selects
-one profile; `init.lua` still wins). The panel therefore lists profiles and
-names the active one without offering a switch. Settings rows are read-only
-because no Core API can write one plugin setting atomically yet; the section
-names the CLI that owns the edit (`bitty plugin config show|scaffold <id>`).
-Extensions are read-only too: the exact `bitty extension install|remove`
-commands are shown, but the panel has no process, network, or uninstall
-authority. Activation is the last recorded state, never a liveness probe, and
-trust is derived from that record plus the descriptor digest; the panel does
-not re-hash executables on a keypress. All three gaps are D-3 work, not silent
-authority.
-
-## D-3 Deferred `config.manage` capability (Candidate)
+## P-3 Deferred `config.manage` capability (candidate)
 
 A persisted write surface requires a new capability; it is **not** implemented
-in 0.0.25 and must not be added without this section's review. Read access does
-not need it: the panel is Core UI and reads Core state directly. A plugin-visible
-read API would reuse the accepted `runtime.inspect` head and stay separate.
+and must not be added without this section's review. The plugin's Settings
+write UI must not ship before it.
 
 ### Capability
 
@@ -187,7 +154,7 @@ read API would reuse the accepted `runtime.inspect` head and stay separate.
 | risk      | high (writes user configuration)                                         |
 | parameter | none; scope travels with each call                                       |
 | grant     | explicit consent bound to the manifest hash, like every other capability |
-| holders   | only the trusted bundled dashboard identity; never a third-party id      |
+| holders   | only the trusted dashboard plugin identity; never a third-party id       |
 
 `config.manage` never implies filesystem authority. No method accepts a path,
 a command, a URL, or raw Lua text.
@@ -216,7 +183,7 @@ closed with a typed error; nothing is clamped silently.
 
 1. The capability is requested in the manifest and granted only by explicit
    user consent bound to that manifest hash; an update that adds it re-prompts.
-2. Every write carries a panel-level confirmation (two `Enter` presses on the
+2. Every write carries a plugin-level confirmation (two `Enter` presses on the
    same row) and a per-generation call budget; there is no "write everything"
    call.
 3. Writes go to the user layer only: `<config-root>/bitty/…`. Profiles, system
@@ -226,11 +193,11 @@ closed with a typed error; nothing is clamped silently.
    previous content. A crash leaves either the old or the new file, never a
    partial one.
 5. Theme and profile writes are structured settings, not rewritten Lua source.
-   The dashboard never edits `init.lua` text; it records the value in a managed
+   The plugin never edits `init.lua` text; it records the value in a managed
    settings file the config loader merges at the same user-layer precedence.
 6. A refused validation, consent, or write leaves memory and disk unchanged and
    reports the reason; no partial application, no screen/file divergence.
-7. `--safe` and read-only filesystems fail closed: the panel reports the
+7. `--safe` and read-only filesystems fail closed: the plugin reports the
    refusal and keeps the previous state.
 
 ### Security review (required before acceptance)
@@ -247,94 +214,78 @@ closed with a typed error; nothing is clamped silently.
 | Partial write after crash                   | temp + `fsync` + rename + directory `fsync`; `.bak` retention                                    |
 
 Status of this review: **open**. It is not an accepted control set until the
-shared security corpus records it; reviewers must treat the table as a proposal,
-not evidence.
+shared security corpus records it; reviewers must treat the table as a
+proposal, not evidence.
 
 ## Relation to existing systems
 
-- `bitty config path|check|edit` remains the file-level authority; the panel
-  links to the same resolved path and never replaces `config edit`.
-- `bitty plugin list|info|enable|disable` remains the ledger authority; the
-  panel reuses its reads and its enable/disable mutation.
-- `bitty extension list` remains the component authority; the panel reuses
-  `discover_components`.
-- `bitty list themes` and the theme registry remain the preset authority; the
-  panel resolves names through the same closed registry.
+- `bitty config path|check|edit` remains the file-level authority; the plugin
+  shows the same resolved path and never replaces `config edit`.
+- `bitty plugin list|info|enable|disable|config show|config scaffold` remains
+  the ledger and settings authority; the plugin reuses its reads and names the
+  CLI for edits until P-3 lands.
+- `bitty extension list` remains the component authority; the plugin consumes
+  the same inventory/activation projection.
+- `bitty list themes` and the theme registry remain the preset authority.
 
 ## Alternatives considered
 
-1. **Ship a bundled Lua plugin (`bitty-terminal.dashboard`).** Rejected for
-   0.0.25: the bundled catalog is a manifest-only dogfood set with an empty
-   `bundled_roots`, so no Lua payload can ship inside the binary; a manifest id
-   backed by Core code would be a private channel. A real bundled payload needs
-   its own packaging decision.
-2. **Ship a separate official plugin repository.** Rejected for the MVP: the
-   plugin would need a read API plus write authority before it could show
-   anything, which is exactly the `config.manage` work this document defers.
-3. **Add `config.manage` now.** Rejected: it widens authority before the
-   security review and before a structured user-layer settings store exists.
-4. **Rewrite `init.lua` text for writes.** Rejected: fragile against user
-   formatting and comments; structured settings with the same precedence are
-   auditable and atomic.
-
-### Owner clarification and this deviation
-
-The intended long-term shape is a **GUI plugin panel** (the devtools model),
-not a Core surface. This slice ships Core UI anyway because no bundled-payload
-path exists; that is a recorded deviation, not the accepted target. OQ-D4
-tracks moving the surface into a plugin once payload shipping and the
-`config.manage` read/write API exist. Reviewers must not read the Core
-implementation as deciding the plugin question.
+1. **Core UI (withdrawn).** A Core-owned panel was drafted in bitty#2390 and
+   closed unmerged: presentation in Core contradicts the architecture and
+   duplicates surfaces the plugin platform exists to own. No Core code remains.
+2. **A bundled plugin manifest backed by Core code.** Rejected: a manifest id
+   behind Core presentation is a private channel.
+3. **A separate official plugin (chosen).** Delivered through the normal
+   install pipeline once the read-only Core query lands. Bundled packaging
+   needs embedded payload shipping (`bundled_roots` is empty today).
+4. **Add `config.manage` with the read query.** Rejected: writes need their own
+   capability and security review, and a structured user-layer store.
 
 ## Affected contracts
 
-- `ChromeAction` gains `toggle_dashboard` (parseable, manual-bind-only).
-- `bitty list actions` gains one row; the manual actions catalog follows.
-- No capability id, plugin manifest, Lua namespace, or file format changes in
-  0.0.25. D-3 would add the `config` capability family and a managed settings
-  file, both of which need their own accepted contracts.
+- Core: `bitty.runtime.inspect` under `runtime.inspect` (read-only, bounded);
+  no presentation code, no new node kind, no Core dashboard action.
+- Plugin: the `bitty-terminal.dashboard` manifest, overlay scenes, and command;
+  capability set limited to `runtime.inspect` + `ui.overlay.focus`.
+- P-3 would add the `config` capability family and a managed settings file,
+  both of which need their own accepted contracts.
+- No `ChromeAction`, `bitty list actions`, or manual action-catalog changes.
 
 ## Open points
 
-1. OQ-D1: whether `config.manage` belongs in the capability vocabulary as one
-   head or as `config.read` + `config.write` (read never implies control, the
-   pattern used by `terminal.*`).
+1. OQ-D1: whether the read query belongs under the existing `runtime.inspect`
+   head or a dedicated read-only head, and whether writes are one
+   `config.manage` head or `config.read` + `config.write`.
 2. OQ-D2: live profile switching semantics — re-merge in place versus a
    restart-required marker — before `profiles.use` can exist.
 3. OQ-D3: the structured user-layer settings file format and its interaction
    with `init.lua` precedence.
-4. OQ-D4 (**owner deviation, unresolved**): the clarified target is a GUI
-   plugin panel like devtools. Core UI ships only because bundled payload
-   shipping and the `config.manage` read/write API do not exist yet. Moving
-   the surface into a plugin — and whether it keeps this exact section set —
-   stays open and must not be treated as decided by this slice.
-5. OQ-D5: an accessibility pass (screen-reader description, monochrome/contrast
-   behavior) for the selected-row highlight.
+4. OQ-D4 (**resolved by the owner**): presentation is plugin-owned. Core UI is
+   withdrawn; the bundled-payload limitation (`bundled_roots` empty) is the
+   only blocking infrastructure item for the bundled route.
+5. OQ-D5: an accessibility pass for the plugin overlay (screen-reader
+   description, monochrome/contrast behavior for the selected row).
 
 ## Acceptance criteria
 
-- The panel opens from a user binding and from the chrome action, and closes on
-  `q`, `Esc`, or the toggle chord.
-- Unmodified keys never reach the PTY while the panel is open; chorded keys keep
-  working.
+- The plugin opens through its own command/overlay binding and closes on `q`,
+  `Esc`, or the toggle command; no Core dashboard action exists.
+- Unmodified keys never reach the PTY while the overlay is open.
 - Every section renders either bounded data or an explicit `unavailable`
   reason; no section silently reads as empty on failure.
-- No plugin runtime or services are created, no file is read on the hot path,
-  and no shell or network call is made by the panel. Settings are read through
-  the bounded plain-config loader; extension trust is a projection of the last
-  activation record, never a fresh hash on a keypress.
-- Theme preview changes the live palette and leaves the config file
-  byte-identical.
-- Plugin enable/disable stays byte-identical to the CLI's managed-manifest
-  result, requires two presses, and refuses unknown or stale records.
-- Every write is refused without an armed confirmation.
+- The plugin creates no runtime beyond its own VM, reads no file directly, and
+  makes no shell or network call. All state comes from the Core query.
+- Long host paths (macOS `/var/folders/...`) keep the marker and executable
+  name; path rows use the path-sized bound.
+- Extension rows show digest, target, activation, liveness, trust, and the
+  exact CLI commands without executing them.
+- No settings write exists before `config.manage` is accepted and reviewed.
 
 ## P0 Review Sign-off
 
-- Implementation review: pending (independent reviewer, separate from the
-  implementer).
-- Security review: pending for D-3 only; the shipped D-2 writes reuse accepted
-  paths and add no capability.
+- Implementation review: pending (plugin repository).
+- Security review: pending for the read query (bitty#2396) and P-3.
+- Architecture: owner-confirmed plugin-owned presentation (OQ-D4 resolved).
 
 ## References
 
