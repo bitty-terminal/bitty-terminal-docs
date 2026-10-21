@@ -71,17 +71,19 @@ dashboard API. Those stay separate decisions.
 ### Shape
 
 The panel is a near-full-panel overlay on the focused view (one-cell margin,
-minimum 30×9 cells; below that it paints nothing and stays open for a later
-resize). It is Core presentation state: fills and glyphs only, never grid
-truth, scrollback, layout, focus, or terminal state.
+minimum 30×9 cells; below that it paints a `terminal too small` hint, keeps the
+state open, and paints the real panel after a resize). It is Core presentation
+state: fills and glyphs only, never grid truth, scrollback, layout, focus, or
+terminal state.
 
-| Section    | Rows                                                                                                                   | Source                                                |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Overview   | profile, resolved theme + layer, font family/size, decoration geometry, config path, one row per built-in theme preset | effective config, live runtime values, startup paths  |
-| Plugins    | one row per bundled catalog entry and installed record: state, source, version                                         | managed plugin manifest + package store index         |
-| Settings   | one row per declared setting: current value, shipped default, source (`user`/`default`)                                | manifest `[settings]` schema + the plugin's user file |
-| Profiles   | `default` plus every valid `profiles/<name>.lua` with the active marker                                                | profiles directory                                    |
-| Extensions | one row per installed native extension: active version, tier, version count                                            | component inventory                                   |
+| Section     | Rows                                                                                                                                                                                                            | Source                                                |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Overview    | profile, resolved theme + layer, font family/size, decoration geometry, config path, one row per built-in theme preset                                                                                          | effective config, live runtime values, startup paths  |
+| Plugins     | one row per bundled catalog entry and installed record: state, source, version                                                                                                                                  | managed plugin manifest + package store index         |
+| Settings    | one row per declared setting: current value, shipped default, source (`user`/`default`)                                                                                                                         | manifest `[settings]` schema + the plugin's user file |
+| Profiles    | `default` plus every valid `profiles/<name>.lua` with the active marker                                                                                                                                         | profiles directory                                    |
+| Extensions  | per installed extension: active version + tier + ABI, descriptor digest, target path, last-recorded activation, liveness, trust, and the exact install/update/remove CLI command (read-only)                    | component inventory + activation records              |
+| Diagnostics | application version, profile and its source layer (`cli`/`env`/`none`), config file and directory, plugin ledger, plugin store, extension user/system roots, extension state root, with present/missing markers | startup-resolved sources                              |
 
 ### Opening and navigation
 
@@ -100,7 +102,7 @@ and is also reachable from any surface that dispatches chrome actions
 holds transient input capture, so two surfaces never compete for the same keys.
 
 While open the panel is modal for **unmodified** keys: `j`/`k` (or arrows) move,
-`h`/`l` (or left/right, Tab) changes section, `1`–`5` jump, `g`/`G` jump to the
+`h`/`l` (or left/right, Tab) changes section, `1`–`6` jump, `g`/`G` jump to the
 first/last row, `PageUp`/`PageDown` page, `Enter` activates, `r` reloads the
 snapshot, and `q`/`Esc` closes. Chorded presses (Ctrl/Alt/Super) stay with the
 user keymap, which is how the toggle chord closes the panel again. Nothing typed
@@ -160,8 +162,14 @@ warning. Safe recovery never reads the third-party store tree to fill a panel.
 Profiles list and switch semantics are restart-scoped today (a launch selects
 one profile; `init.lua` still wins). The panel therefore lists profiles and
 names the active one without offering a switch. Settings rows are read-only
-because no Core API can write one plugin setting atomically yet. Both gaps are
-D-3 work, not silent authority.
+because no Core API can write one plugin setting atomically yet; the section
+names the CLI that owns the edit (`bitty plugin config show|scaffold <id>`).
+Extensions are read-only too: the exact `bitty extension install|remove`
+commands are shown, but the panel has no process, network, or uninstall
+authority. Activation is the last recorded state, never a liveness probe, and
+trust is derived from that record plus the descriptor digest; the panel does
+not re-hash executables on a keypress. All three gaps are D-3 work, not silent
+authority.
 
 ## D-3 Deferred `config.manage` capability (Candidate)
 
@@ -269,6 +277,15 @@ not evidence.
    formatting and comments; structured settings with the same precedence are
    auditable and atomic.
 
+### Owner clarification and this deviation
+
+The intended long-term shape is a **GUI plugin panel** (the devtools model),
+not a Core surface. This slice ships Core UI anyway because no bundled-payload
+path exists; that is a recorded deviation, not the accepted target. OQ-D4
+tracks moving the surface into a plugin once payload shipping and the
+`config.manage` read/write API exist. Reviewers must not read the Core
+implementation as deciding the plugin question.
+
 ## Affected contracts
 
 - `ChromeAction` gains `toggle_dashboard` (parseable, manual-bind-only).
@@ -286,9 +303,11 @@ not evidence.
    restart-required marker — before `profiles.use` can exist.
 3. OQ-D3: the structured user-layer settings file format and its interaction
    with `init.lua` precedence.
-4. OQ-D4: whether the dashboard should later be packaged as a bundled plugin
-   once payload shipping exists, and whether the panel then keeps the same
-   surface.
+4. OQ-D4 (**owner deviation, unresolved**): the clarified target is a GUI
+   plugin panel like devtools. Core UI ships only because bundled payload
+   shipping and the `config.manage` read/write API do not exist yet. Moving
+   the surface into a plugin — and whether it keeps this exact section set —
+   stays open and must not be treated as decided by this slice.
 5. OQ-D5: an accessibility pass (screen-reader description, monochrome/contrast
    behavior) for the selected-row highlight.
 
@@ -300,8 +319,10 @@ not evidence.
   working.
 - Every section renders either bounded data or an explicit `unavailable`
   reason; no section silently reads as empty on failure.
-- No plugin VM is created, no file is read on the hot path, and no shell or
-  network call is made by the panel.
+- No plugin runtime or services are created, no file is read on the hot path,
+  and no shell or network call is made by the panel. Settings are read through
+  the bounded plain-config loader; extension trust is a projection of the last
+  activation record, never a fresh hash on a keypress.
 - Theme preview changes the live palette and leaves the config file
   byte-identical.
 - Plugin enable/disable stays byte-identical to the CLI's managed-manifest
