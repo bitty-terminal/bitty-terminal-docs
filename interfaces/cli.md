@@ -505,6 +505,23 @@ selector. `bitty init --profile NAME` writes only `profiles/NAME.lua` and
 does not activate it; activation is the explicit
 `bitty config profile use NAME` operation.
 
+First-class preset seeds from Core issue #2371 are implemented (0.0.25):
+
+- `bitty init --profile minimal` writes the smallest seed: one `theme` key
+  (`dark`), with every other value left at the shipped default.
+- `bitty init --profile dark` writes the ordinary generated defaults with the
+  dark theme family (`dark` alias).
+- `bitty init --profile light` writes the same generated defaults with the
+  `github-light` preset.
+- Presets are deterministic: they never prompt, need neither a TTY nor
+  `--yes`, never read `$SHELL` or `BITTY_PROFILE`, and never activate the
+  profile they write. Explicit value flags still apply to the seed.
+- Any other valid name keeps the interactive wizard flow (or `--yes`
+  generated defaults) and still never activates the profile.
+- An existing target profile (preset or custom) is a conflict: the run exits
+  2 and writes nothing without `--force`. With `--force`, previous bytes go
+  to a collision-free `<file>.bak[.N]` sibling before the atomic replacement.
+
 - The interactive TTY wizard uses single-keypress navigation for option
   pickers. Arrow keys and `j`/`k` move immediately, Enter selects the current
   entry, and the bounded escape-sequence reader preserves a lone Escape as
