@@ -461,12 +461,36 @@ activate it. Activation is explicit:
 bitty init
 bitty init --yes
 bitty init --yes --profile work
+bitty init --profile minimal
+bitty init --profile dark
+bitty init --profile light
 bitty config profile use work
 bitty config profile list
 bitty config profile show work
 bitty config profile path work
 bitty init --migrate
 ```
+
+First-class presets (Core issue #2371, 0.0.25):
+
+- `--profile minimal` writes the smallest seed: a single `theme` key with the
+  shipped defaults supplying every other value.
+- `--profile dark` writes the ordinary generated defaults with the dark theme
+  family (`dark`).
+- `--profile light` writes the ordinary generated defaults with the
+  `github-light` preset.
+- Preset seeds are deterministic: no prompts, no TTY or `--yes` requirement,
+  no `$SHELL` or `BITTY_PROFILE` read, and no activation. Explicit value
+  flags (`--theme`, `--font-size`, ...) still apply and add only the blocks
+  they touch to a minimal seed.
+- Every other valid name keeps the wizard flow (or `--yes` generated
+  defaults) and still writes only `profiles/NAME.lua`.
+
+A conflict (an existing target profile or selector) fails closed with exit 2
+and writes nothing. `--force` is the explicit reset: the previous bytes go to
+a collision-free `<file>.bak[.N]` sibling (exclusive creation, synced) before
+the new content is published by an atomic sibling-temp rename, so a failed
+write leaves the previous file in place.
 
 - A fresh profile-backed init publishes the profile before the selector.
   A crash before selector publication leaves the previous configuration
@@ -535,14 +559,18 @@ above.
   `bitty config path|check|edit` locates, validates with per-key source
   attribution (`cli/file/profile/default`), and opens the file in
   `$VISUAL`/`$EDITOR` (`vi` fallback).
-- Setup wizard (CTX-0149, issue #243): `bitty init [--yes] [--force]` is the
-  opt-in first-run writer. `--yes` skips prompts and writes sane defaults
-  (a `theme = "dark"` starter with commented gaps, keymap, and selection
-  examples); `--force` overwrites an existing file after copying it to
-  `<file>.lua.bak` (overwriting any older backup). Without `--force`, an
-  existing file is an error, never a silent overwrite. A program literally
-  named `init` must be invoked as `bitty -- init ...`. `--yes`/`--force`
-  are init-only and ignored by normal startup.
+- Setup wizard (CTX-0149, issue #243; profile-backed by #2187/CTX-1404;
+  preset seeds by #2371): `bitty init [--yes] [--force] [--profile NAME]
+[--migrate]` is the opt-in first-run writer. A bare run writes
+  `profiles/default.lua` plus the thin `init.lua` selector; `--profile NAME`
+  writes only that profile and never activates it; `--profile
+minimal|dark|light` seeds a deterministic preset without prompting. Without
+  `--force`, an existing target is an error, never a silent overwrite;
+  `--force` copies the previous bytes to a collision-free `<file>.bak[.N]`
+  sibling before atomically replacing the file. A legacy `init.lua` is never
+  replaced implicitly; `--migrate` is the explicit conversion. A program
+  literally named `init` must be invoked as `bitty -- init ...`.
+  `--yes`/`--force` are init-only and ignored by normal startup.
 - Quiet logging (CTX-0190): the default stderr level is `Warn` — warnings,
   errors, plus unconditional key user-facing lines (paste confirm/cancel,
   startup summary); per-frame `bitty tick` stats sit at `Debug`/`Trace` and
