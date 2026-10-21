@@ -91,8 +91,8 @@ documents (follow-up tasks).
 - [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md)
   (accepted): Workspace is a Core mechanism, panel/workspace presentation is
   plugin policy over Core primitives, and Core draws no chrome.
-- [Panel Runtime RFC](panel-runtime-rfc.md) (accepted): `PanelId != ViewId !=
-TerminalId`, the
+- [Panel Runtime RFC](panel-runtime-rfc.md) (accepted):
+  `PanelId != ViewId != TerminalId`, the
   `Declared -> Created -> Mounted -> Focused -> Suspended -> Disposed`
   lifecycle, suspend without destroying attachment, focus routing, and the
   `4+1` overlay envelope.
@@ -103,8 +103,9 @@ TerminalId`, the
   (accepted): `ViewId != TerminalId`, attachment/detachment, and move
   atomicity.
 - [Terminal State RFC](terminal-state-rfc.md) (accepted): Terminal Truth is
-  grid, cursor, modes, scrollback, replies, and damage; resize enters through
-  one path; the exact reflow algorithm remains that RFC's open point.
+  grid, cursor, modes, scrollback, and replies, with damage as derived state;
+  resize enters through one path; the exact reflow algorithm remains that
+  RFC's open point.
 - [Rich Presentation RFC](rich-presentation-rfc.md) (accepted): the
   `SceneNode` contract and SCN-1..SCN-5 budgets, and the rule that rich
   presentation never becomes Terminal Truth.
