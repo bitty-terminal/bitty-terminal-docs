@@ -177,9 +177,10 @@ their effect on Core and Plugin ownership:
   path.
 
 These are `Accepted` contracts, `Implemented` but not yet `Verified`
-(`Implemented` for IPC/rich/resolver headless tests). A `Verified` claim
-requires independent security-auditor and P0-AC acceptance evidence per the
-[risk evidence RFC](../specifications/risk-evidence-rfc.md)
+(`Implemented` for IPC/rich headless tests; package dependency resolution is
+manager-owned after bitty#1999, so no Core resolver is claimed). A `Verified`
+claim requires independent security-auditor and P0-AC acceptance evidence per
+the [risk evidence RFC](../specifications/risk-evidence-rfc.md)
 (`Specified -> Accepted -> Implemented -> Verified -> Compatible -> Release-ready`).
 
 ## Accepted Core ownership
