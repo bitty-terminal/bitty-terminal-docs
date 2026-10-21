@@ -193,14 +193,19 @@ Rules:
    layer is reportable per token (`framework-default`, `theme-preset`,
    `plugin-package`, `user-keys`, `safe-forced`). A missing token fails
    closed; the resolver never substitutes an unthemed colour.
-3. The node override never grants a capability. It is presentation data
+3. Attribution scope is explicit: padding and radius report their winning
+   layer for every resolved value. Border width and colour report their
+   winning layers only when the resolved width is non-zero; an explicit
+   `border = 0` resolves no border and therefore reports no border
+   attribution.
+4. The node override never grants a capability. It is presentation data
    scoped to content the extension already owns; a node that owns no content
    cannot use it to paint anything.
-4. Core-owned decoration is not reachable: `gaps_in`, `gaps_out`,
+5. Core-owned decoration is not reachable: `gaps_in`, `gaps_out`,
    `content_inset`, `radius`, and `border` on `View` frames remain
    `ConfigPlan`-validated and Core-applied. The primitives here style a node
    **inside** the content rectangle that Core already computed.
-5. When style is not declared anywhere, resolution is flat and contributes
+6. When style is not declared anywhere, resolution is flat and contributes
    zero paint operations. A consumer that emits operations only for a
    non-empty resolved style therefore renders byte-identically to today.
 
@@ -307,9 +312,12 @@ not claim a batching result.
 - **Accessibility.** Style changes paint only. Text, roles, reading order,
   selection, and search indices are unchanged; a border or radius never
   removes content from the accessibility tree.
-- **Contrast.** Border colour comes from tokens that already pass the theme
-  contract's contrast obligations. An extension cannot inject a low-contrast
-  literal; if a theme token is absent, resolution fails closed.
+- **Contrast.** Border colour comes from theme-resolved content tokens; an
+  extension cannot inject a literal. The token contract's AC-1..AC-3 floors
+  govern the focused/idle outline pair, not arbitrary content tokens, so
+  content-token contrast remains an owner-pending theme concern. If a named
+  token is absent, resolution fails closed rather than substituting an
+  unthemed colour.
 - **Safe mode.** `bitty --safe` forces all style geometry flat, so extension
   content degrades to plain themed text without a second policy path.
 - **No hot path.** No PTY read, VT parse, damage computation, keystroke, or
