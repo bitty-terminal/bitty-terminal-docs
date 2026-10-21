@@ -159,6 +159,16 @@ candidate picker as an input concern (draft,
   `Palette`; tooltips consume `Tooltip`; panel-owned `ui.overlay` surfaces are
   `NonModal` unless the Panel Runtime contract grants modal scope to the
   specific surface.
+- The in-grid notification banner is the Core notification primitive's display
+  floor on the `Messages` tier, not a plugin-composed surface. It is transient,
+  paint-only, and non-composable; plugin policy decides whether an event
+  notifies and what it says. See the
+  [Notification Banner Ownership Decision](notification-banner-ownership-decision.md).
+- A presentation-only help/which-key overlay is `NonModal` on `Popup`, is
+  paint-only, and never sets the modal bit or acquires capture. `Esc` dismisses
+  it without consuming the press unless a confirmation gate owns the press;
+  see the
+  [Help and Which-Key Overlay Ownership Design](help-overlay-ownership-design.md).
 - The chrome direction is recorded separately in
   [Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md);
   this record fixes only the overlay-side ownership boundary it consumes.

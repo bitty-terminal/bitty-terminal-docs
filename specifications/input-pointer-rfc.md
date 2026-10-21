@@ -262,7 +262,10 @@ emergency, overlay, and terminal-fallthrough ordering around it.
   available next keys and narrows per keystroke, so the Help panel doubles
   as a which-key menu. Dismissal is `Esc` or the same shortcut; the overlay
   is presentation-only under the overlay rules of the
-  [Panel Runtime pre-study](panel-runtime-pre-study.md).
+  [Panel Runtime pre-study](panel-runtime-pre-study.md). The help panel itself
+  is plugin presentation over the Core keymap read API and overlay mechanism;
+  the read API, parity constraints, and removal plan are the
+  [Help and Which-Key Overlay Ownership Design](help-overlay-ownership-design.md).
 - **Flash-style jump**: a binding labels every panel with a jump key for
   one-keystroke focus, optionally extended to a panel-action mode (toggle
   floating, close, fullscreen per label). This composes with the Leader and
@@ -339,6 +342,19 @@ the #784 Esc-routing matrix; the shipped defaults are also recorded in the
 [Configuration Model RFC](configuration-model-rfc.md) snapshot and the
 [Lua and XDG configuration](../configuration/lua-and-xdg.md) reference. All
 status remains `Implemented` (experimental), not `Verified`/`Compatible`.
+
+### Help overlay ownership transition (decided direction, not implemented)
+
+The shipped `help.rs` panel is `Implemented`-only evidence of a surface Core is
+retiring, not an accepted Core feature. The decided ownership is plugin
+presentation over Core mechanisms: Core keeps the keymap and action registry,
+the bounded read API, overlay geometry and stacking, and `Esc` and
+confirmation-gate routing; a first-party plugin supplies the panel, show/hide
+policy, and the toggle command. The plugin-side default chords depend on the
+reserved plugin-binding dispatch layer becoming live. Until the removal stages
+merge, `help.rs` remains the shipped surface and this evidence section stays
+current. The read-API contract, parity constraints, and removal inventory are
+the [Help and Which-Key Overlay Ownership Design](help-overlay-ownership-design.md).
 
 1. **Floating toggle default** (`bitty` #1704 `0c473b05`, CTX-0962, closes
    `bitty` #1695): `toggle_floating` (alias `floating_toggle`) ships on

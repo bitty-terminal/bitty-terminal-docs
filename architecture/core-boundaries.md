@@ -236,21 +236,23 @@ decode/placement evidence and its recorded deviations.
 
 ## Accepted Plugin ownership
 
-| Optional experience  | Policy owned by the plugin                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------------ |
-| Tabs                 | Tab strip and tab line presentation over Core panel and workspace commands                             |
-| Splits               | When to split, default direction, layout policy, and key bindings; the split primitive remains in Core |
-| Search               | Search UI, navigation, and history policy using a controlled Terminal snapshot                         |
-| Status line          | Presentation of cwd, modes, Git, tasks, and similar state                                              |
-| Workspace bar        | Workspace bar, tabs, sidebar, or pills over published workspace state; Core keeps the workspaces       |
-| Sessions             | Saving, restoring, naming, and organizing user workflows                                               |
-| SSH manager          | Host management and connection UX; PTY and transport security mechanisms remain in Core or a Service   |
-| Shell enhancement    | Optional UX for prompt marks, jump-to-prompt, and command regions                                      |
-| Project / Git        | Project discovery, status presentation, and command composition                                        |
-| Quick/Quake terminal | Window and presentation policy                                                                         |
-| AI / Agent           | Provider integration, Agent panes, status, tasks, and context UX                                       |
-| MCP client           | Consumption of external MCP services; the MCP adapter for Bitty debug is a separate tool               |
-| Palette / picker     | Command palette, file picker, and optional UI                                                          |
+| Optional experience  | Policy owned by the plugin                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------- |
+| Tabs                 | Tab strip and tab line presentation over Core panel and workspace commands                              |
+| Notifications        | Which events notify, message text, silence rules, and whether to use the OS path; Core keeps the banner |
+| Help / which-key     | Help panel content, show/hide policy, and the toggle command over the bounded keymap read API           |
+| Splits               | When to split, default direction, layout policy, and key bindings; the split primitive remains in Core  |
+| Search               | Search UI, navigation, and history policy using a controlled Terminal snapshot                          |
+| Status line          | Presentation of cwd, modes, Git, tasks, and similar state                                               |
+| Workspace bar        | Workspace bar, tabs, sidebar, or pills over published workspace state; Core keeps the workspaces        |
+| Sessions             | Saving, restoring, naming, and organizing user workflows                                                |
+| SSH manager          | Host management and connection UX; PTY and transport security mechanisms remain in Core or a Service    |
+| Shell enhancement    | Optional UX for prompt marks, jump-to-prompt, and command regions                                       |
+| Project / Git        | Project discovery, status presentation, and command composition                                         |
+| Quick/Quake terminal | Window and presentation policy                                                                          |
+| AI / Agent           | Provider integration, Agent panes, status, tasks, and context UX                                        |
+| MCP client           | Consumption of external MCP services; the MCP adapter for Bitty debug is a separate tool                |
+| Palette / picker     | Command palette, file picker, and optional UI                                                           |
 
 The default distribution may bundle some of these plugins, but it cannot grant
 first-party plugins additional authority through private APIs.
@@ -279,6 +281,14 @@ it is not the accepted baseline or current source behavior. Other optional
 chrome, including tab and status surfaces, remains plugin presentation.
 Generic Core chrome-band mechanisms remain available to mounted presentation
 plugins and do not themselves imply Core-drawn chrome.
+
+The help/which-key panel follows the same baseline. Once the first-party help
+plugin covers it, no plugin means no help panel and no Core `toggle_help`
+action; the help chords are supplied by the plugin and are absent in
+`bitty --safe`. Until that migration is merged and released, the current
+`help.rs` panel is transitional `Implemented`-only evidence, not an accepted
+Core feature. The ownership design and removal plan are the
+[Help and Which-Key Overlay Ownership Design](../specifications/help-overlay-ownership-design.md).
 
 Retired state (`W-104`, `bitty#1677` `c246e52`, `bitty#1680` `34b6d83`):
 the retired Core workspaceline, tab strip, and status-line presentation are no
@@ -325,14 +335,39 @@ provides two distinct extension tiers:
 
 ## Mechanism and policy examples
 
-| Scenario          | Core mechanism                                       | Plugin policy                                               |
-| ----------------- | ---------------------------------------------------- | ----------------------------------------------------------- |
-| Split             | Create, close, resize, and focus `LayoutNode` values | Key bindings, direction, balancing policy, and tab/split UX |
-| Notifications     | Platform notification primitive and security gate    | Which events notify, message text, and silence rules        |
-| Clipboard         | Platform read/write primitives and OSC 52 policy     | History, formatting, and interaction UI                     |
-| Shell integration | OSC 7/133 parser and semantic zones                  | Prompt navigation, status line, and command-history UX      |
-| Images            | Protocol parsing, placement, and quotas              | Image browser, previews, and operation UI                   |
-| Commands          | Registry, dispatch, permissions, and results         | Concrete workflows and composed commands                    |
+| Scenario          | Core mechanism                                                                                     | Plugin policy                                                                 |
+| ----------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Split             | Create, close, resize, and focus `LayoutNode` values                                               | Key bindings, direction, balancing policy, and tab/split UX                   |
+| Notifications     | Platform notification primitive, security gate, bounds, and the in-grid banner display floor       | Which events notify, message text, silence rules, and OS-versus-banner policy |
+| Help / which-key  | Keymap and action registry, the bounded read API, overlay geometry and stacking, and `Esc` routing | Panel content, show/hide policy, formatting, and the `toggle_help` command    |
+| Clipboard         | Platform read/write primitives and OSC 52 policy                                                   | History, formatting, and interaction UI                                       |
+| Shell integration | OSC 7/133 parser and semantic zones                                                                | Prompt navigation, status line, and command-history UX                        |
+| Images            | Protocol parsing, placement, and quotas                                                            | Image browser, previews, and operation UI                                     |
+| Commands          | Registry, dispatch, permissions, and results                                                       | Concrete workflows and composed commands                                      |
+
+### Notification display floor
+
+The in-grid notification banner is the display floor of the notification
+primitive, not plugin chrome. Core owns intake, redaction, rate and queue
+bounds, the consent and OS gates, and one bounded transient pill; plugins own
+which events notify, the message text, and silence policy. The display path
+exists in every run, including `bitty --safe` and a run with no OS adapter, so
+a plugin-only banner would either lose the notice or force a Core fallback. It
+exposes no plugin slot, no hit region, and no per-surface appearance settings.
+The full disposition, including the rejected plugin-owned alternative, is the
+[Notification Banner Ownership Decision](../specifications/notification-banner-ownership-decision.md).
+
+### Help and which-key presentation
+
+The help/which-key panel is plugin presentation over Core mechanisms. Core
+keeps the keymap and action registry, the bounded read API, overlay geometry
+and stacking, and `Esc` and confirmation-gate routing; a plugin supplies the
+panel content, show/hide policy, and the toggle command. The transition is
+staged: the current `help.rs` panel is `Implemented`-only evidence of the
+retiring surface, not an accepted Core feature, and the zero-plugin baseline
+draws no help panel once the plugin covers it. The design, read-API contract,
+and removal plan are the
+[Help and Which-Key Overlay Ownership Design](../specifications/help-overlay-ownership-design.md).
 
 ## Extension API composition
 
@@ -492,7 +527,12 @@ layout and workspace mechanisms. The
 [Legacy Chrome and Validation Suite Disposition](../specifications/legacy-chrome-and-validation-disposition.md)
 records retirement consequences, and the
 [Phodopus Host ABI candidate](../specifications/phodopus-host-abi-candidate.md)
-retains its draft status. This page changes none of their API spellings.
+retains its draft status. The
+[Notification Banner Ownership Decision](../specifications/notification-banner-ownership-decision.md)
+fixes the notification primitive's display floor, and the
+[Help and Which-Key Overlay Ownership Design](../specifications/help-overlay-ownership-design.md)
+fixes the help/which-key ownership split and the bounded keymap read API. This
+page changes none of their API spellings.
 
 ## Open points
 
@@ -500,6 +540,11 @@ Candidate decision rules, cross-cutting evolution rules, health signals, and
 the pending decision list are tracked in [Future Boundaries](future-boundaries.md)
 (`draft`). They refine this accepted contract without changing any ownership
 table and without weakening any normative P0 gate.
+
+The exact Lua spellings and capability identifier for the keymap/action read
+surface stay open under `OQ-056`; the ownership split and bounds are fixed by
+the help design record. The notification policy (`OQ-076`) remains open and is
+separate from the banner's ownership.
 
 The inline Command, Event, Capability, and Lifecycle discussions retain their
 unresolved lazy-loading, scope, migration, and verification questions; this
@@ -511,6 +556,12 @@ page settles no new API or enforcement threshold.
   keep all workspace and panel-tab presentation in plugins.
 - The zero-plugin and safe-mode baseline retains Core commands, reserves no
   workspace band, and introduces no built-in strip fallback.
+- The notification banner stays the Core notification primitive's display
+  floor and exposes no plugin slot, hit region, or per-surface appearance
+  policy.
+- Once the help migration is shipped, the zero-plugin and `bitty --safe`
+  baseline also draws no help panel and keeps `toggle_help` out of the Core
+  action catalog.
 - Dependency and source inventories name their revision and do not promote
   draft APIs or Implemented-only mechanisms to `Verified`.
 - All verification and P0 gates above remain required; documentation gates
@@ -526,6 +577,10 @@ transition is recorded by this correction.
 
 - [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md)
   — accepted workspace and panel-tab ownership.
+- [Notification Banner Ownership Decision](../specifications/notification-banner-ownership-decision.md)
+  — in-grid banner stays the Core notification primitive's display floor.
+- [Help and Which-Key Overlay Ownership Design](../specifications/help-overlay-ownership-design.md)
+  — plugin presentation, bounded keymap read API, and Core removal plan.
 - [ADR 0012](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0012-phodopus-runtime.md)
   — runtime successor direction.
 - [Risk evidence RFC](../specifications/risk-evidence-rfc.md) — lifecycle and
