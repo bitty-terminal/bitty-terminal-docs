@@ -181,8 +181,15 @@ answer. Scope travels with the host call, never as a grant parameter.
   and the SDK `bitty.d.lua`.
 
 At the source revision above, the production audio state reader uses bounded
-fixed-argv `pactl` calls for sink volume, mute, and active port. Microphone
-fields are absent because that revision has no scoped source argv; the spectrum
+fixed-argv `pactl` calls for sink volume, mute, and active port. The live
+runtime samples that read off the plugin executor thread (bitty#2425): one
+short-lived sampling thread runs the composed read at the 0.5 Hz ceiling and
+the bridge serves the landed snapshot through the same gate, so
+`audio.state.get()` never spawns or waits inside a plugin callback. A poll
+before the first sample lands hides; the stale-then-hide grace and the
+response shape are unchanged, and a plugin that over-polls cannot multiply
+monitor work. Injected fixture readers stay synchronous. Microphone fields
+are absent because that revision has no scoped source argv; the spectrum
 monitor returns unavailable until a PipeWire/cava follow-up supplies samples.
 The spectrum rate and hide contract above therefore does not establish a live
 spectrum feed. Missing executables, failed calls, and monitor loss use the
