@@ -186,8 +186,9 @@ runtime samples that read off the plugin executor thread (bitty#2425): one
 short-lived sampling thread runs the composed read at the 0.5 Hz ceiling and
 the bridge serves the landed snapshot through the same gate, so
 `audio.state.get()` never spawns or waits inside a plugin callback. A poll
-before the first sample lands hides; the stale-then-hide grace and the
-response shape are unchanged, and a plugin that over-polls cannot multiply
+before the first sample lands hides; `stale_age_ms` and the stale-then-hide
+grace are measured from the instant the reader completed, not from the poll,
+and the response shape is unchanged. A plugin that over-polls cannot multiply
 monitor work. Injected fixture readers stay synchronous. Microphone fields
 are absent because that revision has no scoped source argv; the spectrum
 monitor returns unavailable until a PipeWire/cava follow-up supplies samples.
