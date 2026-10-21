@@ -14,11 +14,12 @@ sidebar_order: 10
 Index of the terminal-platform interface contracts. Normative detail lives
 in the linked pages; this index carries no duplicate normative prose.
 
-| Document                                                    | Status | Purpose                                                                        |
-| ----------------------------------------------------------- | ------ | ------------------------------------------------------------------------------ |
-| [Command-line interface](cli.md)                            | Draft  | Extensible CLI, runtime control, output, and introspection contracts.          |
-| [Provider contracts for bar modules](provider-contracts.md) | Draft  | Core-owned sensor, platform, and audio provider interfaces with rate ceilings. |
-| [Rich content and presentation interfaces](rich-content.md) | Draft  | Terminal truth, rich blocks, semantic sources, and presentation composition.   |
+| Document                                                        | Status | Purpose                                                                        |
+| --------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------ |
+| [Command-line interface](cli.md)                                | Draft  | Extensible CLI, runtime control, output, and introspection contracts.          |
+| [Provider contracts for bar modules](provider-contracts.md)     | Draft  | Core-owned sensor, platform, and audio provider interfaces with rate ceilings. |
+| [Rich content and presentation interfaces](rich-content.md)     | Draft  | Terminal truth, rich blocks, semantic sources, and presentation composition.   |
+| [Configuration dashboard](configuration-dashboard-candidate.md) | Draft  | Core configuration panel and the deferred `config.manage` write contract.      |
 
 ## Authority and status
 
