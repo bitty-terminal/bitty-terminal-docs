@@ -424,17 +424,17 @@ Rules:
 ### State
 
 A content swap changes only the panel's presented content kind. It does not
-detach, suspend, resize, signal, close, or kill the `PaneSession`; the PTY file
-descriptor, parser, grid, cursor, modes, replies, damage, and scrollback stay
-owned and live exactly as before.
+detach, suspend, resize, signal, close, or kill the terminal content owner; the
+PTY file descriptor, parser, grid, cursor, modes, replies, damage, and
+scrollback stay owned and live exactly as before.
 
 ### Output and backpressure
 
-1. **No new buffer.** The existing `poll_pty` drains the primary session and
-   every pane session on every poll, whether or not the pane is painted. A
-   hidden terminal therefore continues to parse into its grid and scrollback.
-   No plugin-visible output buffer, queue, or stream is introduced; such a
-   buffer would be a new data path and a new authority.
+1. **No new buffer.** The existing `poll_pty` drains the primary PTY and every
+   pane session on every poll, whether or not the pane is painted. A hidden
+   terminal therefore continues to parse into its grid and scrollback. No
+   plugin-visible output buffer, queue, or stream is introduced; such a buffer
+   would be a new data path and a new authority.
 2. **The bound is already end-to-end.** Each session's reader channel holds at
    most 16 chunks of 8 KiB (128 KiB); a poll drains at most 32 chunks, 256 KiB,
    and 10 ms across all sessions. When the consumer stalls, the channel fills,
@@ -477,10 +477,11 @@ owned and live exactly as before.
 5. **Alternate screen and images.** The existing rules are unchanged: the
    alternate screen owns no scrollback, and alternate-screen images stay hidden
    while the alternate screen is active.
-6. **Process exit while hidden.** The session stays until the normal close
-   path. An exit is recorded and observed by the existing process/terminal
-   events; on restore the terminal shows the exited state exactly as an
-   unfocused pane does today. The GUI content stays presented until dismissed.
+6. **Process exit while hidden.** The terminal content owner stays until the
+   normal close path. An exit is recorded and observed by the existing
+   process/terminal events; on restore the terminal shows the exited state
+   exactly as an unfocused pane does today. The GUI content stays presented
+   until dismissed.
 
 ## Focus and input ownership
 
