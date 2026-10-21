@@ -237,12 +237,26 @@ a verified source, not forced.
 
 ## 6. Preview an extension update before it re-pins
 
-Install or upgrade exactly one pinned release:
+Install the latest catalog release, or pin exactly one release:
 
 ```sh
-bitty extension install <name> --version <X.Y.Z>
+bitty extension install graphics                 # latest for this host target
+bitty extension install graphics --version 0.0.24
+bitty extension install net --version 0.0.1
 bitty extension install <name> --version <X.Y.Z> --digest <hex>
+# Repo-style names are aliases for the stored component name:
+bitty extension install bitty-graphics --version 0.0.24
 ```
+
+A bare install resolves the highest strict `X.Y.Z` entry for the exact
+`(name, host target)` in `https://cdn.bitty.run/extensions/catalog.v1` and
+prints the resolved version before the release download. The catalog was
+still unpublished (404) on 2026-10-21, so a bare install currently fails
+closed with a concrete `--version` example rather than guessing; exact pins
+for the published `graphics 0.0.24` and `net 0.0.1` artifacts work through
+the documented offline fallback. `latest` is convenience, not a trust
+guarantee: the catalog is mutable metadata, so pin `--version` for
+reproducible automation. Prereleases are never published and never selected.
 
 When the fetch would change the recorded TOFU pin, Bitty prints an
 advisory preview before anything changes:
@@ -311,8 +325,9 @@ external-process variables` — an explicit variable named a denied
 | Inspect a plugin       | `bitty plugin info <id>`                                                              |
 | Revoke one capability  | `bitty plugin revoke <id> --cap <capability>`                                         |
 | Revoke all grants      | `bitty plugin revoke <id>`                                                            |
-| List extensions        | `bitty extension list [--format table\|json\|jsonl]`                                  |
+| List extensions        | `bitty extension list [<name>] [--format table\|json\|jsonl]`                         |
 | Print pinned bytes     | `bitty extension show-source <name> [<version>]`                                      |
+| Install latest         | `bitty extension install <name> [--digest <hex>] [--force] [--yes]`                   |
 | Install a release      | `bitty extension install <name> --version <X.Y.Z> [--digest <hex>] [--force] [--yes]` |
 | Remove an extension    | `bitty extension remove <name> [<version>]`                                           |
 | Safe startup           | `bitty --safe`                                                                        |
