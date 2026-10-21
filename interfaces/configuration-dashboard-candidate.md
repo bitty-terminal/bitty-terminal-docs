@@ -148,6 +148,13 @@ mode). The CLI's checks are unchanged, so a manifest whose pin or grants moved
 is refused with the CLI's diagnostic instead of written. An unknown record is
 refused, and no file is created.
 
+### Safe mode
+
+Under `--safe` the panel installs no external sources: it renders the live
+built-in config, lists the static bundled catalog read-only, reports Settings,
+Profiles, and Extensions as unavailable, and refuses every plugin write with a
+warning. Safe recovery never reads the third-party store tree to fill a panel.
+
 ### Read-only by design
 
 Profiles list and switch semantics are restart-scoped today (a launch selects
