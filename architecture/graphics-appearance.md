@@ -303,6 +303,13 @@ extraction into ANSI 16, ANSI 256 approximations, and semantic colors), and a
 plugins with smooth interpolation. Configuration and event shapes here are
 illustrative; the accepted appearance contract stays in RFC-0001.
 
+Core keeps theme primitives; wallpaper-to-palette derivation is presentation
+policy in the ADR 0014 Core-mechanism/plugin-presentation split. The wired
+path is the plugin `bitty.image.read` bridge over approved wallpaper roots
+with preview/confirm intents (CTX-1169 / bitty#1976). The former
+`bitty-rich::wallpaper_theme` helper had no consumer and was retired on
+2026-10-21 (bitty#2359); no Core derivation API is planned.
+
 ## Subsystem split (direction)
 
 ```text
@@ -663,20 +670,24 @@ remain authoritative.
 - Kitty `APC G` intake exists: `crates/bitty-vt/src/kitty_apc.rs` (CTX-0256)
   parses the `G` control list (`f`, `s`, `v`, `a`, `c`, `r`, `m`),
   base64-unwraps with a fail-closed alphabet check, reassembles chunked `m=`
-  streams under a 320 MB ledger cap mirroring `bitty-rich`, and rejects
+  streams under a 320 MB ledger cap mirroring the Core kitty placement
+  bound (`crates/bitty-rich/src/kitty_place.rs`), and rejects
   oversize raw claims before allocation. Unknown keys are ignored for
   forward compatibility. This is a transmit/display routing intake, not yet a
   full command model.
-- Kitty image pipeline shape exists in `crates/bitty-rich/src/`: `kitty.rs`
-  (`KittyGraphicsStub`: `ingest`, `begin_chunk`, `append_chunk`), plus
+- Kitty image pipeline shape exists in `crates/bitty-rich/src/`:
   `kitty_decode.rs`, `kitty_place.rs`, `image.rs` (`ImageStore` /
   `ImagePlacement` under the accepted IMG-1 through IMG-9 ceilings),
   `background.rs` (CTX-0347: `BackgroundStore` / `BackgroundRasterCache`;
   BG ceilings alias the image-store ceilings, which is partial in-tree
   evidence for the shared-backend direction), `loader.rs` (deny-by-default
-  `ResourcePolicy`), and `scene.rs` (bounded scene limits). There is **no
-  sixel module** in `bitty-rich/src`: Sixel is unimplemented, as the Rich
-  Presentation RFC already records.
+  `ResourcePolicy`), and `scene.rs` (bounded scene limits). The legacy
+  `kitty.rs` placeholder stub (`KittyGraphicsStub`: `ingest`,
+  `begin_chunk`, `append_chunk`) was retired as unwired on 2026-10-21
+  (bitty#2358); the bounded `APC G` intake above is the live path, and the
+  placement/ledger bounds now live in `kitty_place.rs` with unchanged
+  values. There is **no sixel module** in `bitty-rich/src`: Sixel is
+  unimplemented, as the Rich Presentation RFC already records.
 - Present path (per the Rich Presentation RFC evidence section, not
   re-verified here): decoded bitmaps composite topmost over the grid via CPU
   blend plus wgpu blit. Negative/positive z-ordering against glyphs is
