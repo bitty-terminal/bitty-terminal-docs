@@ -430,12 +430,29 @@ their owning open question accepts them; unknown fields fail closed.
 
 ### `scrollbar`, `mouse`
 
-| Key path                             | Type    | Default | Valid range                                      | Fail-closed                    | Reload  |
-| ------------------------------------ | ------- | ------- | ------------------------------------------------ | ------------------------------ | ------- |
-| `scrollbar.mode`                     | string  | `auto`  | `hidden` \| `always` \| `auto` (exact lowercase) | ignore element / reject reload | restart |
-| `scrollbar.width`                    | integer | `8`     | `[1, 32]` logical px                             | ignore element / reject reload | restart |
-| `mouse.focus_follows_mouse`          | boolean | `false` | `true` \| `false`                                | ignore element / reject reload | restart |
-| `mouse.focus_follows_mouse_delay_ms` | integer | `0`     | `[0, 2000]` ms                                   | ignore element / reject reload | restart |
+| Key path                             | Type    | Default               | Valid range                                      | Fail-closed                    | Reload  |
+| ------------------------------------ | ------- | --------------------- | ------------------------------------------------ | ------------------------------ | ------- |
+| `scrollbar.mode`                     | string  | `auto`                | `hidden` \| `always` \| `auto` (exact lowercase) | ignore element / reject reload | restart |
+| `scrollbar.width`                    | integer | `8`                   | `[1, 32]` logical px                             | ignore element / reject reload | restart |
+| `mouse.focus_follows_mouse`          | boolean | `false`               | `true` \| `false`                                | ignore element / reject reload | restart |
+| `mouse.focus_follows_mouse_delay_ms` | integer | `0`                   | `[0, 2000]` ms                                   | ignore element / reject reload | restart |
+| `mouse.right`                        | string  | `none`                | `none` \| any chrome-action spelling             | ignore element / reject reload | restart |
+| `mouse.middle`                       | string  | `paste_from_primary`  | `none` \| any chrome-action spelling             | ignore element / reject reload | restart |
+
+`mouse.right` and `mouse.middle` bind the two chrome buttons to the same
+action vocabulary as `keymaps[].action` — `paste_from_clipboard`,
+`paste_from_primary`, `copy_to_clipboard`, `toggle_help`,
+`command:<owner:cmd>`, and the rest of the catalog — plus an explicit `none`
+no-op. The shipped matrix is `right = "none"` and
+`middle = "paste_from_primary"`: a default right-click reads no clipboard,
+opens no suspicious-paste dialog, and writes no PTY bytes, so an accidental
+right-click over a multi-line clipboard can no longer trap the user behind
+the confirmation gate. Unknown action spellings fail closed with the owning
+field path (`mouse.right` / `mouse.middle`), and a project layer may not bind
+either button. A pane that enables mouse reporting
+(`DECSET 1000`/`1002`/`1003` plus `1006`) still receives the button as
+protocol bytes first; capture wins and no host action runs.
+>>>>>>> 206e938 (docs(config): document mouse button bindings and inert right-click (bitty#2474))
 
 ### `appearance` (theme, custom palette, animations)
 
