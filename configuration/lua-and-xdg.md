@@ -1138,8 +1138,6 @@ Shipped schema:
 -- Shipped schema (bitty#2474).
 return {
     mouse = {
-        focus_follows_mouse = false, -- opt-in hover focus (CTX-0260/CTX-0334)
-        focus_follows_mouse_delay_ms = 0,
         right = "none", -- explicit no-op: no paste, no dialog, no PTY bytes
         middle = "paste_from_primary", -- Linux middle-click selection paste
     },
@@ -1165,9 +1163,9 @@ return {
   paste, and stays configurable (including `"none"`) like any other binding.
 - Both buttons dispatch through the same `ChromeAction` path as a bound chord:
   no parallel mouse action table exists. `bitty list actions` reports the
-  bound buttons beside each action's chord (`mouse` field), `bitty inspect
-config` reports the shipped default for `mouse.right` and `mouse.middle`,
-  and `bitty config check` reports the effective value and source.
+  bound buttons beside each action's chord (`mouse` field). The
+  `bitty inspect config` lookup reports the shipped default, and
+  `bitty config check` reports the effective value and source.
 - A binding that pastes still passes the CTX-0186 suspicious-paste gate:
   multi-line or otherwise suspicious text waits for an explicit confirmation,
   and the default `none` never reads either selection.

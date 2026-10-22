@@ -430,14 +430,14 @@ their owning open question accepts them; unknown fields fail closed.
 
 ### `scrollbar`, `mouse`
 
-| Key path                             | Type    | Default               | Valid range                                      | Fail-closed                    | Reload  |
-| ------------------------------------ | ------- | --------------------- | ------------------------------------------------ | ------------------------------ | ------- |
-| `scrollbar.mode`                     | string  | `auto`                | `hidden` \| `always` \| `auto` (exact lowercase) | ignore element / reject reload | restart |
-| `scrollbar.width`                    | integer | `8`                   | `[1, 32]` logical px                             | ignore element / reject reload | restart |
-| `mouse.focus_follows_mouse`          | boolean | `false`               | `true` \| `false`                                | ignore element / reject reload | restart |
-| `mouse.focus_follows_mouse_delay_ms` | integer | `0`                   | `[0, 2000]` ms                                   | ignore element / reject reload | restart |
-| `mouse.right`                        | string  | `none`                | `none` \| any chrome-action spelling             | ignore element / reject reload | restart |
-| `mouse.middle`                       | string  | `paste_from_primary`  | `none` \| any chrome-action spelling             | ignore element / reject reload | restart |
+| Key path                             | Type    | Default              | Valid range                                      | Fail-closed                    | Reload  |
+| ------------------------------------ | ------- | -------------------- | ------------------------------------------------ | ------------------------------ | ------- |
+| `scrollbar.mode`                     | string  | `auto`               | `hidden` \| `always` \| `auto` (exact lowercase) | ignore element / reject reload | restart |
+| `scrollbar.width`                    | integer | `8`                  | `[1, 32]` logical px                             | ignore element / reject reload | restart |
+| `mouse.focus_follows_mouse`          | boolean | `false`              | `true` \| `false`                                | ignore element / reject reload | restart |
+| `mouse.focus_follows_mouse_delay_ms` | integer | `0`                  | `[0, 2000]` ms                                   | ignore element / reject reload | restart |
+| `mouse.right`                        | string  | `none`               | `none` \| any chrome-action spelling             | ignore element / reject reload | restart |
+| `mouse.middle`                       | string  | `paste_from_primary` | `none` \| any chrome-action spelling             | ignore element / reject reload | restart |
 
 `mouse.right` and `mouse.middle` bind the two chrome buttons to the same
 action vocabulary as `keymaps[].action` — `paste_from_clipboard`,
@@ -456,7 +456,8 @@ attribution and the shipped default applies only when no layer declares the
 leaf. A pane that enables mouse reporting
 (`DECSET 1000`/`1002`/`1003` plus `1006`) still receives the button as
 protocol bytes first; capture wins and no host action runs.
->>>>>>> 206e938 (docs(config): document mouse button bindings and inert right-click (bitty#2474))
+
+> > > > > > > 206e938 (docs(config): document mouse button bindings and inert right-click (bitty#2474))
 
 ### `appearance` (theme, custom palette, animations)
 
