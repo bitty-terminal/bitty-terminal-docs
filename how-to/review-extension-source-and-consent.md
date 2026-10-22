@@ -64,19 +64,19 @@ bitty extension list --format json
 `bitty plugin list` shows source, state, pin status, and granted versus
 requested capabilities per plugin. `bitty extension list` shows name,
 version, active-version marker, source tier (`user` wins over `system`),
-ABI compat, last recorded activation transition, and path per component.
+ABI compat, last recorded activation transition, and path per extension.
 There is no dedicated `consent list` verb: `list` plus `info` below are
 the consent inventory.
 
-The `LAST ACTIVATION` column reports the last transition the component
-broker recorded for that component name: `installed` (nothing recorded
+The `LAST ACTIVATION` column reports the last transition the internal
+component broker recorded for that extension name: `installed` (nothing recorded
 yet), `active`, `stopped`, `crashed`, or `denied:<class>`. The class
 names are the stable host error names (`capability_denied`,
 `plugin_not_active`, `component_grant_invalid`, `component_untrusted`,
 `component_unavailable`), so a denied entry matches the error Bitty
 prints for the same refusal. The value is last-recorded diagnostics, not
 a liveness probe: `active` means the broker recorded a spawn, not that
-the process is alive right now, and it describes the component name, not
+the process is alive right now, and it describes the extension name, not
 one version when several are installed. The table prints it once, on
 the active-version row (or the first row when `current` names no
 installed version). Records live in
@@ -244,17 +244,19 @@ bitty extension install graphics                 # latest for this host target
 bitty extension install graphics --version 0.0.24
 bitty extension install net --version 0.0.1
 bitty extension install <name> --version <X.Y.Z> --digest <hex>
-# Repo-style names are aliases for the stored component name:
+# Repo-style names are aliases for the stored extension name:
 bitty extension install bitty-graphics --version 0.0.24
 ```
 
 A bare install resolves the highest strict `X.Y.Z` entry for the exact
 `(name, host target)` in `https://cdn.bitty.run/extensions/catalog.v1` and
-prints the resolved version before the release download. The catalog was
-still unpublished (404) on 2026-10-21, so a bare install currently fails
-closed with a concrete `--version` example rather than guessing; exact pins
-for the published `graphics 0.0.24` and `net 0.0.1` artifacts work through
-the documented offline fallback. `latest` is convenience, not a trust
+prints the resolved version before the release download. The catalog is
+published (schema 1, verified 2026-10-22) and lists `graphics 0.0.24` and
+`net 0.0.1`, so a bare install selects the highest strict version for the
+host target. When the catalog is unreachable, a bare install fails closed
+with a concrete `--version` example rather than guessing; a pinned install
+falls back to the release `SHA256SUMS` and reuses an already-installed
+verified version without a download. `latest` is convenience, not a trust
 guarantee: the catalog is mutable metadata, so pin `--version` for
 reproducible automation. Prereleases are never published and never selected.
 
@@ -280,7 +282,7 @@ bitty extension install <name> --version <X.Y.Z> --digest <hex> --force --yes
 `--force` re-pins; it never bypasses digest verification. Exit codes for
 all `bitty extension` verbs: `0` success, `1` declined consent / aborted
 prompt / filesystem or fetch-environment failure, `2` usage error
-(including a malformed `--digest`), `4` component error (integrity, ABI,
+(including a malformed `--digest`), `4` extension error (integrity, ABI,
 digest, or pin mismatch).
 
 ## 7. What to do when a spawn is refused
