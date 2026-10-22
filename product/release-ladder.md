@@ -185,7 +185,12 @@ section is a historical record, not a description of the `c6db24d` tree.
 | v0.9    | IPC, `bitty ctl`, MCP adapter                             | `ipc` + `agent` bounded framing/scopes OQ-018                                                                                                                                                                                           | `Accepted` and `Implemented` (profiling/ctl surface through `1835175`), not yet `Verified`                                                                                                                                                                                                                                        |
 | v1.0    | Stabilized contracts                                      | All above under semver-compatible surfaces                                                                                                                                                                                              | requires `Verified` + `Compatible` per risk evidence RFC; not yet claimed                                                                                                                                                                                                                                                         |
 
-`bittyd` and remote UI are post-v1.0 candidates (OQ-020 deferred per ADR 0008).
+The local daemon (`bittyd`) enters the v0.2.0 slice per
+[ADR 0019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0019-bittyd-staging-advance.md),
+a timing amendment to ADR 0008: one instance per user, peer-credential IPC,
+session-grained attach and detach, and no sessions that survive a daemon restart.
+Every ADR 0008 trust-boundary gate stays authoritative. Remote UI and the mobile
+control plane remain post-v1.0 and behind their own separate, strictly later gate.
 
 The status column reports the revision-pinned `491c567` evidence recorded in the
 historical section above; it is not re-derived at the synchronized `310bf87`. No
