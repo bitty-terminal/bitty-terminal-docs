@@ -449,7 +449,11 @@ opens no suspicious-paste dialog, and writes no PTY bytes, so an accidental
 right-click over a multi-line clipboard can no longer trap the user behind
 the confirmation gate. Unknown action spellings fail closed with the owning
 field path (`mouse.right` / `mouse.middle`), and a project layer may not bind
-either button. A pane that enables mouse reporting
+either button. Every `mouse` leaf is presence-gated: a layer that omits
+`mouse.right` or `mouse.middle` (including a hover-only table or
+`mouse = {}`) says nothing, so the lower-precedence value survives with its
+attribution and the shipped default applies only when no layer declares the
+leaf. A pane that enables mouse reporting
 (`DECSET 1000`/`1002`/`1003` plus `1006`) still receives the button as
 protocol bytes first; capture wins and no host action runs.
 >>>>>>> 206e938 (docs(config): document mouse button bindings and inert right-click (bitty#2474))

@@ -1151,6 +1151,12 @@ return {
   `copy_to_clipboard`, `toggle_help`, `command:<owner:cmd>`, and the rest of
   the catalog). Unknown spellings and non-string values fail closed with the
   owning field path (`mouse.right` / `mouse.middle`), never coerced.
+- Every `mouse` leaf is independent and presence-gated: a layer that omits
+  `mouse.right`/`mouse.middle` (or `focus_follows_mouse`, or its delay) says
+  nothing, so the lower-precedence value survives with its attribution and
+  the shipped default applies only when no layer declares the leaf. A
+  hover-only table or an empty `mouse = {}` therefore never resets a profile
+  binding, and a policy layer that pins one button does not pin the other.
 - `right` ships as `"none"`: a right-click is host chrome with no action. It
   reads no clipboard, opens no suspicious-paste dialog, and writes no PTY
   bytes, so an accidental right-click over a multi-line clipboard cannot trap
