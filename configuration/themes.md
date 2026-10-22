@@ -22,8 +22,11 @@ sidebar_order: 11
 > correction shipped in PR #586, merge commit `a7d9e6a`). The names, aliases,
 > dark/light categories, source URLs, and exact palette values are pinned by
 > fail-closed catalog tests in `bitty`, so this page is reference data, not a
-> provisional target. Theme **files** are still unsupported (OQ-047); the
-> inline table is the only custom-palette surface. The owning configuration
+> provisional target. A bounded **local theme file** candidate shipped for
+> 0.0.27 (opt-in `local:<name>` selection; see
+> [Local Theme Files](../specifications/local-theme-files-candidate.md)) but
+> remains under OQ-047, not an accepted contract; the inline table stays a
+> shipped alternative. The owning configuration
 > contract remains the
 > [Configuration Model RFC](../specifications/configuration-model-rfc.md) and
 > the accepted [Appearance Configuration RFC](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0001-appearance-configuration.md)
@@ -32,18 +35,22 @@ sidebar_order: 11
 ## Purpose and scope
 
 This reference documents the shipped preset catalog, the shipped inline
-`appearance.colors` schema, and the exact roles a theme owns versus the roles
-derived from it. It does not define a theme-file format, plugin theme
-contribution, or any ownership outside the terminal palette; those remain open
-questions stated at the end.
+`appearance.colors` schema, the candidate local-theme read path, and the exact
+roles a theme owns versus the roles derived from it. It does not define an
+accepted theme-file format, plugin theme contribution, or any ownership outside
+the terminal palette; those remain open questions stated at the end. The local
+file candidate has its own design note
+([Local Theme Files](../specifications/local-theme-files-candidate.md)).
 
-Bitty resolves terminal colors from a **built-in preset registry** or a
-complete inline palette. A theme owns the window background, default
-foreground, cursor, selection background, and the 16 ANSI colors. Presets also
-carry the focused/idle outline tokens; an inline palette keeps the selected
-preset's outline tokens. The registry is compiled into the binary
-(`bitty` `crates/bitty-config/src/theme.rs`); there is no theme file loading
-today. `bitty list themes` enumerates the shipped catalog.
+Bitty resolves terminal colors from a **built-in preset registry**, a
+complete inline palette, or an explicitly selected local theme file. A theme
+owns the window background, default foreground, cursor, selection background,
+and the 16 ANSI colors. Presets also carry the focused/idle outline tokens; an
+inline palette keeps the selected preset's outline tokens, and a local file may
+supply its own optional pair. The registry is compiled into the binary
+(`bitty` `crates/bitty-config/src/theme.rs`); built-in selection performs no
+file or network I/O. `bitty list themes` enumerates the catalog and any
+accepted local files.
 
 ## Selecting a theme
 
@@ -66,6 +73,17 @@ are present:
 -- Alias form; appearance.theme takes precedence over this key.
 return {
     theme = "dark",
+}
+```
+
+A user-authored local theme is selected explicitly through the `local:`
+namespace:
+
+```lua
+return {
+    appearance = {
+        theme = "local:sunset",
+    },
 }
 ```
 
@@ -590,18 +608,46 @@ the catalog tests.
 
 ## Custom and third-party theme files
 
-Theme **files** and third-party theme packages are **not supported**. There is
-no theme file format, no `$XDG_DATA_HOME/bitty/themes/` or
-`$XDG_CONFIG_HOME/bitty/themes/` loading path, and no plugin theme contribution
-contract today. The `themes/` directory is reserved in the
-[XDG data layout](lua-and-xdg.md#data-state-cache-and-runtime-layouts) but is
-inert. Selecting an unknown name fails closed at validation; it does not load a
-file. The inline `appearance.colors` table is the supported custom-palette
-surface.
+**Candidate, implemented-only under OQ-047.** `bitty` 0.0.27 accepts one flat,
+data-only TOML file per theme in `$XDG_CONFIG_HOME/bitty/themes/*.toml`
+(platform config roots; no hard-coded host path). A file is read only when
+`appearance.theme` explicitly selects `local:<name>`; it never changes the
+meaning of a built-in name, and the built-in/default path stays zero-I/O.
 
-Whether theme files, a file schema, or plugin-supplied themes enter scope is an
-open question; see below. Do not document or rely on a theme-file path until a
-reviewed contract defines its schema, load path, and trust model.
+```toml
+# $XDG_CONFIG_HOME/bitty/themes/sunset.toml
+name = "sunset"
+category = "dark"
+source = "https://example.invalid/sunset"   # metadata only; never fetched
+license = "MIT"
+background = "#1e1e2e"
+foreground = "#cdd6f4"
+cursor = "#f5e0dc"
+selection = "#313244"
+ansi = ["#45475a", "#f38ba8", "#a6e3a1", "#f9e2af", "#89b4fa", "#f5c2e7", "#94e2d5", "#bac2de", "#585b70", "#f38ba8", "#a6e3a1", "#f9e2af", "#89b4fa", "#f5c2e7", "#94e2d5", "#cdd6f4"]  # exactly 16 entries
+border_focused = "#33CCFF"                  # optional
+border_idle = "#595959AA"                   # optional
+```
+
+The full candidate contract (schema, 64-file/64 KiB/symlink bounds, explicit
+selection, readability gate, hot reload, and diagnostics) is the
+[Local Theme Files design note](../specifications/local-theme-files-candidate.md).
+In short:
+
+- unknown fields, malformed hex, short/long ANSI arrays, oversize files,
+  symlinks, and directories over the file cap are rejected with a bounded
+  per-file diagnostic;
+- every accepted file must clear the normal-text **4.5:1** and focused-outline
+  **3:1** contrast floors before it can be selected;
+- a valid edit hot-reloads on the existing configuration tick, while an invalid
+  edit keeps the last good palette and reports `load-error`;
+- `bitty list themes` marks local rows with origin `local` and keeps any
+  optional upstream URL in JSON `provenance`, never in the human table.
+
+Installed/theme-package distributions, plugin theme contribution, remote
+downloads, and the `$XDG_DATA_HOME/bitty/themes/` installed half remain
+unsupported and undecided. There is no network fetching on any theme path. Do
+not treat the candidate schema as an accepted contract until OQ-047 closes.
 
 ## Status and open questions
 
@@ -615,8 +661,11 @@ open questions and are registered rather than decided in this page:
   exposed as a selectable or queryable config surface, or is it non-selectable
   documentation metadata only?
 - **OQ-047 — custom theme files.** The inline `appearance.colors` palette is
-  shipped; this question covers user-authored or third-party theme **files**
-  and asks what schema, load path, and trust model they would use.
+  shipped, and the candidate local-file path above is implemented-only for
+  0.0.27. The question remains Open: it still asks what schema, load path, and
+  trust model are accepted, and whether local names may shadow built-ins,
+  whether dual `light:`/`dark:` selections may mix local files, and how
+  installed theme packages or plugin contributions enter scope.
 - **OQ-048 — automatic light/dark switching (partially shipped).** Dual
   `light:<name>,dark:<name>` OS-appearance switching shipped in `bitty`
   CTX-0951 (PR #1687): the key is the `appearance.theme` dual string and the

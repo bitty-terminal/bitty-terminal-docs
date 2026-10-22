@@ -101,6 +101,8 @@ $XDG_CONFIG_HOME/bitty/
 │   ├── sessions.lua
 │   ├── development.lua
 │   └── ai.lua
+├── themes/
+│   └── sunset.toml
 └── profiles/
     ├── default.lua
     ├── minimal.lua
@@ -109,8 +111,10 @@ $XDG_CONFIG_HOME/bitty/
 ```
 
 Here `plugins/` contains plugin behavior configuration or declarative imports,
-not installed plugin source. The manifest and lock names are candidates; their
-package semantics are documented in
+not installed plugin source. `themes/` holds optional local theme files
+(implemented-only candidate under OQ-047; no installed theme packages). The
+manifest and lock names are candidates; their package semantics are documented
+in
 [Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md).
 
 The configuration root is not a package or extension-data root. Installed
@@ -874,8 +878,10 @@ valid set (CTX-0951, `bitty` #1687; closes
   `cursor`, `selection`, plus exactly 16 `ansi` hex strings. Every leaf is
   `#RRGGBB`-only; a missing, short, long, or malformed leaf rejects the whole
   reload fail-closed, never a partial palette, and the diagnostic names the
-  exact leaf. This table is the supported custom-color surface; no file path
-  is accepted (OQ-047 theme files stay open).
+  exact leaf. This table is the shipped custom-color surface; it accepts no
+  file path. A local theme file is a separate, explicitly selected
+  `local:<name>` source (implemented-only candidate under OQ-047, see
+  [Local Theme Files](../specifications/local-theme-files-candidate.md)).
 
 - The gap layers compose: effective gap =
   `decoration.gap * DPI_scale + layout.gap_cells * cell_axis` (CTX-0333).
@@ -1313,28 +1319,33 @@ $XDG_RUNTIME_DIR/bitty/
 └── locks/
 ```
 
-Installed themes belong in data; a user's own theme source may live in config.
-No theme-file loading path is implemented yet: the 30 built-in presets are
-compiled into the binary and selected through `appearance.theme`, while inline
-`appearance.colors` is the supported custom-color surface and theme files stay
-unsupported. The reserved `themes/` directory above is inert, so treat it as a
-candidate layout only. See the
-[theme preset catalog](themes.md) for the shipped presets, the inline palette
-schema, and the open questions on theme files and category selection. Cache is
+Installed themes belong in data; a user's own theme source lives in config.
+`bitty` 0.0.27 implements an **implemented-only candidate** read path for
+`$XDG_CONFIG_HOME/bitty/themes/*.toml`, selected explicitly as
+`local:<name>`; the 30 built-in presets remain compiled into the binary and
+select through `appearance.theme` with no file I/O, while inline
+`appearance.colors` stays a shipped custom-color surface. The config
+`themes/` directory is therefore no longer inert, but its schema and trust
+model are not accepted until OQ-047 closes; the `$XDG_DATA_HOME/bitty/themes/`
+installed-theme half remains a candidate layout with no loader. See the
+[theme preset catalog](themes.md) and the
+[Local Theme Files design note](../specifications/local-theme-files-candidate.md)
+for the candidate schema, bounds, readability gate, and open questions. Cache is
 rebuildable.
 Runtime sockets and locks belong to the login session, while sessions and
 layouts intended to survive restart belong in state.
 
-A candidate live-reload path for wallpaper-derived palettes extends
-[OQ-047](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md): a generator such as Matugen writes
-`~/.config/bitty/theme.lua` returning `background`, `foreground`, and
-`palette[0..15]`, then runs `bitty ctl theme reload`; Core applies the new
-palette in a single render pass with no tearing, black frame, or PTY reset.
-Dynamic palette sequences (`OSC 4`) and dynamic foreground/background
-(`OSC 10`/`OSC 11`) are shipped behind the default-deny
-`set_osc_color_set_allowed` capability gate (CTX-0381, CTX-0392); the
-candidate file-based generator still needs its own file schema, reload class,
-and generated-file ownership decision.
+A candidate generator path extends [OQ-047](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md):
+a tool such as Matugen writes a `local:<name>` theme file with
+`background`, `foreground`, and the 16 ANSI entries under the config
+`themes/` directory; the existing configuration tick observes the file change
+and reparses it, and Core applies the accepted palette through the normal
+theme setter with no PTY reset. The implemented-only candidate and its bounds
+are in the [Local Theme Files design note](../specifications/local-theme-files-candidate.md);
+generated-file ownership, generator invocation, and schema acceptance remain
+OQ-047 work. Dynamic palette sequences (`OSC 4`) and dynamic
+foreground/background (`OSC 10`/`OSC 11`) are shipped behind the default-deny
+`set_osc_color_set_allowed` capability gate (CTX-0381, CTX-0392).
 
 ## Cross-platform paths
 
