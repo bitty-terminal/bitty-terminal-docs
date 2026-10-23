@@ -364,7 +364,9 @@ SDK binding; `OQ-074` and `OQ-075` remain Open. The reviewed Core-internal
 behavior below is `Implemented-only` evidence read from the workspace `bitty`
 checkout at short revision `5670d9ae` (2026-10-02, `main`), with the pointer
 selection, scrollback anchoring, paint, and persistent-selection updates
-checked at `10b8cc91` (2026-10-23, `main`). It is bounded to source inspection;
+checked at `10b8cc91` (2026-10-23, `main`) and the drag-wheel, page-key
+ownership, pointer-edge auto-scroll, and prune-drift updates recorded from
+`bitty` PR #2569 (CTX-1476). It is bounded to source inspection;
 it is not `Verified`, not `Compatible`, not the extension, and not the host API.
 
 - Bounded search: `crates/bitty-term-state/src/search.rs` provides
@@ -392,8 +394,15 @@ it is not `Verified`, not `Compatible`, not the extension, and not the host API.
   scrolling pins the press endpoint, and committed text stays stable. Detached
   floats and pinned leaves are live selection owners. `PersistentSelection` is
   re-projected and clamped across reflow/DPI and dropped fail-closed when its
-  owner or range no longer resolves. Pointer-edge auto-scroll is not
-  implemented (`bitty` #2470).
+  owner or range no longer resolves. Pointer-edge auto-scroll during a drag is
+  implemented by `bitty` PR #2569 (CTX-1476, closes #2470): a pointer held in
+  the top or bottom painted row scrolls the selection owner one line per 40 ms
+  interval, bounded by that owner's scrollback and the transcript ends, armed
+  through `Runtime::selection_autoscroll_deadline`, and disarmed on release,
+  pointer leave, exhausted bounds, or window focus loss. An in-flight drag also
+  owns the wheel and the page keys over PTY mouse capture, and the in-place end
+  path (`CursorLeft`) resolves prune drift before committing so it cannot
+  re-stamp rows captured before an eviction.
 - Pointer shape: `Runtime::pointer_over_selectable_text` limits the I-beam to
   live grid content, excluding borders, decoration, gaps, the scrollbar, plugin
   bands, copy mode, the search overlay, modal overlays, and mouse-capturing

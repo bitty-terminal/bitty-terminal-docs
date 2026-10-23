@@ -926,15 +926,27 @@ Scrollback and float coverage (`buffer_pos_for_cell`,
   selection survives even when its inclusive range collapses. A selection whose
   owner or range no longer resolves is dropped fail-closed.
 
-Known residual: pointer-edge auto-scroll during a drag is **not** shipped; it
-remains tracked by `bitty` #2470. A drag that leaves the owner clamps to the
-edge cell and does not scroll the viewport.
+Pointer-edge auto-scroll (implemented-only evidence, `bitty` PR #2569,
+CTX-1476, closes #2470): a pointer held in the top or bottom painted row of the
+owner scrolls that owner one line per 40 ms interval, bounded by the owner's own
+scrollback and the transcript ends, with the wake exposed as
+`Runtime::selection_autoscroll_deadline` for `ControlFlow::Wait`. Release,
+pointer leave, exhausted bounds, and window focus loss disarm it; focus regain
+does not resurrect a stale wake, and the next pointer move inside the edge row
+re-arms it. A drag that leaves the owner still clamps to the edge cell without
+scrolling. While a drag is in flight it owns the wheel and the page keys even
+when the focused pane captures mouse reporting, and the in-place end path
+(`CursorLeft`) resolves the live range against the current buffer before
+committing, so a pruned range denies instead of silently copying different
+lines.
 
 Tests: `crates/bitty-runtime/tests/pointer_selection_scale.rs` (scale mapping,
 one-cell drags, half-cell centre press, I-beam/chrome/capture precedence),
 `selection_scrollback.rs` (scroll-while-dragging, multi-page drag, pruned-range
-suppression), and `selection_float_panels.rs` (detached float and scrolled
-pinned leaf).
+suppression), `selection_float_panels.rs` (detached float and scrolled pinned
+leaf), and `selection_span_2470.rs` (drag-owned wheel with Shift released, page
+keys in split and float owners, bounded edge auto-scroll and focus-loss disarm,
+and the `CursorLeft` prune-drift regression).
 
 ### Stacked-float topmost-first hit-test (implementation evidence)
 
