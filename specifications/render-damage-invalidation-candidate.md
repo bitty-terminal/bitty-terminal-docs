@@ -147,6 +147,25 @@ matters beyond the terminal: PTY bytes, native UI state, plugin IPC,
 agent status, animations, and images will all produce update bursts
 that must converge on one frame, not one render per source event.
 
+Bitty's 0.0.27 present path now carries one bounded piece of that idea: an
+opt-in PTY-quiescence settle gate (merged `bitty` PR #2537, squash
+`fa57b5b7`, 2026-10-23; `bitty` #2486). While it is armed, a dirty present is
+held until the PTY stream has been quiet for a Core-owned window, or until a
+fixed cap since the burst began, whichever comes first. A repaint split across
+tty-sized reads is therefore applied whole before the frame snapshot is taken,
+and the committed frame matches terminal truth instead of a half-applied
+repaint. Damage is retained while the frame is deferred; the gate composes
+with the existing present-cadence gate by waiting for the later deadline; and a
+continuous producer still presents at the cap. Only the real GUI arms the gate
+— headless and test runs keep deterministic every-dirty-tick behavior with a
+zero window. The window and cap are internal constants with no TOML or Lua
+selector.
+
+This is a presentation-latency heuristic, not the damage scheduler this note
+proposes. It does not track per-cell or per-row damage, subdivide a panel, or
+coalesce native UI, plugin, animation, and image sources into one scheduled
+frame; it only waits out one PTY burst before presenting.
+
 ### Row-parallel workers capped by visible rows
 
 Foot can spread rendering across worker threads up to the logical CPU
@@ -323,27 +342,30 @@ not built yet.
 
 ## Built versus not built
 
-Verified 2026-09-23 against `bitty` `main`. `Implemented` below means
-code exists; nothing below is `Verified`, and nothing authorizes
-shipped or compatibility-guaranteed behavior. There is no damage or
-invalidation system in `bitty` today.
+Verified 2026-09-23 against `bitty` `main`; row 6 re-checked 2026-10-23 at
+`fa57b5b7`. `Implemented` below means code exists; nothing below is
+`Verified`, and nothing authorizes shipped or compatibility-guaranteed
+behavior. There is no damage or invalidation system in `bitty` today.
 
-| #   | Claim                                                             | State            | Evidence                                                                                                                        |
-| --- | ----------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | The render pipeline is a terminal-snapshot grid pipeline          | Implemented-only | `bitty-render` self-describes as a terminal-snapshot grid pipeline; it is terminal-centric, not damage-driven                   |
-| 2   | `ViewContent` five-way split exists; Terminal is one content kind | Implemented-only | `crates/bitty-ui/src/panel.rs:184`: `Empty`, `Terminal(u64)`, `Rich(u64)`, `Browser(BrowserSurfaceId)`, `Panel(PanelId)`        |
-| 3   | The only `SurfaceKind` is the wgpu swapchain handle               | Implemented-only | the single `SurfaceKind` in render `gpu.rs` names the wgpu swapchain surface, not a panel content surface                       |
-| 4   | Cell/row dirty flags exist in the terminal grid                   | NOT built        | no `dirty` / `clean` cell or row tracking in `bitty` `main`; the foot-style `row->dirty` plus `cell.attrs.clean` pair is absent |
-| 5   | A `DamageSpan` (row plus column range) type exists                | NOT built        | no `DamageSpan` or equivalent row-plus-column-range damage type in `bitty` `main`                                               |
-| 6   | A frame scheduler with a PTY coalescing window exists             | NOT built        | no delayed-rendering or update-batching stage between state mutation and rendering                                              |
-| 7   | Persistent per-panel GPU textures exist                           | NOT built        | no per-panel render targets; there is no texture-reuse versus repaint distinction                                               |
-| 8   | Tile-based damage tracking exists                                 | NOT built        | no tile subdivision of render targets and no tile-addressed repaint path                                                        |
-| 9   | Ring-buffer GPU scroll (viewport move, not row memcpy) exists     | NOT built        | no viewport-offset scroll path reusing resident rows on the GPU                                                                 |
-| 10  | Browser-style native UI invalidation exists                       | NOT built        | no retained-widget invalidation path; the UI pieces that exist are unintegrated and carry no damage protocol                    |
+| #   | Claim                                                             | State               | Evidence                                                                                                                                                                                                                                                                                           |
+| --- | ----------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | The render pipeline is a terminal-snapshot grid pipeline          | Implemented-only    | `bitty-render` self-describes as a terminal-snapshot grid pipeline; it is terminal-centric, not damage-driven                                                                                                                                                                                      |
+| 2   | `ViewContent` five-way split exists; Terminal is one content kind | Implemented-only    | `crates/bitty-ui/src/panel.rs:184`: `Empty`, `Terminal(u64)`, `Rich(u64)`, `Browser(BrowserSurfaceId)`, `Panel(PanelId)`                                                                                                                                                                           |
+| 3   | The only `SurfaceKind` is the wgpu swapchain handle               | Implemented-only    | the single `SurfaceKind` in render `gpu.rs` names the wgpu swapchain surface, not a panel content surface                                                                                                                                                                                          |
+| 4   | Cell/row dirty flags exist in the terminal grid                   | NOT built           | no `dirty` / `clean` cell or row tracking in `bitty` `main`; the foot-style `row->dirty` plus `cell.attrs.clean` pair is absent                                                                                                                                                                    |
+| 5   | A `DamageSpan` (row plus column range) type exists                | NOT built           | no `DamageSpan` or equivalent row-plus-column-range damage type in `bitty` `main`                                                                                                                                                                                                                  |
+| 6   | A frame scheduler with a PTY coalescing window exists             | Partial (gate only) | `Runtime::set_present_settle`/`note_present_input` hold a dirty present until the PTY stream is quiet, capped since the burst began and composed with the present cadence; real GUI only, zero window by default (bitty PR #2537 `fa57b5b7`, #2486). No frame scheduler or damage store is implied |
+| 7   | Persistent per-panel GPU textures exist                           | NOT built           | no per-panel render targets; there is no texture-reuse versus repaint distinction                                                                                                                                                                                                                  |
+| 8   | Tile-based damage tracking exists                                 | NOT built           | no tile subdivision of render targets and no tile-addressed repaint path                                                                                                                                                                                                                           |
+| 9   | Ring-buffer GPU scroll (viewport move, not row memcpy) exists     | NOT built           | no viewport-offset scroll path reusing resident rows on the GPU                                                                                                                                                                                                                                    |
+| 10  | Browser-style native UI invalidation exists                       | NOT built           | no retained-widget invalidation path; the UI pieces that exist are unintegrated and carry no damage protocol                                                                                                                                                                                       |
 
-Rows 4–10 are the gap this candidate exists to name. Any future RFC
-that claims to close a row must cite implementation evidence in the
-`bitty` repository; this note alone closes nothing.
+Rows 4–10 (row 6 now partial) are the gap this candidate exists to name. The
+present gate coalesces a PTY burst into one presentation; it does not track
+damage, schedule frames across sources, or subdivide a panel, so the candidate
+architecture below remains unbuilt. Any future RFC that claims to close a row
+must cite implementation evidence in the `bitty` repository; this note alone
+closes nothing.
 
 ## Security review
 

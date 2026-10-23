@@ -202,7 +202,7 @@ Headless evidence is `bitty-term-state`'s
 `alt_screen_scroll_never_captures_scrollback` plus the btop-shaped runtime
 cycle in `tui_exit_scrollback_2133.rs`. This is separate from the
 presentation-layer Kitty image rule: alternate-screen images are hidden while
-the TUI owns the screen, while the retained main-screen placements repaint on
+the TUI owns the screen, while the stashed main-screen placements repaint on
 exit.
 
 ### Resize and reflow implementation evidence
