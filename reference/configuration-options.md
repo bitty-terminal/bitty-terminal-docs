@@ -104,16 +104,32 @@ external layer with the same diagnostic contract, and startup continues on the
 remaining layers. This covers Lua syntax or runtime faults, Lua budget
 exhaustion, undeclared keys, unreadable files, profile `extends` cycles, and
 missing parent profiles. A missing explicit `--config` / `BITTY_CONFIG` path,
-a requested-but-missing profile, CLI usage errors, and internal defects stay
-fatal (exit 2). Salvage never escalates a capability or trust value: a dropped
-element resolves to the lower layers and the deny-by-default built-ins (no
-plugins, no background-image roots), and a present invalid value is never
-turned into a more permissive one.
+a missing explicit `--profile` / `BITTY_PROFILE` name, CLI usage errors, and
+internal defects stay fatal (exit 2). A persisted selector that no longer
+resolves is external configuration: startup ignores it with a diagnostic and
+does not rewrite the selector; the next launch retries.
 
-Diagnostics are bounded to eight startup lines; the remainder are summarized
-and `bitty config check` reports the full list. Diagnostics carry paths,
-field names, and validation reasons only, never file contents or secret
-values.
+Salvage never escalates a capability or trust value. When a security-sensitive
+element is ignored — or when any whole external layer is dropped, because the
+vanished layer might have restricted it — a deny overlay runs after the normal
+merge and before validation/installation:
+
+- `plugins`: deny-all. No configured plugin is enabled or activated for the
+  launch, so no plugin can request a grant through it.
+- `history`: transcript and command capture stay off.
+- `mouse`: middle and right button bindings resolve to `none`.
+- `decoration`: the background-image root allowlist is empty.
+
+Lower layers cannot re-enable a denied element for that launch. Every other
+setting from the same file and from the remaining layers stays effective, and
+`keymaps` (which grants no capability) keeps the shipped defaults. A present
+invalid value is never turned into a more permissive one.
+
+Diagnostics are bounded to at most nine startup lines: up to eight
+ignored-element/deny lines, plus one suppression summary when more were
+dropped. `bitty config check` reports the full list. Diagnostics carry paths, field names, and
+bounded validation messages only. They never include file contents or
+unrelated file data; validation messages may quote the offending value.
 
 `bitty config check` and `bitty doctor` remain strict: they reject the same
 input with a non-zero exit and the exact first field error, without salvage.
@@ -417,15 +433,15 @@ candidate contract under OQ-047
 
 ### `mod_key`, `leader_key`, `leader_timeout_ms`, `input.leader`, `input.timeout_len`, `keymaps`, `plugins`
 
-| Key path            | Type                                  | Default                                                  | Valid range                                                                                                                                                                                                                                                                                                           | Fail-closed                    | Reload  |
-| ------------------- | ------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------- |
-| `mod_key`           | string                                | `alt`                                                    | `alt` (`opt`/`option`) \| `super` (`meta`/`cmd`/`command`/`win`/`windows`), trimmed, case-insensitive, at most 32 bytes; `ctrl`/`shift` rejected (they would steal shell typing)                                                                                                                                      | ignore element / reject reload | live    |
-| `leader_key`        | string                                | unset (`alt+space`; `ctrl+space` on Windows)             | shared chord grammar (see keymap rules)                                                                                                                                                                                                                                                                               | ignore element / reject reload | live    |
-| `leader_timeout_ms` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms                                                                                                                                                                                                                                                                                                     | ignore element / reject reload | live    |
-| `input.leader`      | string                                | unset (same platform default as `leader_key`)            | shared chord grammar; wins over `leader_key` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                                         | ignore element / reject reload | live    |
-| `input.timeout_len` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms; wins over `leader_timeout_ms` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                                     | ignore element / reject reload | live    |
-| `keymaps[]`         | array of `{ chord, action, context }` | 95 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                          | ignore element / reject reload | live    |
-| `plugins[]`         | gap                                   | empty                                                    | **No Lua declaration path exists**: a top-level `plugins` key is rejected as undeclared ([bitty#1325](https://github.com/bitty-terminal/bitty/issues/1325)). `PluginSpec { id, enabled }` exists in the effective config (id at most 128 bytes, merge by id, at most 1024 entries) but no file layer can populate it. | reject layer (as undeclared)   | restart |
+| Key path            | Type                                  | Default                                                  | Valid range                                                                                                                                                                                                                                                                                                  | Fail-closed                    | Reload  |
+| ------------------- | ------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | ------- |
+| `mod_key`           | string                                | `alt`                                                    | `alt` (`opt`/`option`) \| `super` (`meta`/`cmd`/`command`/`win`/`windows`), trimmed, case-insensitive, at most 32 bytes; `ctrl`/`shift` rejected (they would steal shell typing)                                                                                                                             | ignore element / reject reload | live    |
+| `leader_key`        | string                                | unset (`alt+space`; `ctrl+space` on Windows)             | shared chord grammar (see keymap rules)                                                                                                                                                                                                                                                                      | ignore element / reject reload | live    |
+| `leader_timeout_ms` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms                                                                                                                                                                                                                                                                                            | ignore element / reject reload | live    |
+| `input.leader`      | string                                | unset (same platform default as `leader_key`)            | shared chord grammar; wins over `leader_key` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                                | ignore element / reject reload | live    |
+| `input.timeout_len` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms; wins over `leader_timeout_ms` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                            | ignore element / reject reload | live    |
+| `keymaps[]`         | array of `{ chord, action, context }` | 95 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                 | ignore element / reject reload | live    |
+| `plugins[]`         | array of `{ id, enabled }`            | empty                                                    | Top-level `plugins` is a normal Lua declaration path. `id` is trimmed, non-empty, at most 128 bytes; `enabled` is a boolean; at most 1024 entries; entries merge by `id`. An invalid table is ignored at startup and denied for the launch (see [Startup salvage](#startup-salvage-and-strict-diagnostics)). | ignore element / reject reload | restart |
 
 `schema_version` current is `1` (absent assumes `0` and migrates; newer
 than `1` is rejected). Profile `extends` is a single-parent chain with
