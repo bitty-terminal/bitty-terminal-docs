@@ -258,6 +258,30 @@ non-zero value at validation with a typed `window.blur_radius` diagnostic.
 `close_confirm` must not be declared by project layers: a
 repository-local file must not disable a data-loss guard.
 
+#### Adaptive new-panel policy (runtime-only)
+
+`workspace.layout` selects a layout-provider name; it is not the adaptive
+new-panel placement policy. `Mod+N` / `new_panel` uses the Core
+`PanelLayoutMode`, whose 0.0.27 default is `Balanced`: split the physically
+largest slot along the cell-aspect-aware axis and place the fresh pane after
+it (right or below). `Spiral`, `Dwindle`, and `BisectLargest` remain
+embedder-selectable runtime modes. The mode is exposed through
+`Runtime::panel_layout_mode` / `set_panel_layout_mode`; 0.0.27 has no TOML or
+Lua selector for it, and a user configuration cannot choose `Balanced` or any
+other mode. Explicit `new_split:<dir>` always splits the focused pane on the
+requested axis.
+
+Adaptive insertion is bounded by a gap-aware minimum pane of 10 columns by 4
+rows. A target is refused, with a warning and no layout change, when
+`(dimension - inner gap) / 2` is below the bound on both axes. At the default
+inner gap of 0 cells a 20-column pane splits into two 10-column children. At a
+1-cell gap the same pane cannot split horizontally (9-column children) and
+falls back to a vertical split when its height allows; only a target that fits
+on neither axis is refused.
+
+`close_confirm` must not be declared by project layers: a
+repository-local file must not disable a data-loss guard.
+
 ### `decoration` (logical px, Core-owned)
 
 | Key path                            | Type             | Default                                               | Valid range                                                                                                               | Fail-closed                  | Reload |
@@ -429,8 +453,13 @@ Shipped defaults (95 bindings, Alt spelling; `mod_key = "super"`
 rebinds every `alt`-bearing chord, `alt`-free chords pass through):
 
 - Navigate: `alt+h/j/k/l` and `alt+arrows`, `ctrl+alt+arrows`;
-  `ctrl+tab` / `ctrl+shift+tab` cycle focus.
-- Workspaces: `alt+n` new, `alt+w` close (kill-confirm),
+  `ctrl+tab` / `ctrl+shift+tab` cycle focus. Directional chords rank a
+  candidate by facing-edge distance, then dwindle tree adjacency, then
+  shared-edge overlap, then perpendicular center.
+- New panel: `alt+n` (`new_panel`) applies the `Balanced` adaptive policy
+  (largest slot, cell-aspect axis, new pane after); it is refused at the
+  gap-aware 10x4 minimum. `alt+q` closes the focused panel.
+- Workspaces: `alt+t` new, `alt+w` close (kill-confirm),
   `alt+-` / `alt+=` previous/next, `alt+tab` last-used, `alt+1..9`
   jump, `shift+alt+1..9` move window.
 - Splits: `shift+alt+h/j/k/l` and `shift+alt+arrows` create;
@@ -449,6 +478,12 @@ rebinds every `alt`-bearing chord, `alt`-free chords pass through):
   `ctrl+minus` (+shifted) smaller, `ctrl+0` reset.
 - Help: ``alt+` ``, `alt+?`, `alt+shift+?`, `alt+shift+/`.
 - Overlays: `ctrl+shift+space` copy mode, `ctrl+shift+f` search.
+
+`alt+n` is not a workspace verb; the new-workspace chord is `alt+t`. The
+adaptive new-panel mode is runtime-only (see
+[Adaptive new-panel policy](#adaptive-new-panel-policy-runtime-only)): a user
+keymap can rebind the chord but cannot select `Balanced`, `Spiral`, `Dwindle`,
+or `BisectLargest`.
 
 ## Theme presets
 
