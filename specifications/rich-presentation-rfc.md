@@ -400,12 +400,15 @@ or promoting the implementation to `Verified`/`Compatible`.
   replies rather than a spoofed terminal brand. The tested flow transmits
   and paints with `a=T`, preserves the cursor with `C=1`, and clears with
   `a=d,d=A`; Sixel remains unclaimed.
-- Main-screen Kitty image placements survive an alternate-screen cycle. While
-  alternate screen is active, existing placements are retained but not
-  blitted, and new placements are suppressed; on return to the primary screen
-  the retained placements repaint. This is presentation state and is
-  independent of the terminal-state rule that alternate-screen scrolls never
-  enter primary scrollback.
+- Main-screen Kitty image placements survive an alternate-screen cycle because
+  each origin keeps a separate image plane per screen. Entering the alternate
+  screen detaches the primary placements and virtual prototypes (the shared
+  images behind Unicode placeholder cells) into a per-origin stash and starts
+  an empty alt plane; new placements register on the alt plane and are never
+  blitted over main. Leaving drops the alt plane, re-attaches the stash, and
+  forces a full redraw, so the primary image repaints at its original rect.
+  This is presentation state and is independent of the terminal-state rule
+  that alternate-screen scrolls never enter primary scrollback.
 
 Headless evidence is `terminal_queries.rs` for the `14 t`/`16 t`/`18 t` and
 Yazi probe battery, `kitty_images_present.rs` for KgpOld display/erase and
@@ -435,6 +438,38 @@ Recorded deviations and open items (not silently resolved):
   are not tracked (full-screen scroll is exact).
 - Animation, image delete/query actions, and the Sixel/iTerm2 adapters remain
   unimplemented; no `Verified`/`Compatible` claim is made here.
+
+### Alternate-screen image restore implementation evidence (0.0.27)
+
+Status: **experimental review evidence only.** The accepted image ceilings
+above remain authoritative; this subsection records merged `bitty` PR
+[#2537](https://github.com/bitty-terminal/bitty/pull/2537) (squash
+`fa57b5b7`, 2026-10-23), closing `bitty` #2437, and claims no `Verified` or
+`Compatible` status. The restore mechanics come from the per-screen image
+planes merged in `bitty` #2442/#2458; #2537 pins the exit sequence that used to
+lose the image so it cannot regress silently.
+
+- A full-screen TUI may clear the alternate screen on the way out. Measured
+  from btop 1.4.7, `ED 2` arrives **before** `?1049l`; because the clear
+  executes while the alternate screen still owns the grid, it stays on the
+  alt plane and cannot erase the stashed primary descriptors.
+- On leave, the origin drops the alt plane, re-attaches the stashed primary
+  placements (and the virtual prototypes behind placeholder cells stashed with
+  them), and forces a full redraw. The image repaints at its original primary
+  rect with its pixels intact — not just restored placement metadata — and
+  repeated enter/leave cycles restore every time. An enter + `ED 2` + leave
+  sequence delivered in one PTY batch restores as well.
+- An open synchronized-update (`DECSET 2026`) window defers the restored frame
+  without losing it. Alternate-screen images and alternate-screen clears never
+  appear on the restored primary grid or in primary scrollback.
+- Evidence: `crates/bitty-runtime/tests/kitty_alt_screen_restore.rs`
+  (`primary_image_survives_a_tui_that_clears_the_alt_screen`,
+  `enter_clear_and_leave_in_one_pty_batch_restore_the_image`,
+  `repeated_tui_cycles_keep_restoring_the_image`,
+  `alt_screen_images_die_with_the_tui_plane`,
+  `restore_waits_out_a_synchronized_update_window`). The fixtures use real APC
+  framing equivalent to chafa's two-read `a=T` transmission and the measured
+  btop 1.4.7 exit bytes.
 
 ### Animation lifecycle
 

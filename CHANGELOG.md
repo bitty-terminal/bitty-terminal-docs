@@ -10,6 +10,17 @@ and this project adheres to
 
 ### Added
 
+- 0.0.27 image and present-path synchronization: Kitty image content in a pane
+  survives entering and leaving a full-screen TUI on the alternate screen,
+  including a TUI that clears the alternate screen before `?1049l`, with
+  placements and pixel content restored at the original primary rect and no
+  alt-screen content leaking into shell scrollback; and rapid full-screen
+  redraws present complete frames instead of ghost/stale rows because the
+  real-GUI present path holds a dirty frame for a bounded PTY-quiescence
+  window. The settle window is an internal Core constant, not a user tunable.
+  These entries record implementation evidence only, not a `Verified` or
+  `Compatible` claim.
+
 - 0.0.27 behavior synchronization: balanced adaptive new-panel placement,
   gap-aware 10x4 minimum panes, corner-zone drag insertion, directional focus
   ranking, expanding-sibling close focus, dense workspace IDs, deterministic
