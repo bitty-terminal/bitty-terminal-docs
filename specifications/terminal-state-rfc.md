@@ -205,6 +205,55 @@ presentation-layer Kitty image rule: alternate-screen images are hidden while
 the TUI owns the screen, while the retained main-screen placements repaint on
 exit.
 
+### Resize and reflow implementation evidence
+
+Status: **experimental review evidence only.** The accepted invariants above
+remain authoritative; this subsection records merged `bitty` PR
+[#2534](https://github.com/bitty-terminal/bitty/pull/2534) (squash `2289df4b`,
+2026-10-23), closing `bitty` #2529, and claims no `Verified` or `Compatible`
+status.
+
+- **Height-only resize keeps the newest output.** Shrinking the primary screen
+  first absorbs unused padding below the used height (through the lowest
+  non-blank row, soft-wrap continuation, or the cursor), then moves the
+  remaining oldest rows into scrollback with their wrap flags and moves the
+  cursor with its content. Growing a bottom-full viewport re-enters the newest
+  history rows at the top; when history supplies fewer rows than the growth,
+  the remaining blank filler sits above the pulled block. Otherwise the
+  viewport grows downward and the cursor keeps its row. A shrink/grow round trip
+  restores the original content, and a transient one-row divider solve no
+  longer destroys the rows above the cursor. The alternate grid keeps the
+  application-owned truncate/pad policy bounded to the new height.
+- **Width reflow preserves printed spaces and exact text.** `Cell::padding`
+  marks blanks synthesized by erase, grid growth, or rewrap fill; a space
+  printed by the application carries `padding == false` and stays content.
+  `take_logical_lines` drops trailing padding from every physical segment, so a
+  synthetic margin pad in front of a width-2 glyph vanishes while a real space
+  at a soft-wrap boundary survives. Rewrap copies printed cells verbatim and
+  only fillers are erased or padded, so narrowing and widening no longer merge
+  words or insert spaces between CJK/emoji glyphs. Real spaces, CJK, emoji,
+  combining marks, hyperlink spans, and `ls`/Markdown fixtures survive repeated
+  width changes at boundary widths.
+- **Selection copy stays exact.** Buffer-anchored selections map through the
+  reflowed logical text, so copied text matches the source across repeated
+  width changes; scrollback rows and their anchors survive grow/shrink.
+- **Placements and state hash.** Kitty placements follow height shifts and clip
+  when they no longer fit; a width reflow clears stale placements while virtual
+  prototypes survive. Canonical serialization version 12 adds the per-cell
+  `padding` marker (`CANONICAL_HASH_VERSION = 12`): two states that differ only
+  in whether a blank is layout padding now hash differently, as replay
+  guarantee 2 requires. Pinned hashes covering reflow must be regenerated with
+  the deliberate baseline review.
+- Evidence: `crates/bitty-term-state/tests/resize_reflow_2529.rs`
+  (`height_only_shrink_keeps_newest_output_and_roundtrips`,
+  `transient_one_row_height_never_squashes_output`,
+  `width_roundtrip_preserves_wrap_boundary_spaces`,
+  `wide_reflow_is_exact_for_cjk_repeated_cycles`,
+  `wide_margin_padding_is_not_content_but_real_spaces_are`,
+  `wide_emoji_and_mixed_spaces_survive_repeated_cycles`),
+  `crates/bitty-runtime/tests/resize_scrollback.rs`, and
+  `crates/bitty-term-state/src/canonical.rs` (`write_cell`).
+
 ## Damage tracking model
 
 - Each applied action records a damaged rectangle set (grid coordinates plus

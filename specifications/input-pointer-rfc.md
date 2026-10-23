@@ -582,6 +582,10 @@ line counts.
 - Auto-scroll is presentation-only (viewport + selection range update), not
   PTY input. It stops immediately on button release or pointer leaving the
   edge band. The rate is bounded and attributable per View.
+- As of 0.0.27 this candidate is **not** implemented: a selection drag that
+  leaves the owner clamps to the edge cell without scrolling. See the
+  [pointer selection evidence](#pointer-shapes-and-caret-selection-implementation-evidence);
+  `bitty` #2470 remains the tracking issue.
 
 ## Pinch and swipe gestures (candidate)
 
@@ -845,6 +849,92 @@ Known residuals, tracked in `bitty` #1484:
   focus.
 - A selection clipped to a single visible cell is not painted while a grid is
   taller than its frame.
+
+### Pointer shapes and caret selection (implementation evidence)
+
+Status: **experimental implementation evidence.** This subsection records
+shipped `bitty` behavior from PR
+[#2506](https://github.com/bitty-terminal/bitty/pull/2506) (squash `10b8cc91`,
+2026-10-23), addressing `bitty` #2480, #2470, and #2523. The pointer-edge
+auto-scroll part of #2470 remains a follow-up. This subsection does not accept
+the candidate sections above and claims no `Verified` or `Compatible` status.
+
+Pointer shape precedence (`sync_cursor_icon` in
+`crates/bitty-terminal/src/terminal_app.rs`):
+
+1. pointer outside the window, or a focusable/modal overlay holding capture:
+   the platform arrow (`Default`);
+2. hyperlink hover (OSC 8 or the gated plaintext detector): `Pointer`;
+3. the focused pane's `OSC 22` shape;
+4. selectable terminal text: `Text` (the I-beam);
+5. everything else: `Default`.
+
+`Runtime::pointer_over_selectable_text` narrows the I-beam to the hit View's
+**content** rectangle: the frame border ring, Core decoration, panel gaps,
+split dividers, the overlay scrollbar, and plugin chrome bands own their pixels
+and keep the arrow. Copy mode, the search overlay, and a modal panel overlay
+consume the pointer; a pane whose application captures mouse reporting also
+keeps the arrow, with `Shift` as the selection escape. A pointer leave restores
+the arrow even when the last hovered shape was text.
+
+Caret anchoring (`selection_press_target` and the owner-cell mapping in
+`crates/bitty-runtime/src/runtime/layout_focus.rs`):
+
+- `Simple` and `Block` pointer drags address horizontal **cell edges** (a caret
+  in `0..=cols`) rather than cell centres, following the kitty half-cell
+  convention. A press or motion in the left half of a cell rounds to its
+  leading edge; the right half rounds to its trailing edge; the frame edges
+  clamp to the nearest edge cell. One column of pointer travel selects exactly
+  one column at scale 1, 1.25, 1.5, and 2, so a single character is selectable.
+- Rows use the floor cell and stay inclusive; vertical motion keeps whole rows.
+- A caret span covering one cell is retained as a real selection
+  (`single_cell`), not dropped as a collapsed click. It survives a DPI change, a
+  geometry clamp, and the in-place end of a drag (`CursorLeft`).
+- `Block` anchors stay cell-based at the pressed column while the focus uses the
+  nearest caret, so a vertical `Alt`+drag from either half of a cell keeps the
+  pressed column and paints a one-column rectangle.
+- Drag-versus-click classification uses the snapped pointer cell, so a backward
+  drag starts a fresh range instead of chaining into a word selection.
+
+Paint and coverage (`selection_row_rects` in
+`crates/bitty-runtime/src/runtime/present.rs`):
+
+- `Block` paints a real per-row rectangle: the pressed column window on every
+  spanned row.
+- `Simple` keeps the text-flow shape: anchor column on the first row, full rows
+  in the middle, focus column on the last. Word and line expansions share that
+  shape.
+- A wide-glyph leader extends its fill across the trailing spacer, so half of a
+  double-width glyph is never left unshaded.
+
+Scrollback and float coverage (`buffer_pos_for_cell`,
+`shift_selection_for_scroll`, and `selection_owner_state` in
+`crates/bitty-runtime/src/runtime/selection.rs`):
+
+- Pointer `Simple`/`Block` selections anchor to combined scrollback + grid
+  buffer rows, with stable line ids for history. A drag may start in the live
+  grid and continue into history, span multiple scrollback pages, or begin in
+  history and return to the live grid; committed text stays stable at later
+  scroll positions.
+- Scrolling during a drag pins the press endpoint instead of sliding it; the
+  range grows across the scroll.
+- Detached floats and pinned leaves resolve through the shared owner lookup, so
+  pointer selection, I-beam precedence, highlight paint, and text extraction
+  work in their scrolled viewports instead of projecting against the live grid.
+- `PersistentSelection` survives a reflow or DPI change: anchors are
+  re-projected to the new window, clamped, and kept when valid; a one-cell
+  selection survives even when its inclusive range collapses. A selection whose
+  owner or range no longer resolves is dropped fail-closed.
+
+Known residual: pointer-edge auto-scroll during a drag is **not** shipped; it
+remains tracked by `bitty` #2470. A drag that leaves the owner clamps to the
+edge cell and does not scroll the viewport.
+
+Tests: `crates/bitty-runtime/tests/pointer_selection_scale.rs` (scale mapping,
+one-cell drags, half-cell centre press, I-beam/chrome/capture precedence),
+`selection_scrollback.rs` (scroll-while-dragging, multi-page drag, pruned-range
+suppression), and `selection_float_panels.rs` (detached float and scrolled
+pinned leaf).
 
 ### Stacked-float topmost-first hit-test (implementation evidence)
 
