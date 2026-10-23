@@ -17,6 +17,16 @@ and this project adheres to
   These entries record implementation evidence only, not a `Verified` or
   `Compatible` claim.
 
+- 0.0.27 selection, reflow, and font/DPI synchronization: caret-based pointer
+  anchoring with a real one-cell selection, an I-beam limited to selectable
+  grid text, Block-versus-Simple highlight paint, scrollback-spanning selections
+  with detached-float and pinned-leaf owners, and `PersistentSelection`
+  re-clamping across reflow/DPI; height-only resize row retention and exact
+  space/CJK/emoji reflow with canonical hash v12 `Cell::padding`; and
+  fractional-DPI glyph sampling plus font metrics measured at the resolved
+  point size. These entries record implementation evidence only, not a
+  `Verified` or `Compatible` claim.
+
 - 0.0.24 behavior synchronization: `bitty init` single-keypress TTY picker
   navigation and mascot removal; corrected fcitx5 IME commit ownership;
   detached/pinned float scrolling, discard, Alt-only drag, and full occlusion;

@@ -614,6 +614,48 @@ Candidate contract — logical pixels own layout, physical pixels own raster:
    per the existing saturating arithmetic is rejected at `RuntimeConfig` or
    `CellMetrics::new` validation, exactly as today.
 
+### Fractional-DPI sampling and resolved-size metrics (implementation evidence)
+
+Status: **experimental implementation evidence.** This subsection records
+merged `bitty` PR [#2539](https://github.com/bitty-terminal/bitty/pull/2539)
+(squash `f1ed2586`, 2026-10-23), closing `bitty` #2520. It changes no candidate
+rule above and does not promote this RFC beyond `draft`.
+
+- **No glyph stretching at fractional DPI.** The GPU present path recovers its
+  sampling factor as `surface / plan`. A cell-aligned plan stops short of a
+  window that is not an exact multiple of the cell, so the leftover strip used
+  to become a content scale. `Runtime::present_plan_extent` now spans the
+  configured surface extent (the larger of the content plan and the surface),
+  so `derive_scale` returns exactly `1.0` and the leftover strip stays
+  background. In the reported 11pt case (base cell `9x20`, 1.6 scale factor,
+  physical cell `14x32`, window `2506x1496`), the old cell-aligned plan was
+  `2504x1466` and bilinearly stretched every glyph by about `1.01x`.
+- **Metrics are measured at the resolved point size.** `CrossFontRasterizer`
+  sizes the FreeType face with one discarded `'0'` probe glyph at the requested
+  size before calling `metrics()`. Previously the face had no raster size, so
+  the backend reported font-unit advances (`19.265625px` for DejaVu at every
+  size) with zero line height and descent, forcing the legacy 3/4 baseline.
+  The measured face now supplies the metric-aware baseline, and the integer
+  cell stays consistent with the rounded advance so neighbouring cells do not
+  overlap.
+- **Fractional point sizes are not truncated.** A resolved size such as
+  `11 * 1.6 = 17.6pt` is passed through; only the raster pixels are fractional,
+  and the config-derived cell (`9x20` base, `14x32` at 1.6) matches the rounded
+  advance.
+- Limits: this is sampling and metric evidence, not acceptance of the candidate
+  DPI contract; a monitor move still invalidates the glyph cache and forces a
+  full redraw per the rules above. The fix adds no user-facing DPI or sizing
+  key.
+- Evidence: `crates/bitty-runtime/src/runtime/resize.rs`
+  (`present_plan_covers_the_surface_for_non_cell_aligned_windows`,
+  `present_plan_keeps_owner_size_11_at_scale_1_6_crisp`) and
+  `crates/bitty-render/tests/font_metrics_live.rs`
+  (`size_11_metrics_fit_the_derived_cell`,
+  `size_11_at_scale_1_6_keeps_advance_and_cell_consistent`,
+  `fractional_point_size_is_not_truncated_to_whole_points`). The live font
+  suite runs under `BITTY_RENDER_FONT_TESTS=1` and skips when the host has no
+  DejaVu face.
+
 ## Glyph atlas and cache
 
 The implemented substrate — `GlyphRasterizer`, `GlyphCache`,

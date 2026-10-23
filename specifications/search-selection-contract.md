@@ -362,9 +362,10 @@ No part of this contract is implemented as an extension or as the public host
 API. There is no focusable overlay, no transient input-capture host API, and no
 SDK binding; `OQ-074` and `OQ-075` remain Open. The reviewed Core-internal
 behavior below is `Implemented-only` evidence read from the workspace `bitty`
-checkout at short revision `5670d9ae` (2026-10-02, `main`) and is bounded to
-source inspection; it is not `Verified`, not `Compatible`, not the extension,
-and not the host API.
+checkout at short revision `5670d9ae` (2026-10-02, `main`), with the pointer
+selection, scrollback anchoring, paint, and persistent-selection updates
+checked at `10b8cc91` (2026-10-23, `main`). It is bounded to source inspection;
+it is not `Verified`, not `Compatible`, not the extension, and not the host API.
 
 - Bounded search: `crates/bitty-term-state/src/search.rs` provides
   `State::search`, `SearchOptions`, `SearchMatch`, `SEARCH_MAX_PATTERN_LEN`
@@ -379,6 +380,26 @@ and not the host API.
   and `normalized`/`snapped`/`clamped`/`text`; the runtime constructs `Simple`,
   `Word`, `Line`, and `Block` today (mouse click-count and Alt, plus the
   copy-mode visual selection).
+- Pointer selection: `crates/bitty-runtime/src/runtime/layout_focus.rs` maps a
+  press or drag to the owner's nearest horizontal cell edge (the kitty
+  half-cell caret), so one column of travel selects one column and a single
+  character is selectable at scale 1, 1.25, 1.5, and 2. A one-cell span is kept
+  as a real selection (`single_cell`) instead of being discarded as a collapsed
+  click, including across DPI/geometry clamps. `Block` paints a per-row
+  rectangle from the pressed column; `Simple`/`Word`/`Line` keep the text-flow
+  shape; wide leaders extend over their spacer. Pointer `Simple`/`Block` ranges
+  anchor to combined scrollback + grid buffer rows, so a drag spans pages,
+  scrolling pins the press endpoint, and committed text stays stable. Detached
+  floats and pinned leaves are live selection owners. `PersistentSelection` is
+  re-projected and clamped across reflow/DPI and dropped fail-closed when its
+  owner or range no longer resolves. Pointer-edge auto-scroll is not
+  implemented (`bitty` #2470).
+- Pointer shape: `Runtime::pointer_over_selectable_text` limits the I-beam to
+  live grid content, excluding borders, decoration, gaps, the scrollbar, plugin
+  bands, copy mode, the search overlay, modal overlays, and mouse-capturing
+  panes (Shift remains the selection escape). `sync_cursor_icon` resolves
+  outside/overlay `Default`, hyperlink `Pointer`, `OSC 22`, then text
+  `Text`, then `Default`.
 - Runtime binding and navigation: `crates/bitty-runtime/src/runtime/search.rs`
   and `search_mode.rs` bind a search to one focused view (`search_view`),
   open fail-closed when the leaf has no live grid, consume keys with no PTY
@@ -391,8 +412,9 @@ and not the host API.
 - Headless tests exist under `crates/bitty-runtime/tests/`
   (`search_overlay.rs`, `copy_search_view_bound.rs`,
   `scrollback_search_selection_persistence.rs`, `selection_clipboard.rs`,
-  `selection_view_owned.rs`, `search_overlay.rs`); passing tests are parity
-  evidence for the mechanic, not acceptance of this contract.
+  `selection_view_owned.rs`, `pointer_selection_scale.rs`,
+  `selection_scrollback.rs`, `selection_float_panels.rs`); passing tests are
+  parity evidence for the mechanic, not acceptance of this contract.
 
 Contract versus the reviewed Core-internal behavior (gaps the host-API and
 extraction tasks must close; none weakens a control and none is authorization):
