@@ -23,9 +23,10 @@ sidebar_order: 25
 > master, and grid, plus
 > drag, resize, move, and scratchpad interactions. The implementation evidence
 > below describes experimental subsets, including merged memory diagnostics
-> checked at `bitty` `1c68de25`; it does not authorize stable or
-> compatibility-guaranteed behavior beyond the accepted contract and does not
-> weaken any normative security control. Implementation remains
+> checked at `bitty` `1c68de25` and the 0.0.27 balanced tiling, focus, close,
+> and workspace-id rules checked at `bitty` `4b740cfe`; it does not authorize
+> stable or compatibility-guaranteed behavior beyond the accepted contract and
+> does not weaken any normative security control. Implementation remains
 > `Implemented-only`, without `Verified` or compatibility acceptance.
 > The lifecycle is `Draft -> experimental review evidence -> Accepted ->
 normative`.
@@ -577,13 +578,18 @@ What merged, exactly:
     Bounded subset and deviations from Hyprland: the ghost keeps the source
     tile size and the untouched tiled layout stays behind it (Hyprland floats
     and shrinks the dragged tiled window, which reflows its siblings during
-    the gesture); no drag threshold (feedback starts on pointer-down); no
-    `smart_split` parent-orientation selection (this subset uses the nearest
-    normalized edge directly, equivalent to the optional
-    `precise_mouse_move`/`smart_split` placement); no corner-quadrant
-    position sizing, snap, drag-into-group, monitor-edge reassignment, or
-    cross-workspace drop in this gesture. Full dwindle parity is out of
-    scope. Evidence: `crates/bitty-ui/src/drag.rs`,
+    the gesture); no drag threshold (feedback starts on pointer-down). The
+    0.0.27 follow-up (`bitty` PR #2538 `4b740cfe`, issue #2521) adds a
+    **corner zone** inside 25% of both target axes: there the insert axis is
+    the perpendicular of the target's parent split, so the drop splits inside
+    the target's column or row instead of carving a new column and re-homing
+    the target; mid-edge drops keep the nearest-edge new-column/new-row
+    behavior. Edge and corner inserts refuse a target that cannot host two
+    children at the 10x4-cell minimum (see entry 19). The plan is still
+    classified by pointer position, not the ghost rectangle; there is no
+    snap, drag-into-group, monitor-edge reassignment, or cross-workspace drop
+    in this gesture. Full dwindle parity is out of scope. Evidence:
+    `crates/bitty-ui/src/drag.rs`,
     `crates/bitty-ui/src/layout.rs` (`swap_leaves`),
     `crates/bitty-runtime/src/runtime/mouse_chrome.rs`,
     `crates/bitty-runtime/tests/tiled_drag_move.rs`.
@@ -618,13 +624,80 @@ What merged, exactly:
     a live leaf, stale bindings are invalidated, and the window leaf count
     includes active floats, pins, and inactive-workspace floats. Evidence is
     the `discard_floated`, `discard_pinned`, and window-count regression suite.
+18. **Balanced adaptive new-panel policy** (`bitty` PR #2538 `4b740cfe`,
+    issues #2521/#2528; `PanelSplitPlan`): `PanelLayoutMode::Balanced` is the
+    0.0.27 default for `NewPanel`/`Mod+N`. It selects the physically largest
+    slot (area `width * height`, first in solver order on ties), chooses
+    `balanced_split_axis` (the `smart_split_axis` cell-aspect heuristic with
+    `CELL_ASPECT_RATIO = 2.0`), and places the fresh pane after the target
+    (right for a horizontal split, below for vertical). Eight consecutive
+    default presses on 80x24 keep all pane areas within 3x and every pane at
+    least 10x4. `Spiral` continues its clockwise rotation only while the pane
+    created by the previous split still holds focus and restarts at Right on
+    any other focus or close; `Dwindle` splits the focused pane right/down;
+    `BisectLargest` keeps its raw `width >= height` axis. The mode is a
+    runtime field (`Runtime::panel_layout_mode` /
+    `set_panel_layout_mode`) with no TOML or Lua selector in 0.0.27;
+    `workspace.layout` names a `LayoutProvider` and does not choose it.
+    Explicit `new_split:<dir>` keeps focused-leaf, fixed-axis semantics in
+    every mode. Evidence: `crates/bitty-runtime/src/config.rs`,
+    `crates/bitty-runtime/src/runtime/layout_focus.rs`,
+    `crates/bitty-terminal/src/chrome_keys.rs`, and the
+    `chrome_new_panel_eight_times_stays_balanced_and_closes_in_tree_order`
+    regression.
+19. **Gap-aware minimum pane size** (`bitty` PR #2538 `4b740cfe`, issues
+    #2521/#2528): adaptive insertion never carves a pane narrower than
+    `MIN_PANE_COLS = 10` or shorter than `MIN_PANE_ROWS = 4`. `splittable_rect`
+    checks `(dimension - gap_in) / 2 >= minimum`, so the configured inner gap
+    is reserved before the check; `splittable_axis` prefers the balanced axis,
+    falls back to the perpendicular one, and returns `None` when neither fits.
+    `Mod+N` then warns and leaves the layout untouched; edge/corner drag
+    inserts refuse a target rather than commit a border-only sliver. A
+    20-column pane at `gaps_in = 1` cannot split horizontally (9-column
+    children); 21 columns can. Center swaps are geometry-neutral and remain
+    allowed. Evidence: `crates/bitty-ui/src/layout.rs` and
+    `crates/bitty-ui/src/drag.rs`.
+20. **Directional focus ranking** (`bitty` PR #2538 `4b740cfe`, issue #2526):
+    a `goto_split:<dir>` candidate must lie fully beyond the focused pane's
+    facing edge. Aligned candidates (positive perpendicular overlap) rank
+    above disjoint ones; within a tier the order is nearest facing-edge
+    distance, then dwindle tree adjacency (`tree_direction_rank`: the lowest
+    separating ancestor, with the natural edge leaf first), then widest
+    shared-edge overlap, then nearest perpendicular center, then stable leaf
+    order and `ViewId`. `Mod+j` from the top pane of a `1+1+2` layout lands on
+    the bottom-left pane even when the bottom-right pane is wider or earlier
+    in creation order. Only separated tiled candidates participate in the
+    ranked pass; zero-area panes are skipped. Evidence:
+    `crates/bitty-ui/src/focus.rs`.
+21. **Close focus follows the expanding sibling** (`bitty` PR #2538
+    `4b740cfe`, issue #2528): after a close, focus moves to the sibling
+    subtree that expands into the vacated slot: its first leaf when the
+    closed pane was the left/top child, its last leaf when it was the
+    right/bottom child. `Stack`/`Overlay` wrappers are transparent; when the
+    closed leaf is not a direct split child the rule falls back to the next
+    leaf in solver order, then the previous. Repeated closes walk the creation
+    tree rather than a positional DFS neighbour. The same rule applies
+    through `Runtime::replace_layout` / `set_layout_closing`, so shell exit
+    reaping, external-editor teardown, and workspace close re-home focus and
+    primary ownership consistently. Evidence:
+    `crates/bitty-ui/src/layout.rs` (`survivor_after_close`).
+22. **Dense workspace identity** (`bitty` PR #2538 `4b740cfe`, issue #2532):
+    `Runtime::next_free_workspace_seq` returns the lowest free ID in
+    `1..=MAX_WORKSPACES` (16), and `workspace_new` inserts the slot in ID
+    order while shifting MRU and pending-close indices. Deleting `ws3` from
+    `[1,2,3,4]` and creating again reuses `ws3`, never the former monotonic
+    `5`/`10`. Slot order is ID order, so presentation consumers and bar
+    capsules do not reorder after delete/create cycles. Evidence:
+    `crates/bitty-runtime/src/runtime/workspaces.rs`.
 
 Explicit non-claims: the `LayoutProvider` plugin algorithms, drag/resize
 interactions, and scratchpad retention in this specification are not
-implemented in the slice except for entries 9-13 above, which are the
-shipped panel interaction slice (bisect-largest, floating toggle,
-resize step, Mod+drag move, border-drag resize, move/resize/drag
-animations, and the G1 float-stays-float tombstone). Live present-path px decoration painting is no longer
+implemented in the slice except for entries 9-13 and 18-22 above, which are
+the shipped panel interaction slice (bisect-largest, floating toggle,
+resize step, Mod+drag move with corner-zone insertion, border-drag resize,
+move/resize/drag animations, balanced adaptive new panels, gap-aware minimum
+panes, directional focus ranking, expanding-sibling close focus, dense
+workspace IDs, and the G1 float-stays-float tombstone). Live present-path px decoration painting is no longer
 a non-claim (`bitty` PR #519 CTX-0294 and PR #533 CTX-0311 shipped it; the
 single-window path also still paints the cell-unit `layout.*` gaps). The
 `smart_split` constructor and the `overlay_tiered`/`overlay_stack`
@@ -644,6 +717,15 @@ amend the accepted contract and claim no `Verified`/`Compatible` status.
   Evidence: `close_focused_leaf` in
   `crates/bitty-terminal/src/chrome_keys.rs`; `remove_leaf` split-collapse
   in `crates/bitty-ui/src/layout.rs`.
+- **Focus follows the expanding sibling (issue #2528, `4b740cfe`).** Closing
+  a pane focuses the sibling subtree that expands into the vacated slot: its
+  first leaf when the closed pane was the left/top child, its last leaf when
+  it was the right/bottom child. `Stack`/`Overlay` wrappers are transparent;
+  the fallback is the next leaf in solver order, then the previous. The rule
+  is installed through `Runtime::replace_layout` / `set_layout_closing` as
+  well as the key path, so shell exit, editor teardown, and workspace close
+  re-home focus and primary ownership consistently. Evidence:
+  `survivor_after_close` in `crates/bitty-ui/src/layout.rs`.
 - **Intentional Hyprland divergences (DEC-0099):**
   - last tiled-panel close (CTX-1297): `Mod+q`/`close_view` prunes an empty
     workspace and follows a surviving workspace when other workspaces still

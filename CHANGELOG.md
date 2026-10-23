@@ -10,6 +10,13 @@ and this project adheres to
 
 ### Added
 
+- 0.0.27 behavior synchronization: balanced adaptive new-panel placement,
+  gap-aware 10x4 minimum panes, corner-zone drag insertion, directional focus
+  ranking, expanding-sibling close focus, dense workspace IDs, deterministic
+  English `os.date` conversions, and centered/clamped anchored tooltips.
+  These entries record implementation evidence only, not a `Verified` or
+  `Compatible` claim.
+
 - 0.0.24 behavior synchronization: `bitty init` single-keypress TTY picker
   navigation and mascot removal; corrected fcitx5 IME commit ownership;
   detached/pinned float scrolling, discard, Alt-only drag, and full occlusion;

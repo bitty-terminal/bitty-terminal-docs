@@ -147,16 +147,16 @@ Rules:
 
 ### Module set for v1
 
-| Module      | Input source                                       | Cadence                                             | Failure posture                                                         |
-| ----------- | -------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------- |
-| `workspace` | Window/workspace model (layout/view identifiers)   | Event-driven (workspace change)                     | Shows `—` on unknown, never blocks bar                                  |
-| `cwd`       | Active terminal cwd via OSC 7 / shell integration  | Event-driven (cwd change)                           | Truncates to bounded display length; elides middle on overflow          |
-| `git`       | Git snapshot for cwd (branch, dirty, ahead/behind) | Debounced poll ≤ 1 Hz, capped by repository watcher | Stale snapshot reused; errors render as branch-only without dirty state |
-| `cpu`       | `SystemMetricsService`                             | Sample interval ≥ 1000 ms (default 2000 ms)         | Last sample held; error renders `cpu: —`                                |
-| `memory`    | `SystemMetricsService`                             | Sample interval ≥ 1000 ms (default 2000 ms)         | Last sample held; error renders `mem: —`                                |
-| `network`   | `SystemMetricsService`                             | Sample interval ≥ 1000 ms (default 2000 ms)         | Last sample held; error renders `net: —`                                |
-| `battery`   | Platform Core battery API                          | Event + poll ≥ 30 s                                 | Hidden when no battery; `—` on permission denial                        |
-| `clock`     | OS time, locale-aware formatting                   | Tick aligned to next second/minute per format       | Never fails; falls back to ISO fallback on format error                 |
+| Module      | Input source                                        | Cadence                                             | Failure posture                                                         |
+| ----------- | --------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------- |
+| `workspace` | Window/workspace model (layout/view identifiers)    | Event-driven (workspace change)                     | Shows `—` on unknown, never blocks bar                                  |
+| `cwd`       | Active terminal cwd via OSC 7 / shell integration   | Event-driven (cwd change)                           | Truncates to bounded display length; elides middle on overflow          |
+| `git`       | Git snapshot for cwd (branch, dirty, ahead/behind)  | Debounced poll ≤ 1 Hz, capped by repository watcher | Stale snapshot reused; errors render as branch-only without dirty state |
+| `cpu`       | `SystemMetricsService`                              | Sample interval ≥ 1000 ms (default 2000 ms)         | Last sample held; error renders `cpu: —`                                |
+| `memory`    | `SystemMetricsService`                              | Sample interval ≥ 1000 ms (default 2000 ms)         | Last sample held; error renders `mem: —`                                |
+| `network`   | `SystemMetricsService`                              | Sample interval ≥ 1000 ms (default 2000 ms)         | Last sample held; error renders `net: —`                                |
+| `battery`   | Platform Core battery API                           | Event + poll ≥ 30 s                                 | Hidden when no battery; `—` on permission denial                        |
+| `clock`     | OS time, deterministic English `os.date` formatting | Tick aligned to next second/minute per format       | Never fails; unsupported conversions stay verbatim                      |
 
 All modules satisfy:
 
@@ -187,6 +187,41 @@ All modules satisfy:
    replacement tree.
 4. No module code runs on the input path: emission and hit-testing are
    bounded data walks over the mounted tree.
+
+### Anchored hover tooltips (0.0.27 implementation evidence)
+
+Status: **implemented-only.** The bar plugin owns hover state and writes the
+module detail text into its non-modal `overlay` block; Core owns the placement
+of the anchored stack.
+
+1. An anchored tooltip is centered on the hovered region's midpoint and
+   clamped so the whole row stack stays inside the window whenever it fits. A
+   multi-row stack centers on its widest non-empty row. A stack wider than the
+   window starts at column 0 and clips like any over-wide overlay row; a
+   zero-width stack keeps the region start and paints nothing.
+2. The stack still paints just below a top band or just above a bottom band.
+   A bottom-anchored stack that would reach into its own band clips instead of
+   covering it. Modal (unanchored) tooltip placement is unchanged.
+3. The host re-reads a refreshed hovered `overlay` block on the next tick. The
+   bar plugin re-arms each module's next one-shot before rendering, so a render
+   fault or wall-budget abort no longer stops the clock and module cadence for
+   the generation.
+4. Hover never captures input, never sets modal state, and never raises an OS
+   notification. Evidence: `bitty` PR #2536 `800cf8e3` (issue #2530),
+   `crates/bitty-runtime/src/runtime/present.rs` (`centered_tooltip_x`), and
+   the bar plugin's timer re-arm.
+
+### Clock formatting (0.0.27 implementation evidence)
+
+Status: **implemented-only.** The clock `format` resolves the common POSIX
+`strftime` conversions deterministically in English, without a host locale
+database: `%a %A %b %h %B` names, `%C %d %e %y %Y`, `%H %I %M %S %j %p`,
+`%u %w`, the composites `%c %D %F %r %R %T %x %X`, and the literals
+`%n %t %%`. Zone- and week-number conversions (`%z %Z %U %V %W %g %G`), the
+epoch conversion `%s`, and unknown specifiers stay verbatim. `os.date("*t")`,
+the `!` UTC prefix, the local-time default, and the `isdst` deviation are
+unchanged. The conversion table is a pure in-VM computation with no new host
+read. Evidence: `bitty` PR #2536 `800cf8e3`, `crates/bitty-lua/src/stdlib.rs`.
 
 ### Module contracts (illustrative shapes)
 

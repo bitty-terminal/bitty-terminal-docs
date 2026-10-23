@@ -150,7 +150,10 @@ Shipped slice: the workspace verbs `bitty ctl workspace list|new|close|focus|mov
 are implemented (`bitty` #433/#457, CTX-0257/CTX-0259) with scope gates
 `view.inspect` (`list`) and `view.manage` (`new|focus|move`), while
 `workspace close ws:N` requires the elevated `terminal.manage` scope because
-it kills live sessions. The rest of the runtime-control surface above remains
+it kills live sessions. Workspace ids are dense: `workspace new` takes the
+lowest free `ws:N` in `1..=16` and slots stay ordered by id, so deleting
+`ws:3` and creating again reuses `ws:3` instead of leaving a gap (issue #2532,
+`bitty` PR #2538). The rest of the runtime-control surface above remains
 candidate; see the
 [Workspace Compositor Specification](../specifications/workspace-compositor.md)
 evidence section.
