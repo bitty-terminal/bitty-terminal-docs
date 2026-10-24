@@ -548,10 +548,10 @@ Limits:
    `E_UI_PANEL_NESTED`; it must `update` or `release` first. This is the
    "nested open" case: GUI content cannot open GUI content inside itself or
    stack a second surface.
-3. **No drawer in this record.** The drawer question
-   ([bitty#2042](https://github.com/bitty-terminal/bitty/issues/2042)) is a
-   placement decision. If a drawer mode is adopted later, it changes placement
-   only and this content contract is unaffected.
+3. **No drawer in this record.** The drawer question is decided for 0.1.0 by
+   the [Drawer Presentation Mode Decision](drawer-presentation-mode-decision.md):
+   no drawer mode is added. If a drawer is admitted later, it changes
+   placement only and this content contract is unaffected.
 4. **Band is unchanged.** The bar keeps its `bottom` band mount, its exclusive
    zone, its reflow behavior, and its zero-space-when-absent rule. It never
    becomes panel content, never displaces a PTY, and never appears in the GUI
@@ -825,5 +825,6 @@ This record is complete when:
   design request.
 - [bitty#2380](https://github.com/bitty-terminal/bitty/issues/2380) — the
   configuration dashboard request.
-- [bitty#2042](https://github.com/bitty-terminal/bitty/issues/2042) — the
-  drawer placement question.
+- [Drawer Presentation Mode Decision](drawer-presentation-mode-decision.md) —
+  the 0.1.0 disposition that keeps the drawer question a placement-only
+  concern.
