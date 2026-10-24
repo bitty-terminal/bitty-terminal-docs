@@ -249,8 +249,10 @@ bytes; payloads obey `PR-5..PR-9` (`8 KiB` per event, `32`/`8 KiB` batch,
 `DropOldest` with coalescing for observation topics). Capabilities obey the
 closed grammar from the Plugin Platform RFC; families not listed are not
 implied. Every `panel.*` sketch below is a deferred candidate pending the
-panel-provider contract (`bitty-docs` `CTX-0181`, OQ-058; accepted contract text in RFC-0006, `bitty-docs#443` OPEN/`#445` merged); no `panel.*`
-is granted or mounted until that contract lands.
+plugin-facing provider gate (`bitty-docs` `CTX-0181`, OQ-058; RFC-0006 is a
+bounded candidate only, with `RFC-OQ-2`, `RFC-OQ-3`, and `RFC-OQ-5` still open;
+see `bitty-docs` issue #464); no `panel.*` is granted or mounted until an
+accepted contract lands.
 
 ### Primary candidates requested in CTX-0107
 
@@ -337,7 +339,10 @@ reviewed RFC — no private channel, no first-party bypass.
 
 Every `panel.*` entry below is a deferred candidate pending the
 panel-provider contract (`bitty-docs` `CTX-0181`, OQ-058); nothing here
-grants or mounts a panel (predecessor: RFC-0006, `bitty-docs#443` OPEN/`#445` merged; rows stay deferred with owning-repo follow-ups).
+grants or mounts a panel (candidate context: RFC-0006, `bitty-docs#443`; the
+rows stay deferred with owning-repo follow-ups while `RFC-OQ-2`,
+`RFC-OQ-3`, and `RFC-OQ-5` remain open; see issue #464). RFC-0006 is not an
+accepted contract and does not authorize implementation or compatibility.
 
 | Plugin                                             | Closed capability families (candidate)                                                                                                                                | Data source                                                                                                                                                                                                                    | Budget host                                                                                                   | Isolation check                                                                                                                                                                                                                                                                   |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
