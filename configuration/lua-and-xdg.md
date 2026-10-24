@@ -1395,27 +1395,42 @@ the Windows variables participating through the platform-aware probe
 every native mapping below are candidates. The table uses relative forms only
 (environment-variable roots, never absolute host paths).
 
-| Role    | Linux / BSD                 | macOS (candidate)                                              | Windows (candidate)                                                         |
-| ------- | --------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Config  | `$XDG_CONFIG_HOME/bitty`    | `~/Library/Application Support/bitty`                          | `%APPDATA%\bitty` (roaming; also the plugin lock file)                      |
-| Data    | `$XDG_DATA_HOME/bitty`      | `~/Library/Application Support/bitty`                          | `%LOCALAPPDATA%\bitty` (non-roaming; candidate `data\` split)               |
-| State   | `$XDG_STATE_HOME/bitty`     | `~/Library/Application Support/bitty` (no separate state role) | `%LOCALAPPDATA%\bitty` (candidate `state\` split; never roams)              |
-| Cache   | `$XDG_CACHE_HOME/bitty`     | `~/Library/Caches/bitty`                                       | `%LOCALAPPDATA%\bitty` (candidate `cache\` split; never roams)              |
-| Runtime | `$XDG_RUNTIME_DIR/bitty`    | `$TMPDIR/bitty-<uid>/` (per-user temp)                         | Named pipe `\\.\pipe\bitty-<username>-<instance-id>` (no filesystem socket) |
-| Bin     | `~/.local/bin` (user scope) | `/Applications/Bitty.app` or `~/Applications`                  | `%LOCALAPPDATA%\Programs\Bitty` (per-user scope)                            |
+| Role    | Linux / BSD                 | macOS (candidate)                                              | Windows (candidate)                                                                 |
+| ------- | --------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Config  | `$XDG_CONFIG_HOME/bitty`    | `~/Library/Application Support/bitty`                          | `%APPDATA%\bitty` (roaming; also the plugin lock file)                              |
+| Data    | `$XDG_DATA_HOME/bitty`      | `~/Library/Application Support/bitty`                          | `%LOCALAPPDATA%\bitty` (non-roaming; candidate `data\` split)                       |
+| State   | `$XDG_STATE_HOME/bitty`     | `~/Library/Application Support/bitty` (no separate state role) | `%LOCALAPPDATA%\bitty` (candidate `state\` split; never roams)                      |
+| Cache   | `$XDG_CACHE_HOME/bitty`     | `~/Library/Caches/bitty`                                       | `%LOCALAPPDATA%\bitty` (candidate `cache\` split; never roams)                      |
+| Runtime | `$XDG_RUNTIME_DIR/bitty`    | `$TMPDIR/bitty-<uid>/` (per-user temp)                         | Named pipe `\\.\pipe\bitty-<instance-id>` (current-user DACL; no filesystem socket) |
+| Bin     | `~/.local/bin` (user scope) | `/Applications/Bitty.app` or `~/Applications`                  | `%LOCALAPPDATA%\Programs\Bitty` (per-user scope)                                    |
 
 Notes on the candidate mapping:
 
 - Roaming versus local on Windows: configuration roams with the user profile
   (`%APPDATA%`); rebuildable caches, session state, and data stay machine-local
   (`%LOCALAPPDATA%`) so roaming profiles never sync them.
-- Runtime IPC on Windows uses named pipes rather than Unix-domain sockets; the
-  pipe name carries the user and instance id so concurrent logins stay separate.
+- Runtime IPC on Windows uses named pipes rather than Unix-domain sockets. The
+  endpoint is `\\.\pipe\bitty-<instance-id>`: the pipe carries a protected
+  current-user-only DACL, and endpoint peers are checked by process-token SID
+  comparison on connect. Cross-user separation therefore comes from the ACL and
+  SID check, not from a user-name segment in the pipe name.
 - File modes are POSIX-only: the `0600` tiers below map to per-user NTFS DACLs
   scoped to the current user SID on Windows (see
   [Credential sources](#credential-sources-and-secret-storage-candidate)).
 - macOS has no separate state role: sessions, layouts, and history live under
   Application Support alongside data; only cache splits out.
+
+> Implementation note (Implemented-only, CTX-1405): `bitty-ipc` maps an instance
+> id verbatim to `\\.\pipe\bitty-<instance-id>` (`windows_pipe_name`), and the
+> Windows listener creates the endpoint with a protected current-user-only DACL
+> and re-attests each connected instance; clients reject a server whose
+> process-token SID is not the current user
+> (`crates/bitty-ipc-devtools/src/devtools.rs`,
+> `crates/bitty-ipc-winpipe/src/pipe.rs`). The endpoint and protection are the
+> accepted transport in the
+> [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)
+> (OQ-018). The directory-role mapping above remains a candidate; this note
+> claims no Verified status.
 
 ### Environment variables and path overrides
 
