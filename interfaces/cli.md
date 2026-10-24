@@ -766,8 +766,53 @@ plugins, dependency and key conflicts, renderer state, and supported image
 protocols. It should offer structured output for automation.
 
 Shell completion should target Bash, Zsh, Fish, PowerShell, and Nushell. Dynamic
-plugin completion comes from static package manifests and should update when
-the installed plugin set changes, without starting every plugin runtime.
+completion values for local operands should come from local
+configuration/ledger/store state and update when that state changes, without
+starting a plugin runtime. Manifest-derived plugin subcommands remain candidate
+contract; the shipped slice below records the implemented portion.
+
+## Shipped slice: `bitty completion` dynamic candidates
+
+Status: **implemented on the `bitty` 0.0.28 development line** (CTX-1486,
+`bitty` #2575). This section records completion behavior in `bitty` source; it
+does not claim a release, a stable completion contract, or acceptance of the
+rest of the candidate completion tree above.
+
+- Shape: unchanged `bitty completion <shell>` (alias `comp`). No new public
+  command, flag, or persisted state is added.
+- Static words: every generated script renders the parser-owned grammar
+  (first-level words, nested verbs, stable aliases, and per-command flags) from
+  `crates/bitty-terminal/src/grammar.rs`.
+- Dynamic values in Bash, Zsh, Fish, and PowerShell: `--profile` and
+  `--profile=`, `bitty plugin enable|disable <id>`, and
+  `bitty config profile show|use|path <name>` also offer locally known values.
+  There are no top-level `bitty enable`/`bitty disable` aliases to complete.
+- Local helpers: the scripts call two hidden, read-only helpers,
+  `bitty +list-profiles [--json]` and
+  `bitty +list-plugins --installed [--json]`. Both emit one candidate per line
+  (`--json` emits `{"v":1,"kind":"profiles|plugins","candidates":[...]}`),
+  sorted bytewise and de-duplicated, capped at 256 candidates with 128 bytes
+  per candidate. `+list-profiles` reads profile file names under
+  `$XDG_CONFIG_HOME/bitty/profiles/`; `+list-plugins --installed` reads the
+  managed `$XDG_CONFIG_HOME/bitty/bitty-plugins.toml` ledger plus the installed
+  `$XDG_DATA_HOME/bitty/plugins/current.json` index. The helpers are not
+  documented commands and never appear in help or static completion lists.
+- Boundaries: the helpers never construct a runtime or plugin VM, never load
+  plugin code, never spawn a child, never prompt for consent, and perform no
+  network I/O. They read bounded local files, emit no diagnostics or host
+  paths, and exit `0` with no candidates when the profile directory, ledger,
+  or store index is missing, unreadable, or malformed. Generated scripts
+  redirect helper stderr and treat any helper failure as an empty candidate
+  set, so broken local state cannot break the shell.
+- Nushell (documented limitation): Nushell extern signatures are static, so
+  the Nushell script offers no dynamic profile or plugin value candidates and
+  documents that limitation in its header. Nushell still completes the
+  generated grammar; running the hidden helpers directly returns the same
+  local data.
+- Verification: `cli_completion` integration tests cover sorted local state,
+  malformed-state fail-soft behavior, the 256-candidate bound, helper usage
+  errors staying off stdout, golden script fixtures, and native-shell parse
+  checks where the shell is installed.
 
 ## Shipped slice: `bitty shell-init` shell integration
 
@@ -787,6 +832,9 @@ candidate tree or its other subtrees.
   OSC 133 prompt-start `A` and command-done-with-status `D` marks,
   observation only) followed by one eval line wiring the matching
   `bitty completion <shell>` output, so Tab completion works after init.
+  Sourcing the script never invokes `bitty`; pressing Tab for a dynamic value
+  runs the bounded local candidate helpers described in
+  [Shipped slice: `bitty completion` dynamic candidates](#shipped-slice-bitty-completion-dynamic-candidates).
   Nushell instead inlines the completion definitions, because Nushell parses
   `source` paths before `save -f` runs and a save-then-source roundtrip of a
   just-written file cannot load.
@@ -816,10 +864,11 @@ candidate tree or its other subtrees.
   script).
 - Exit codes: `0` success; `2` usage error.
 - Deliberate non-goals in this slice: no rc-file auto-editing; no `bitty x`
-  execution or plugin completion integration. Deferred (do not treat as
-  available): OSC 7 percent-encoding of cwd paths (`bitty` #1855),
-  session-local Nushell double-source guard (`bitty` #1856), B/C span zones,
-  and per-float styling.
+  execution or plugin-provided subcommand completion (installed plugin-id
+  candidates for `plugin enable|disable` ship as described above). Deferred
+  (do not treat as available): OSC 7 percent-encoding of cwd paths (`bitty`
+  #1855), session-local Nushell double-source guard (`bitty` #1856), B/C span
+  zones, and per-float styling.
 
 ## Deferred candidates
 
