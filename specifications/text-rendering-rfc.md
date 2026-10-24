@@ -413,8 +413,9 @@ Candidate contract — coverage-driven, deterministic, bounded:
 
 Status: **shipped-default notes only** (read-only from `bitty`
 `origin/main`, `crates/bitty-config/src/types.rs`,
-`crates/bitty-vt/src/action.rs`, CTX-0157/CTX-0163/CTX-0237). They record what the
-implementation ships today; they change no candidate rule above and do not
+`crates/bitty-vt/src/action.rs`, CTX-0157/CTX-0163/CTX-0237, and the 0.0.24
+cell-box render change CTX-1387 via `bitty` #2307 and #2312). They record what
+the implementation ships today; they change no candidate rule above and do not
 promote this RFC beyond `draft`.
 
 - Primary face defaults to `"JetBrainsMono Nerd Font"` at `12.0`pt with
@@ -422,14 +423,26 @@ promote this RFC beyond `draft`.
   `10x22` from the legacy `8x16` base. The values are measured raster
   truth at `12`pt (CTX-0237, `bitty` #413, commit `308687d`: live
   crossfont probe average advance `10`px, line `22`px, descent `-5`px),
-  so in-font tall glyphs (block elements, powerline separators, Nerd
-  icons) fit with zero overhang; over-tall outliers keep the permitted
-  overdraw path. The renderer resolves the baseline from measured face
-  metrics (legacy fixed-ratio fallback retained).
+  so in-font tall glyphs (powerline separators, Nerd icons) fit with zero
+  overhang; over-tall outliers keep the permitted overdraw path. The
+  renderer resolves the baseline from measured face metrics (legacy
+  fixed-ratio fallback retained).
+- Block elements `U+2580-U+259F` are not font-sourced: the renderer paints
+  them from Unicode cell-box geometry, so a block always fills its cell
+  exactly. Partial blocks (upper/lower and left/right eighth steps), the full
+  block, and the quadrant compositions emit rectangles snapped to eighth-cell
+  boundaries, and the shade scalars `U+2591-U+2593` emit uniform 25 %, 50 %,
+  and 75 % coverage masks instead of the font's dither pattern. Adjacent block
+  cells therefore share an exact edge at fractional DPI scale, and
+  figlet/lolcat-style art shows no one-pixel grid between cells. Box drawing
+  (`U+2500-U+257F`) and braille (`U+2800-U+28FF`) stay font-sourced through
+  the fallback chain below.
 - Family-level fallback order is the configured primary, then
   `"JetBrains Mono"`, `"monospace"`, `"DejaVu Sans Mono"`, and
   `"Noto Sans Symbols 2"` last. `DejaVu Sans Mono` covers box drawing and
-  block elements (`U+2580-U+259F`); `Noto Sans Symbols 2` covers braille
+  the block scalars (`U+2580-U+259F`) as a font-coverage fact, but the
+  cell-box path above paints block scalars before any face is consulted, so
+  that coverage only affects box drawing; `Noto Sans Symbols 2` covers braille
   patterns (`U+2800-U+28FF`, TUI graphs such as btop CPU meters).
 - `DECSCUSR` (`CSI Ps SP q`) maps `0` to the configured default style,
   `1`/`2` to blinking/steady block, `3`/`4` to blinking/steady underline,
