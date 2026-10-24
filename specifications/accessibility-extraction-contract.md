@@ -492,10 +492,13 @@ partial snapshot, a truncated name, or a privileged path.
   construction and refresh of the `Adapter` from the running application, the
   controlled action interface and activation dispatch, and adapter-facing
   snapshot serialization.
-- **Not started**: the platform backends (`bitty-a11y` `CTX-0003`) and the
-  runtime adapter call site. No screen reader sees a Bitty tree today: the
-  model seam is bound, but no AT-SPI/UIA/AX backend exists and only
-  `HeadlessBackend` is exercised.
+- **Explicitly deferred (retention recorded)**: the platform backend binding and
+  the runtime adapter call site are deferred by the
+  [Accessibility Model Retention and Platform Backend Decision](accessibility-model-retention-decision.md);
+  the live tracker is
+  [bitty#1768](https://github.com/bitty-terminal/bitty/issues/1768). No screen
+  reader sees a Bitty tree today: the model seam is bound, but no AT-SPI/UIA/AX
+  backend exists and only `HeadlessBackend` is exercised.
 - **Open**: independent acceptance and security review of the extension and
   of this binding; the role vocabulary's platform-convention mapping; whether
   terminal text runs carry styling attributes; the announcement coalescing
@@ -591,6 +594,7 @@ evidence this contract obligates.
 | [Rich Presentation RFC](rich-presentation-rfc.md) (accepted)                                                                                                    | Unchanged; its scene node kinds gain the required role mapping the projection consumes.                                                           |
 | [Theme Token Contract (Candidate)](theme-token-contract-candidate.md) (draft)                                                                                   | Holds the contrast floor and compliant token pair the settings rule selects.                                                                      |
 | [UI Motion and Budget (Candidate)](ui-motion-and-budget-candidate.md) (draft)                                                                                   | Shares the reduced-motion and no-hot-path rules.                                                                                                  |
+| [Accessibility Model Retention and Platform Backend Decision](accessibility-model-retention-decision.md) (accepted)                                             | Records Core retention and defers the platform backend binding to bitty#1768; changes no rule in this contract.                                   |
 
 ## Open points
 
@@ -617,6 +621,11 @@ owner.
   extension.
 - **Screen-reader traversal mode** parked to `CTX-0003`: whether a text-first
   focus traversal inside a terminal leaf enters scope, and at which milestone.
+- **Platform backend binding** parked to
+  [bitty#1768](https://github.com/bitty-terminal/bitty/issues/1768) under the
+  [Accessibility Model Retention and Platform Backend Decision](accessibility-model-retention-decision.md):
+  the backend and runtime adapter call site are explicitly deferred, not
+  declined.
 
 ## Acceptance criteria
 
@@ -682,3 +691,6 @@ document changes no P0 control.
 - [Theme Token Contract (Candidate)](theme-token-contract-candidate.md) and
   [UI Motion and Budget (Candidate)](ui-motion-and-budget-candidate.md) -
   candidate contracts for the contrast floor and motion rules.
+- [Accessibility Model Retention and Platform Backend Decision](accessibility-model-retention-decision.md)
+  - the retention disposition that defers the platform backend binding to
+    bitty#1768 while keeping this contract's model seam published and tested.
