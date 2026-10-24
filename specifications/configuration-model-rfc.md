@@ -367,9 +367,11 @@ to the manifest hash, and settings declarations intentionally stay out of
    its own resolved map; cross-plugin reads fail closed structurally and at
    the gate. Tables are deferred: table values fail to the default for that
    key.
-5. **`bitty-plugins.toml` is untouched**: it stays machine-only. User file
-   reads use the Core file-type restrictions, and values stay typed per
-   declaration.
+5. **The managed ledger is untouched**: `bitty-plugins.lua` stays
+   machine-only, data-only, and parsed without a Lua VM. A legacy
+   `bitty-plugins.toml` is read once for migration only. User file reads use
+   the Core file-type restrictions, and values stay typed per declaration; no
+   setting value grants authority.
 
 The bar plugin is the first customer, wired end-to-end as proof with its
 declaration (`show`, `edge`, `show_single`, `name_max_chars` plus a

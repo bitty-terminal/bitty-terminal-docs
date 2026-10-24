@@ -108,7 +108,7 @@ visible `+N more` note. A view too small for a legible panel shows
 ### Fail-closed
 
 Every section either renders bounded data or `unavailable: <reason>`. An
-unreadable managed manifest, store index, profiles directory, or extension root
+unreadable managed ledger, store index, profiles directory, or extension root
 must never read as "none installed". The plugin reads no environment dump,
 credential, token, or process command line, so it cannot leak a secret.
 
