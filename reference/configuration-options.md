@@ -107,27 +107,35 @@ missing parent profiles. A missing explicit `--config` / `BITTY_CONFIG` path,
 a missing explicit `--profile` / `BITTY_PROFILE` name, CLI usage errors, and
 internal defects stay fatal (exit 2). A persisted selector that no longer
 resolves is external configuration: startup ignores it with a diagnostic and
-does not rewrite the selector; the next launch retries.
+does not rewrite the selector; the next launch retries. The miss loads no
+profile layer, so nothing was resurrected and no other surface is denied.
 
 Salvage never escalates a capability or trust value. When a security-sensitive
 element is ignored — or when any whole external layer is dropped, because the
 vanished layer might have restricted it — a deny overlay runs after the normal
 merge and before validation/installation:
 
-- `plugins`: deny-all. No configured plugin is enabled or activated for the
-  launch, so no plugin can request a grant through it.
+- `plugins`: deny-all. No configured plugin is enabled. The config layer has
+  no runtime activation consumer, so this is a configuration-level deny and
+  does not claim a plugin process was stopped.
 - `history`: transcript and command capture stay off.
 - `mouse`: middle and right button bindings resolve to `none`.
-- `decoration`: the background-image root allowlist is empty.
+- `decoration`: the background-image root allowlist is empty and every
+  configured image is cleared — `decoration.background_image`,
+  `window.background_image`, and every per-view `background_image`. The
+  runtime therefore loads no image and cannot reject the config for a path
+  outside the denied roots.
 
 Lower layers cannot re-enable a denied element for that launch. Every other
-setting from the same file and from the remaining layers stays effective, and
-`keymaps` (which grants no capability) keeps the shipped defaults. A present
-invalid value is never turned into a more permissive one.
+setting from the same file and from the remaining layers stays effective.
+`keymaps` grants no capability and falls back to the shipped defaults when
+dropped; because the keymap model has no unbind action, a `command:` binding
+declared by a lower-precedence layer can still appear. A present invalid value
+is never turned into a more permissive one.
 
-Diagnostics are bounded to at most nine startup lines: up to eight
-ignored-element/deny lines, plus one suppression summary when more were
-dropped. `bitty config check` reports the full list. Diagnostics carry paths, field names, and
+Diagnostics are bounded to at most eight lines (the deny-overlay summary has a
+reserved slot, evicting the last element line if needed) plus one suppression
+line when more were dropped. `bitty config check` reports the full list. Diagnostics carry paths, field names, and
 bounded validation messages only. They never include file contents or
 unrelated file data; validation messages may quote the offending value.
 
