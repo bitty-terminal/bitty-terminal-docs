@@ -1125,6 +1125,58 @@ pools, handedness preference, and script-action registrations
 ([OQ-089](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md),
 [Semantic Terminal RFC](../specifications/semantic-terminal-rfc.md#p7-bitty-beacon-spatial-action-engine-candidate)).
 
+## Mouse button bindings (shipped defaults)
+
+Status: **implementation reference** for `bitty` #2474 (task CTX-1449). This
+section records the behavior implemented for that issue and makes no release,
+merge, or tag claim. It changes no normative contract above and weakens no
+security control.
+
+Shipped schema:
+
+```lua
+-- Shipped schema (bitty#2474).
+return {
+    mouse = {
+        right = "none", -- explicit no-op: no paste, no dialog, no PTY bytes
+        middle = "paste_from_primary", -- Linux middle-click selection paste
+    },
+}
+```
+
+- Both buttons accept `"none"` or any chrome-action spelling from the
+  `keymaps[].action` vocabulary (`paste_from_clipboard`, `paste_from_primary`,
+  `copy_to_clipboard`, `toggle_help`, `command:<owner:cmd>`, and the rest of
+  the catalog). Unknown spellings and non-string values fail closed with the
+  owning field path (`mouse.right` / `mouse.middle`), never coerced.
+- Every `mouse` leaf is independent and presence-gated: a layer that omits
+  `mouse.right`/`mouse.middle` (or `focus_follows_mouse`, or its delay) says
+  nothing, so the lower-precedence value survives with its attribution and
+  the shipped default applies only when no layer declares the leaf. A
+  hover-only table or an empty `mouse = {}` therefore never resets a profile
+  binding, and a policy layer that pins one button does not pin the other.
+- `right` ships as `"none"`: a right-click is host chrome with no action. It
+  reads no clipboard, opens no suspicious-paste dialog, and writes no PTY
+  bytes, so an accidental right-click over a multi-line clipboard cannot trap
+  the user behind the confirmation gate (owner directive for 0.0.26).
+- `middle` ships as `"paste_from_primary"`, the Linux middle-click selection
+  paste, and stays configurable (including `"none"`) like any other binding.
+- Both buttons dispatch through the same `ChromeAction` path as a bound chord:
+  no parallel mouse action table exists. `bitty list actions` reports the
+  bound buttons beside each action's chord (`mouse` field). The
+  `bitty inspect config` lookup reports the shipped default, and
+  `bitty config check` reports the effective value and source.
+- A binding that pastes still passes the CTX-0186 suspicious-paste gate:
+  multi-line or otherwise suspicious text waits for an explicit confirmation,
+  and the default `none` never reads either selection.
+- Capture precedence is unchanged: a pane that enabled mouse reporting
+  (`DECSET 1000`/`1002`/`1003` plus `1006`) receives the button as bounded SGR
+  protocol bytes, and no host action runs. Shift remains the unconditional
+  capture escape.
+- Merge and reload: scalar-replace with per-field source attribution,
+  restart-required (adopted into the runtime configuration at startup), and a
+  project layer may not bind either button.
+
 ## Reload classification (shipped schema inventory)
 
 Status: **implementation reference** read-only from `bitty` `origin/main` at
@@ -1172,6 +1224,7 @@ Shipped leaf inventory:
 | `layout.resize_step`                                                                         | live     | built-in default     |
 | `scrollbar.mode`, `scrollbar.width`                                                          | restart  | built-in default     |
 | `mouse.focus_follows_mouse`, `mouse.focus_follows_mouse_delay_ms`                            | restart  | built-in default     |
+| `mouse.right`, `mouse.middle`                                                                | restart  | built-in default     |
 | `plugins[].id`, `plugins[].enabled`                                                          | restart  | built-in default     |
 | unknown or undeclared key                                                                    | rejected | n/a                  |
 
