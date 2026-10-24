@@ -50,6 +50,11 @@ versioning. Consumer harnesses such as Wheel own their task graph, context, tool
 policy, consent, audit content, and cancellation policy; they consume this
 service and must not grow a competing daemon.
 
+What the daemon may own is bounded by the draft
+[bittyd Scope Charter](bittyd-scope-charter.md): this document defines the
+service surface, while the charter fixes the mechanism floor and the exclusions
+that keep presentation, agent, and workflow policy out of the daemon.
+
 This document decides the questions bitty#2546 left open:
 
 1. Which session kinds the v0.2.0 slice hosts, and how an absent kind is
@@ -1349,6 +1354,9 @@ promotion PR. A missing sign-off is a merge blocker, not a comment.
 
 ## References
 
+- [bittyd Scope Charter](bittyd-scope-charter.md) (draft) — the session-host
+  mechanism floor and exclusion set that bounds this contract's scope; it
+  changes no service-surface rule.
 - [Wheel consumer requirements for the bittyd session host (Candidate)](bittyd-session-host-requirements-candidate.md)
   - consumer requirements and the `D-*`, `V-*`, and `Q-*` sets answered here.
 - [ADR 0008 - Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)
