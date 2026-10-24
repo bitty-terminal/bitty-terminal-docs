@@ -11,11 +11,17 @@ sidebar_order: 10
 
 # Troubleshooting
 
-No product troubleshooting procedures exist because no stable or supported
-public contract is claimed; experimental code and pre-alpha releases exist
-(latest `v0.0.20`), but no diagnostic or recovery path is `Verified` or
-`Compatible`. Planned diagnostic, safe-mode, log, and recovery ideas must not
-be presented as commands users can run.
+No product troubleshooting procedure is `Verified` or `Compatible`: the corpus
+describes experimental and implemented-only behavior for the 0.0.28
+development line, and the pre-alpha release is `v0.0.27`. Planned diagnostic,
+safe-mode, log, and recovery ideas must not be presented as commands users can
+run.
+
+## Pages
+
+| Page                                                        | Use when                                                                                                                   |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| [Crash and exit diagnostics](crash-and-exit-diagnostics.md) | Bitty disappears, closes without an explanation, or leaves an unresponsive window; you need crash, exit, or stall evidence |
 
 ## Admission criteria
 

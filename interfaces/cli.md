@@ -700,6 +700,22 @@ the layer model is owned by the
 [Configuration Model RFC](../specifications/configuration-model-rfc.md) and the
 [Lua and XDG configuration](../configuration/lua-and-xdg.md) reference.
 
+## Diagnostic environment variables
+
+Status: **implementation reference (experimental).** The crash and exit
+switches describe the 0.0.28 development line (bitty PR #2588); the stall
+watchdog shipped in 0.0.26. Neither is a stable contract.
+
+| Variable                  | Effect                                                                                                       | Values                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `BITTY_CRASH_REPORT`      | Crash and exit reports for the interactive event loop; `--headless` and `--test-mode` never install the hook | Unset or any value other than a disabling value leaves it on; `0`, `false`, `off`, and `no` disable it                     |
+| `BITTY_STALL_WATCHDOG`    | Opt-in main-loop stall monitor; off by default                                                               | `1`, `true`, `on`, and `yes` enable it with 2000 ms; an integer sets that millisecond threshold; other values leave it off |
+| `BITTY_STALL_WATCHDOG_MS` | Threshold override when the watchdog is enabled                                                              | Integer milliseconds, clamped to 50 through 600000; never enables the watchdog by itself                                   |
+
+State file names, report fields, bounds, redaction, and the signal-capture
+limitation are in
+[Crash and exit diagnostics](../troubleshooting/crash-and-exit-diagnostics.md).
+
 ## Test mode
 
 Status: **implementation reference (experimental).** Documented from the merged

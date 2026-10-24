@@ -10,6 +10,14 @@ and this project adheres to
 
 ### Added
 
+- 0.0.28 crash and exit diagnostics documentation: a troubleshooting guide for
+  `BITTY_CRASH_REPORT` (default-on for interactive runs, opt-out values,
+  `--headless` exclusion), the `crash-report.log`, `exit-report.log`, and
+  `stall-watchdog.log` state slots, report contents and bounds, the
+  `SIGTERM`/`SIGHUP` capture limitation, and the opt-in
+  `BITTY_STALL_WATCHDOG` with its 2 s default threshold. These entries record
+  implementation evidence only, not a `Verified` or `Compatible` claim.
+
 - 0.0.27 image and present-path synchronization: Kitty image content in a pane
   survives entering and leaving a full-screen TUI on the alternate screen,
   including a TUI that clears the alternate screen before `?1049l`, with
