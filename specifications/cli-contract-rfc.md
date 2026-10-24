@@ -185,7 +185,7 @@ and never loads a plugin VM.
 | `bitty doctor`     | local                       | no                                                | Stable recovery and diagnostics entry point; must work in safe mode.                                                                                                                                                 |
 | `bitty cmd`        | mixed                       | depends on target executable                      | Direct qualified executable invocation for automation and diagnostics.                                                                                                                                               |
 | `bitty x`          | extension                   | depends on plugin command class                   | Collision-free plugin entry point; mandatory for every plugin command.                                                                                                                                               |
-| `bitty completion` | local                       | no                                                | Emits completion scripts for Bash, Zsh, Fish, PowerShell, and Nushell from static manifests.                                                                                                                         |
+| `bitty completion` | local                       | no                                                | Emits completion scripts for Bash, Zsh, Fish, PowerShell, and Nushell from the parser-owned grammar plus bounded local candidate helpers.                                                                            |
 | `bitty version`    | local                       | no                                                | Machine-readable version, channel, and build metadata.                                                                                                                                                               |
 
 Starting a terminal and controlling an existing instance remain visibly
@@ -459,9 +459,11 @@ state, and supported image protocols. It offers `--format json` for automation
 and must work in safe mode.
 
 `bitty completion <shell>` emits completion for Bash, Zsh, Fish, PowerShell, and
-Nushell. Dynamic plugin completion is derived from static manifest metadata and
-regenerates when the installed plugin set changes, without starting any plugin
-runtime.
+Nushell. Static words come from the parser-owned grammar. Bash, Zsh, Fish, and
+PowerShell also complete bounded local values for `--profile`, `plugin
+enable|disable <id>`, and `config profile show|use|path <name>` from the local
+configuration, ledger, and plugin store, without starting a plugin runtime;
+Nushell keeps static values because its extern signatures are static.
 
 `bitty version` emits `bitty <semver> (<channel> <commit>)` on stdout and the
 same fields in `--format json`.
@@ -618,11 +620,16 @@ owns:
 - core tokens and their typed flags from the registry;
 - `bitty x` plugin subtrees from static manifest metadata;
 - top-level alias expansion when the manifest uniquely claims a name;
+- bounded local values for completion contexts the grammar marks as local
+  operand slots (`--profile`, installed plugin ids for `plugin
+enable|disable`, and profile names for `config profile show|use|path`) from
+  local configuration, ledger, and store state;
 - file and resource completions declared as bounded enumerations in the schema
   (for example `bitty list protocols` completes from the registry enumeration).
 
-The completion script is regenerated when the installed plugin set changes, not
-when a plugin VM starts. Packages do not provide executable completion hooks.
+The completion script is regenerated when the parser grammar changes; local
+value candidates are resolved at Tab time and never start a plugin VM. Packages
+still do not provide executable completion hooks.
 
 ## Exit codes for v1
 
