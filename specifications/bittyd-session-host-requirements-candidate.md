@@ -34,6 +34,13 @@ sidebar_order: 79
 | Evidence status   | No test vector in this document has been executed against a real `bittyd`   |
 | Change authority  | Wheel may record consumer requirements; Core and the security corpus decide |
 
+> **Core response.** The Core-owned answers to `D-01` through `D-18`, the
+> service surface, and the conformance harness plan are recorded in the
+> [bittyd Session-Host Contract (Candidate)](bittyd-session-host-contract-candidate.md).
+> That contract is a candidate until owner and security review; this document
+> remains the consumer input, and the contract states the Core answer wherever
+> the two differ.
+
 ## 1. Purpose and scope
 
 Wheel is the Coding Agent Harness and runs as an independent out-of-process
