@@ -17,12 +17,13 @@ carries no duplicate normative prose.
 
 ## Direction
 
-| Document                                                    | Status   | Purpose                                                                                 |
-| ----------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
-| [Bitty Product Vision](vision.md)                           | Accepted | Product direction, principles, goals, non-goals, and open questions.                    |
-| [Panel Extensibility Vision](panel-vision.md)               | Draft    | Panel as first-class container enabling a programmable terminal workspace.              |
-| [Proposed Delivery Sequence](proposed-delivery-sequence.md) | Draft    | Candidate build order, deferral list, and version ladder from historical advisor input. |
-| [Bitty Visual Identity Direction](visual-identity.md)       | Accepted | Pixel-art-first mascot and shared visual-asset direction with rendering constraints.    |
+| Document                                                        | Status   | Purpose                                                                                            |
+| --------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| [Bitty Product Vision](vision.md)                               | Accepted | Product direction, principles, goals, non-goals, and open questions.                               |
+| [Panel Extensibility Vision](panel-vision.md)                   | Draft    | Panel as first-class container enabling a programmable terminal workspace.                         |
+| [Proposed Delivery Sequence](proposed-delivery-sequence.md)     | Draft    | Candidate build order, deferral list, and version ladder from historical advisor input.            |
+| [Bitty Visual Identity Direction](visual-identity.md)           | Accepted | Pixel-art-first mascot and shared visual-asset direction with rendering constraints.               |
+| [Positioning in the Agent Era](positioning-in-the-agent-era.md) | Draft    | Why falling implementation cost raises the value of system semantics, contracts, and verification. |
 
 ## Release planning
 
