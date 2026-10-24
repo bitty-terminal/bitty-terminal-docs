@@ -60,6 +60,7 @@ shipped, stable, or compatibility-guaranteed behavior:
 | [Small-Core Capability Floor](small-core-capability-floor.md)                                                                                    | — (0.0.23 gate bitty#2059; closes no OQ)                                      | Accepted |
 | [Notification Banner Ownership Decision](notification-banner-ownership-decision.md)                                                              | — (bitty#2398 ownership disposition; closes no OQ)                            | Accepted |
 | [Help and Which-Key Overlay Ownership Design](help-overlay-ownership-design.md)                                                                  | — (bitty#2397 ownership design; API spellings under OQ-056)                   | Accepted |
+| [Drawer Presentation Mode Decision](drawer-presentation-mode-decision.md)                                                                        | — (bitty#2042 0.1.0 disposition; no new mode; closes no OQ)                   | Accepted |
 
 The following drafts are under review and do not authorize shipped, stable, normative, or compatibility-guaranteed behavior; experimental implementation may exist as review evidence (`Draft -> Experimental Implementation -> Accepted -> Verified -> Compatible`):
 

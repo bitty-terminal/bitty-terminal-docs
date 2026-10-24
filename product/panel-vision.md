@@ -580,6 +580,9 @@ predecessor material and is not accepted by this vision.
   and per-Window scratchpad already have draft or accepted anchors in the
   [Workspace Compositor](../specifications/workspace-compositor.md) and the
   [Panel Runtime pre-study](../specifications/panel-runtime-pre-study.md).
+  A drawer/slide-over is not a candidate mode for 0.1.0; the
+  [Drawer Presentation Mode Decision](../specifications/drawer-presentation-mode-decision.md)
+  records that disposition and the admission path for a future proposal.
 - **Candidate suggestion plus rules**: a plugin suggests a mode
   (`preferred_mode`) but never forces it; user panel rules decide, in the
   spirit of window-manager window rules (match on plugin, role, or panel id
