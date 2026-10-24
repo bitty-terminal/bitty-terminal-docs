@@ -75,10 +75,13 @@ Bitty abstracts paths through a five-role semantic hierarchy:
 | **Data**    | `$XDG_DATA_HOME/bitty` (`~/.local/share/bitty`)    | `~/Library/Application Support/bitty`                          | `%LOCALAPPDATA%\bitty\data` (local)  |
 | **State**   | `$XDG_STATE_HOME/bitty` (`~/.local/state/bitty`)   | `~/Library/Application Support/bitty`                          | `%LOCALAPPDATA%\bitty\state` (local) |
 | **Cache**   | `$XDG_CACHE_HOME/bitty` (`~/.cache/bitty`)         | `~/Library/Caches/bitty`                                       | `%LOCALAPPDATA%\bitty\cache` (local) |
-| **Runtime** | `$XDG_RUNTIME_DIR/bitty` (`/run/user/<uid>/bitty`) | `$TMPDIR/bitty-<uid>/`                                         | `\\.\pipe\bitty-<username>-<id>`     |
+| **Runtime** | `$XDG_RUNTIME_DIR/bitty` (`/run/user/<uid>/bitty`) | `$TMPDIR/bitty-<uid>/`                                         | `\\.\pipe\bitty-<instance-id>`       |
 
 On Windows, configuration roams with user domain profiles (`%APPDATA%`), while
-rebuildable caches and session state stay machine-local (`%LOCALAPPDATA%`).
+rebuildable caches and session state stay machine-local (`%LOCALAPPDATA%`). The
+runtime endpoint is a per-instance named pipe with a current-user-only DACL;
+clients also verify the server's process-token SID, so another user cannot
+connect to or impersonate the endpoint.
 
 ### Can I override configuration paths using environment variables?
 
