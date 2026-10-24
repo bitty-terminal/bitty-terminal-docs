@@ -25,8 +25,11 @@ sidebar_order: 40
   code path, and a test that exercises it. Every other row is **planned**
   (a specification in this corpus covers it), **gap** (no owning
   specification or code), or **wont-do** (out of scope by design).
-- Source revision: extracted from `bitty` `main` at `7d7ec91b`. When code
-  and this page disagree, the code wins and this page needs a fix.
+- Source revision: baseline extracted from `bitty` `main` at `7d7ec91b`.
+  The Shift+Enter evidence in this PR is point-in-time evidence from the
+  unmerged `bitty` PR [#2628](https://github.com/bitty-terminal/bitty/pull/2628)
+  at `9d9eb684`; when code and this page disagree, the code wins and this page
+  needs a fix.
 - Key-level detail (types, defaults, ranges, reload class) lives in the
   [configuration options reference](configuration-options.md); escape
   sequence behavior lives in the
@@ -151,7 +154,7 @@ repository root.
 | Leader / key sequences    | G K W | `input.leader`, `input.timeout_len` (legacy `leader_key`, `leader_timeout_ms`) | implemented | `crates/bitty-config/src/file.rs::lua_leader_parses_absent_means_silent_and_bad_fails_closed`; canonical `input.leader`/`input.timeout_len` win over legacy keys, `100..=60000` ms default `1000`, two-step `<Leader> <second>` only with multi-step deferred fail-closed (`bitty#1650` via `#1748`) |
 | Modifier remap for chrome | —     | `mod_key`                                                                      | implemented | `crates/bitty-config/src/keymap.rs::default_mod_is_identity_over_shipped_map`                                                                                                                                                                                                                        |
 | Send-text binding         | G K W | —                                                                              | gap         | The action catalog has no send-text or send-escape action.                                                                                                                                                                                                                                           |
-| Kitty keyboard protocol   | G K W | CSI `u` flags                                                                  | implemented | `crates/bitty-runtime/tests/enhanced_keyboard_protocol.rs::shift_enter_is_distinct_only_after_kitty_negotiation`                                                                                                                                                                                     |
+| Kitty keyboard protocol   | G K W | CSI `u` subset; negotiated Shift+Enter                                         | partial     | `crates/bitty-runtime/tests/enhanced_keyboard_protocol.rs::shift_enter_is_distinct_only_after_kitty_negotiation`; modifyOtherKeys, application keypad, and other Kitty deltas remain deferred in the gap/RFC records                                                                                 |
 | Mouse reporting (SGR)     | G K W | DECSET 1000/1002/1006                                                          | implemented | `crates/bitty-runtime/tests/mouse_encoding.rs::sgr_encoding_still_keeps_button_identity_and_modifiers`                                                                                                                                                                                               |
 | Alternate scroll          | G K W | DECSET 1007                                                                    | implemented | `crates/bitty-runtime/tests/m1_mode_input.rs::alternate_scroll_translates_wheel_on_alt_screen`                                                                                                                                                                                                       |
 | Focus reporting           | G K W | DECSET 1004                                                                    | implemented | `crates/bitty-runtime/tests/m1_mode_input.rs::focus_reporting_emits_in_and_out_only_when_enabled`                                                                                                                                                                                                    |
