@@ -84,7 +84,7 @@ An advanced configuration may use:
 ```text
 $XDG_CONFIG_HOME/bitty/
 ├── init.lua
-├── bitty-plugins.toml
+├── bitty-plugins.lua
 ├── bitty-plugins.lock
 ├── lua/
 │   └── config/
@@ -113,7 +113,8 @@ $XDG_CONFIG_HOME/bitty/
 Here `plugins/` contains plugin behavior configuration or declarative imports,
 not installed plugin source. `themes/` holds optional local theme files
 (implemented-only candidate under OQ-047; no installed theme packages). The
-manifest and lock names are candidates; their package semantics are documented
+data-only Lua ledger path is implemented in the current Core plugin CLI; the
+lock name and the wider package semantics remain candidates and are documented
 in
 [Package management](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/package-management.md).
 
@@ -202,7 +203,21 @@ present but invalid canonical Lua file does not fall through to an alias or
 TOML file; the plugin keeps running on lower settings layers and the rejection
 is recorded internally. The legacy TOML subset remains data-only and follows
 the same declared-key, strict-type, per-key default behavior. No setting value
-grants capability or changes the machine-managed `bitty-plugins.toml`.
+grants capability or changes the machine-managed ledger:
+`<config-dir>/bitty-plugins.lua` (data-only Lua; a pre-Lua
+`bitty-plugins.toml` is read once for migration and retained at
+`bitty-plugins.toml.bak`). Values in any user file are data, never authority:
+grants stay bound to the manifest hash recorded by the host, and undeclared
+keys are dropped with a diagnostic.
+
+A successful `bitty plugin install` and the first `bitty plugin enable` create
+the canonical Lua file once when the plugin declares at least one setting. The
+generated file contains the declared defaults as comments and returns an empty
+table, so the manifest defaults stay in effect until the user edits a line. It
+is written atomically with owner-only permissions, is never created over an
+existing canonical/alias/legacy file, and is not created for a plugin with no
+declared settings. `bitty plugin config scaffold --force` remains the explicit
+overwrite path.
 
 The selected file is read when the plugin activates, and its resolved map is
 pinned to that generation. Editing it does not hot-reload the plugin or its

@@ -435,14 +435,25 @@ security acceptance, or implementation of the other candidate subtrees.
   archive extraction converge on the local-directory validation and consent
   pipeline. Unsupported schemes and malformed sources fail closed; this does
   not add a registry-install route. Source operands remain bounded to 256 bytes.
-- Durable state: the bundled managed manifest lives at
-  `$XDG_CONFIG_HOME/bitty/bitty-plugins.toml` (or beside an explicit
-  `--config`), a strict bounded TOML subset; unknown keys, duplicates,
-  malformed values, over-limit files, and unknown versions fail closed before
-  any mutation. Store installs instead use
-  `$XDG_DATA_HOME/bitty/plugins/current.json` and versioned package trees under
-  `packages/<id>/<version>/`. The user's configuration `init.lua` is never
-  rewritten by these management operations.
+- Durable state: the bundled managed ledger lives at
+  `$XDG_CONFIG_HOME/bitty/bitty-plugins.lua` (or beside an explicit
+  `--config`), a data-only Lua table literal parsed without a Lua VM: unknown
+  fields, duplicate keys or capability items, malformed values, non-UTF-8
+  input, over-limit files, and unknown versions fail closed before any
+  mutation. A legacy `bitty-plugins.toml` is migrated once (0600 temp,
+  no-clobber commit) and retained as `bitty-plugins.toml.bak`; an existing Lua
+  ledger is never overwritten by migration. Grants stay bound to the recorded
+  manifest hash, so a hand-edited ledger cannot widen authority. Store
+  installs use `$XDG_DATA_HOME/bitty/plugins/current.json` and versioned
+  package trees under `packages/<id>/<version>/`. The user's configuration
+  `init.lua` is never rewritten by these management operations.
+- Generated settings: a successful install or first enable of a plugin that
+  declares `[settings]` creates
+  `$XDG_CONFIG_HOME/bitty/plugins/<owner>.<name>.lua` once with the declared
+  defaults commented out. Existing files, user edits, legacy
+  `<owner>.<name>.toml` settings, and settings-less manifests never produce or
+  overwrite a file; `bitty plugin config scaffold --force` is the explicit
+  replacement path.
 - Capability consent: new requested capabilities require explicit approval
   (`--yes` or an interactive `[y/N]` that fails closed on EOF). Store consent
   binds to the staged snapshot, including manifest hash and content digest;

@@ -225,13 +225,44 @@ target or symlinked `plugins/` directory, writes only inside the
 environment-derived config root, and commits atomically with an owner-only
 file mode.
 
+A successful `bitty plugin install` and the first `bitty plugin enable`
+auto-generate the same canonical path when the plugin declares at least one
+setting. The generated file is **commented** (every declared key and its
+shipped default is a comment, and the returned table is empty), so the
+manifest defaults remain in effect until the user uncomments a line. Creation
+happens only when the canonical file, its eligible short alias, and the legacy
+`<owner>.<name>.toml` are all absent; an existing file or user edit is never
+overwritten, and `scaffold --force` is the explicit replacement path. A
+plugin with no declared settings gets no file. The write uses a 0600
+temp-file plus no-clobber commit, refuses symlinks and special files, and is
+best-effort after a successful install (a read-only config root produces a
+diagnostic, never a failed install). `bitty plugin info <id>` prints the
+canonical path and whether it exists.
+
 Inspection fails closed with a non-zero exit after printing the report when the
 selected file is rejected, or when it carries keys the manifest does not
 declare or values whose type disagrees. Unknown plugin ids, unreadable stored
 schemas, an existing scaffold target without `--force`, unsafe paths, and
 symlinked targets are typed errors, never partial writes.
 
-`bitty-plugins.toml` stays machine-only. Core PR
+The machine-managed ledger is `<config-dir>/bitty-plugins.lua` and stays
+machine-only. It is data-only Lua, parsed without a Lua VM or host access, and
+contains one record per managed plugin (`source`, `manifest_hash`, `enabled`,
+`granted`, `denied`). Unknown fields, duplicate keys or capability items,
+non-UTF-8 input, and over-limit files fail closed. Authority stays
+manifest-bound: a grant is honoured only when the installed manifest declares
+that capability for the recorded `manifest_hash`; undeclared grants are
+dropped with a diagnostic. Text-editing the ledger can never widen authority.
+
+A pre-Lua `bitty-plugins.toml` ledger is read once for migration and is never
+rewritten: the Lua ledger is written atomically (0600 temp, no-clobber commit)
+and the previous TOML bytes are retained at `bitty-plugins.toml.bak`.
+Migration preserves `source`, `manifest_hash`, `enabled`, `granted`, and
+`denied`, never overwrites an existing Lua ledger, and refuses symlinked or
+special files. `bitty plugin doctor` reports the ledger state and
+`--repair` retains an obsolete legacy file as a backup.
+
+Core PR
 [#2198](https://github.com/bitty-terminal/bitty/pull/2198) diagnostics for alias
 ambiguity, canonical-over-alias shadowing, dropped entries, and rejected files
 are **implemented-only** at merged Core
