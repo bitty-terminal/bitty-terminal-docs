@@ -277,6 +277,47 @@ Source evidence at that revision:
 [RC-1/RC-2 constants](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790d0a2011340e4a3c04564ab7/crates/bitty-lua/src/lib.rs),
 and [TOML parser](https://github.com/bitty-terminal/bitty/blob/1c68de2545c961790d0a2011340e4a3c04564ab7/crates/bitty-config/src/plugin_file.rs).
 
+## Execution budget tightening (manifest `[limits]` and `plugin-budgets.lua`)
+
+Status: **implemented-only** (bitty#2304). This surface can only tighten the
+compiled RC-1/RC-2 ceilings; it can never raise them.
+
+Two optional layers are upper bounds on the host defaults:
+
+1. `bitty-plugin.toml` `[limits]`: `fuel_instructions`, `wall_ms`,
+   `memory_bytes`, `warning_ms` (all optional). Values validate in
+   `1..=ceiling`; zero, a negative or non-integer value, an above-ceiling
+   value, and a `warning_ms` that is not below `wall_ms` fail manifest
+   validation with the manifest field path.
+2. `<config-dir>/plugin-budgets.lua`: a data-only Lua return table with an
+   optional global `default` table and optional per-plugin `plugins` entries
+   keyed by validated plugin id. It is parsed without a Lua VM or host access
+   (16 KiB, 256 lines, 512 bytes per line, 256 plugin entries, UTF-8 only,
+   duplicate/unknown keys and non-integer values fail closed). Symlinks and
+   special files are refused.
+
+| Dimension           | Host ceiling | Scope                       |
+| :------------------ | :----------- | :-------------------------- |
+| `fuel_instructions` | 10,000,000   | per VM, RC-1                |
+| `wall_ms`           | 50           | per callback, RC-1          |
+| `memory_bytes`      | 33,554,432   | per VM accounted heap, RC-2 |
+| `warning_ms`        | 8            | advisory, never suspends    |
+
+Effective value per dimension is the minimum of the host ceiling, the
+manifest declaration, the user global default, and the user per-plugin
+override. A later layer that declares a larger number is inert, never a
+widening. When the effective `wall_ms` is below the advisory threshold, the
+effective `warning_ms` is capped at `wall_ms - 1`.
+
+Failure posture: a rejected `plugin-budgets.lua` is not silently ignored —
+plugin activation fails closed with a typed budget error, and
+`bitty plugin config show <id>` prints the effective rows and exits non-zero.
+`bitty --safe` ignores the manifest declaration and the user file and runs the
+host defaults, so the recovery path cannot be blocked by a bad local file.
+The file is read at startup; live generations keep their activation-time
+budgets. `bitty plugin config show <id>` reports each dimension's host
+ceiling, manifest value, user layers, effective value, and source layer.
+
 ## Core options (`init.lua` top level and tables)
 
 ### `font`
