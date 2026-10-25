@@ -314,7 +314,8 @@ provides two distinct extension tiers:
 1. **L1 Rust Core Extensions**: Standalone first-party Rust repositories providing
    optional, host-side system capabilities without polluting the Core crate graph:
    - `bitty-ipc`: Generic out-of-process IPC bridge (`bitty-ipc-api`, `ipc-auth`,
-     `ipc-core`, `ipc-devtools`, `ipc-mcp`), default-off.
+     `ipc-core`, `ipc-devtools`), default-off; the MCP protocol implementation
+     lives in `bitty-ai`, not in this extension.
    - `bitty-network`: Shared optional networking runtime (`bitty-network-api`,
      `bitty-network`), default-off, network-free Core baseline.
    - `bitty-agent`: AI agent protocol layer (`bitty-agent-api`, `bitty-agent`),
