@@ -13,12 +13,12 @@ sidebar_order: 10
 
 Reference documentation will describe verified, versioned product contracts in
 a factual and lookup-oriented form. An experimental implementation exists and
-pre-alpha releases exist (latest `v0.0.20`), but no stable or supported public
-contract is claimed yet: no CLI, configuration key, Lua API, plugin API, or
-protocol reference is verified, `Compatible`, or `Release-ready`. The
-[terminal compatibility matrix](compatibility-matrix.md) is the first draft
-reference page: it records per-scenario evidence status rather than promising
-stable behavior.
+pre-alpha releases exist (latest `v0.0.29`, released 2026-10-26), but no
+stable or supported public contract is claimed yet: no CLI, configuration key,
+Lua API, plugin API, or protocol reference is verified, `Compatible`, or
+`Release-ready`. The [terminal compatibility matrix](compatibility-matrix.md)
+is the first draft reference page: it records per-scenario evidence status
+rather than promising stable behavior.
 
 ## Planned reference sets
 
