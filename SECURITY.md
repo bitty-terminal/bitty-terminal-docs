@@ -2,9 +2,10 @@
 
 ## Supported Versions
 
-Pre-alpha releases exist (latest `v0.0.20`), but no release is stable,
-`Verified`, `Compatible`, or supported. Normative requirements in this policy
-are `Accepted` contract, not shipped product behavior.
+Pre-alpha releases exist (latest `v0.0.29`, released 2026-10-26), but no
+release is stable, `Verified`, `Compatible`, or supported. Normative
+requirements in this policy are `Accepted` contract, not shipped product
+behavior.
 
 | Version   | Supported |
 | --------- | --------- |

@@ -13,9 +13,10 @@ sidebar_order: 10
 
 There is no supported installation, stable command set, or verified daily-use
 workflow yet. Experimental code and pre-alpha releases exist (latest
-`v0.0.20`), but no Stable, `Compatible`, or `Release-ready` interface is
-claimed. This section is a maintained plan for future user documentation, not
-a preview of commands that users can run today.
+`v0.0.29`, released 2026-10-26), but no Stable, `Compatible`, or
+`Release-ready` interface is claimed. This section is a maintained plan for
+future user documentation, not a preview of commands that users can run
+today.
 
 ## Planned sections
 

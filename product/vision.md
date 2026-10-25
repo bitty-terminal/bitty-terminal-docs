@@ -17,8 +17,9 @@ sidebar_order: 10
   releases exist, but no stable or supported product contract is claimed
 - Implementation status: no stable, supported, or user-ready product is
   claimed; foundation and headless implementation evidence exists and
-  pre-alpha releases exist (latest `v0.0.20`), but this document does not claim
-  that any capability is stable, `Compatible`, or independently verified
+  pre-alpha releases exist (latest `v0.0.29`, released 2026-10-26), but this
+  document does not claim that any capability is stable, `Compatible`, or
+  independently verified
 - Source: the [first eight rounds of discussion between the project initiator and
   the architecture advisor](https://chatgpt.com/share/6a8d7652-9de0-83e9-9a6b-bdc54ff2f7d6),
   reorganized into a maintainable form
@@ -69,10 +70,10 @@ unused terminal. Platform interfaces should remain capability-specific instead
 of becoming a single God abstraction.
 
 The project is currently **Pre-alpha / M1 Hardening**. Existing architecture,
-headless test evidence, and pre-alpha releases (latest `v0.0.20`) record design
-and implementation progress; they are not proof of a stable, `Compatible`, or
-independently verified terminal product. After the design
-gates, priority should transition from architecture-first toward
+headless test evidence, and pre-alpha releases (latest `v0.0.29`, released
+2026-10-26) record design and implementation progress; they are not proof of a
+stable, `Compatible`, or independently verified terminal product. After the
+design gates, priority should transition from architecture-first toward
 dogfooding-first. The working sequence is: Terminal Truth (PTY, VT, and state);
 real renderer, fonts, input, and IME; a usable shell/nvim/tmux terminal;
 View/Layout/Panel; Plugin API dogfood; then Rich, IPC, Agent, browser, and the

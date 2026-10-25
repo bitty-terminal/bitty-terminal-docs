@@ -1,6 +1,6 @@
 ---
 title: Release Ladder
-description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (18 crates 310bf87, 54 OQs Accepted, release v0.0.21) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
+description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (the 2026-10-02 snapshot with 18 crates, synchronized revision 310bf87, 54 OQs Accepted, release v0.0.21) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
 category: product
 audience: maintainer
 document_type: overview
@@ -202,7 +202,9 @@ row in this ladder claims `Verified`, `Compatible`, or `Release-ready`.
   `metadata` + `language` + `agents` + `hygiene` + `svg` + `actionlint`; the
   repository `justfile` has no `state` recipe), `act -n`
   DRYRUN success for the Docs quality `ci.yml` workflow.
-- `cargo check --workspace --all-targets --locked` and
+- Snapshot evidence at the dated `2026-10-02` synchronized `bitty` snapshot
+  (`310bf87`):
+  `cargo check --workspace --all-targets --locked` and
   `cargo check --target x86_64-pc-windows-gnu` pass at the synchronized
   `bitty` revision per that repository's CI (merge gates green through
   `679f12f`; the synchronized head `310bf87` carries only post-`679f12f`
