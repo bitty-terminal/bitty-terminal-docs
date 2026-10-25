@@ -505,6 +505,11 @@ First-class presets (Core issue #2371, 0.0.25):
 - Every other valid name keeps the wizard flow (or `--yes` generated
   defaults) and still writes only `profiles/NAME.lua`.
 
+**Current generated output (after the 0.0.25 preset record):** Current
+`--profile minimal` output writes a nested
+`appearance.theme` key, with the shipped defaults supplying every other value.
+This current output note is separate from the historical 0.0.25 preset record above.
+
 A conflict (an existing target profile or selector) fails closed with exit 2
 and writes nothing. `--force` is the explicit reset: the previous bytes go to
 a collision-free `<file>.bak[.N]` sibling (exclusive creation, synced) before
