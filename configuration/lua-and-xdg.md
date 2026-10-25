@@ -833,9 +833,14 @@ return {
 ```
 
 Per-plugin user files (Core2192, `bitty` #2057): the bar plugin declares
-its settings (`show`, `edge`, `show_single`, `name_max_chars`, plus a
-`modules` string array defaulting to `{"workspaces", "clock"}`) in its
-manifest `[settings]`, and a user file at
+`show`, `edge`, `show_single`, `name_max_chars`, `label`, `icons`, and the
+Waybar-style module groups `modules_left`, `modules_center`, and
+`modules_right` in its manifest `[settings]`. Their shipped defaults are
+`label = "index"`, `icons = "ascii"`, `modules_left = { "workspaces" }`,
+`modules_center = { "clock" }`, and `modules_right = { "network", "cpu",
+"memory", "battery" }`. The module groups are true left, center, and right
+anchors; provider-backed modules hide fail closed when their provider is
+absent or ungranted. A user file at
 `<config-dir>/plugins/<owner>.<name>.lua` overrides the shipped defaults
 through the same source that serves `bitty.settings.get`; legacy TOML is only
 the compatibility fallback. Values are the user's, authority is the system's:
