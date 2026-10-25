@@ -30,6 +30,57 @@ sidebar_order: 62
 > [DIR-030](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)
 > direction, not a crate.
 
+## Successor-owner pointers
+
+This section records ownership, not content. It decides no limit, timeout,
+error code, or lifecycle state machine, and it repeats no value from the owner
+documents.
+
+- **Network safety limits (CC-02 through CC-06).** Destination
+  re-authorization for every redirect hop and the sensitive-header policy,
+  the HTTP transfer budget, WebSocket frame, message, and aggregate
+  ceilings, the single operation deadline that covers DNS, connect, TLS,
+  proxy, send, receive, and close, HTTPS proxy behavior (typed rejection
+  versus authenticated TLS, trust roots, hostname verification, and no
+  plaintext fallback), the CONNECT, DNS, and subprotocol profile, and
+  diagnostic-field safety under
+  [P0-AC-026](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md)
+  are owned by the successor network specification in the
+  [bitty-network repository](https://github.com/bitty-terminal/bitty-network)
+  and are not decided in `bitty-terminal-docs`. That specification does not
+  exist yet: this page stays a `draft` candidate, and its
+  built-versus-not-built record is a dated snapshot, not a limit contract.
+  This candidate therefore states no number, ceiling, deadline, or error
+  taxonomy for any of them.
+- **Plugin suspend/resume transaction semantics (CC-07).** Whether a failed
+  suspend or resume leaves the prior coherent state intact, which service
+  visibility and dispatch authority survive the transition, and whether
+  command dispatch from `Suspended` is denied are owned by the
+  [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/plugin-host-runtime-rfc.md)
+  in `bitty-plugins-docs`; that lifecycle question stays open there.
+- **Panel suspend/resume is already decided.** Panel suspend and resume are
+  Core-owned in the accepted [Panel Runtime RFC](panel-runtime-rfc.md):
+  `PanelRuntime` owns panel creation, mount, suspend, resume, and disposal,
+  and `FS-P1` makes a refused capability, budget, or scope transactional
+  with no partial state. Only the plugin lifecycle stays open; this page
+  neither restates nor reopens the panel rule.
+
+### Cross-repository traceability
+
+`decided` means an accepted owner document answers the row; `open` means no
+owner document answers it yet. Ownership is exclusive: this page carries the
+pointer and none of the value.
+
+| Row   | Subject                                                                                                                | Owner document                                                                                                                                                                                        | State   |
+| ----- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| CC-01 | Plugin manifest, capability, and compatibility-range grammar authority                                                 | [Plugin Manifest and Capability Grammar Authority](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/manifest-capability-authority.md) (`Accepted`, `bitty-plugins-docs`) | decided |
+| CC-02 | Redirect authorization, HTTP transfer budget, WebSocket ceilings, operation-deadline scope, and `https` proxy behavior | Successor network safety specification in the [bitty-network repository](https://github.com/bitty-terminal/bitty-network) (`not written`); no limit is recorded here                                  | open    |
+| CC-03 | CONNECT, DNS, and subprotocol profile; diagnostic-field safety under P0-AC-026                                         | Successor network safety specification in the [bitty-network repository](https://github.com/bitty-terminal/bitty-network) (`not written`)                                                             | open    |
+| CC-04 | HTTP destination and response-body bound implementation                                                                | `bitty-network` crates, gated on the CC-02 specification                                                                                                                                              | open    |
+| CC-05 | WebSocket safety and lifecycle bound implementation                                                                    | `bitty-network` crates, gated on the CC-02 specification                                                                                                                                              | open    |
+| CC-06 | Network protocol and diagnostic hardening implementation                                                               | `bitty-network` crates, gated on the CC-02 and CC-03 specifications                                                                                                                                   | open    |
+| CC-07 | Plugin suspend/resume transaction semantics                                                                            | [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/plugin-host-runtime-rfc.md) (`Accepted`; lifecycle question open)                                    | open    |
+
 ## Purpose and scope
 
 Bitty core ships network-free today, and several future consumers each
