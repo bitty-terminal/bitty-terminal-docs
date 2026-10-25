@@ -25,21 +25,19 @@ imperative module-setup model like Neovim.
 - The Lua script does not directly mutate host state or invoke imperative setup functions (such as `require("bitty").setup(...)`). Instead, the host compiles the returned table into an immutable `ConfigPlan` that is merged across layers (`CLI > file > profile > defaults`) before the renderer and terminal runtime initialize.
 - For detailed architecture, see [Configuration model RFC](specifications/configuration-model-rfc.md) and [Lua and XDG configuration](configuration/lua-and-xdg.md).
 
-### Why does calling `os.getenv` fail with `E_ENV_DENIED`?
+### Why does calling `os.getenv` fail?
 
-Bitty enforces Zero Ambient Authority (ZAA). Physical stripping of `os.getenv`
-and `os.setenv` prevents malicious project trees or third-party code from
-exfiltrating credentials (such as `AWS_SECRET_ACCESS_KEY` or `GITHUB_TOKEN`).
+Bitty enforces Zero Ambient Authority (ZAA), so untrusted project trees or
+third-party code cannot exfiltrate credentials (such as `AWS_SECRET_ACCESS_KEY`
+or `GITHUB_TOKEN`) by reading the ambient environment.
 
-- If user code or a plugin attempts to call `os.getenv`, Bitty raises a typed runtime error: `E_ENV_DENIED`.
-- To safely read environment variables, use the host-mediated bridge:
-
-  ```lua
-  local editor = bitty.env.get("EDITOR")
-  local has_profile = bitty.env.has("BITTY_PROFILE")
-  ```
-
-- In the configuration VM, the host resolves keys against an allowlist of standard variables (`EDITOR`, `SHELL`, `TERM`, `BITTY_PROFILE`, `BITTY_THEME`, `XDG_CONFIG_HOME`). Sensitive tokens are filtered and return `nil`. In plugin VMs, keys additionally require manifest capability declarations (`env:<KEY>`).
+- The configuration VM installs pure-computation libraries only. `os`, `io`,
+  `require`, `debug`, and every host callback are absent, so configuration code
+  has no environment access at all.
+- Plugin Lua has no `os.getenv` either. It can read a host variable only
+  through the `env.read:<KEY>` manifest capability: with that grant,
+  `bitty.env.get` / `bitty.env.has` return the value or its presence, and every
+  other key fails closed.
 
 ### Why do `export` or `set -x` in a terminal tab not affect Bitty?
 
@@ -66,16 +64,18 @@ Bitty follows the XDG Base Directory specification on Linux, and standard platfo
 
 ### Can I change these paths using environment variables or CLI flags?
 
-Yes. Bitty provides explicit environment variables and CLI flags to override platform default paths:
+Only the configuration file location has dedicated overrides; the other roles
+are derived from the platform roots:
 
-- **CLI flags**:
-  - `--config <path>`: Specifies an explicit configuration file, bypassing default search paths.
-  - `--config-dir <dir>`: Sets the configuration directory for multi-file configurations.
+- **CLI flag**:
+  - `--config <path>`: Specifies an explicit configuration file, bypassing the default search paths.
+  - There is no `--config-dir` flag; an unknown flag exits with status 2.
 - **Environment variables**:
   - `BITTY_CONFIG`: Sets an explicit path to the configuration file.
-  - `BITTY_CONFIG_DIR`: Overrides the base configuration directory.
-  - `BITTY_DATA_DIR`: Overrides the persistent data directory (plugins, themes, session state).
-  - `BITTY_LOG_DIR`: Overrides the directory where diagnostic logs are written.
+  - `BITTY_CONFIG_DIR`, `BITTY_DATA_DIR`, and `BITTY_LOG_DIR` are not read.
+- **Data and state roots** come from `$XDG_DATA_HOME` and `$XDG_STATE_HOME`,
+  defaulting to `~/.local/share` and `~/.local/state`; they have no dedicated
+  override variables.
 - **Evaluation precedence**:
   1. CLI arguments (`--config`)
   2. Direct environment overrides (`BITTY_CONFIG`)
