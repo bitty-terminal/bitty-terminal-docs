@@ -359,10 +359,10 @@ Agent tooling. Permissions for MCP, Agents, and DevTools follow the
 
 Status: `Implemented` mechanism record, not an accepted contract change.
 The five services below were prototyped in Phase A and now reside in the
-independent `bitty-ipc` extension repository (under `bitty-ipc-core`,
-`bitty-ipc-devtools`, and `bitty-ipc-mcp`); the reconciliation note is a draft
-design record in `bitty`. Wire and bridge publication plus live Runtime wiring
-are sequel work and are not claimed here. Accepted ownership tables in
+independent `bitty-ipc` extension repository (under `bitty-ipc-core` and
+`bitty-ipc-devtools`); the reconciliation note is a draft design record in
+`bitty`. Wire and bridge publication plus live Runtime wiring are sequel work
+and are not claimed here. Accepted ownership tables in
 [Core and Plugin Boundaries](core-boundaries.md) are unchanged.
 
 Direction:
