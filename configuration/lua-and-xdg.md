@@ -1008,7 +1008,9 @@ valid set (CTX-0951, `bitty` #1687; closes
 
 ## Shipped keymaps and Mod key
 
-Status: **shipped defaults** (read-only from `bitty` `origin/main`, CTX-0236,
+Status: **shipped defaults** (read-only from `bitty` `origin/main` at
+`7d98f53`, `crates/bitty-config/src/keymap.rs` and `crates/bitty-config/src/file.rs`,
+with the historical CTX-0236,
 CTX-0257, CTX-0258, CTX-0259, CTX-0262, CTX-0263, CTX-0264, CTX-0265, CTX-0962,
 CTX-0963; merged
 to `bitty` origin `main` at commits `2a5e451`, `227ca3a`, `6e662a2`,
@@ -1034,6 +1036,7 @@ return {
     input = { leader = "ctrl+b", timeout_len = 1000 }, -- canonical leader surface (bitty#1650): wins over legacy keys when both are present
     close_confirm = "when_busy", -- "always" | "when_busy" (default) | "never"
     layout = { resize_step = 0.05 }, -- tiled resize delta per keypress, 0.01..=0.20, fail-closed, live (CTX-0963)
+    mouse = { right = "none", middle = "paste_from_primary" }, -- button actions; RestartRequired
     keymaps = {
         { chord = "alt+h", action = "goto_split:left", context = "global" },
         { chord = "alt+a", action = "toggle_floating", context = "global" },
@@ -1048,8 +1051,15 @@ return {
   keep their exact spelling and overlay by `context + chord` identity.
 - `keymaps` is set-by-identifier: a user entry with the same `context + chord`
   replaces the shipped entry, anything else appends. The shipped set is
-  94 entries, all context `global`; unknown chords, actions, or contexts
-  fail closed, and single-character keys require at least one modifier.
+  97 entries, all context `global` (Core `DEFAULT_KEYMAPS` at `7d98f53`);
+  unknown chords, actions, or contexts fail closed, and single-character keys
+  require at least one modifier.
+- `mouse.right` and `mouse.middle` are current shipped fields using the same
+  action vocabulary as `keymaps[].action`. Their defaults are respectively
+  `"none"` (inert right-click) and `"paste_from_primary"` (middle-click
+  paste from the primary selection); each may be explicitly set to `"none"`
+  or another supported chrome action. Both are `RestartRequired`; see the
+  [reload classification inventory](#reload-classification-shipped-schema-inventory).
 - `layout.resize_step` is the tiled resize granularity (CTX-0963, `bitty`
   #1697): `0.05` default, `0.01..=0.20` split-ratio delta per
   `resize_split` keypress, fail-closed (NaN, infinite, and out-of-range
@@ -1190,9 +1200,9 @@ return {
 ## Reload classification (shipped schema inventory)
 
 Status: **implementation reference** read-only from `bitty` `origin/main` at
-`828a787` (verified read-only via `merge-base --is-ancestor`; the
+`7d98f53` (verified read-only via `merge-base --is-ancestor`; the
 `appearance.colors`, `leader_key`, `leader_timeout_ms`, and `close_confirm`
-rows below are read-only from `origin/main` at `c64dd1e`, same verification).
+rows below are included in that current revision).
 The accepted
 framework is the
 [Configuration Model RFC](../specifications/configuration-model-rfc.md)
@@ -1234,7 +1244,8 @@ Shipped leaf inventory:
 | `layout.resize_step`                                                                         | live     | built-in default     |
 | `scrollbar.mode`, `scrollbar.width`                                                          | restart  | built-in default     |
 | `mouse.focus_follows_mouse`, `mouse.focus_follows_mouse_delay_ms`                            | restart  | built-in default     |
-| `mouse.right`, `mouse.middle`                                                                | restart  | built-in default     |
+| `mouse.right`                                                                                | restart  | `none`               |
+| `mouse.middle`                                                                               | restart  | `paste_from_primary` |
 | `plugins[].id`, `plugins[].enabled`                                                          | restart  | built-in default     |
 | unknown or undeclared key                                                                    | rejected | n/a                  |
 
