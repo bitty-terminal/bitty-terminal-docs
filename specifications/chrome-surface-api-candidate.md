@@ -111,7 +111,35 @@ else in this record is implemented.
 - `bitty.ui.mount(slot, tree)` and `bitty.ui.update(handle, tree)` exist behind
   `ui.rich`, with the closed slot set, the `Text`/`Row`/`Column`/`List` nodes,
   and the limits `UI_MAX_DEPTH = 16`, `UI_MAX_NODES = 2048`, and
-  `UI_MAX_TEXT_BYTES = 256 KiB` (`bitty@da63e42e`).
+  `UI_MAX_TEXT_BYTES = 256 KiB` (`bitty@7d98f53a`). The accepted scene budgets
+  are enforced per plugin generation as a strict subset: 64 retained blocks and
+  a 2 MiB retained-string aggregate per generation (`SCN-4`/`SCN-5` numbers,
+  with the aggregate charging every host-retained string, CTX-1340); the
+  terminal-wide aggregation across plugins and the per-band per-frame render
+  cap are not implemented and stay deferred.
+- Band/overlay style parity (CTX-1419, bitty PR #2385 `cd6b0724`): the
+  `overlay` surface accepts the same style vocabulary as a band and paints
+  `fg`/`bg`/`bold` per flattened run through the same closed host token table
+  (`foreground`, `background`, `cursor`, `selection`, `accent`, plus the same
+  synthetic bold double-strike and unknown-token fallback with a host
+  diagnostic count). An unstyled overlay row keeps the pre-parity single-pill
+  paint path byte-for-byte. Bitty PR #2392 `c816b00e` keeps the one-cell
+  default pill on an empty styled row (so a capture-bearing overlay never
+  paints nothing) and carries an overlay `Column`/`List` root's own style
+  declaration down to its rows. The parity matrix is
+  `crates/bitty-runtime/tests/lua_ui_parity.rs` plus the overlay paint tests
+  in `present.rs`; component shape, style fields, bindings, and regions are
+  validated typed (`E_UI_COMPONENT_INVALID`) in the bridge before any host
+  call. The candidate token vocabulary is not promoted: token resolution
+  still waits on the Theme Token Contract.
+- Band-only interaction routing (CTX-1419): declared `on_click`/`on_scroll`
+  bindings and per-item `region` identities dispatch only from band surfaces.
+  Overlay scene bindings are retained but not routed; overlay interaction is
+  the separately gated `ui.overlay.focus` capture path, and overlay pointer
+  routing stays an open point. Chrome gestures route declared args only —
+  never focus, layout, or selection changes — and the input path is pure data
+  with no plugin VM (`bitty` PRs #2385/#2392, CTX-1419,
+  `crates/bitty-runtime/tests/lua_ui_parity.rs`).
 - `top` and `bottom` mounts are retained and painted as edge bands. `overlay`
   mounts are retained by the Core focusable-overlay host and are not edge
   bands (CTX-0941).
@@ -127,7 +155,12 @@ else in this record is implemented.
   with `E_UI_COMPONENT_INVALID`, and status presentation is a `bottom`-band
   composition (bar replacement). The accepted Lua Surface RFC still lists
   `statusline` in its frozen v1 vocabulary, so that accepted text and this
-  implementation fact diverge until the RFC is revised.
+  implementation fact diverge until the RFC is revised. The revision goes
+  through the owner amendment process tracked as
+  [bitty#2676](https://github.com/bitty-terminal/bitty/issues/2676); this
+  record does not rewrite the accepted source, and the API-design track
+  (CTX-1299) and the release-scope track (CTX-1305) stay open under their own
+  tasks while CTX-1419 is the completed implementation evidence.
 - No Lua workspace read API and no workspace events exist.
 - A Core pill renderer with `workspace.bar.colors` and `workspace.bar.pill_align`
   was attempted and not merged; it is dropped by this record.
@@ -138,6 +171,31 @@ else in this record is implemented.
   lines, positive for wheel-up), overwriting a declared entry of the same
   name. Parse reserves one arg slot for the injected delta so dispatch can
   never exceed `UI_CLICK_MAX_ARGS`.
+
+### Current host versus candidate delta
+
+The following distinctions keep the candidate rules below from being read as
+claims about the pinned current host (`bitty@7d98f53a`, with UI parity evidence
+from PR #2385 `cd6b0724` and PR #2392 `c816b00e`):
+
+- **Token behavior:** the current resolver accepts exactly five host tokens —
+  `foreground`, `background`, `cursor`, `selection`, and `accent`. A
+  syntactically valid but unknown token falls back to the span default and
+  increments the host diagnostic counter. The candidate rule below still
+  proposes rejection; candidate token namespaces such as `surface.*` and
+  `chrome.*` are not guaranteed by the current host.
+- **Tree layout:** current horizontal band flattening concatenates `Column` and
+  `List` descendants into one row, while an overlay `Column` or `List` stacks
+  its direct children as overlay rows. Neither behavior is evidence for the
+  candidate surface geometry or for headed capsules.
+- **Surface and frame budgets:** the candidate one-surface-per-edge rule and
+  per-band, per-frame node cap are not enforced. The current host keeps
+  multiple mounts from one plugin on an edge and enforces the scene block and
+  retained-string limits per plugin generation; terminal-wide `SCN-4`/`SCN-5`
+  aggregation is deferred.
+- **Interaction:** current click, scroll, and region routing is band-only.
+  Overlay scene-node bindings are retained data, not overlay pointer
+  hit-testing or routing.
 
 ## L0 Surfaces
 
@@ -186,6 +244,12 @@ else in this record is implemented.
    limits (`UI_MAX_DEPTH`, `UI_MAX_NODES`, `UI_MAX_TEXT_BYTES`) apply at mount
    time, and the per-band per-frame cap `BAND_MAX_NODES_PER_FRAME` from the
    Chrome Band Contract applies at render time across all surfaces on a band.
+   _Current host note (CTX-1419, bitty PRs #2385/#2392, `bitty@7d98f53a`):_
+   `BAND_MAX_NODES_PER_FRAME` is not implemented; the host enforces the
+   accepted scene budgets per plugin generation instead (64 blocks and a
+   2 MiB retained-string aggregate per generation, the `SCN-4`/`SCN-5`
+   numbers, with the aggregate charging every host-retained string).
+   Terminal-wide aggregation stays deferred.
 2. Nodes beyond the cap are not laid out for that frame; the band draws a
    truncation marker at the overflow point and records a diagnostic naming the
    plugin. The frame still presents; one plugin's overflow truncates only its
@@ -197,10 +261,21 @@ else in this record is implemented.
 1. `UiNode` gains optional style attributes: `fg`, `bg` (theme token names),
    and `bold` (Boolean). Token names resolve through the
    [Theme Token Contract](theme-token-contract-candidate.md); raw colors are not
-   accepted.
+   accepted. This remains candidate behavior: the current host uses the
+   five-token resolver and falls back with a diagnostic for unknown names.
 2. Validation fails closed: an unknown token name, a wrong type, or an
    unknown attribute rejects the mount or update with a source-attributed
    error; nothing renders with a guessed style.
+   _Current host note (CTX-1419, bitty PRs #2385 `cd6b0724` and #2392
+   `c816b00e`, `bitty@7d98f53a`):_ wrong types, unknown attributes, and
+   malformed shapes already reject typed (`E_UI_COMPONENT_INVALID`) before
+   any host call; the host resolves the closed token table `foreground`,
+   `background`, `cursor`, `selection`, `accent`, paints `bold` with the
+   synthetic double-strike, and falls back to the span default for another
+   well-formed token name with a host diagnostic count. Fail-closed
+   rejection of unknown token names stays deferred to the Theme Token
+   Contract and is not promoted by this record. Bands and the overlay
+   surface paint the same style vocabulary (style parity).
 
 ### Click bindings
 
@@ -537,6 +612,11 @@ bounds; this record fixes only the shape.
 - Attention flag sources and bounds.
 - Pointer events beyond primary click (hover, secondary click, drag source)
   and their accessibility roles.
+- Overlay scene-node pointer routing (kept deferred by CTX-1419): declared
+  `on_click`/`on_scroll`/`region` on the `overlay` surface are retained and
+  not routed until an accepted overlay hit-test/geometry contract exists;
+  overlay interaction is the separately gated `ui.overlay.focus` capture
+  path, and this record promotes no such routing.
 - Whether drag-to-bar (PW-8) needs a drop-target binding on nodes in addition
   to `on_click`.
 
@@ -577,3 +657,11 @@ acceptance requires owner and security-reviewer sign-off recorded here.
   — `bitty.ui.mount` and the closed slot set.
 - [bitty#1431](https://github.com/bitty-terminal/bitty/issues/1431) — workspace
   bar occludes terminal content.
+- [bitty#2191](https://github.com/bitty-terminal/bitty/issues/2191) — the Lua
+  UI parity reconciliation source; the implementation evidence this record's
+  current-state section pins is
+  [bitty#2385](https://github.com/bitty-terminal/bitty/pull/2385)
+  (`cd6b0724`) and
+  [bitty#2392](https://github.com/bitty-terminal/bitty/pull/2392)
+  (`c816b00e`), CTX-1419. The accepted Lua Surface RFC amendment runs
+  separately ([bitty#2676](https://github.com/bitty-terminal/bitty/issues/2676)).

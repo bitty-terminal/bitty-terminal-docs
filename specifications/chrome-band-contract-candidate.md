@@ -225,6 +225,13 @@ usable = container inset by gaps_out and the accepted decoration insets,
    `BAND_MAX_NODES_PER_FRAME`). Nodes beyond the cap are not laid out for that
    frame, the band renders a truncation marker, and a diagnostic is recorded;
    the frame still presents.
+   _Current host note (CTX-1419, bitty PRs #2385 `cd6b0724` and #2392
+   `c816b00e`, `bitty@7d98f53a`):_ the per-frame cap is not implemented. The
+   host enforces the accepted scene budgets per plugin generation instead —
+   64 retained blocks and a 2 MiB retained-string aggregate per generation
+   (the `SCN-4`/`SCN-5` numbers, with the aggregate charging every
+   host-retained string); terminal-wide aggregation stays deferred, and this
+   record does not promote it.
 3. `tabline` stays an exclusive claim reserved for future panel tabs (PW-10).
    It is not a band region and does not host workspace pills.
 4. A mount never supplies coordinates, thickness, or edge; host layout owns
@@ -278,6 +285,14 @@ usable = container inset by gaps_out and the accepted decoration insets,
    (generation, mount handle, slot, version, edge, row), so a reflow,
    remount, or replacement version refuses a stale region before dispatch.
    Neither emission nor hit-testing enters a plugin VM.
+9. **Overlay scene nodes are not band interactions** (kept deferred by
+   CTX-1419, bitty PRs #2385 `cd6b0724` and #2392 `c816b00e`,
+   `bitty@7d98f53a`): bindings mounted in the focusable `overlay` slot are
+   accepted and retained but route no pointer events, because no accepted
+   overlay hit-test/geometry contract exists. Overlay interaction is the
+   separately gated `ui.overlay.focus` capture path; band click/scroll/region
+   routing stays band-only, and this record does not promote overlay
+   routing.
 
 ### Wheel scroll routing
 
@@ -400,6 +415,9 @@ influence band thickness or edge.
 - Lua event names and payloads for band click and drop (OQ-056).
 - Pill attention-state sources and their bound (bell, activity, exit status).
 - Accessibility roles and announcements for pills (accessibility baseline).
+- Overlay scene-node pointer routing for declared bindings (kept deferred;
+  the implemented boundary is band-only routing, bitty#2191 PRs #2385/#2392,
+  CTX-1419).
 
 ## Acceptance criteria
 
