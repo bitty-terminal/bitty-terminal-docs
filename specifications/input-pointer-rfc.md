@@ -582,10 +582,13 @@ line counts.
 - Auto-scroll is presentation-only (viewport + selection range update), not
   PTY input. It stops immediately on button release or pointer leaving the
   edge band. The rate is bounded and attributable per View.
-- As of 0.0.27 this candidate is **not** implemented: a selection drag that
-  leaves the owner clamps to the edge cell without scrolling. See the
-  [pointer selection evidence](#pointer-shapes-and-caret-selection-implementation-evidence);
-  `bitty` #2470 remains the tracking issue.
+- Bounded pointer-edge selection auto-scroll is now implemented-only evidence in
+  Core; this does not accept the candidate contract or make this RFC
+  `Accepted`/`Verified`. See the
+  [pointer selection evidence](#pointer-shapes-and-caret-selection-implementation-evidence)
+  and `bitty` PR #2569 (CTX-1476, closes #2470). The threshold, cadence, and
+  acceleration values above remain candidate text rather than an accepted
+  contract.
 
 ## Pinch and swipe gestures (candidate)
 
@@ -856,8 +859,9 @@ Status: **experimental implementation evidence.** This subsection records
 shipped `bitty` behavior from PR
 [#2506](https://github.com/bitty-terminal/bitty/pull/2506) (squash `10b8cc91`,
 2026-10-23), addressing `bitty` #2480, #2470, and #2523. The pointer-edge
-auto-scroll part of #2470 remains a follow-up. This subsection does not accept
-the candidate sections above and claims no `Verified` or `Compatible` status.
+auto-scroll part of #2470 is now recorded below as implemented-only evidence
+from PR #2569 (CTX-1476, closes #2470). This subsection does not accept the
+candidate sections above and claims no `Verified` or `Compatible` status.
 
 Pointer shape precedence (`sync_cursor_icon` in
 `crates/bitty-terminal/src/terminal_app.rs`):
