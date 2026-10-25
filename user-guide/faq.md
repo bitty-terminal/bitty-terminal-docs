@@ -36,21 +36,19 @@ imperative module-setup model like Neovim.
 
 - The Lua script does not directly mutate host state or invoke imperative setup functions (such as `require("bitty").setup(...)`). Instead, the host compiles the returned table into an immutable `ConfigPlan` that is merged across layers (`CLI > file > profile > defaults`) before the renderer and terminal runtime initialize.
 
-### Why does calling `os.getenv` fail with `E_ENV_DENIED`?
+### Why does calling `os.getenv` fail?
 
-Bitty enforces Zero Ambient Authority (ZAA). Physical stripping of `os.getenv`
-and `os.setenv` prevents malicious project trees or third-party code from
-exfiltrating credentials (such as `AWS_SECRET_ACCESS_KEY` or `GITHUB_TOKEN`).
+Bitty enforces Zero Ambient Authority (ZAA), so untrusted project trees or
+third-party code cannot exfiltrate credentials (such as `AWS_SECRET_ACCESS_KEY`
+or `GITHUB_TOKEN`) by reading the ambient environment.
 
-- If user code or a plugin attempts to call `os.getenv`, Bitty raises a typed runtime error: `E_ENV_DENIED`.
-- To safely read environment variables, use the host-mediated bridge:
-
-  ```lua
-  local editor = bitty.env.get("EDITOR")
-  local has_profile = bitty.env.has("BITTY_PROFILE")
-  ```
-
-- In the configuration VM, the host resolves keys against an allowlist of standard variables (`EDITOR`, `SHELL`, `TERM`, `BITTY_PROFILE`, `BITTY_THEME`, `XDG_CONFIG_HOME`). Sensitive tokens are filtered and return `nil`. In plugin VMs, keys additionally require manifest capability declarations (`env:<KEY>`).
+- The configuration VM installs pure-computation libraries only. `os`, `io`,
+  `require`, `debug`, and every host callback are absent, so configuration code
+  has no environment access at all.
+- Plugin Lua has no `os.getenv` either. It can read a host variable only
+  through the `env.read:<KEY>` manifest capability: with that grant,
+  `bitty.env.get` / `bitty.env.has` return the value or its presence, and every
+  other key fails closed.
 
 ### Why do `export` or `set -x` in a terminal tab not affect Bitty?
 
@@ -61,7 +59,7 @@ child process connected via a pseudo-terminal (PTY) pair.
 1. **Process isolation:** Running `export FOO=bar` in Bash/Zsh or `set -x FOO bar` in Fish mutates only that child shell's private environment table.
 2. **Immutable VM snapshot:** Bitty captures allowed environment variables once at VM creation. Mid-session environment changes do not retroactively alter running Lua VMs.
 3. **Security:** Preventing child PTYs from rewriting terminal emulator variables eliminates Confused Deputy attacks where untrusted scripts attempt to take over the terminal harness.
-4. **Dynamic control:** To change terminal appearance or behavior from scripts, use the authenticated IPC interface (`bitty ctl theme set <name>`).
+4. **Explicit selection:** Set the `theme` key in `init.lua` (or pass `--theme <name>`) and enumerate the available themes with `bitty list themes`. `bitty ctl` controls runtime resources such as views, terminals, workspaces, and config reload; it has no theme command.
 
 ## Filesystem and cross-platform paths
 
@@ -93,6 +91,10 @@ Yes. Bitty checks paths in strict precedence order:
 
 If `--config` or `BITTY_CONFIG` is explicitly specified but the file does not
 exist, Bitty fails closed with exit code 2 rather than falling back.
+
+There is no `--config-dir` flag, and no `BITTY_CONFIG_DIR`, `BITTY_DATA_DIR`, or
+`BITTY_LOG_DIR` variables. Data and state directories come from
+`$XDG_DATA_HOME` and `$XDG_STATE_HOME` (`~/.local/share` and `~/.local/state`).
 
 Other dedicated override variables include:
 
