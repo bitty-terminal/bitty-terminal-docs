@@ -407,7 +407,7 @@ CTX-0292) predates this amendment and shipped the `4/6/2/6` defaults; the
 ## Shipped slice (implementation evidence)
 
 Status: **experimental implementation evidence.** The single-window slice in
-`bitty` `origin/main` (`1f31435`, verified read-only via
+`bitty` `origin/main` (`7d98f53`, verified read-only via
 `merge-base --is-ancestor`) implements a bounded subset of this accepted
 contract. It does not promote this specification beyond `Accepted`, does not
 close its open items, and does not claim `Verified`/`Compatible`; the full
@@ -602,6 +602,18 @@ What merged, exactly:
     `appearance.animations`. Layout commits immediately; only Core-owned
     chrome ring fades. Reduced-motion, safe-mode, and disabled suppress
     all three; zero-wakeup-when-idle preserved.
+    Current `origin/main` also demonstrates the workspace-switch boundary:
+    switching stashes the outgoing slot, loads the destination layout and
+    focus, and immediately synchronizes the destination leaf frames, terminal
+    grids, and PTY winsizes before the optional `AnimationKind::Workspace`
+    transition is observed (`bitty` #2639 `6e810e49`). The transition is
+    presentation-only: `present_frames` remains the committed source for
+    input and hit testing, while `paint_frames_at` may only paint the optional
+    chrome effect. Instant, reduced-motion, safe-mode, and disabled policies
+    therefore present the same committed destination state without an active
+    animation. Evidence: `crates/bitty-runtime/src/runtime/workspaces.rs`,
+    `crates/bitty-runtime/src/runtime/layout_focus.rs`, and
+    `crates/bitty-runtime/tests/panel_animations.rs`.
 14. **Detached-float scroll routing** (`bitty` #2139, PR #2151,
     `8eafcb84`): wheel, page, and keyboard scroll lookup includes detached
     and pinned views, so a focused float receives viewport and selection-offset
@@ -626,25 +638,29 @@ What merged, exactly:
     the `discard_floated`, `discard_pinned`, and window-count regression suite.
 18. **Balanced adaptive new-panel policy** (`bitty` PR #2538 `4b740cfe`,
     issues #2521/#2528; `PanelSplitPlan`): `PanelLayoutMode::Balanced` is the
-    0.0.27 default for `NewPanel`/`Mod+N`. It selects the physically largest
-    slot (area `width * height`, first in solver order on ties), chooses
+    0.0.27 policy for `NewPanel`/`Mod+N`. It selects the largest feasible slot
+    (area `width * height`, first in solver order on ties), chooses
     `balanced_split_axis` (the `smart_split_axis` cell-aspect heuristic with
     `CELL_ASPECT_RATIO = 2.0`), and places the fresh pane after the target
     (right for a horizontal split, below for vertical). Eight consecutive
-    default presses on 80x24 keep all pane areas within 3x and every pane at
-    least 10x4. `Spiral` continues its clockwise rotation only while the pane
-    created by the previous split still holds focus and restarts at Right on
-    any other focus or close; `Dwindle` splits the focused pane right/down;
-    `BisectLargest` keeps its raw `width >= height` axis. The mode is a
-    runtime field (`Runtime::panel_layout_mode` /
-    `set_panel_layout_mode`) with no TOML or Lua selector in 0.0.27;
+    presses on 80x24 keep all pane areas within 3x and every pane at least
+    10x4. Current `origin/main` defaults to `Spiral` (`bitty` #2582
+    `a2783e3a`): its clockwise rotation continues only while the pane created
+    by the previous split still holds focus and restarts at Right on any
+    other focus or close; when the focused slot is exhausted, the plan falls
+    back to the largest feasible Balanced target. `Dwindle` splits the
+    focused pane right/down; `BisectLargest` keeps its raw `width >= height`
+    axis. The mode is a runtime field (`Runtime::panel_layout_mode` /
+    `set_panel_layout_mode`) with no TOML or Lua selector in this slice;
     `workspace.layout` names a `LayoutProvider` and does not choose it.
     Explicit `new_split:<dir>` keeps focused-leaf, fixed-axis semantics in
     every mode. Evidence: `crates/bitty-runtime/src/config.rs`,
     `crates/bitty-runtime/src/runtime/layout_focus.rs`,
     `crates/bitty-terminal/src/chrome_keys.rs`, and the
     `chrome_new_panel_eight_times_stays_balanced_and_closes_in_tree_order`
-    regression.
+    regression. The later largest-feasible fallback refinement filters
+    unsplittable leaves before area ranking (`bitty` #2658 `57783e5e`), so an
+    exhausted large leaf cannot hide a smaller feasible target.
 19. **Gap-aware minimum pane size** (`bitty` PR #2538 `4b740cfe`, issues
     #2521/#2528): adaptive insertion never carves a pane narrower than
     `MIN_PANE_COLS = 10` or shorter than `MIN_PANE_ROWS = 4`. `splittable_rect`
@@ -690,9 +706,39 @@ What merged, exactly:
     capsules do not reorder after delete/create cycles. Evidence:
     `crates/bitty-runtime/src/runtime/workspaces.rs`.
 
+23. **Workspace-switch commit and presentation boundary** (current `bitty`
+    `origin/main` `7d98f53`; workspace install and animation evidence): a
+    workspace switch commits the destination layout, focus, and hit-test
+    ownership immediately. The slot load re-synchronizes each visible leaf's
+    frame and terminal grid, including the PTY winsize, before the next
+    presentation tick. If the animation policy admits `AnimationKind::Workspace`,
+    it is a bounded presentation-only effect; it does not interpolate layout
+    rectangles, terminal grids, PTY geometry, or the hit-test owner. Input,
+    hit testing, resize, and layout commits read the committed frames, while
+    the paint path may render only the optional chrome transition. This is
+    implementation evidence, not a new animation contract. Evidence:
+    `crates/bitty-runtime/src/runtime/workspaces.rs`,
+    `crates/bitty-runtime/src/runtime/layout_focus.rs`, and
+    `crates/bitty-runtime/tests/panel_animations.rs`.
+24. **Nested border-divider drag constraints** (`bitty` #2657 `1cc4d576`,
+    #2659 `fa4f05ca`, current in `origin/main`): border-divider motion reserves
+    `layout.gaps_in` before solving the split. For the targeted split, Core
+    recursively computes the minimum extent of both child subtrees using their
+    active ratios and nested same-axis gaps, then intersects those bounds with
+    the accepted ratio range before clamping the requested ratio. An infeasible
+    subtree or degenerate extent fails closed: that split receives no ratio
+    change, and no tree commit occurs when no grabbed split has a feasible
+    change. The drag preserves the tree shape and its captured press geometry;
+    a feasible update reflows leaf frames, grids, and PTY winsizes immediately.
+    Cross-drag keeps axis decisions independent, so one infeasible axis cannot
+    disturb a feasible perpendicular axis. Evidence:
+    `crates/bitty-ui/src/layout.rs`,
+    `crates/bitty-runtime/src/runtime/mouse_chrome.rs`, and
+    `crates/bitty-runtime/tests/border_drag_resize.rs`.
+
 Explicit non-claims: the `LayoutProvider` plugin algorithms, drag/resize
 interactions, and scratchpad retention in this specification are not
-implemented in the slice except for entries 9-13 and 18-22 above, which are
+implemented in the slice except for entries 9-13 and 18-24 above, which are
 the shipped panel interaction slice (bisect-largest, floating toggle,
 resize step, Mod+drag move with corner-zone insertion, border-drag resize,
 move/resize/drag animations, balanced adaptive new panels, gap-aware minimum
