@@ -1531,10 +1531,25 @@ When `--config` or `BITTY_CONFIG` is explicitly specified, the target file must 
 
 Bitty enforces strict process and memory boundaries between the terminal host and child PTY processes:
 
-- **Config VM isolation:** Lua configuration code cannot call `os.getenv` (denied fail-closed with `E_ENV_DENIED`, [ADR 0006](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0006-os-env-policy.md)). Configuration reads environment variables solely through the mediated `bitty.env.get(name)` host bridge under an allowlisted key set.
+- **Config VM isolation:** Lua configuration code cannot call `os.getenv`. The
+  configuration VM installs pure-computation libraries only (`crates/bitty-lua/src/config.rs`,
+  empirically verified denied-globals inventory): `os`, `io`, `require`,
+  `debug`, `print`, and every host callback are absent, so any denied global —
+  including `os.getenv` — fails closed with a Lua runtime error, and there is
+  no `bitty` global to carry an environment bridge. Configuration code has no
+  environment access at all; the desensitized, grant-gated
+  `bitty.env.get(name)` / `bitty.env.has(name)` bridge is a plugin-VM surface
+  (`env.read:<KEY>` grants) and is not exposed to the configuration chunk
+  ([ADR 0006](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0006-os-env-policy.md)).
 - **PTY child-to-parent boundary:** In Unix process models, environment mutations in child processes (`export FOO=bar` in bash/zsh or `set -x FOO bar` in fish) exist only within the child shell's memory space and its descendants. A child process cannot mutate parent process environment variables.
 - **Immutable VM snapshot:** Bitty captures the allowed environment snapshot once at VM construction time. Environment changes in the host process or child PTYs do not retroactively alter a running Config VM or plugin VM, protecting against Confused Deputy attacks.
-- **Dynamic control:** Terminal settings (such as themes, layouts, or font sizes) are modified dynamically via authenticated IPC commands (`bitty ctl theme set <name>`), never through ambient environment pollution.
+- **Dynamic control:** Terminal settings (such as themes, layouts, or font
+  sizes) are modified by editing the configuration file and applying it with
+  `bitty ctl config reload` (elevation-gated; needs
+  `BITTY_CTL_ELEVATE=config.modify`), which drives the shipped live runtime
+  adopters including `set_theme_palette` — never through ambient environment
+  pollution. There is no `bitty ctl theme` verb; live theme/font hot-swap
+  outside `config reload` is an unimplemented follow-up.
 
 Candidate discovery commands include:
 
