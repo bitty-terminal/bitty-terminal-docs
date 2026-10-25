@@ -778,9 +778,10 @@ amend the accepted contract and claim no `Verified`/`Compatible` status.
     own panels. The whole-window last-panel case remains the window-close
     gesture. A workspace with detached or local floats is retained while its
     tiled shell is closed.
-  - fresh-leaf-on-move: moving the only leaf of a source workspace leaves a
-    fresh leaf behind so the never-empty invariant holds; the moved `ViewId`
-    and session appear in exactly one slot.
+  - singleton-source-on-move: when another workspace exists, moving the only
+    tiled leaf removes the now-empty source workspace; it does not leave a
+    fresh leaf or empty workspace behind. The moved `ViewId` and session
+    appear in exactly one remaining slot.
   - zoom-restore-before-mutate: tree-mutating actions restore a zoomed layout
     first (`restore_zoom` / `restore_for_mutation`) so the mutation applies
     to the real tree, not the single-leaf zoom view.
@@ -873,12 +874,12 @@ for the canonical providers. Unknown provider names fail validation.
 All interactions route through the command registry and produce a validated
 `LayoutTree` update; no interaction mutates the tree by direct pointer writes.
 
-| Interaction  | Gesture or command                            | Effect                                                                                                                                  |
-| ------------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `drag`       | Pointer drag on `View` border or decoration   | Initiates a `View` move; drop target is a `View` edge or `Workspace`; Core re-parents the leaf in the tree.                             |
-| `resize`     | Drag split handle between `View`s             | Adjusts the targeted `H` or `V` `ratio` within `[0.1, 0.9]`; never reorders leaves.                                                     |
-| `move`       | `workspace.move_view` command or drag to edge | Moves a `View` to another `Workspace` in the same `Window`; source and destination trees are validated atomically.                      |
-| `scratchpad` | `scratchpad.toggle` command                   | Moves a `View` to or from a special hidden `Workspace` per `Window`; hidden views incur no render cost and retain `ViewId` and content. |
+| Interaction  | Gesture or command                                                         | Effect                                                                                                                                                                                       |
+| ------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `drag`       | Pointer drag on `View` border or decoration                                | Initiates a `View` move; drop target is a `View` edge or `Workspace`; Core re-parents the leaf in the tree.                                                                                  |
+| `resize`     | Drag split handle between `View`s                                          | Adjusts the targeted `H` or `V` `ratio` within `[0.1, 0.9]`; never reorders leaves.                                                                                                          |
+| `move`       | `bitty.workspace.move_panel` / `core.workspace.move_panel` or drag to edge | Moves a `View` to another `Workspace` in the same `Window`; source and destination trees are validated atomically. The stale `workspace.move_view` spelling is not a current public command. |
+| `scratchpad` | `scratchpad.toggle` command                                                | Moves a `View` to or from a special hidden `Workspace` per `Window`; hidden views incur no render cost and retain `ViewId` and content.                                                      |
 
 Rules:
 
