@@ -498,8 +498,6 @@ leaf. A pane that enables mouse reporting
 (`DECSET 1000`/`1002`/`1003` plus `1006`) still receives the button as
 protocol bytes first; capture wins and no host action runs.
 
-> > > > > > > 206e938 (docs(config): document mouse button bindings and inert right-click (bitty#2474))
-
 ### `appearance` (theme, custom palette, animations)
 
 | Key path                                        | Type                | Default               | Valid range                                                                                                                                                                                                                                                                                                                                          | Fail-closed                    | Reload |
@@ -542,7 +540,7 @@ candidate contract under OQ-047
 | `leader_timeout_ms` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms                                                                                                                                                                                                                                                                                            | ignore element / reject reload | live    |
 | `input.leader`      | string                                | unset (same platform default as `leader_key`)            | shared chord grammar; wins over `leader_key` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                                | ignore element / reject reload | live    |
 | `input.timeout_len` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms; wins over `leader_timeout_ms` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                            | ignore element / reject reload | live    |
-| `keymaps[]`         | array of `{ chord, action, context }` | 95 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                 | ignore element / reject reload | live    |
+| `keymaps[]`         | array of `{ chord, action, context }` | 97 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                 | ignore element / reject reload | live    |
 | `plugins[]`         | array of `{ id, enabled }`            | empty                                                    | Top-level `plugins` is a normal Lua declaration path. `id` is trimmed, non-empty, at most 128 bytes; `enabled` is a boolean; at most 1024 entries; entries merge by `id`. An invalid table is ignored at startup and denied for the launch (see [Startup salvage](#startup-salvage-and-strict-diagnostics)). | ignore element / reject reload | restart |
 
 `schema_version` current is `1` (absent assumes `0` and migrates; newer
@@ -566,17 +564,21 @@ Bindable actions: `goto_split:<left|right|up|down>`,
 `toggle_floating` (alias `floating_toggle`; CTX-0962),
 `focus_next`, `focus_prev`,
 `focus:<1..=256>`, `copy_to_clipboard`, `paste_from_clipboard`,
+`paste_from_primary` (no shipped chord; the `mouse.middle` default),
 `scroll_page_up`, `scroll_page_down`, `increase_font_size`,
 `decrease_font_size`, `reset_font_size`, `toggle_help`,
 `open_composer` (manual bind only), `fold_toggle` / `fold_expand` /
-`fold_collapse` (manual bind only), `workspace_new`,
-`workspace_close`, `workspace_prev`, `workspace_next`,
-`workspace_last`, `workspace_focus:<1..=16>`,
+`fold_collapse` (manual bind only), `toggle_pinned` (alias `pinned_toggle`;
+manual bind only), `workspace_new`, `workspace_close`, `workspace_prev`,
+`workspace_next`, `workspace_last`, `workspace_next_occupied`,
+`workspace_prev_occupied`, `workspace_focus:<1..=16>`,
 `workspace_move:<1..=16>`, `workspace_swap:<1..=16>`,
-`jump_to_prompt:<prev|next>`, `select_command_output`,
-`toggle_palette`, `enter_copy_mode`, `open_search`. The last
-two are shipped defaults missing from the code module docs
-([bitty#1327](https://github.com/bitty-terminal/bitty/issues/1327)).
+`jump_to_prompt:<prev|next>`, `select_command_output`, `toggle_palette`.
+
+`enter_copy_mode` and `open_search` retired with the Core copy-mode/search
+policy and fail closed as unknown actions, so a user binding must target the
+owning plugin command instead; the retired `ctrl+shift+space` and
+`ctrl+shift+f` chords are ordinary shell input again.
 
 `toggle_help` (alias `show_help`) is still a Core action in the current source.
 The decided direction moves the help/which-key panel to a first-party plugin
@@ -607,19 +609,22 @@ change: a refused toggle parks nothing and leaves zoom and occupancy
 untouched. It carries no shipped default chord; bind it through a user
 `keymaps` entry by `context + chord` identity like any other action.
 
-Shipped defaults (95 bindings, Alt spelling; `mod_key = "super"`
+Shipped defaults (97 bindings, Alt spelling; `mod_key = "super"`
 rebinds every `alt`-bearing chord, `alt`-free chords pass through):
 
 - Navigate: `alt+h/j/k/l` and `alt+arrows`, `ctrl+alt+arrows`;
   `ctrl+tab` / `ctrl+shift+tab` cycle focus. Directional chords rank a
   candidate by facing-edge distance, then dwindle tree adjacency, then
   shared-edge overlap, then perpendicular center.
-- New panel: `alt+n` (`new_panel`) applies the `Balanced` adaptive policy
-  (largest slot, cell-aspect axis, new pane after); it is refused at the
-  gap-aware 10x4 minimum. `alt+q` closes the focused panel.
+- New panel: `alt+n` (`new_panel`) applies the `Spiral` adaptive policy
+  (clockwise right, down, left, up around the focused slot, continuing while
+  the fresh pane stays focused, with a largest-feasible `Balanced` fallback
+  when the focused slot is too small); it is refused at the gap-aware 10x4
+  minimum. `alt+q` closes the focused panel.
 - Workspaces: `alt+t` new, `alt+w` close (kill-confirm),
-  `alt+-` / `alt+=` previous/next, `alt+tab` last-used, `alt+1..9`
-  jump, `shift+alt+1..9` move window.
+  `alt+-` / `alt+=` previous/next, `alt+tab` last-used, `alt+[` / `alt+]`
+  cycle occupied workspaces (next/previous, wrapping), `alt+1..9` jump,
+  `shift+alt+1..9` move window.
 - Splits: `shift+alt+h/j/k/l` and `shift+alt+arrows` create;
   `shift+ctrl+h/j/k/l` (+arrows) and `ctrl+shift+alt+h/j/k/l`
   (+arrows) resize by `layout.resize_step` per keypress (default `0.05`).
@@ -635,7 +640,10 @@ rebinds every `alt`-bearing chord, `alt`-free chords pass through):
 - Font zoom: `ctrl+equal` / `ctrl+plus` (+shifted spellings) larger,
   `ctrl+minus` (+shifted) smaller, `ctrl+0` reset.
 - Help: ``alt+` ``, `alt+?`, `alt+shift+?`, `alt+shift+/`.
-- Overlays: `ctrl+shift+space` copy mode, `ctrl+shift+f` search.
+
+`toggle_palette`, `toggle_pinned`, and `paste_from_primary` ship without a
+chord (manual bind only), so they add no entry to the 97;
+`paste_from_primary` is still the shipped `mouse.middle` default.
 
 `alt+n` is not a workspace verb; the new-workspace chord is `alt+t`. The
 adaptive new-panel mode is runtime-only (see
