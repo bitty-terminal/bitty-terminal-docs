@@ -334,9 +334,10 @@ ceiling above, grants no new capability, and does not promote this RFC beyond
 `accepted`. Sixel remains unimplemented.
 
 The iTerm2 inline-image adapter is a separate `implemented-only` bounded PNG
-`OSC 1337 File=` subset (commit `19a50380`, hardened in `26ce4f72`; **unmerged**
-at the time of this record, with no `origin/main` merge claimed). Its bounds,
-refusals, and pending final hardening citation are recorded in the
+`OSC 1337 File=` subset (commit `19a50380`, hardened in `26ce4f72` and
+`b6fb2a65`; **unmerged** at the time of this record, with no `origin/main` merge
+claimed). Its bounds, refusals, measurements, and review outcome are recorded in
+the
 [Image Protocol Decision](image-protocol-decision.md#admission-record-2026-10-26).
 Neither protocol makes a `Verified` or `Compatible` claim here.
 
@@ -448,7 +449,7 @@ Recorded deviations and open items (not silently resolved):
 - Animation and image delete/query actions remain unimplemented, and the Sixel
   adapter remains unimplemented. The iTerm2 inline-image adapter is
   `implemented-only` as the bounded PNG `OSC 1337 File=` subset (`19a50380`,
-  hardened in `26ce4f72`, unmerged) recorded in the
+  hardened in `26ce4f72` and `b6fb2a65`, unmerged) recorded in the
   [Image Protocol Decision](image-protocol-decision.md#admission-record-2026-10-26);
   no `Verified`/`Compatible` claim is made here.
 

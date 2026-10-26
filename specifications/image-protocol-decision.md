@@ -136,23 +136,26 @@ deferral in the disposition above. It follows the bounded-adapter requirements
 of the "if instead admitted" path: the scoped Core task carried the protocol
 work, the pre-decode bounds, the fail-closed malformed-input handling, and the
 negative tests, and this docs task (CTX-1591) records the result. The adapter
-was implemented at `19a50380` and was **hardened in `26ce4f72`** (both
-CTX-1590, closing the pre-scan string-state escapes); it was inspected read-only
-for this record, and no merge or release state is asserted here.
+was implemented at `19a50380` and was **hardened in `26ce4f72` and
+`b6fb2a65`** (all CTX-1590, closing the pre-scan string-state escapes and the
+final escape-state gap); it was inspected read-only for this record, and no
+merge or release state is asserted here.
 
 The focused review reproduced two pre-scan string-state escapes (MF-1 and
 MF-2) that removed bytes `vte` needed to leave its own string state, leaving
 its uncapped OSC collector open for the rest of the stream: measured
 ~259-272 MiB RSS growth on a 256 MiB tail. `26ce4f72` closes both escapes,
 requires the PNG `IHDR` chunk length to declare its 13 bytes before dimensions
-are read, grows the collected body in bounded steps so retained capacity stays
-at `ITERM2_OSC_MAX_BODY_BYTES`, and counts downstream decode/store/placement
-refusals through `State::note_iterm2_refused`.
+are read, grows the collected body in bounded steps rather than a `Vec::push`
+doubling, and counts downstream decode/store/placement refusals through
+`State::note_iterm2_refused`. `b6fb2a65` closes the final escape-state gap:
+`0x7F..=0xFF` after `ESC` stays in the tracked `Escape` state, mirroring `vte`
+0.15's `advance_esc`, so `ESC 0x7F ]` and `ESC 0xC3 0xA9 ]` before an image
+dispatch the empty OSC and keep printing.
 
-> **Pending citation.** The final hardening commit (the `0x7F..=0xFF`
-> escape-state fix, plus its two tests) is not yet in this record; it will be
-> appended here when it lands. The omission is deliberate and visible, not
-> silent.
+> **Final citation.** The adapter is at `19a50380`, hardened in `26ce4f72` and
+> `b6fb2a65`; all three commits are on the CTX-1590 task branch, and no
+> `origin/main` merge or release state is claimed.
 
 It admits nothing beyond that adapter and its hardening, moves no accepted
 ceiling, closes no open question, and claims no `Verified` or `Compatible`
@@ -265,23 +268,30 @@ revision's work.
   `::unterminated_dcs_is_closed_before_a_diverted_image`,
   `::image_after_aborted_apc_is_admitted`,
   `::image_after_aborted_apc_split_across_reads_is_admitted`,
-  `::osc1337_body_cap_bounds_the_parser_body_behind_an_aborted_apc`;
+  `::osc1337_body_cap_bounds_the_parser_body_behind_an_aborted_apc`,
+  `::escape_del_before_a_diverted_image_keeps_the_escape_state`,
+  `::escape_non_printing_prefix_bracket_before_a_diverted_image_dispatches_the_osc`;
   `crates/bitty-term-state/src/state/tests.rs::iterm2_inline_image_is_inert_and_refusals_are_counted`;
   `crates/bitty-runtime/tests/iterm2_inline_images.rs::inline_image_lands_on_the_cursor_cell_rect`,
   `::oversize_payload_fails_closed_and_is_counted`,
   `::downstream_decode_failure_is_counted_as_a_refusal`,
   `::kitty_graphics_still_works_alongside_osc_1337` (plus the auto-size,
   split-read, unsupported-format, and transmit-only cases in the same file).
-- Live pixel evidence: none is recorded for this adapter. Both commits add
+- Escape-state measurements (`b6fb2a65`): `ESC 0x7F ]` + image + a 256 MiB tail
+  measured 265,044 KiB with prints lost at `26ce4f72` and 2,832 KiB with prints
+  delivered at `b6fb2a65` (`main`: 2,796 KiB); the non-ASCII `ESC 0xC3 0xA9 ]`
+  variant measured 265,032 KiB -> 2,764 KiB. The admitted image accounts for
+  the small difference from `main`.
+- Live pixel evidence: none is recorded for this adapter. All three commits add
   headless tests only; no live-campaign paint result is claimed.
 
 ### Review gate
 
 The focused security review reproduced two escapes (MF-1 and MF-2), both closed
-in `26ce4f72`. Its final `0x7F..=0xFF` escape-state fix is still landing, so the
-review is not recorded as closed here and this record asserts no approval. The
-admission remains **subject to the focused security review recorded in the
-task**.
+in `26ce4f72`, and its final `0x7F..=0xFF` escape-state finding is fixed in
+`b6fb2a65`. The review outcome is cited here; no separate approval verdict is
+asserted, and the admission remains **subject to the focused security review
+recorded in the task**.
 
 ## Verification backlog
 
