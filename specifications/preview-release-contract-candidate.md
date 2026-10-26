@@ -233,8 +233,8 @@ A no-op is not a failure and must not be reported as a published preview.
 - One repository-wide concurrency group (`preview-release`) with
   `cancel-in-progress: false`. A manual dispatch queues behind a scheduled run
   rather than racing it.
-- Every job carries `timeout-minutes`, and their sum is the maximum wall clock a
-  run can hold the group. Candidate bounds: preflight 5, build 60, packaging 20,
+- Every job carries `timeout-minutes`, and their sum is an upper bound on the wall
+  clock a run can hold the group. Candidate bounds: preflight 5, build 60, packaging 20,
   release 10, cleanup 10. Without them a hung run queues every later night
   forever, because `cancel-in-progress: false` never cancels it.
 - Tags and releases are created only after every matrix leg has produced and
