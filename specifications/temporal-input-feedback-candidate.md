@@ -89,7 +89,7 @@ carries the state.
 
 An **action class** is a closed category of user action with one feedback window.
 An **observation state** is a resting phase with defined exit events: it
-schedules no periodic work, and at most one one-shot dwell deadline may be
+schedules no periodic work, and at most one one-shot deadline may be
 outstanding. A **burst** is all interpolation triggered by one event for one
 class; entry and completion are separate events and therefore separate bursts.
 The **repeat-coalescing window** is a wall-clock interval from the first trigger
@@ -120,8 +120,9 @@ bracketed paste are terminal state and never receive a feedback label.
    transitions, but with no renderer installed or under `--safe` the state has no
    user-visible form.
 6. **No periodic wakeups when idle.** Frames run only while a bounded animation
-   is active; the `settled` exit uses one one-shot deadline that fires at most
-   once and schedules nothing after.
+   is active; `done` and `unknown` use one one-shot deadline that fires at most
+   once, `failed` and `refused` hold no deadline, and nothing schedules a
+   periodic wakeup.
 7. **No plugin work per frame, and no plugin read path yet.** Plugin rendering
    waits for the status-provider contract; until then Core state exists alone.
 
@@ -133,7 +134,8 @@ Mode is a separate latched machine that persists until replaced or exited.
 
 ```text
 idle -> ack (<=80 ms) -> submitted | pasting | active (starting -> running)
-  -> settled (done | failed | refused | unknown) -> idle
+  -> settled (done | unknown) -> idle
+  -> settled (failed | refused) -> idle on input, dismissal, or replacement
 ```
 
 1. `ack` always resolves within `80 ms` and never waits for the shell.
@@ -149,25 +151,26 @@ idle -> ack (<=80 ms) -> submitted | pasting | active (starting -> running)
 4. `active` settles only on a signal from the producer that declared the boundary,
    and Core applies the result immediately. OSC 133 `D` with an exit code settles
    `done` (zero) or `failed` (non-zero); `D` without an exit code settles
-   `unknown` — the command finished, the outcome did not; a normal PTY/session
-   close without an outcome settles `unknown`, never `failed`; an action scope
-   disposed without an outcome settles `unknown`; a producer refusal settles
-   `refused`. `unknown` therefore means **outcome unknown or boundary lost** (shell
-   crash, dropped end mark, close or disposal without outcome). Settlement never
-   waits for a presentation deadline. If neither an outcome nor a loss is
-   detectable, the state must rest at `running`, which means **started, completion
-   unknown** — never "in progress" and never an implied completion time. The state
-   channel must never show `running` after completion, and no timeout may invent
-   completion.
+   `unknown` — the command finished, the outcome did not arrive; a normal
+   PTY/session close without an outcome settles `unknown`, never `failed`; an
+   action scope disposed without an outcome settles `unknown`; a producer refusal
+   settles `refused`. `unknown` therefore means **outcome unknown or boundary
+   lost** (shell crash, dropped end mark, close or disposal without outcome).
+   Settlement never waits for a presentation deadline. If neither an outcome nor a
+   loss is detectable, the state must rest at `running`, which means **started,
+   completion unknown** — never "in progress" and never an implied completion
+   time. The state channel must never show `running` after completion, and no
+   timeout may invent completion.
 5. `settled` publishes its terminal phase immediately — it never delays
-   settlement for presentation — and schedules no frames. It exits to `idle` at
-   the class dwell deadline (the minimum-visible hold for progress, the `2 s`
-   dwell for error and refusal) or on the next action, whichever comes first;
-   error and refusal additionally stay sticky until input, dismissal, or
-   replacement. A renderer may keep the completed indicator visible for that
-   deadline, and Core never returns a completed action to `running` or to an
-   earlier phase. `unknown` is a plain label: it takes the minimum-visible hold
-   only, carries no error glyph, and never takes the `2 s` error dwell.
+   settlement for presentation — and schedules no frames. Exit splits by outcome:
+   `done` and `unknown` return to `idle` at the minimum-visible hold or on the
+   next action, whichever comes first; `failed` and `refused` never exit on the
+   deadline — the `2 s` dwell is their minimum presentation dwell, and they stay
+   sticky until input, dismissal, or replacement. A renderer may keep the
+   completed indicator visible for the applicable window, and Core never returns
+   a completed action to `running` or to an earlier phase. `unknown` is a plain
+   label: it takes the minimum-visible hold only, carries no error glyph, and
+   never takes the `2 s` dwell.
 
 | Action class         | State channel (Core, not always visible)                                                                        | Motion channel (optional)                | Window                                                                      | Cancel and coalesce                                                              |
 | -------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -350,9 +353,10 @@ inventory stay unchanged until acceptance.
   animation per surface property; one repeat-coalescing window of `300 ms`
   wall-clock from the first trigger, independent of the burst cap, which repeats
   never restart and holds never extend, and excess animating surfaces commit
-  immediately (bound `8`). After the last animation present returns to idle, and
-  the `settled` exit uses one one-shot hold deadline, cancelled only by a newer
-  trigger that replaces the state. No spinner, pulse, or clock runs while idle.
+  immediately (bound `8`). After the last animation present returns to idle;
+  `done` and `unknown` use one one-shot hold deadline, cancelled by a newer trigger
+  that replaces the state, while `failed` and `refused` hold none and stay sticky.
+  No spinner, pulse, or clock runs while idle.
 - **High load and slow shells.** Feedback must yield to terminal output: if the
   frame budget is exhausted, motion drops first and the state applies on the next
   available frame. It must never backpressure the PTY or delay echo. A slow shell
@@ -363,14 +367,14 @@ inventory stay unchanged until acceptance.
   otherwise nothing is drawn, and errors are not suppressed where chrome exists.
   With no plugin or under `--safe`, there is no render at all.
 
-| Budget                  | Measurement                                                                                                                                 | Pass condition                                                                                                             |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| PB-4 input latency      | Input event to feedback publication and first feedback frame, A/B with feedback disabled; the accepted key-to-screen harness runs unchanged | No key-to-screen regression; p50 `≤8 ms`, p99 `≤15 ms`; feedback never delays a PTY write                                  |
-| Feedback frame count    | Frames per ack and per `300 ms` burst, headless present counter                                                                             | `≤5` frames per ack; `≤18` per `300 ms`; static holds render `0` frames                                                    |
-| PB-7 idle resources     | 10-minute idle after a burst; wakeup counter and CPU sampling                                                                               | Zero periodic wakeups after completion; at most one one-shot hold deadline, then idle; idle CPU within the accepted budget |
-| Present-path frame time | p99 present time with and without an active feedback animation                                                                              | No increase beyond the existing missed-present threshold; within the `≤1 ms` candidate envelope                            |
-| PB-5 package size       | Stripped binary and package delta after link                                                                                                | Charged to PB-5; a `>100 KiB` delta is a candidate review trigger, not a budget change                                     |
-| Accessibility           | Headless state tests plus reduced-motion and `--safe` runs; adapter evidence is unavailable                                                 | Same committed state at `0 ms`; no color-only state; announcements remain a future-adapter contract                        |
+| Budget                  | Measurement                                                                                                                                 | Pass condition                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PB-4 input latency      | Input event to feedback publication and first feedback frame, A/B with feedback disabled; the accepted key-to-screen harness runs unchanged | No key-to-screen regression; p50 `≤8 ms`, p99 `≤15 ms`; feedback never delays a PTY write                                                                     |
+| Feedback frame count    | Frames per ack and per `300 ms` burst, headless present counter                                                                             | `≤5` frames per ack; `≤18` per `300 ms`; static holds render `0` frames                                                                                       |
+| PB-7 idle resources     | 10-minute idle after a burst; wakeup counter and CPU sampling                                                                               | Zero periodic wakeups after completion; at most one one-shot hold deadline for `done`/`unknown`; sticky errors hold none; idle CPU within the accepted budget |
+| Present-path frame time | p99 present time with and without an active feedback animation                                                                              | No increase beyond the existing missed-present threshold; within the `≤1 ms` candidate envelope                                                               |
+| PB-5 package size       | Stripped binary and package delta after link                                                                                                | Charged to PB-5; a `>100 KiB` delta is a candidate review trigger, not a budget change                                                                        |
+| Accessibility           | Headless state tests plus reduced-motion and `--safe` runs; adapter evidence is unavailable                                                 | Same committed state at `0 ms`; no color-only state; announcements remain a future-adapter contract                                                           |
 
 ## Owner decisions
 
@@ -414,10 +418,11 @@ capability.
    `active` have the stated exits; `active` settles at once — `done`/`failed` from
    OSC 133 `D` with an exit code, `unknown` from `D` without one, a close, or a
    disposal without an outcome, `refused` from a refusal — and rests at `running`
-   only when neither an outcome nor a loss is detectable; `settled` exits to
-   `idle` at the dwell deadline or the next action; no phase schedules a periodic
-   timer (only the one-shot hold deadline exists); a boundary-less action returns
-   to `idle`.
+   only when neither an outcome nor a loss is detectable; `done`/`unknown` exit to
+   `idle` at the hold or the next action while `failed`/`refused` stay sticky
+   until input, dismissal, or replacement; no phase schedules a periodic timer
+   (only the `done`/`unknown` one-shot hold deadline exists); a boundary-less
+   action returns to `idle`.
 2. Budgets: transitions `120..=180 ms`, ack `≤80 ms`, burst interpolation
    `≤300 ms` with holds excluded, the independent `300 ms` repeat-coalescing
    window, error dwell `≥2000 ms`, and candidate-key clamping to `[0, 80]` and
