@@ -1,35 +1,36 @@
 ---
-title: Multiplexer Decision (Candidate)
-description: Candidate decision for the built-in multiplexer story - Core and extension seam, bittyd as the session host, attach authority, bounded persistence, session limits, remote deferral, and owner decisions
+title: Multiplexer Decision
+description: Accepted decision for the built-in multiplexer story - Core and extension seam, bittyd as the session host, attach authority, bounded persistence, session limits, remote deferral, and owner decisions
 category: specifications
 audience: contributor
 document_type: specification
-status: draft
+status: accepted
 website_publish: false
 sidebar_order: 83
 ---
 
-# Multiplexer Decision (Candidate)
+# Multiplexer Decision
 
 ## Document status
 
-> Status: **candidate, not accepted and not implemented.** This is the design
-> bitty#2218 asks for: whether detach/attach, persistence, and remote sessions are
-> a Core mechanism, an extension, or a seam; whether a server is needed; and what
-> the attach trust boundary is. It authorizes no code, daemon, crate, or
-> transport. The issue closes only when the owner accepts the decision.
+> Status: **accepted on 2026-10-26 by the project owner**, choosing Option C
+> (Core/extension seam). This is the design bitty#2218 asked for: whether
+> detach/attach, persistence, and remote sessions are a Core mechanism, an
+> extension, or a seam; whether a server is needed; and what the attach trust
+> boundary is. It authorizes no code, daemon, crate, or transport by itself;
+> implementation scopes are listed below and remain separately gated.
 
-| Control          | Value                                                                                                   |
-| ---------------- | ------------------------------------------------------------------------------------------------------- |
-| Status           | Candidate, reviewed by no one yet, authorizes no code                                                   |
-| Owner            | Terminal platform runtime surface (bitty#2218, CTX-0155); final decision is the project owner's         |
-| Issue            | [bitty#2218](https://github.com/bitty-terminal/bitty/issues/2218) — built-in multiplexer story          |
-| Upstream records | ADR 0008, ADR 0014, ADR 0015, ADR 0016, ADR 0019, bittyd session-host contract and scope charter        |
-| Implementation   | None. No seam, session manager, dedicated server, or remote transport exists                            |
-| Promotion gate   | Owner decisions `M-01` through `M-06`, independent review, and security review, then `status: accepted` |
+| Control          | Value                                                                                            |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| Status           | Accepted (2026-10-26), authorizes the seam boundary but no code                                  |
+| Owner            | Terminal platform runtime surface (bitty#2218, CTX-0155); final decision is the project owner's  |
+| Issue            | [bitty#2218](https://github.com/bitty-terminal/bitty/issues/2218) — built-in multiplexer story   |
+| Upstream records | ADR 0008, ADR 0014, ADR 0015, ADR 0016, ADR 0019, bittyd session-host contract and scope charter |
+| Implementation   | None. No seam, session manager, dedicated server, or remote transport exists                     |
+| Promotion gate   | Satisfied 2026-10-26 for the decision; `M-01` through `M-06` stay open with fail-safe defaults   |
 
-Candidate wording uses "must" for what the accepted decision would require. It is
-not a current obligation and not evidence that a control exists.
+Accepted wording uses "must" for what the decision requires. It remains not
+evidence that a control exists; implementation is tracked separately.
 
 ## Purpose and scope
 
@@ -238,7 +239,7 @@ Session names and ordering are extension metadata; Core validates their bounds o
 
 ## Bounds
 
-Candidate defaults; accepted bounds are reused. User configuration may lower a
+Defaults recorded here; accepted bounds are reused. User configuration may lower a
 bound, never raise it above the system maximum.
 
 | Bound                           | Default                    | Maximum | At the limit                                                                                     |
@@ -258,7 +259,7 @@ bound, never raise it above the system maximum.
 
 Session, attach, backlog, transport, and metadata values reuse `D-14` of the
 bittyd candidate and the accepted RC-9/RC-10 ceilings. The persisted-file and
-attach-snapshot bounds are this decision's candidate defaults.
+attach-snapshot bounds are this decision's recorded defaults.
 
 Terminal-state and stop notifications are control events: if the queue cannot take
 one, the lease closes with a terminal-event-lost result rather than dropping it
@@ -282,7 +283,7 @@ without the [Risk Evidence RFC](risk-evidence-rfc.md) gates.
 
 ## Decision register
 
-Each row is an owner decision. The recommendation is the candidate position; the
+Each row is an owner decision. The recommendation is the accepted position; the
 default applies if the owner does not decide.
 
 | ID   | Decision               | Recommendation                                                                               | Default if undecided                       |
