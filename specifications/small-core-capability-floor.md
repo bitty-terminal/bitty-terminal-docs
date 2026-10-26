@@ -153,7 +153,7 @@ values where they exist; rows with no accepted number say so.
 | OSC 8 hyperlinks parsed with a click-to-open gate; shell integration never infers state by parsing prompt text               | [Compatibility Milestone RFC](compatibility-milestone-rfc.md)                                              |
 | Clipboard write via OSC 52 only, gated by user permission; clipboard read-back by untrusted output is out of scope (P0 risk) | [Compatibility Milestone RFC](compatibility-milestone-rfc.md), security corpus                             |
 | Kitty keyboard as opt-in progressive enhancement over required legacy xterm modifier encoding                                | [Compatibility Milestone RFC](compatibility-milestone-rfc.md)                                              |
-| Kitty Graphics present path only; Sixel refused, iTerm2 deferred, via a demand-gated admission path                          | [Image Protocol Decision](image-protocol-decision.md)                                                      |
+| Kitty Graphics present path plus the bounded PNG iTerm2 subset (`implemented-only`); Sixel refused                           | [Image Protocol Decision](image-protocol-decision.md)                                                      |
 
 Title updates are bounded (`WINDOW_TITLE_MAX_CHARS = 256`, C0/DEL/C1
 stripped, change-gated). Parser, terminal state, and image decode stay

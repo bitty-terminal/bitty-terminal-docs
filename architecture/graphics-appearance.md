@@ -731,8 +731,9 @@ Rich Presentation continues to own image bounds and protocol behavior; the compo
    the CTX-0013 survey above**: v0.1.3 has no receiver-side parser, so the
    sender-side-only role stands.
 4. Owning-RFC follow-ups already recorded in the Rich Presentation RFC (IMG-2
-   side-cap wording, cursor-on-top, per-origin quotas, Sixel/iTerm2 adapters):
-   untouched here, not duplicated as new items.
+   side-cap wording, cursor-on-top, per-origin quotas, the Sixel adapter): the
+   bounded iTerm2 adapter is no longer a follow-up and is recorded in the
+   [Image Protocol Decision](../specifications/image-protocol-decision.md#admission-record-2026-10-26).
 5. No new open question is admitted by this task: none of the above blocks the
    current milestone beyond already-tracked work.
 
