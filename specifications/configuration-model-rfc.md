@@ -211,11 +211,19 @@ defaults` per [Lua and XDG configuration](../configuration/lua-and-xdg.md).
 | `keymaps`                                                                 | shipped Alt-as-Mod set (82 entries, context `global`); user entries replace by `context + chord`, else append                                                                                                           | set-by-identifier     |
 | `plugins`                                                                 | empty by default                                                                                                                                                                                                        | set-by-identifier     |
 
-Absent `selection`/`layout`/`decoration` tables (or absent keys within them)
-mean "this layer says nothing" and inherit silently; present-but-partial
-`font`, `window`, and `terminal` tables fail closed rather than filling
-defaults, preserving attribution. Scalar-replace above matches the shipped
-`bitty-config` merge implementation exactly.
+Absent `selection`/`layout`/`decoration` tables mean "this layer says nothing"
+and inherit. A declared table is resolved as one complete typed struct, so
+leaves it omits take the built-in default rather than the inherited value:
+`layout`, `decoration`, `window`, `terminal`, `selection`, and `scrollbar` all
+behave that way. Leaves the schema keeps optional still say nothing when
+omitted — including the `decoration` outline colours/widths and background
+leaves, `window.background_*`, `mouse.*`, `history.capture.*`,
+`workspace.show_bar`/`workspace.bar.edge`, and the `appearance` sub-tables. A
+declared `font` table still requires `family` and `size`, and a declared
+`terminal` table still requires `scrollback`; a missing required key fails
+closed rather than defaulting. Scalar-replace above matches the shipped
+`bitty-config` merge implementation exactly
+([Table completeness](../configuration/lua-and-xdg.md#table-completeness)).
 
 The shipped keymap set is the canonical Alt spelling rendered through the
 `mod_key` setting above (`alt` default, `super` opt-in rebinding): `alt+h/j/k/l`

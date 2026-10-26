@@ -612,7 +612,9 @@ replay, grid/scene/atlas dumps, performance capture, and renderer overlays.
 
 ## Configuration commands
 
-Status: **candidate contract.**
+Status: **candidate contract.** The `config profile` subtree is the exception:
+it is implemented and documented as
+[implemented-only profile management](#profile-management).
 
 ```sh
 bitty paths
@@ -623,10 +625,6 @@ bitty config show --source
 bitty config defaults
 bitty config diff
 bitty config reload
-bitty config profile list
-bitty config profile show NAME
-bitty config profile use NAME
-bitty config profile path NAME
 ```
 
 `config check` should evaluate configuration in a fresh configuration VM,
@@ -634,23 +632,85 @@ produce and validate a typed plan, and avoid creating a GUI. `config show`
 should show effective values, while `--source` explains which layer and file
 provided each value.
 
-`config profile` is implemented (CTX-1404, issue #2187) as a local,
-pre-runtime surface:
-
-- `list` reads bounded directory metadata and evaluates no Lua.
-- `show NAME` loads and validates the single-parent `extends` chain and
-  prints profile-only values with source attribution.
-- `use NAME` validates the name, chain, and prospective selector, then
-  rewrites only the `profile = "..."` value in the existing selector,
-  preserving comments and user overrides. It keeps a recoverable backup and
-  never reloads a running instance or mutates plugin/component state.
-- `path NAME` validates the name grammar and prints the resolved path without
-  creating it or evaluating Lua.
-- A legacy `init.lua` without the versioned selector envelope is refused;
-  `bitty init --migrate` is the explicit conversion path.
-
 Path and configuration architecture are documented in
 [Lua and XDG configuration](../configuration/lua-and-xdg.md).
+
+### Profile management
+
+Status: **implemented-only, source-qualified** at `bitty` `origin/main`
+(bitty #2708, commit `11582102`, CTX-1589; the read-only verbs first shipped
+with CTX-1404, issue #2187). This records implemented behaviour; it is not a
+stability promise and does not accept the candidate CLI grammar above.
+
+```sh
+bitty config profile create NAME
+bitty config profile clone SRC DST
+bitty config profile rename OLD NEW
+bitty config profile delete NAME
+bitty config profile list
+bitty config profile show NAME
+bitty config profile use NAME
+bitty config profile get NAME PATH
+bitty config profile set NAME PATH VALUE
+bitty config profile path NAME
+```
+
+All ten verbs are local, pre-runtime operations on
+`$XDG_CONFIG_HOME/bitty/profiles/<name>.lua`, or on the sibling `profiles/`
+directory of an explicit `--config` / `BITTY_CONFIG` file. They never install,
+enable, or grant a plugin, never touch component state, and never edit shell
+rc files; `BITTY_PROFILE` is a launch input and never an output target.
+
+- `create NAME` writes a minimal valid profile; `clone SRC DST` copies SRC's
+  Lua bytes verbatim. Both refuse an existing destination as a conflict.
+  `default` is reserved for `bitty init`: `create` refuses it, and `clone`
+  refuses it as a destination (cloning `default` to another name is the
+  intended path).
+- `rename OLD NEW` renames the file in place and refuses an existing new name,
+  renaming onto itself, and the reserved `default`.
+- `delete NAME` removes the file. `delete` and `rename` refuse the profile the
+  next launch would activate — from `--profile`, `BITTY_PROFILE`, or the
+  persisted `init.lua` selector — and a profile another profile names in
+  `extends`.
+- `list` reads bounded directory metadata and evaluates no Lua. `show NAME`
+  loads and validates the single-parent `extends` chain and prints
+  profile-only values with source attribution. `path NAME` validates the name
+  grammar and prints the resolved path without creating it or evaluating Lua.
+- `use NAME` validates the name, the whole chain, and the prospective selector
+  before mutation, then rewrites exactly one live top-level short-quoted
+  `profile = "…"` assignment in the existing versioned selector, preserving
+  comments and user overrides and keeping a recoverable backup. It re-parses
+  the rewritten selector and refuses to write unless the selector resolves to
+  the requested name; a selector that already names NAME is a reported no-op.
+  With no selector present it writes the versioned selector. A legacy
+  `init.lua` without the versioned envelope is refused, and
+  `bitty init --migrate` is the explicit conversion path. It never reloads a
+  running instance.
+- `get NAME PATH` prints the effective value at one documented dotted scalar
+  path. `set NAME PATH VALUE` validates the value through the same strict
+  loader `bitty config check` uses (including `local:<name>` theme
+  resolution), edits only that path inside the profile's returned Lua table,
+  re-reads the edited leaf through the merged candidate, and refuses to write
+  on any mismatch. Accepted paths and the inherited-table pinning rule are in
+  [Profile management commands](../configuration/lua-and-xdg.md#profile-management-commands);
+  keymaps, plugins, panel rules, views, theme colour maps, and background-image
+  paths are not settable.
+
+Writes are fail-closed and atomic. The candidate bytes are parsed and merged
+before any change, then published through a unique same-directory temporary
+file, `sync_all`, and a rename over the target. A rejected value, a refused
+edit, or a failed write leaves the previous profile bytes byte-identical; a
+new profile uses exclusive creation instead of overwriting.
+
+Every verb accepts `--json`, an alias for `--format json` (accepted before or
+after the `config` word; a bare `--json` outside `config` stays an unknown-flag
+usage error). It prints one compact versioned envelope on stdout instead of the
+human text, for example
+`{"v":1,"command":"config profile list","ok":true,"result":{…}}` or
+`{"v":1,"command":"config profile set","ok":false,"error":{"class":"config","code":"E_PROFILE_INVALID","message":"…"}}`,
+with the human diagnostic on stderr for a failure. Exit codes are `0` success,
+`1` filesystem/I/O failure, and `2` usage, conflict, not-found, and
+invalid-input failures.
 
 ## Safe mode configuration precedence
 

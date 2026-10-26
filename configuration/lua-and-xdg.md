@@ -385,6 +385,38 @@ Status: **candidate rules.**
 Source metadata should survive merge so that `config show --source` and
 developer tools can explain every effective value and conflict.
 
+### Table completeness
+
+Status: **shipped behaviour** (read-only from `bitty` `origin/main`,
+`crates/bitty-config/src/file.rs` `build_plan_from_data` and
+`crates/bitty-config/src/merge.rs`, checked against bitty #2708 at `11582102`).
+This narrows the candidate deep-merge direction above; it changes no security
+control.
+
+The shipped loader does not deep-merge table-valued sections leaf by leaf. For
+each typed table it builds one complete struct, so the merge rule is:
+
+- An **absent** table says nothing: the lower-precedence table survives with
+  its attribution.
+- A **declared** table is complete. Leaves it omits take the built-in default,
+  not the inherited value, so omit nothing you mean to inherit.
+- Leaves the schema keeps optional still say nothing when omitted inside a
+  declared table, including the `decoration` outline colours, outline widths,
+  and background-image/roots/tint leaves; the `window.background_*` quartet;
+  every `mouse.*` leaf; `history.capture.*`; `workspace.show_bar` and
+  `workspace.bar.edge`; and `appearance.colors`, `appearance.animations.*`,
+  and `appearance.style.*`. `appearance.theme` is not optional inside a
+  declared `appearance` table.
+- `font` and `terminal` additionally require their load-bearing keys: a `font`
+  table without `family` and `size`, or a `terminal` table without
+  `scrollback`, fails closed instead of filling defaults.
+
+The consequence matters for profile composition: a profile that declares one
+leaf of `layout`, `decoration`, or another complete table resets every omitted
+sibling of that table to the binary's default. `bitty config profile set`
+compensates by pinning the complete resolved table first (see
+[Profile management commands](#profile-management-commands)).
+
 ## Profiles
 
 Status: **shipped defaults** for profile selection, naming, and layering
@@ -467,6 +499,105 @@ The shipped launch form is `bitty --profile coding` (or `BITTY_PROFILE=coding`)
 as specified above; the grammar-ownership question is closed by that shipment
 and only multi-parent `extends` stays open.
 
+### Profile management commands
+
+Status: **implemented-only** (read-only from `bitty` `origin/main`,
+`crates/bitty-terminal/src/profile.rs`, bitty #2708 at `11582102`, CTX-1589).
+The profile model above remains the shipped contract; this subsection records
+the management surface and promises no stability.
+
+`bitty config profile <verb>` operates on the profile directory resolved from
+the same config target startup uses (`--config` > `BITTY_CONFIG` > XDG probe),
+then its sibling `profiles/` directory:
+
+| Verb                  | Effect                                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------------- |
+| `create NAME`         | Write a minimal valid profile; an existing file is a conflict.                            |
+| `clone SRC DST`       | Copy SRC's Lua bytes verbatim to DST; an existing destination is a conflict.              |
+| `rename OLD NEW`      | Rename one file in place; an existing NEW or `OLD = NEW` is a conflict.                   |
+| `delete NAME`         | Remove one file.                                                                          |
+| `list`                | List validated names from bounded directory metadata; evaluates no Lua.                   |
+| `show NAME`           | Load and validate the `extends` chain; print profile-only values with source attribution. |
+| `use NAME`            | Activate NAME by rewriting the persisted selector.                                        |
+| `get NAME PATH`       | Print the effective value at one documented dotted scalar path.                           |
+| `set NAME PATH VALUE` | Validate and write one documented dotted scalar path into NAME.                           |
+| `path NAME`           | Print the resolved path without creating it or evaluating Lua.                            |
+
+Fail-closed rules:
+
+- `default` is reserved for `bitty init`: `create`, `delete`, and `rename`
+  refuse it, and `clone` refuses it as a destination (cloning `default` to a
+  new name is the intended path).
+- `create`, `clone`, and `rename` never overwrite an existing destination.
+- `delete` and `rename` refuse the profile the next launch would activate
+  (from `--profile`, `BITTY_PROFILE`, or the persisted selector) and a profile
+  another profile names in `extends`; the diagnostic names the dependents.
+- `use NAME` validates the name, the whole chain, and the prospective selector
+  first. It rewrites exactly one live top-level short-quoted
+  `profile = "…"` assignment, preserves comments and user overrides, keeps a
+  recoverable backup, and re-parses the result; it refuses to write unless the
+  selector resolves to NAME. A selector already naming NAME is a reported
+  no-op (`changed: false` in JSON), and a missing selector is created with the
+  same versioned envelope. A legacy `init.lua` without the envelope is refused
+  in favour of `bitty init --migrate`. Activation never reloads a running
+  instance.
+- Every write parses and merges the candidate bytes before any file change,
+  then publishes through a unique same-directory temporary file, `sync_all`,
+  and a rename over the target. A refused edit or failed write leaves the
+  previous bytes byte-identical; new profiles use exclusive creation.
+- `get` and `set` reject an unknown or malformed path, a non-finite number, a
+  control character, and a value over the loader's line bound before any
+  write. `set` re-reads the edited leaf through the merged candidate and
+  refuses the write on a mismatch.
+
+`get` and `set` accept 37 documented dotted scalar paths:
+
+```text
+appearance.theme
+appearance.animations.enabled
+font.family, font.size, font.line_height, font.letter_spacing, font.fallback
+window.opacity, window.padding, window.radius_px
+terminal.scrollback, terminal.shell, terminal.scroll_lines_per_notch,
+terminal.scroll_pixels_per_notch, terminal.page_scroll_percent,
+terminal.cursor_style, terminal.bell
+selection.auto_copy
+history.capture.transcript, history.capture.commands
+layout.gaps_in, layout.gaps_out, layout.resize_step
+decoration.gaps_in, decoration.gaps_out, decoration.border,
+decoration.radius, decoration.content_inset
+scrollbar.mode, scrollbar.width
+mouse.focus_follows_mouse, mouse.focus_follows_mouse_delay_ms,
+mouse.right, mouse.middle
+mod_key, close_confirm, session.restore_on_startup
+```
+
+Keymaps, plugins, panel rules, views, the inline theme colour map
+(`appearance.colors`), local theme files, and background-image paths are not
+settable. `font.fallback` takes a comma-separated list; text values may be
+quoted and are written as short-quoted Lua strings.
+
+**Table pinning.** `font`, `window`, `terminal`, `layout`, `decoration`,
+`scrollbar`, and `appearance` merge as complete tables
+([Table completeness](#table-completeness)). When `set` targets a leaf of one
+of those tables and the profile does not declare the table itself, `set` first
+writes the complete resolved table into the profile, seeded from the effective
+chain: every resolved leaf, including leaves `config check` does not print
+(`window.blur_radius`, `decoration.border_color*`, `decoration.border_width*`,
+`font.features`, `font.disable_ligatures`, and the background-image leaves),
+plus the required `font.family`/`font.size` and `terminal.scrollback`. The
+human output adds `pinned '<table>' into '<name>'` and the JSON result carries
+`"pinned":["<table>"]`; editing an already-declared table pins nothing.
+
+That table is then declared locally, so later edits to the parent profile no
+longer flow into it. Only removing the table from the profile restores
+inheritance; the CLI never re-inherits a pinned table on its own.
+
+Every verb accepts `--json` (an alias for `--format json`); the envelope shape
+and exit codes are defined in
+[Profile management](../interfaces/cli.md#profile-management). There is no
+interactive or TUI profile editor in this surface: that half remains open
+(bitty#2449, gated on bitty#2393).
+
 ## Profile-backed initialization
 
 Status: **implemented-only** on `bitty` `main` after issue #2187 (CTX-1404);
@@ -483,6 +614,9 @@ bitty init --yes --profile work
 bitty init --profile minimal
 bitty init --profile dark
 bitty init --profile light
+bitty config profile create work
+bitty config profile set work font.size 13
+bitty config profile get work font.size
 bitty config profile use work
 bitty config profile list
 bitty config profile show work
@@ -530,19 +664,15 @@ write leaves the previous file in place.
   effective values with the pre-migration configuration, and only then
   replaces `init.lua` with the selector. The legacy bytes remain in the
   selector backup.
-- `bitty config profile use NAME` validates the name, the whole profile chain,
-  and the prospective selector before mutation. It rewrites only the
-  `profile = "..."` value, preserving comments and user overrides, and keeps
-  a backup of the previous selector.
+- `bitty config profile use NAME` is the activation command; its validation,
+  selector rewrite, backup, and no-op behaviour are defined in
+  [Profile management commands](#profile-management-commands).
 - `--profile NAME` combined with `--config`/`BITTY_CONFIG` is refused as
   ambiguous. `BITTY_PROFILE` is never an output target.
 - When a persisted selector lives in an explicit `--config`/`BITTY_CONFIG`
   file, its profile directory is the sibling `profiles/` directory of that
   file (the same location `bitty init` writes). One-launch `--profile` and
   `BITTY_PROFILE` continue to resolve under the user config root.
-- `config profile list` reads directory metadata only (no Lua evaluation);
-  `show` loads the bounded `extends` chain; `path` validates the name and
-  prints the resolved path without creating it.
 - `--force` is an explicit reset of the named generated file, with backups;
   a default run refuses an existing target instead of guessing. Lossless
   merge into arbitrary hand-edited Lua is not part of this slice: the wizard
@@ -681,9 +811,11 @@ return {
 }
 ```
 
-Absent `layout` tables (or absent keys within them) mean "this layer says
-nothing" and inherit silently. There are no per-panel-type gap overrides.
-Open: whether a CLI flag set grows to cover `layout.*`.
+An absent `layout` table means this layer says nothing and inherits. A
+declared `layout` table is complete, so omitted leaves take the built-in `0`
+default rather than the inherited value
+([Table completeness](#table-completeness)). There are no per-panel-type gap
+overrides. Open: whether a CLI flag set grows to cover `layout.*`.
 
 ## Shipped workspace decoration (Core-owned px reference)
 
@@ -759,10 +891,11 @@ merge commit `485fbfd` shipped the pre-CTX-0333 `4/6/2/6` set without
 - Unknown keys and out-of-range values fail closed with a source-attributed
   diagnostic; Core never falls back to a silent default when validation
   fails.
-- `decoration` deep-merges as a table while each field is scalar-replace
-  with per-field source attribution; project layers may set the surface
-  because it is presentation-only chrome with no process authority (like the
-  scrollbar), and the fields reload `Live`.
+- `decoration` merges as a complete table, so a declared table resolves every
+  geometry leaf (see [Table completeness](#table-completeness)) with per-field
+  source attribution; project layers may set the surface because it is
+  presentation-only chrome with no process authority (like the scrollbar), and
+  the fields reload `Live`.
 - The Core solver is total, deterministic, and saturating: `gaps_out`
   insets the workspace area, `gaps_in` reserves the band between siblings,
   `border` insets each View's content rect, and `radius` is carried as clip
@@ -789,8 +922,12 @@ The `CTX-0292` merge commit `485fbfd` shipped `gaps_in = 4, gaps_out = 6,
 border = 2, radius = 6` without `content_inset`; the canonical `6/6/2/6/6` set
 and `content_inset` shipped with `bitty` PR #562.
 
-Absent `decoration` tables (or absent keys within them) mean "this layer
-says nothing" and inherit silently.
+An absent `decoration` table means this layer says nothing and inherits. A
+declared `decoration` table is complete for its five geometry leaves, so an
+omitted `gaps_in`, `gaps_out`, `border`, `radius`, or `content_inset` takes the
+built-in default rather than the inherited value; the optional outline
+colour/width and background-image leaves keep inheriting when omitted
+([Table completeness](#table-completeness)).
 
 The px decoration is painted on the live present path (`bitty` PR #519
 `638ef81`, CTX-0294, plus the CTX-0311 SDF rounded fills in PR #533

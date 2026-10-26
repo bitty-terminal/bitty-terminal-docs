@@ -74,20 +74,35 @@ nested table, with strings at most 2048 bytes.
 
 The user file is `$XDG_CONFIG_HOME/bitty/init.lua` (fallback
 `~/.config/bitty/`; a sibling `config.lua` is accepted only when
-`init.lua` is absent). Named profiles live at
-`$XDG_CONFIG_HOME/bitty/profiles/<name>.lua` with single-parent `extends`
-chains and cycle detection. `BITTY_CONFIG` overrides the file path and
+`init.lua` is absent). `BITTY_CONFIG` overrides the file path and
 `BITTY_PROFILE` overrides the profile name; `--config` / `--profile` win
 over both.
+
+### Named profiles
+
+Named profiles live at `$XDG_CONFIG_HOME/bitty/profiles/<name>.lua` — or the
+sibling `profiles/` directory of an explicit `--config` / `BITTY_CONFIG` file
+— and compose through a single-parent `extends` chain with cycle detection.
+`bitty config profile` manages them with `create`, `clone`, `rename`,
+`delete`, `list`, `show`, `use`, `get`, `set`, and `path`; `use` rewrites only
+the persisted `profile = "…"` selector value, and `get`/`set` address the
+documented dotted scalar paths. Before editing a leaf of an inherited
+complete table, `set` pins the whole resolved table into the profile, so a
+parent's later edits no longer reach that table. The verbs, refusals,
+atomic-write contract, and accepted paths are in
+[Profile management commands](../configuration/lua-and-xdg.md#profile-management-commands);
+the table rule is in
+[Table completeness](../configuration/lua-and-xdg.md#table-completeness).
 
 Merge precedence, low to high: `CoreDefaults (0)` < `SystemDefaults (10)`
 < `SystemPolicy (20, non-overridable)` < `Distribution (30)` <
 `Profile (40)` < `User (50)` < `TrustedLocal (60, project-scoped,
-hash-bound consent)` < `Cli (70)`. Scalars replace, structured maps
-deep-merge, keymaps merge by `context + chord` identity, plugins merge by
-`id`. `bitty --safe` ignores every external layer and forces the safe
-effective config (decoration `0/0/1/0/0`, opaque outline pair, animations
-`0` ms, `views` dropped).
+hash-bound consent)` < `Cli (70)`. Scalars replace. A declared table is
+complete: omitted leaves take the built-in default, not the inherited value,
+except the optional leaves listed in the table-completeness rule. Keymaps
+merge by `context + chord` identity, plugins merge by `id`. `bitty --safe`
+ignores every external layer and forces the safe effective config (decoration
+`0/0/1/0/0`, opaque outline pair, animations `0` ms, `views` dropped).
 
 ## Startup salvage and strict diagnostics
 
@@ -787,10 +802,10 @@ merge), `--opacity <value>` (raw, fail-closed at merge),
 values exit `2`; missing `--config` / `--profile` / `--theme` /
 `--font-family` / `--font-size` / `--opacity` values warn-ignored.
 
-Subcommands: `config <path|check|edit>`, `init [--yes] [--force]
-[--scrollback <lines>] [--close-confirm <always|when_busy|never>]
-[--gaps-in <px>] [--gaps-out <px>] [--border <px>] [--radius <px>]`
-(init-only; validated fail-closed at dispatch), `doctor
+Subcommands: `config <path|check|show|validate|edit|profile>`, `init [--yes]
+[--force] [--scrollback <lines>] [--close-confirm
+<always|when_busy|never>] [--gaps-in <px>] [--gaps-out <px>] [--border <px>]
+[--radius <px>]` (init-only; validated fail-closed at dispatch), `doctor
 [--format <table|json|jsonl>] [--no-color]`, `run -- COMMAND...`,
 `ctl` (with `--socket` / `--instance`, before or after the word),
 `list|ls <kind> [--format <table|json|jsonl>] [--socket] [--instance]
