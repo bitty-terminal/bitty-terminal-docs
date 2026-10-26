@@ -17,9 +17,10 @@ sidebar_order: 13
 - Closes open question [OQ-001](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md); acceptance was
   recorded per the
   [documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md).
-- Implementation status: no Bitty product code exists. Every budget below is a
-  **target contract for future implementation**, not a claim about current
-  behavior. None of these numbers has been measured against a real build.
+- Implementation status: every budget below is a **target contract**, not a
+  claim about current behavior. No budget has an accepted measurement campaign
+  yet; the implementation-only observations recorded under PB-1 and PB-4 are
+  not acceptance evidence.
 - Provenance rule: all comparative figures come from third-party public
   sources of varying methodology rigor, following the provenance rules of the
   [documentation workflow](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/documentation-workflow.md). They
@@ -115,7 +116,9 @@ floor when plugins are disabled, which motivates budgets between those bands.
 
 ## Budgets
 
-Status: **accepted targets**, none measured yet. Each budget names its metric,
+Status: **accepted targets**. No budget below is accepted on measured evidence
+yet; the implementation-only observations recorded under PB-1 and PB-4 are not
+acceptance measurements. Each budget names its metric,
 measurement condition, and rationale. Enforcement mechanisms (benchmark
 harness, CI gates) require a follow-up implementation task before any of these
 become acceptance criteria.
@@ -132,6 +135,15 @@ become acceptance criteria.
   rather than assuming it.
 - Measurement: median/p99 of ≥ 50 launches via `hyperfine` or equivalent,
   recorded per Tier 1 platform once they exist.
+- Implementation observation (2026-10-27, unmerged `bitty` PR
+  [#2732](https://github.com/bitty-terminal/bitty/pull/2732), Linux reference
+  host, warm OS file cache, 1758 faces): a full `fontdb` discovery pass
+  measured 233–250 ms; with the persistent font index, warm
+  `SwashSingle::new` measured 7.3–7.8 ms, `Runtime::with_defaults` measured
+  9.3–13.3 ms, and end-to-end `bitty --headless` measured ~32–45 ms.
+  `BITTY_FONT_INDEX=0` restores the full scan for diagnosis. This is one
+  Linux host, not the ≥50-launch Tier 1 procedure above, so it is not
+  acceptance evidence; the budget is unchanged.
 
 ### PB-2 Idle memory
 
@@ -167,6 +179,14 @@ become acceptance criteria.
   ([core boundaries](../architecture/core-boundaries.md)) is what makes this
   budget defensible; the p50/p99 split detects tail spikes from interception
   events even when the median stays fast.
+- Implementation observation (2026-10-27, unmerged `bitty` PR
+  [#2732](https://github.com/bitty-terminal/bitty/pull/2732), Linux reference
+  host, warm OS file cache): the shaped stack measured ~2.2× the classic
+  per-frame cost in the microbenchmark; steady-state damage added +4.6 µs and
+  worst-case churn +0.22 ms per frame, remaining inside the 8 ms p50 budget.
+  This is one-host implementation evidence without an end-to-end
+  key-to-screen p50/p99 measurement, so it is not acceptance evidence; the
+  budget is unchanged.
 
 ### PB-5 Package size
 

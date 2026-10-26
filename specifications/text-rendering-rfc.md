@@ -447,14 +447,15 @@ promote this RFC beyond `draft`.
 - `DECSCUSR` (`CSI Ps SP q`) maps `0` to the configured default style,
   `1`/`2` to blinking/steady block, `3`/`4` to blinking/steady underline,
   and `5`/`6` to blinking/steady bar. Shape input handling is shipped in
-  `bitty-vt`; shape rendering, full shaping, ligature/kerning policy, and
-  color emoji remain candidate above.
+  `bitty-vt`; shape rendering is implemented through the shaped stack (see
+  [HarfBuzz shaped-stack phases](#harfbuzz-shaped-stack-phases-implementation-evidence));
+  kerning policy and color emoji remain candidate above.
 
 ### Shaping (HarfBuzz-grade), ligatures, and kerning
 
 Candidate contract — per-run shaping that preserves the grid:
 
-1. **Shaper adoption.** Shipped under Issue [#1666](https://github.com/bitty-terminal/bitty/issues/1666) (Task `CTX-0952`, PR [#1685](https://github.com/bitty-terminal/bitty/pull/1685), [#1690](https://github.com/bitty-terminal/bitty/pull/1690), [#1706](https://github.com/bitty-terminal/bitty/pull/1706)): the shaping engine adopts the pure-Rust HarfBuzz port **`harfrust`** together with **`swash`** and **`fontdb`**, preserving the `#![forbid(unsafe_code)]` supply-chain invariant. `crossfont` is retained as an unshaped fallback/baseline path. Shaping runs strictly on the **render-cold-path** inside `GridRenderer` after damage planning and never mutates terminal state.
+1. **Shaper adoption.** Shipped under Issue [#1666](https://github.com/bitty-terminal/bitty/issues/1666) (Task `CTX-0952`, PR [#1685](https://github.com/bitty-terminal/bitty/pull/1685), [#1690](https://github.com/bitty-terminal/bitty/pull/1690), [#1706](https://github.com/bitty-terminal/bitty/pull/1706)): the shaping engine adopts the pure-Rust HarfBuzz port **`harfrust`** together with **`swash`** and **`fontdb`**, preserving the `#![forbid(unsafe_code)]` supply-chain invariant. `crossfont` remains the explicit unshaped fallback path. Shaping runs strictly on the **render-cold-path** inside `GridRenderer` after damage planning and never mutates terminal state.
 2. **Runs, not per-cell calls.** Scalars of one `FramePlan` damage region are
    partitioned into shaping runs: maximal contiguous scalars of one script
    (Unicode `Script` property), one bidi level + direction, and one resolved
@@ -492,16 +493,47 @@ Candidate contract — per-run shaping that preserves the grid:
 
 #### HarfBuzz shaped-stack phases (implementation evidence)
 
-Status: **experimental review evidence only.** This subsection records what
-merged into `bitty` `origin/main` (`bitty-render` shaped stack); it does not
-accept the candidate sections above and claims no `Verified`/`Compatible`
+Status: **implementation evidence; the shaped stack is the production default
+on unmerged `bitty` PR [#2732](https://github.com/bitty-terminal/bitty/pull/2732)
+at `c87f1307` (2026-10-27, Issue
+[#2219](https://github.com/bitty-terminal/bitty/issues/2219), Task
+`CTX-1607`).** This subsection records what landed in `bitty-render`; it does
+not accept the candidate sections above and claims no `Verified`/`Compatible`
 status. Grid truth is untouched in every phase (snapshots by shared ref;
-every live test asserts equality).
+every live test asserts equality). Measurements below come from one Linux
+reference host; no macOS or Windows evidence is claimed.
 
+- **Default selection** (CTX-1607, `bitty` #2219, PR #2732): resolution is
+  ordered `shaped` → `crossfont` → `headless`. `auto` (default) and `shaped`
+  prefer the `harfrust` + `swash` + `fontdb` stack; `crossfont` is the
+  explicit and degraded fallback when the shaped stack cannot initialize, and
+  `BITTY_TEXT_STACK=classic` forces it. The deterministic headless rasterizer
+  closes the chain as a test/golden stack, never a production font path.
+  Every downgrade is observable: `Runtime::text_stack` reports the resolved
+  stack, `Runtime::text_stack_note` carries the fallback reason, startup logs
+  and the verbose tick line name it, and `bitty doctor` reports it in the
+  `text-stack` row. `font.features` and `font.disable_ligatures` travel
+  through the effective configuration (both restart-required).
+- **Grid-alignment degradation** (CTX-1607): malformed shaped output never
+  paints misaligned glyphs. The grid-tiling gate and the per-cell advance gate
+  degrade the offending group to unshaped per-cell rendering and increment
+  `RenderCounters::shaping_misaligned`; a whole-run shaper failure degrades
+  that run and increments `RenderCounters::shaping_fallback_runs`. A single
+  bad run never fails a frame.
+- **Measured startup cost** (CTX-1607, Linux reference host, JetBrainsMono
+  `12` pt, `80x24`, warm OS file cache, 1758 faces): a full `fontdb`
+  discovery pass measured 233–250 ms; with the persistent parse index the
+  warm `SwashSingle::new` measured 7.3–7.8 ms, `Runtime::with_defaults`
+  measured 9.3–13.3 ms, and end-to-end `bitty --headless` measured
+  ~32–45 ms. The index is reconciled against discovery on every start, so
+  installed, removed, and changed fonts are seen; `BITTY_FONT_INDEX=0`
+  restores the full scan for diagnosis. These are implementation observations
+  against PB-1, not acceptance measurements; the PB-1 budget is unchanged.
 - **Phase A additive landing** (CTX-0957, `bitty` #1685, part of #1666):
   `harfrust` + `swash` + `fontdb` wired as an opt-in shaping path behind
-  the existing `GlyphRasterizer` seam; production default stays `crossfont`
-  with zero behavior change. Crossfont parity baseline checked in
+  the existing `GlyphRasterizer` seam; at that point the production default
+  remained `crossfont` with zero behavior change. The production default flip
+  followed under CTX-1607 (above). Crossfont parity baseline checked in
   (`crossfont_baseline.json`, 124 rows); `shaped_parity` compares the
   shaped path against it with divergences allowlisted to the exact
   `KNOWN_DIVERGENT` set. `font.features` / `font.disable_ligatures`
