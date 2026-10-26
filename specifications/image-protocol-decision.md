@@ -136,10 +136,11 @@ deferral in the disposition above. It follows the bounded-adapter requirements
 of the "if instead admitted" path: the scoped Core task carried the protocol
 work, the pre-decode bounds, the fail-closed malformed-input handling, and the
 negative tests, and this docs task (CTX-1591) records the result. The adapter
-was implemented at `19a50380` and was **hardened in `26ce4f72` and
-`b6fb2a65`** (all CTX-1590, closing the pre-scan string-state escapes and the
-final escape-state gap); it was inspected read-only for this record, and no
-merge or release state is asserted here.
+was implemented at `19a50380`, **hardened in `26ce4f72`, `b6fb2a65`, and
+`cfdd0f8f`** (all CTX-1590, closing the pre-scan string-state escapes, the
+final escape-state gap, and the cursor-advance gap), and **merged to `bitty`
+`origin/main` as the squash commit `8f206dd8`** (PR bitty#2705). No release
+state is asserted here.
 
 The focused review reproduced two pre-scan string-state escapes (MF-1 and
 MF-2) that removed bytes `vte` needed to leave its own string state, leaving
@@ -153,9 +154,9 @@ doubling, and counts downstream decode/store/placement refusals through
 0.15's `advance_esc`, so `ESC 0x7F ]` and `ESC 0xC3 0xA9 ]` before an image
 dispatch the empty OSC and keep printing.
 
-> **Final citation.** The adapter is at `19a50380`, hardened in `26ce4f72` and
-> `b6fb2a65`; all three commits are on the CTX-1590 task branch, and no
-> `origin/main` merge or release state is claimed.
+> **Final citation.** The adapter is `19a50380`, hardened in `26ce4f72`,
+> `b6fb2a65`, and `cfdd0f8f`, and merged to `bitty` `origin/main` as squash
+> commit `8f206dd8` (PR bitty#2705). No release state is claimed.
 
 It admits nothing beyond that adapter and its hardening, moves no accepted
 ceiling, closes no open question, and claims no `Verified` or `Compatible`
@@ -165,8 +166,12 @@ status. Sixel remains refused.
 
 `OSC 1337 ; File=` inline images with an explicit `inline=1` and a PNG payload
 only. An admitted image is routed through the existing Kitty
-store/placement/present seam as `f=100` PNG at the drained cursor with the
-cursor held (`C=1`). There is no enable switch: the adapter is always on, and
+store/placement/present seam as `f=100` PNG at the drained cursor, with the
+seam's cursor-movement flag set to `C=0`: the cursor advances past the image's
+placement rectangle exactly as native `imgcat` leaves it. The WezTerm-only
+`doNotMoveCursor=1` extension that holds the cursor is not admitted. A
+pre-merge review caught the earlier `C=1` behavior, which let following shell
+output overwrite the image rows (`cfdd0f8f`). There is no enable switch: the adapter is always on, and
 only the caps and quotas gate admission. No configuration key or capability
 switch applies, unlike the gated OSC 52 clipboard write. The adapter reuses that
 seam rather than the `ImageSource::Iterm2` data-model variant, which stays
@@ -213,9 +218,9 @@ revision's work.
   or the render seam. An image the parser admitted but the runtime's decode,
   store, or placement quota refused is reported through
   `State::note_iterm2_refused`, so every iTerm2 refusal shares one counter.
-- A rejected image consumes its sequence, does not move the cursor, and paints
-  nothing; the counter and the rate-limited diagnostic are the only observable
-  effects.
+- A rejected image consumes its sequence, does not move the cursor (unlike an
+  admitted image, which advances it past the placement), and paints nothing; the
+  counter and the rate-limited diagnostic are the only observable effects.
 - The scanner grows the collected body in bounded steps, so retained capacity
   never exceeds `ITERM2_OSC_MAX_BODY_BYTES`, and releases the body buffer when
   the OSC terminates. A candidate whose prefix does not match is replayed
