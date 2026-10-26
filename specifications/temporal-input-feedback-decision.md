@@ -1,23 +1,23 @@
 ---
-title: Temporal Input Feedback (Candidate)
-description: Candidate decision for legible bounded presentation-only feedback on typing submit mode-change panel-action and command-lifecycle boundaries without adding input latency
+title: Temporal Input Feedback Decision
+description: Accepted decision for legible bounded presentation-only feedback on typing submit mode-change panel-action and command-lifecycle boundaries without adding input latency
 category: specifications
 audience: contributor
 document_type: specification
-status: draft
+status: accepted
 website_publish: false
 sidebar_order: 84
 ---
 
-# Temporal Input Feedback (Candidate)
+# Temporal Input Feedback Decision
 
 ## Document status
 
-> Status: **draft candidate** — not **Accepted**, **Verified**, **Implemented**,
-> **Compatible**, or normative. It records the direction bitty#2220 asks for:
-> input actions legible in time without delaying the PTY, reordering bytes, or
-> weakening an accepted control. It authorizes no implementation and claims no
-> behavior below exists.
+> Status: **accepted on 2026-10-27 by the project owner**. The six decisions
+> `T-01`..`T-06` were accepted as recommended. The record defines the contract
+> bitty#2220 asks for: input actions legible in time without delaying the PTY,
+> reordering bytes, or weakening an accepted control. It authorizes no
+> implementation and claims no behavior below exists.
 >
 > Revision note (2026-10-27): addresses the second and third delta reviews —
 > completion and lost-boundary policy, immediate settlement with a renderer-owned
@@ -31,8 +31,8 @@ sidebar_order: 84
 Owner: input and presentation surfaces (CTX-0156); issue:
 [bitty#2220](https://github.com/bitty-terminal/bitty/issues/2220).
 Implementation: none — no feedback state surface, indicator module, or feedback
-transition leaf exists. Promotion gate: owner answers `T-01`..`T-06` (or records
-the fail-safe defaults), independent review, then `status: accepted`.
+transition leaf exists. The accepted decisions are recorded below; implementation
+requires its own scoped tasks and gates.
 
 ## Purpose and scope
 
@@ -263,7 +263,7 @@ candidate requests **no new slot** and no Core-drawn bar. When both `bar` and
 wins, Core does not arbitrate beyond the band contract, and enabling both may
 duplicate labels (open point, not a Core policy).
 
-## Indicator contract (candidate, blocked on the provider contract)
+## Indicator contract (blocked on the provider contract)
 
 The candidate assigns Core the state, timing, cancellation, and accessibility
 semantics, and none of that surface exists yet. **Plugin rendering is a
@@ -376,7 +376,7 @@ inventory stay unchanged until acceptance.
 | PB-5 package size       | Stripped binary and package delta after link                                                                                                | Charged to PB-5; a `>100 KiB` delta is a candidate review trigger, not a budget change                                                                        |
 | Accessibility           | Headless state tests plus reduced-motion and `--safe` runs; adapter evidence is unavailable                                                 | Same committed state at `0 ms`; no color-only state; announcements remain a future-adapter contract                                                           |
 
-## Owner decisions
+## Accepted decisions
 
 | ID   | Decision                                                     | Recommendation                                                                                                                       | Fail-safe if not accepted                                                           |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
@@ -387,7 +387,7 @@ inventory stay unchanged until acceptance.
 | T-05 | How persistent is error/refusal feedback?                    | Minimum `2 s` dwell, then sticky until next input, dismiss command, or replacement; never flash-only                                 | Sticky until the next input; never auto-clear                                       |
 | T-06 | Is the action-class set closed, may plugins add classes?     | Closed set; plugins render but cannot define classes; a new class needs a reviewed revision                                          | Closed at the classes here; unknown classes render as plain state                   |
 
-A recorded answer or fail-safe default is a promotion precondition.
+Accepted on 2026-10-27 as recommended; a later change requires a reviewed revision.
 
 ## Acceptance mapping (bitty#2220)
 
