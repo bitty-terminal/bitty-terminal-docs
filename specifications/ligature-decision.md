@@ -33,7 +33,7 @@ when the shaped stack cannot initialize or forced with
 `BITTY_TEXT_STACK=classic`. `font.features` and `font.disable_ligatures`
 are wired through the effective configuration (both restart-required). The
 accepted disposition below is unchanged; this note records implementation
-status only. Merge commit: pending.
+status only. Merged as `56971c8c` (PR #2732).
 
 ## Purpose and scope
 
