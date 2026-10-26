@@ -22,6 +22,10 @@ sidebar_order: 30
   `bitty` repository owns the schemas, defaults, validation, and tests it
   mirrors. When code and this page disagree, the code wins and this page
   needs a fix.
+- The text-stack rows (`font.features`, `font.disable_ligatures`, and
+  `BITTY_TEXT_STACK`) cite unmerged `bitty` PR
+  [#2732](https://github.com/bitty-terminal/bitty/pull/2732) at `c87f1307`
+  (2026-10-27, CTX-1607); they are implemented-only until that PR merges.
 - Extraction method: `EffectiveConfig` and per-section structs in
   `bitty-config/src/types.rs`, chord/action grammar in
   `bitty-config/src/keymap.rs`, discovery bounds in
@@ -337,12 +341,29 @@ ceiling, manifest value, user layers, effective value, and source layer.
 
 ### `font`
 
-| Key path              | Type   | Default                   | Valid range                          | Fail-closed                    | Reload |
-| --------------------- | ------ | ------------------------- | ------------------------------------ | ------------------------------ | ------ |
-| `font.family`         | string | `JetBrainsMono Nerd Font` | trimmed non-empty, at most 128 bytes | ignore element / reject reload | live   |
-| `font.size`           | float  | `12.0`                    | finite, `(0, 128]`                   | ignore element / reject reload | live   |
-| `font.line_height`    | float  | `1.375`                   | finite, `[1.0, 2.0]`                 | ignore element / reject reload | live   |
-| `font.letter_spacing` | float  | `2.0`                     | finite, `[0.0, 8.0]`                 | ignore element / reject reload | live   |
+| Key path                 | Type   | Default                   | Valid range                                                                                                                                                                | Fail-closed                    | Reload  |
+| ------------------------ | ------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------- |
+| `font.family`            | string | `JetBrainsMono Nerd Font` | trimmed non-empty, at most 128 bytes                                                                                                                                       | ignore element / reject reload | live    |
+| `font.size`              | float  | `12.0`                    | finite, `(0, 128]`                                                                                                                                                         | ignore element / reject reload | live    |
+| `font.line_height`       | float  | `1.375`                   | finite, `[1.0, 2.0]`                                                                                                                                                       | ignore element / reject reload | live    |
+| `font.letter_spacing`    | float  | `2.0`                     | finite, `[0.0, 8.0]`                                                                                                                                                       | ignore element / reject reload | live    |
+| `font.features`          | list   | empty                     | at most 32 entries; each entry is `TAG`, `TAG=<u32>`, `TAG on`, `TAG off`, `+TAG`, or `-TAG`; `TAG` is exactly 4 ASCII alphanumeric characters; at most 16 bytes per entry | ignore element / reject reload | restart |
+| `font.disable_ligatures` | string | `never`                   | `never`, `cursor`, or `always`                                                                                                                                             | ignore element / reject reload | restart |
+
+#### Text stack and fallback
+
+`BITTY_TEXT_STACK` is a startup-only environment switch for the text stack,
+not an `init.lua` key and not live-reloadable. `auto` (default) and `shaped`
+resolve the `harfrust`/`swash`/`fontdb` stack first, then `crossfont`, then the
+deterministic headless rasterizer; `classic` forces `crossfont`. An unknown
+value is ignored with a startup warning and resolves to `auto`.
+
+`font.features` and `font.disable_ligatures` only apply while the shaped stack
+is active. The `crossfont` fallback keeps grid geometry and per-cell painting
+but has no shaping stage, so programming ligatures and OpenType feature
+overrides do not apply there. The resolved stack and any fallback reason are
+visible in startup logs, the verbose tick line, and `bitty doctor`'s
+`text-stack` row (`Runtime::text_stack` / `Runtime::text_stack_note`).
 
 ### `window`
 

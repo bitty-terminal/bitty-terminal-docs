@@ -25,6 +25,16 @@ sidebar_order: 42
 > [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md) row are
 > synchronized by this change.
 
+**Status note (2026-10-27, `bitty` PR [#2732](https://github.com/bitty-terminal/bitty/pull/2732) at `c87f1307`, unmerged).** The
+`harfrust`/`swash` stack is the production default (Issue
+[#2219](https://github.com/bitty-terminal/bitty/issues/2219), Task
+`CTX-1607`); `crossfont` is the explicit and degraded fallback, selected
+when the shaped stack cannot initialize or forced with
+`BITTY_TEXT_STACK=classic`. `font.features` and `font.disable_ligatures`
+are wired through the effective configuration (both restart-required). The
+accepted disposition below is unchanged; this note records implementation
+status only. Merge commit: pending.
+
 ## Purpose and scope
 
 This record answers the M1-22 question — adopt ligatures or record an explicit
