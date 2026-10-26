@@ -145,7 +145,8 @@ from contaminating each other.
 Image protocol decoding should not create GPU textures directly. The candidate
 model normalizes Kitty Graphics, Sixel, and iTerm2 image input into
 `ImageStore` and `ImagePlacement`, which then enter the scene or render
-snapshot.
+snapshot. Today the bounded PNG `OSC 1337 File=` iTerm2 subset follows this
+model through the shared Kitty seam; Sixel input is still refused.
 
 The architecture must preserve `Image != Cell`. Image identity, placement,
 anchors, clipping, stacking, and scrolling semantics must not be prematurely

@@ -80,7 +80,8 @@ stays in force. A real entry remains a future, separately reviewed change.
    same capabilities under a new name.
 2. **A wrong entry is worse than no entry.** A `bitty` entry that advertised
    Sixel, Kitty graphics, or other unimplemented protocols would mislead term-DB
-   probes; the accepted image contract keeps Sixel refused and iTerm2 deferred.
+   probes; the accepted image contract keeps Sixel refused and admits iTerm2
+   only as the bounded PNG `OSC 1337 File=` subset.
    Advertising capabilities Bitty lacks is a correctness defect, not a
    convenience.
 3. **The placeholder class is already closed.** The retired dummy was a

@@ -40,8 +40,8 @@ and does not weaken any normative security control.
 
 The authoritative image contract stays the accepted
 [Rich Presentation RFC](rich-presentation-rfc.md) (OQ-008, `IMG-1`..`IMG-9`);
-this page consumes it and does not redefine or reopen it. Refusals and
-deferrals for Sixel and iTerm2 stay with the recorded
+this page consumes it and does not redefine or reopen it. The Sixel refusal
+and the bounded iTerm2 admission stay with the recorded
 [Image Protocol Decision](image-protocol-decision.md) and the
 [Kitty Family Scope Decision](kitty-family-scope-decision.md).
 
@@ -80,8 +80,8 @@ Out of scope and owned elsewhere:
 - the Core integration that consumes the extension (`W-141`, `CTX-0934`);
 - final wire encoding, exact identifier spellings, and manifest schema, which
   stay provisional here until the extension contract accepts them;
-- protocol admission for Sixel and iTerm2, which stays with the recorded
-  refusal/deferral and any later scoped admission task;
+- protocol admission for Sixel, which stays with the recorded refusal; the
+  bounded iTerm2 subset is admitted only by the recorded decision;
 - the renderer's scene composition, z-order, and present path, owned by the
   accepted [Rich Presentation RFC](rich-presentation-rfc.md) and the graphics
   and appearance model;
@@ -121,8 +121,8 @@ This contract must be read together with, and must not weaken:
   ownership and the `PanelId != ViewId != TerminalId` identity separation.
 - The recorded [Image Protocol Decision](image-protocol-decision.md) and
   [Kitty Family Scope Decision](kitty-family-scope-decision.md): Kitty is the
-  admitted protocol, Sixel is refused, and iTerm2 is deferred behind a demand
-  and security gate.
+  admitted protocol, Sixel is refused, and iTerm2 is admitted only as the
+  bounded PNG `OSC 1337 File=` subset recorded there.
 - The accepted plugin-ecosystem contracts that bound any extension packaging:
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md),
   [Isolation and Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md),
@@ -235,9 +235,14 @@ un-validated payload.
 - **Sixel (refused).** The recorded refusal stands; `bitty inspect protocol
 sixel` reports unsupported and Sixel sequences are ignored while text and
   fallbacks keep working. This page opens no Sixel path.
-- **iTerm2 inline images (deferred).** No parser or decoder exists; the data
-  model variant is inert. Admission requires a new scoped task with demand
-  evidence and a security review.
+- **iTerm2 inline images (bounded subset).** A bounded PNG `OSC 1337 File=`
+  adapter with an explicit `inline=1` is `implemented-only` on `main`
+  (`8f206dd8`, bitty#2705): bounded base64 wire/decoded payload, attribute and
+  `name=` caps, a cell-span cap, and `IHDR` dimensions checked before PNG
+  decode, with every refusal counted. It reuses the Kitty store/placement seam,
+  so `ImageSource::Iterm2` stays unreachable. The data model variant remains
+  inert for this path. Wider iTerm2 forms still require their own scoped task
+  with demand evidence and a security review.
 
 ### Intake caps and where validation happens
 
@@ -564,30 +569,30 @@ Any later implementation that cites this contract must prove, at minimum:
 
 ## Alternatives considered
 
-| Alternative                                                | Trade-off                                                                                            | Disposition                                                                                               |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Keep decode in Core and extract nothing                    | Fewest moving parts, but leaves decode policy in the small core and contradicts ADR 0016 Boundary 2. | Rejected; decode moves to `bitty-graphics` under this contract.                                           |
-| Extract decode as an in-process crate only, with no worker | Simple and fast, but a codec panic or allocator spike has no crash containment.                      | Partially accepted as a test/headless entry; the decided decode execution shape is the bounded worker.    |
-| Trust the worker because it is first-party                 | Removes re-validation cost, but moves the trust decision out of Core.                                | Rejected; worker memory and output are never trusted and are re-validated before upload.                  |
-| Let the extension own placement, budget, or eviction       | Centralizes graphics logic, but divides the trust decision across owners.                            | Rejected; Core retains placement, resource policy, and the aggregate ledger.                              |
-| Treat the repository split as process isolation            | Cheap to document, but a repository is not an OS boundary and withdraws no risk.                     | Rejected; only the bounded worker adds containment, and framing, deadlines, and re-validation still bind. |
-| Decode inline on the parser or render path for latency     | Shortest path, but puts untrusted decode work on the hot path.                                       | Rejected; decode stays off the parser, render, and input hot paths.                                       |
-| Admit Sixel or iTerm2 here to widen coverage               | Broader protocol support, but multiplies decoder attack surface with no demand evidence.             | Rejected; the recorded refusal/deferral stands and any admission needs its own scoped task.               |
-| Let a worker restart without bound after repeated crashes  | Self-healing, but can spin and mask a persistent fault.                                              | Rejected; restarts are bounded and past the bound decode fails closed.                                    |
+| Alternative                                                | Trade-off                                                                                            | Disposition                                                                                                                       |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Keep decode in Core and extract nothing                    | Fewest moving parts, but leaves decode policy in the small core and contradicts ADR 0016 Boundary 2. | Rejected; decode moves to `bitty-graphics` under this contract.                                                                   |
+| Extract decode as an in-process crate only, with no worker | Simple and fast, but a codec panic or allocator spike has no crash containment.                      | Partially accepted as a test/headless entry; the decided decode execution shape is the bounded worker.                            |
+| Trust the worker because it is first-party                 | Removes re-validation cost, but moves the trust decision out of Core.                                | Rejected; worker memory and output are never trusted and are re-validated before upload.                                          |
+| Let the extension own placement, budget, or eviction       | Centralizes graphics logic, but divides the trust decision across owners.                            | Rejected; Core retains placement, resource policy, and the aggregate ledger.                                                      |
+| Treat the repository split as process isolation            | Cheap to document, but a repository is not an OS boundary and withdraws no risk.                     | Rejected; only the bounded worker adds containment, and framing, deadlines, and re-validation still bind.                         |
+| Decode inline on the parser or render path for latency     | Shortest path, but puts untrusted decode work on the hot path.                                       | Rejected; decode stays off the parser, render, and input hot paths.                                                               |
+| Admit Sixel or iTerm2 here to widen coverage               | Broader protocol support, but multiplies decoder attack surface with no demand evidence.             | Rejected here; the Sixel refusal stands and the bounded iTerm2 subset was admitted only through its own scoped task (bitty#2705). |
+| Let a worker restart without bound after repeated crashes  | Self-healing, but can spin and mask a persistent fault.                                              | Rejected; restarts are bounded and past the bound decode fails closed.                                                            |
 
 ## Affected contracts
 
-| Contract                                                                                                                                                        | Effect                                                                                                       |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md) | Consumed as the accepted boundary; this page records its terminal-side consequences only.                    |
-| [Rich Presentation RFC](rich-presentation-rfc.md) (accepted)                                                                                                    | Unchanged; `IMG-1`..`IMG-9`, `ImageStore`/`ImagePlacement`, and `Image != Cell` are consumed, not redefined. |
-| [Image Protocol Decision](image-protocol-decision.md) (draft)                                                                                                   | Consumed; Sixel refusal and iTerm2 deferral are not reopened.                                                |
-| [Kitty Family Scope Decision](kitty-family-scope-decision.md) (draft)                                                                                           | Consumed; the scope of deferral is not extended here.                                                        |
-| [Performance Budget RFC](performance-budget-rfc.md) (accepted)                                                                                                  | Unchanged; hot-path exclusion is consumed.                                                                   |
-| [Terminal State RFC](terminal-state-rfc.md) (accepted)                                                                                                          | Unchanged; Terminal Truth ownership is consumed.                                                             |
-| [Workspace Compositor Specification](workspace-compositor.md) (accepted)                                                                                        | Unchanged; identity separation is consumed.                                                                  |
-| Core integration `W-141` (`CTX-0934`)                                                                                                                           | Gains the placement, intake, budget, and validation requirements it must implement.                          |
-| `bitty-graphics` extension `CTX-0003`                                                                                                                           | Gains the worker lifecycle, framing, and output-cap constraints it must implement.                           |
+| Contract                                                                                                                                                        | Effect                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md) | Consumed as the accepted boundary; this page records its terminal-side consequences only.                      |
+| [Rich Presentation RFC](rich-presentation-rfc.md) (accepted)                                                                                                    | Unchanged; `IMG-1`..`IMG-9`, `ImageStore`/`ImagePlacement`, and `Image != Cell` are consumed, not redefined.   |
+| [Image Protocol Decision](image-protocol-decision.md) (draft)                                                                                                   | Consumed; the Sixel refusal is not reopened, and iTerm2 is admitted only as the bounded subset recorded there. |
+| [Kitty Family Scope Decision](kitty-family-scope-decision.md) (draft)                                                                                           | Consumed; the scope of deferral is not extended here.                                                          |
+| [Performance Budget RFC](performance-budget-rfc.md) (accepted)                                                                                                  | Unchanged; hot-path exclusion is consumed.                                                                     |
+| [Terminal State RFC](terminal-state-rfc.md) (accepted)                                                                                                          | Unchanged; Terminal Truth ownership is consumed.                                                               |
+| [Workspace Compositor Specification](workspace-compositor.md) (accepted)                                                                                        | Unchanged; identity separation is consumed.                                                                    |
+| Core integration `W-141` (`CTX-0934`)                                                                                                                           | Gains the placement, intake, budget, and validation requirements it must implement.                            |
+| `bitty-graphics` extension `CTX-0003`                                                                                                                           | Gains the worker lifecycle, framing, and output-cap constraints it must implement.                             |
 
 ## Open points
 
@@ -609,9 +614,9 @@ None of these is a new global open question; each is parked with its named owner
   reviewed Kitty path admits `8192` px per side within the same `4096²` area
   and `64 MiB` byte budget; the accepted `IMG-2` wording stays authoritative
   until the owning revision aligns it.
-- **Sixel and iTerm2 admission** parked to a future scoped task: demand
-  evidence, protocol work, and a security review are prerequisites, never
-  convenience.
+- **Sixel admission** parked to a future scoped task: demand evidence,
+  protocol work, and a security review are prerequisites, never convenience.
+  The bounded iTerm2 subset went through that path in bitty#2705 (`8f206dd8`).
 
 ## Acceptance criteria
 
