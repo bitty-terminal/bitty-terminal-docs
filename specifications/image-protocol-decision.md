@@ -42,13 +42,13 @@ and the animation lifecycle, all of which stay with the accepted RFC.
 
 ## Source identity
 
-| Source                                                                                                            | Role                                                                             |
-| ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [Rich Presentation RFC](rich-presentation-rfc.md)                                                                 | Accepted image contract (OQ-008); open point 2 records the bounded iTerm2 subset |
-| [Compatibility Milestone RFC](compatibility-milestone-rfc.md)                                                     | Accepted M1 matrix: Images are `Out of M1`, deferred to the image-protocol RFC   |
-| [Rich Content](../interfaces/rich-content.md)                                                                     | Candidate rich-surface contract; records Sixel and iTerm2 as unimplemented       |
-| [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md)                                                 | iTerm2 is `implemented-only (bounded subset)`; Sixel is `missing; refused`       |
-| [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) | Cross-project governance, linked not copied; no dedicated image-scope OQ open    |
+| Source                                                                                                            | Role                                                                              |
+| ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [Rich Presentation RFC](rich-presentation-rfc.md)                                                                 | Accepted image contract (OQ-008); open point 2 records the bounded iTerm2 subset  |
+| [Compatibility Milestone RFC](compatibility-milestone-rfc.md)                                                     | Accepted M1 matrix: Images are `Out of M1`, deferred to the image-protocol RFC    |
+| [Rich Content](../interfaces/rich-content.md)                                                                     | Candidate rich-surface contract; bounded iTerm2 subset; Sixel still unimplemented |
+| [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md)                                                 | iTerm2 is `implemented-only` (bounded subset); Sixel is `missing; refused`        |
+| [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) | Cross-project governance, linked not copied; no dedicated image-scope OQ open     |
 
 Implementation evidence, read-only from `bitty` `origin/main` `fce0c3b`
 (2026-09-20), the historical baseline for this record:
@@ -109,12 +109,12 @@ protocol work, demand evidence, and a security review.
   statement. The [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md)
   row keeps `missing; refused`, and `bitty inspect protocol` may add an explicit
   `iterm2` entry beside the existing `sixel` one. No accepted ceiling moves.
-- **If instead admitted:** a new scoped task adds one bounded adapter per
-  protocol (payload cap, dimension and allocation checks before decode,
-  fail-closed malformed input), makes the `ImageSource` variant reachable, and
-  lands negative tests plus a focused security review before any `Compatible`
-  claim. Admission requires demonstrated demand and a protocol-work estimate,
-  not convenience.
+- **If instead admitted:** the bounded-adapter requirements are met by the
+  scoped task recorded below — payload cap, pre-decode dimension checks, a
+  fail-closed parser, and negative tests. The adapter reuses the Kitty
+  store/placement seam instead of making `ImageSource::Iterm2` reachable;
+  demand evidence and the protocol-work estimate live in
+  [bitty#2217](https://github.com/bitty-terminal/bitty/issues/2217).
 
 ### Security and bounds
 
@@ -135,57 +135,92 @@ Status: **implemented-only, bounded subset.** This record supersedes the iTerm2
 deferral in the disposition above. It follows the bounded-adapter requirements
 of the "if instead admitted" path: the scoped Core task carried the protocol
 work, the pre-decode bounds, the fail-closed malformed-input handling, and the
-negative tests, and this docs task (CTX-1591) records the result. It admits
-nothing beyond the adapter implemented at `19a50380` (CTX-1590,
-[bitty#2217](https://github.com/bitty-terminal/bitty/issues/2217), 2026-10-26),
-inspected read-only for this record; no merge or release state is asserted
-here. It moves no accepted ceiling, closes no open question, and claims no
-`Verified` or `Compatible` status. Sixel remains refused.
+negative tests, and this docs task (CTX-1591) records the result. The adapter
+was implemented at `19a50380` and was **hardened in `26ce4f72`** (both
+CTX-1590, closing the pre-scan string-state escapes); it was inspected read-only
+for this record, and no merge or release state is asserted here.
+
+The focused review reproduced two pre-scan string-state escapes (MF-1 and
+MF-2) that removed bytes `vte` needed to leave its own string state, leaving
+its uncapped OSC collector open for the rest of the stream: measured
+~259-272 MiB RSS growth on a 256 MiB tail. `26ce4f72` closes both escapes,
+requires the PNG `IHDR` chunk length to declare its 13 bytes before dimensions
+are read, grows the collected body in bounded steps so retained capacity stays
+at `ITERM2_OSC_MAX_BODY_BYTES`, and counts downstream decode/store/placement
+refusals through `State::note_iterm2_refused`.
+
+> **Pending citation.** The final hardening commit (the `0x7F..=0xFF`
+> escape-state fix, plus its two tests) is not yet in this record; it will be
+> appended here when it lands. The omission is deliberate and visible, not
+> silent.
+
+It admits nothing beyond that adapter and its hardening, moves no accepted
+ceiling, closes no open question, and claims no `Verified` or `Compatible`
+status. Sixel remains refused.
 
 ### What is admitted
 
 `OSC 1337 ; File=` inline images with an explicit `inline=1` and a PNG payload
 only. An admitted image is routed through the existing Kitty
 store/placement/present seam as `f=100` PNG at the drained cursor with the
-cursor held (`C=1`); per-origin store and placement quotas, alternate-screen
-stashing, and the present blit budget apply unchanged. The adapter reuses that
+cursor held (`C=1`). There is no enable switch: the adapter is always on, and
+only the caps and quotas gate admission. No configuration key or capability
+switch applies, unlike the gated OSC 52 clipboard write. The adapter reuses that
 seam rather than the `ImageSource::Iterm2` data-model variant, which stays
 unreachable. The iTerm2 download form does not exist in Bitty: no protocol input
 writes a file.
 
+Per-origin store and placement quotas are implemented in the shared seam and
+apply unchanged (S5, #1849): an origin evicts its own oldest images first, a
+noisy origin cannot evict another origin's images, and global pressure refuses
+instead of evicting across origins. Alternate-screen stashing and the present
+blit budget also come from the shared seam; no iTerm2-specific test covers the
+stashing path.
+
 ### Bounds
 
-| Bound                              | Value                                                                                   |
-| ---------------------------------- | --------------------------------------------------------------------------------------- |
-| Base64 wire payload                | 4 MiB (`ITERM2_OSC_MAX_WIRE_BYTES`, IMG-1 parity)                                       |
-| Decoded payload                    | 3 MiB (`ITERM2_OSC_MAX_DECODED_BYTES`)                                                  |
-| Attribute header (`key=value;...`) | 4096 bytes (`ITERM2_OSC_MAX_ATTRIBUTE_BYTES`)                                           |
-| Decoded `name=`                    | 256 bytes (`ITERM2_OSC_MAX_NAME_BYTES`); validated and dropped                          |
-| Requested `width`/`height` span    | 4096 cells per axis (`ITERM2_OSC_MAX_CELL_SPAN`); `auto` or a cell count only           |
-| PNG side                           | 8192 px (`ITERM2_DECODE_MAX_DIMENSION`)                                                 |
-| PNG area                           | 4096 x 4096 px (`ITERM2_DECODE_MAX_PIXELS`)                                             |
-| Format                             | PNG only; the signature and `IHDR` dimensions are checked before any decoder allocation |
+| Bound                              | Value                                                                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Base64 wire payload                | 4 MiB (`ITERM2_OSC_MAX_WIRE_BYTES`, IMG-1 parity)                                                                              |
+| Decoded payload                    | 3 MiB (`ITERM2_OSC_MAX_DECODED_BYTES`)                                                                                         |
+| Attribute header (`key=value;...`) | 4096 bytes (`ITERM2_OSC_MAX_ATTRIBUTE_BYTES`)                                                                                  |
+| Decoded `name=`                    | 256 bytes (`ITERM2_OSC_MAX_NAME_BYTES`); validated and dropped                                                                 |
+| Requested `width`/`height` span    | 4096 cells per axis (`ITERM2_OSC_MAX_CELL_SPAN`); `auto` or a cell count only                                                  |
+| PNG side                           | 8192 px (`ITERM2_DECODE_MAX_DIMENSION`)                                                                                        |
+| PNG area                           | Total area 16,777,216 px (`width*height`); 8192 x 2048 admitted, 5000 x 5000 refused                                           |
+| Format                             | PNG only; the 13-byte `IHDR` chunk length and dimensions are checked before PNG decode/allocation; base64 decode happens first |
 
 The collected body cap is the header cap plus one separator byte plus the wire
 cap; an over-cap body is dropped without further buffering and counted as
 refused.
 
-IMG-2 states `4096 x 4096` px. This adapter permits `8192` px per side within a
-`4096 x 4096`-pixel area, the same relationship the Kitty path records as a
-deviation from the IMG-2 wording in the [Rich Presentation RFC](rich-presentation-rfc.md#kitty-probe-and-alternate-screen-image-evidence);
+IMG-2 states `4096 x 4096` px. This adapter caps each side at `8192` px and the
+total area at `16,777,216` px (`width*height`): `8192 x 2048` is admitted and
+`5000 x 5000` is refused. That is the same relationship the Kitty path records
+as a deviation from the IMG-2 wording in the
+[Rich Presentation RFC](rich-presentation-rfc.md#kitty-probe-and-alternate-screen-image-evidence);
 the memory ceiling is unchanged, and aligning IMG-2 remains the owning RFC
 revision's work.
 
 ### Fail-closed accounting
 
-- Every parser refusal emits the inert `TerminalAction::Iterm2ImageRejected`
-  action. Terminal state counts it in `iterm2_refused` and does nothing else:
-  no store, no placement, no paint, no partial payload.
-- The scanner releases the body buffer when the OSC terminates. A candidate
-  whose prefix does not match is replayed byte-for-byte into `vte`, so every
-  other OSC path is unchanged.
-- An admitted image that the downstream seam cannot store or place fails closed
-  and is logged; nothing is painted.
+- Every refusal counts. A parser refusal emits the inert
+  `TerminalAction::Iterm2ImageRejected` action, which terminal state counts in
+  `iterm2_refused`; that request never reaches the store, the placement layer,
+  or the render seam. An image the parser admitted but the runtime's decode,
+  store, or placement quota refused is reported through
+  `State::note_iterm2_refused`, so every iTerm2 refusal shares one counter.
+- A rejected image consumes its sequence, does not move the cursor, and paints
+  nothing; the counter and the rate-limited diagnostic are the only observable
+  effects.
+- The scanner grows the collected body in bounded steps, so retained capacity
+  never exceeds `ITERM2_OSC_MAX_BODY_BYTES`, and releases the body buffer when
+  the OSC terminates. A candidate whose prefix does not match is replayed
+  byte-for-byte into `vte`, so every other OSC path is unchanged.
+- The pre-scan tracks the `vte` string state it forwards, so a matched candidate
+  cannot swallow the terminator that closes an open OSC/DCS/SOS/PM, and an
+  aborted APC routes `ESC ]` into the diverted path instead of `vte`'s uncapped
+  collector (`26ce4f72`, closing MF-1 and MF-2).
 
 ### Deliberately refused forms
 
@@ -209,26 +244,44 @@ revision's work.
 
 - Parser and bounds: `crates/bitty-vt/src/iterm2_osc.rs`, wired in
   `crates/bitty-vt/src/parser.rs`; the constant names above are the code's own.
+  `26ce4f72` adds the `IHDR` chunk-length check and the bounded body growth.
 - Runtime routing and refusal logging: `crates/bitty-runtime/src/runtime/pty.rs`.
-- Counter: `TelemetryCounters::iterm2_refused` in
-  `crates/bitty-term-state/src/state.rs`.
-- Capability wording: `bitty inspect protocol iterm2-inline-images` reports the
-  bounded subset, the doctor image row names it beside `kitty-graphics`, and
-  `sixel` stays `unsupported`.
-- Tests: `crates/bitty-vt/src/iterm2_osc.rs` module tests;
+- Counter: `TelemetryCounters::iterm2_refused` and `State::note_iterm2_refused`
+  in `crates/bitty-term-state/src/state.rs`; parser and downstream refusals
+  share the counter.
+- Capability wording: `bitty inspect protocol iterm2-inline-images` prints
+  `supported` for the bounded subset. That tool word means "capability
+  present"; it is not the lifecycle `Verified` status this record withholds.
+  The doctor image row names the subset beside `kitty-graphics`, and `sixel`
+  stays `unsupported`.
+- Tests: `crates/bitty-vt/src/iterm2_osc.rs::body_growth_stays_within_the_cap`,
+  `::ihdr_chunk_length_must_be_thirteen`;
   `crates/bitty-vt/src/parser/tests.rs::osc1337_refusals_are_counted_inert_actions`,
-  `::osc1337_other_commands_stay_inert_unknown_osc`;
+  `::osc1337_other_commands_stay_inert_unknown_osc`,
+  `::unterminated_osc_title_is_closed_before_a_diverted_image`,
+  `::unterminated_osc_title_is_closed_before_a_refused_image`,
+  `::unterminated_non_image_osc_1337_is_closed_before_a_diverted_image`,
+  `::unterminated_osc_52_is_closed_before_a_diverted_image`,
+  `::unterminated_dcs_is_closed_before_a_diverted_image`,
+  `::image_after_aborted_apc_is_admitted`,
+  `::image_after_aborted_apc_split_across_reads_is_admitted`,
+  `::osc1337_body_cap_bounds_the_parser_body_behind_an_aborted_apc`;
   `crates/bitty-term-state/src/state/tests.rs::iterm2_inline_image_is_inert_and_refusals_are_counted`;
-  `crates/bitty-runtime/tests/iterm2_inline_images.rs` (admitted placement,
-  auto sizing, split reads, oversize/format/transmit-only refusals, and Kitty
-  coexistence).
-- Live pixel evidence: none is recorded for this adapter. The commit adds
+  `crates/bitty-runtime/tests/iterm2_inline_images.rs::inline_image_lands_on_the_cursor_cell_rect`,
+  `::oversize_payload_fails_closed_and_is_counted`,
+  `::downstream_decode_failure_is_counted_as_a_refusal`,
+  `::kitty_graphics_still_works_alongside_osc_1337` (plus the auto-size,
+  split-read, unsupported-format, and transmit-only cases in the same file).
+- Live pixel evidence: none is recorded for this adapter. Both commits add
   headless tests only; no live-campaign paint result is claimed.
 
 ### Review gate
 
-The admission is **subject to the focused security review recorded in the
-task**; this record asserts no approval beyond that task record.
+The focused security review reproduced two escapes (MF-1 and MF-2), both closed
+in `26ce4f72`. Its final `0x7F..=0xFF` escape-state fix is still landing, so the
+review is not recorded as closed here and this record asserts no approval. The
+admission remains **subject to the focused security review recorded in the
+task**.
 
 ## Verification backlog
 

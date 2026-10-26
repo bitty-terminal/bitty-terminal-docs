@@ -331,10 +331,14 @@ Status: **experimental review evidence only.** This subsection records the
 Kitty graphics pipeline merged in `bitty` `origin/main` (read-only at
 `1f31435`, verified via `merge-base --is-ancestor`). It changes no accepted
 ceiling above, grants no new capability, and does not promote this RFC beyond
-`accepted`. Sixel remains unimplemented. iTerm2 inline images are
-`implemented-only` as the bounded PNG `OSC 1337 File=` subset recorded in the
-[Image Protocol Decision](image-protocol-decision.md#admission-record-2026-10-26);
-that subset makes no `Verified` or `Compatible` claim.
+`accepted`. Sixel remains unimplemented.
+
+The iTerm2 inline-image adapter is a separate `implemented-only` bounded PNG
+`OSC 1337 File=` subset (commit `19a50380`, hardened in `26ce4f72`; **unmerged**
+at the time of this record, with no `origin/main` merge claimed). Its bounds,
+refusals, and pending final hardening citation are recorded in the
+[Image Protocol Decision](image-protocol-decision.md#admission-record-2026-10-26).
+Neither protocol makes a `Verified` or `Compatible` claim here.
 
 What merged, exactly:
 
@@ -435,13 +439,16 @@ Recorded deviations and open items (not silently resolved):
   parser and all pane parsers are charged against IMG-4 before buffering more
   input (bitty#1576).
 - Images are topmost over same-origin cursor and selection fills
-  (cursor-on-top is follow-up), the decoded-image store is global FIFO (a
-  noisy origin can evict another origin's stored images; per-origin quotas are
-  follow-up), and scroll-region (`DECSTBM`) moves that do not grow scrollback
-  are not tracked (full-screen scroll is exact).
+  (cursor-on-top is follow-up); the decoded-image store and placements are
+  quota-managed per origin, evicting that origin's oldest entries first
+  (S5, #1849), so a noisy origin cannot evict another origin's images and
+  global pressure refuses instead of evicting across origins; scroll-region
+  (`DECSTBM`) moves that do not grow scrollback are not tracked (full-screen
+  scroll is exact).
 - Animation and image delete/query actions remain unimplemented, and the Sixel
   adapter remains unimplemented. The iTerm2 inline-image adapter is
-  `implemented-only` as the bounded PNG `OSC 1337 File=` subset recorded in the
+  `implemented-only` as the bounded PNG `OSC 1337 File=` subset (`19a50380`,
+  hardened in `26ce4f72`, unmerged) recorded in the
   [Image Protocol Decision](image-protocol-decision.md#admission-record-2026-10-26);
   no `Verified`/`Compatible` claim is made here.
 

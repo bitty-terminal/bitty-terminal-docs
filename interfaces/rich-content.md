@@ -287,8 +287,11 @@ pixel evidence. The exact pipeline, bounds, deviations, and deferred pieces
 are recorded in the [Rich Presentation RFC](../specifications/rich-presentation-rfc.md)
 decode/placement evidence subsections. This document otherwise remains a
 candidate contract: nothing here becomes a stable or supported API by virtue
-of those experimental milestones, and Sixel, iTerm2 inline images, animation,
-and the structured transports below remain unimplemented.
+of those experimental milestones, and Sixel, animation, and the structured
+transports below remain unimplemented. iTerm2 inline images are admitted only
+as the bounded `OSC 1337 File=` subset (PNG with an explicit `inline=1`); its
+bounds and refused forms are recorded in the
+[Image Protocol Decision](../specifications/image-protocol-decision.md#admission-record-2026-10-26).
 
 Current model boundary (2026-10-21, `bitty` `origin/main` `f246dc55`):
 `RichBlock` and `SceneNode` (`crates/bitty-rich/src/scene.rs`) exist only as
