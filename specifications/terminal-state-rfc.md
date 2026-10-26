@@ -120,7 +120,7 @@ enum Action {
     RequestDeviceStatus { kind: StatusKind },     // produces a Reply action output
     Reply { bytes: Box<[u8]> },                   // bounded response written to PTY
 
-    // OSC handling (terminated payloads, already length-bounded by the parser)
+    // OSC handling (terminated payloads, bound by the control-string budget)
     OscTitle { text: BoundedString },
     OscClipboard { op: ClipboardOp, data: BoundedBytes },  // gated by P0 policy
     OscCwd { url: BoundedString },                // OSC 7
@@ -143,13 +143,47 @@ telemetry so unmapped sequences cannot silently grow.
 ### Parser obligations
 
 - Bounded parsing per the security baseline: maximum parameter count, parameter
-  magnitude, OSC payload size, and sequence length; exceeding a limit yields a
-  well-defined `Action` (truncate/cancel) rather than unbounded growth or a
-  wedge (threat T-01).
+  magnitude, control-string body size, and sequence length; exceeding a limit
+  yields a well-defined `Action` (truncate/cancel) rather than unbounded growth
+  or a wedge (threat T-01).
+  - **Control-string budget.** One parser-level budget,
+    `CONTROL_STRING_MAX_BYTES = 4,198,413` body bytes, covers OSC (any id),
+    DCS, SOS, PM, and the APC header/discard path. The value is the iTerm2
+    maximum (4 MiB payload, its 4 KiB attribute header, and separator) plus the
+    `ESC ]` introducer and `1337;File=` prefix, so a legitimate maximum-size
+    iTerm2 candidate is admitted rather than refused.
+    Accepted Kitty graphics payloads are exempt from this budget and remain
+    bounded by IMG-1 and IMG-3 in the
+    [Rich Presentation RFC](rich-presentation-rfc.md), so a large legitimate
+    image is not refused. A terminated string at the cap is admitted; one byte
+    over is refused.
+  - **Overflow behaviour.** On the byte past the cap the parser injects `CAN`
+    (`0x18`) so `vte` leaves the string state; it emits
+    `ControlStringRejected { kind, reason: Overflow }` and increments the
+    `control_string_refused` telemetry counter. The remainder is swallowed
+    until the real terminator, then parsing recovers on the wire. The
+    parser-handled APC never reaches `vte`: it aborts locally under the same
+    cap, drops its accumulated header, and emits the same refusal.
+  - **Refusal semantics.** Refusal is bounded, not inert: the prefix already
+    fed to `vte` is dispatched before the abort, so one truncated mapped action
+    may still apply, including a truncated `OSC 52` clipboard write that
+    remains subject to the clipboard gate. Only the tail past the cap is
+    dropped.
+  - **DCS substate.** A C1 `ST` (`0x9C`) terminates only a DCS that `vte` has
+    hooked, matching `vte`; in a DCS header and in SOS/PM strings it is
+    ignored. The tracker returns to `Ground` on the terminating byte, so
+    following text is not miscounted as an unterminated string.
 - Every intermediate parse state must be reachable from any byte; malformed
   sequences resynchronize deterministically (defined recovery byte handling).
 - UTF-8 decoding follows a single specified policy for invalid bytes (replace
   with U+FFFD, one cell), identical offline and live.
+
+Status of the control-string budget: **implemented-only**, not `Verified` or
+`Compatible`. The shipped behavior is `bitty` PR
+[#2716](https://github.com/bitty-terminal/bitty/pull/2716) (squash `144e7a5c`,
+2026-10-26); the cap boundary, overflow recovery, and truncated-prefix
+application are pinned by `crates/bitty-vt/tests/control_string_cap.rs` and the
+parser's control-string tests.
 
 ## Grid and state invariants
 
