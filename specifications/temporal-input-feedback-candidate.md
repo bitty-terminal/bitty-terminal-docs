@@ -19,8 +19,9 @@ sidebar_order: 84
 > weakening an accepted control. It authorizes no implementation and claims no
 > behavior below exists.
 >
-> Revision note (2026-10-27): addresses the second delta review — completion and
-> lost-boundary policy, burst arithmetic, repeat-window wording, renderer and
+> Revision note (2026-10-27): addresses the second and third delta reviews —
+> completion and lost-boundary policy, immediate settlement with a renderer-owned
+> presentation hold, burst arithmetic, repeat-window wording, renderer and
 > `--safe` propagation, Core chrome accent ownership, and status honesty. Still
 > open: live completion evidence, renderer-independent `--safe` legibility, the
 > contrast token contract, the announcement adapter, and the provider contract.
@@ -95,7 +96,8 @@ The **repeat-coalescing window** is a wall-clock interval from the first trigger
 during which further triggers do not start a new burst; it is independent of the
 burst cap and is not extended by holds. The **committed state** is the final,
 already-correct presentation that exists with or without motion. **Minimum
-visible** is the shortest time a progress indicator stays presented once shown. A
+visible** is the shortest time a renderer keeps a progress indicator presented
+once shown; it is presentation-only and never delays state settlement. A
 **command boundary** is an explicit signal that a command started or finished. A
 **mode** here is a Core user mode (scrollback copy/selection, the search overlay);
 parser-driven terminal modes such as `DECCKM`, mouse capture, alternate screen, or
@@ -118,7 +120,7 @@ bracketed paste are terminal state and never receive a feedback label.
    transitions, but with no renderer installed or under `--safe` the state has no
    user-visible form.
 6. **No periodic wakeups when idle.** Frames run only while a bounded animation
-   is active; a minimum-visible hold is one one-shot deadline that fires at most
+   is active; the `settled` exit uses one one-shot deadline that fires at most
    once and schedules nothing after.
 7. **No plugin work per frame, and no plugin read path yet.** Plugin rendering
    waits for the status-provider contract; until then Core state exists alone.
@@ -144,31 +146,44 @@ idle -> ack (<=80 ms) -> submitted | pasting | active (starting -> running)
    machine returns to `idle` — no `starting` or progress state is invented.
    `active` lasts as long as the action, but it schedules no frames while
    unchanged and implies no completion time.
-4. `active` settles only on a signal from the producer that declared the boundary:
-   a command-finished mark (OSC 133 `D`), an action scope disposed with an
-   outcome, or PTY/session close. `done` and `failed` require an explicit outcome,
-   `refused` a producer refusal, and `unknown` means the boundary was lost (shell
-   crash, dropped end mark, disposed scope without outcome). If the loss cannot be
-   detected, the state must rest at `running`, which means **started, completion
-   unknown** — never "in progress" and never an implied completion time. No
-   timeout may invent completion.
-5. `settled` applies the committed state first and optionally animates entry; a
-   newer trigger of the same class replaces the current one, so feedback never
-   queues unboundedly or stacks.
+4. `active` settles only on a signal from the producer that declared the boundary,
+   and Core applies the result immediately. OSC 133 `D` with an exit code settles
+   `done` (zero) or `failed` (non-zero); `D` without an exit code settles
+   `unknown` — the command finished, the outcome did not; a normal PTY/session
+   close without an outcome settles `unknown`, never `failed`; an action scope
+   disposed without an outcome settles `unknown`; a producer refusal settles
+   `refused`. `unknown` therefore means **outcome unknown or boundary lost** (shell
+   crash, dropped end mark, close or disposal without outcome). Settlement never
+   waits for a presentation deadline. If neither an outcome nor a loss is
+   detectable, the state must rest at `running`, which means **started, completion
+   unknown** — never "in progress" and never an implied completion time. The state
+   channel must never show `running` after completion, and no timeout may invent
+   completion.
+5. `settled` publishes its terminal phase immediately — it never delays
+   settlement for presentation — and schedules no frames. It exits to `idle` at
+   the class dwell deadline (the minimum-visible hold for progress, the `2 s`
+   dwell for error and refusal) or on the next action, whichever comes first;
+   error and refusal additionally stay sticky until input, dismissal, or
+   replacement. A renderer may keep the completed indicator visible for that
+   deadline, and Core never returns a completed action to `running` or to an
+   earlier phase. `unknown` is a plain label: it takes the minimum-visible hold
+   only, carries no error glyph, and never takes the `2 s` error dwell.
 
-| Action class         | State channel (Core, not always visible)                                                                        | Motion channel (optional)              | Window                                                                      | Cancel and coalesce                                                          |
-| -------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Printable keypress   | Echo only; no indicator                                                                                         | None                                   | `0 ms`                                                                      | Never animates; echo and PTY write unchanged                                 |
-| Enter / submit       | `submitted` after ack until first output/next input                                                             | Renderer ack accent                    | Ack `≤80 ms`, then rest; no progress claim                                  | First output, next input, or focus change ends it; key repeat never restarts |
-| Paste commit         | `pasting`, then `pasted` or `refused`                                                                           | Renderer ack, never per byte or line   | Ack `≤80 ms`; rest bounded by the paste commit                              | Oversized or rejected paste uses the error class                             |
-| Mode change          | Explicit text label naming the Core user mode                                                                   | Renderer accent `120..=180 ms`         | Persists while active; motion `≤180 ms`                                     | Next mode replaces; exit commits immediately                                 |
-| Panel / action start | `ack`, then `starting` only when a boundary is known                                                            | Entry transition `120..=180 ms`        | Entry `≤180 ms`; minimum visible `150..=200 ms` once shown                  | No boundary means ack only; completion commits; cancel shows final state     |
-| Long-running command | `active`: `starting`, then `running` (started, completion unknown); settles `done`/`failed`/`refused`/`unknown` | Determinate steps only, `≤180 ms` each | While active; entry and completion bursts `120..=180 ms` each               | No loop and no spinner; indeterminate work is static after entry             |
-| Error / refusal      | `settled`: label plus status glyph                                                                              | Entry `≤180 ms`; no exit flash         | Minimum dwell `≥2000 ms`, then sticky until next input, dismiss, or replace | Replaced only by a newer state; never auto-clears below the dwell            |
+| Action class         | State channel (Core, not always visible)                                                                        | Motion channel (optional)                | Window                                                                      | Cancel and coalesce                                                              |
+| -------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Printable keypress   | Echo only; no indicator                                                                                         | None                                     | `0 ms`                                                                      | Never animates; echo and PTY write unchanged                                     |
+| Enter / submit       | `submitted` after ack until first output/next input                                                             | Renderer ack accent                      | Ack `≤80 ms`, then rest; no progress claim                                  | First output, next input, or focus change ends it; key repeat never restarts     |
+| Paste commit         | `pasting`, then `pasted` or `refused`                                                                           | Renderer ack, never per byte or line     | Ack `≤80 ms`; rest bounded by the paste commit                              | Oversized or rejected paste uses the error class                                 |
+| Mode change          | Explicit text label naming the Core user mode                                                                   | Renderer accent `120..=180 ms`           | Persists while active; motion `≤180 ms`                                     | Next mode replaces; exit commits immediately                                     |
+| Panel / action start | `ack`, then `starting` only when a boundary is known                                                            | Renderer entry transition `120..=180 ms` | Entry `≤180 ms`; renderer hold `150..=200 ms` once shown                    | No boundary means ack only; completion settles at once; cancel shows final state |
+| Long-running command | `active`: `starting`, then `running` (started, completion unknown); settles `done`/`failed`/`refused`/`unknown` | Determinate steps only, `≤180 ms` each   | While active; entry and completion bursts `120..=180 ms` each               | No loop and no spinner; indeterminate work is static after entry                 |
+| Error / refusal      | `settled`: label plus status glyph                                                                              | Renderer entry `≤180 ms`; no exit flash  | Minimum dwell `≥2000 ms`, then sticky until next input, dismiss, or replace | Replaced only by a newer state; never auto-clears below the dwell                |
 
 Paste is one bounded burst: echo plus one optional ack, not a per-line effect.
 Long-running actions reject a spinner because a spinner is a looping animation,
-which RFC-0002 forbids and PB-7 charges as continuous work.
+which RFC-0002 forbids and PB-7 charges as continuous work. A minimum-visible
+hold never delays settlement: Core applies the outcome at the boundary and a
+renderer may keep the completed indicator visible until the deadline.
 
 ## Timing budgets
 
@@ -190,15 +205,16 @@ thresholds; the exact microsecond ceiling belongs to the implementing repository
 A **burst** is all interpolation triggered by one event for one class. Entry,
 progress step, and completion are separate events, so their bursts are capped
 individually and are never summed; a class lifetime can contain several bursts.
-The `300 ms` cap bounds interpolation only. A minimum-visible hold is wall-clock,
-renders no frames, and does not extend either the burst cap or the
-repeat-coalescing window. If completion arrives before the hold expires, the
-committed completion state waits for that single deadline, which is bounded by
-`200 ms`; a newer trigger that replaces the state cancels it. A burst whose
-configured segments sum above `300 ms` must degrade to the committed state
-instead of animating. Ack (`≤80`), each transition segment (`120..=180`), and
-each completion burst (`120..=180`) fit inside the cap by construction and are
-never summed.
+The `300 ms` cap bounds interpolation only. A minimum-visible hold is a
+renderer-presentation rule, not a state rule: it is wall-clock, renders no frames,
+and does not extend either the burst cap or the repeat-coalescing window. When an
+outcome arrives before the hold expires, Core settles the state at once while the
+renderer may keep the completed indicator visible until that single deadline,
+which is bounded by `200 ms`; a newer trigger that replaces the state cancels the
+hold. A burst whose configured segments sum above `300 ms` must degrade to the
+committed state instead of animating. Ack (`≤80`), each transition segment
+(`120..=180`), and each completion burst (`120..=180`) fit inside the cap by
+construction and are never summed.
 
 ## Why this adds no input latency
 
@@ -258,12 +274,16 @@ Once the provider contract exists, the candidate rules are:
 
 1. A renderer **must** read a read-only snapshot (`class`, `phase`, `label`,
    `progress`), must not mutate phase or timing, and must receive updates on
-   transitions only. Any ack or mode accent is the renderer's own scene
-   interpolation, not Core chrome.
+   transitions only. The same snapshot carries the resolved Core timing policy
+   the renderer needs — ack and mode accent durations and the minimum-visible
+   hold — as read-only values; field names belong to the provider amendment. Any
+   ack or mode accent is the renderer's own scene interpolation, not Core chrome.
 2. Labels come from a closed static vocabulary: `submitted`, `pasting`, `pasted`,
    `starting`, `running`, `done`, `failed`, `refused`, `unknown`, and Core
-   user-mode names. `running` means started with completion unknown, never "in
-   progress". Terminal output must never enter a label, log line, or announcement.
+   user-mode names. `running` means started with completion unknown — never "in
+   progress", never an implied completion time, and never presented after
+   completion. `unknown` means the outcome is unknown or the boundary was lost.
+   Terminal output must never enter a label, log line, or announcement.
 3. Error and refusal are a leading status glyph plus a text label, composed as
    `Text` in a `Row`/`Column`. The accepted node subset is
    `Text | Row | Column | List`; there is no shape or stroke primitive, and
@@ -295,19 +315,21 @@ Once the provider contract exists, the candidate rules are:
   transition (mode entered/left, failed/refused/done), never for typing or ack,
   rate-limited and coalesced, no PTY bytes, no repeating cadence — and claims no
   current announcement. No verbosity key exists; adding one is a follow-up.
-- **Safe mode.** `--safe` loads no plugins and draws no Core fallback, so mode and
-  error are **not rendered**. The candidate records that gap rather than adding a
-  Core status surface; whether to fund one is `T-04`.
+- **Safe mode.** `--safe` loads no plugins and draws no Core fallback, so no
+  composited feedback is presented and mode and error are **not rendered**; the
+  existing copy-mode and search runtime log lines are unchanged. The candidate
+  records that gap rather than adding a Core status surface; whether to fund one
+  is `T-04`.
 
-| Key (status)                                         | Default                    | Range / values                       | Effect on feedback                            |
-| ---------------------------------------------------- | -------------------------- | ------------------------------------ | --------------------------------------------- |
-| `appearance.animations.enabled` (shipped)            | `true`                     | `true` \| `false` (`false` = `0 ms`) | Disables motion; state remains                |
-| `appearance.animations.reduced_motion` (shipped)     | `auto`                     | `auto` \| `always` \| `never`        | `always` and `--safe` collapse to final state |
-| `appearance.animations.duration_ms.*` (shipped)      | `100..=200` per transition | `[0, 500]` ms                        | Existing transitions; unchanged               |
-| `appearance.animations.duration_ms.ack` (candidate)  | `80`                       | `[0, 80]` ms                         | Ack accent; `0` means state-only              |
-| `appearance.animations.duration_ms.mode` (candidate) | `150`                      | `[0, 180]` ms                        | Mode accent; `0` means state-only             |
-| Minimum visible (policy, not a key; `T-02`)          | `180`                      | `150..=200` ms or no hold            | Hold after entry; renders no frames           |
-| Per-burst interpolation cap (policy, not a key)      | `300`                      | fixed                                | One event's interpolation; excess commits     |
+| Key (status)                                         | Default                    | Range / values                       | Effect on feedback                                 |
+| ---------------------------------------------------- | -------------------------- | ------------------------------------ | -------------------------------------------------- |
+| `appearance.animations.enabled` (shipped)            | `true`                     | `true` \| `false` (`false` = `0 ms`) | Disables motion; state remains                     |
+| `appearance.animations.reduced_motion` (shipped)     | `auto`                     | `auto` \| `always` \| `never`        | `always` and `--safe` collapse to final state      |
+| `appearance.animations.duration_ms.*` (shipped)      | `100..=200` per transition | `[0, 500]` ms                        | Existing transitions; unchanged                    |
+| `appearance.animations.duration_ms.ack` (candidate)  | `80`                       | `[0, 80]` ms                         | Core policy read by the renderer; `0` = state-only |
+| `appearance.animations.duration_ms.mode` (candidate) | `150`                      | `[0, 180]` ms                        | Core policy read by the renderer; `0` = state-only |
+| Minimum visible (policy, not a key; `T-02`)          | `180`                      | `150..=200` ms or no hold            | Renderer hold after entry; renders no frames       |
+| Per-burst interpolation cap (policy, not a key)      | `300`                      | fixed                                | One event's interpolation; excess commits          |
 
 `ui.motion` is **not** adopted. The accepted home is `appearance.animations`; a
 second tree would duplicate that surface and split validation and attribution. If
@@ -328,8 +350,8 @@ inventory stay unchanged until acceptance.
   animation per surface property; one repeat-coalescing window of `300 ms`
   wall-clock from the first trigger, independent of the burst cap, which repeats
   never restart and holds never extend, and excess animating surfaces commit
-  immediately (bound `8`). After the last animation present returns to idle, and a
-  minimum-visible hold uses one one-shot deadline, cancelled only by a newer
+  immediately (bound `8`). After the last animation present returns to idle, and
+  the `settled` exit uses one one-shot hold deadline, cancelled only by a newer
   trigger that replaces the state. No spinner, pulse, or clock runs while idle.
 - **High load and slow shells.** Feedback must yield to terminal output: if the
   frame budget is exhausted, motion drops first and the state applies on the next
@@ -365,14 +387,14 @@ A recorded answer or fail-safe default is a promotion precondition.
 
 ## Acceptance mapping (bitty#2220)
 
-| #2220 criterion                                                                              | Where this candidate answers it                                    | Status                                                                                                                  |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| Candidate actions, state machines, timing budgets, interruption rules, visual/input boundary | Action classes, state model, timing budgets, surfaces              | Addressed (design)                                                                                                      |
-| Keyboard, Enter, paste, mode-switch, command-lifecycle latency and correctness invariants    | Action-class table, latency section, PTY-never-delayed rules       | Partially addressed: completion and lost-boundary policy defined; no live shell-mark evidence                           |
-| Reduced-motion and accessibility behavior                                                    | Accessibility and preferences; `T-01`, `T-02`                      | Partially addressed: no `--safe` renderer; contrast depends on the Theme Token Contract; announcements need the adapter |
-| High-load, slow-shell, and application-full-screen cases                                     | Performance and failure posture                                    | Partially addressed; design only, no live evidence                                                                      |
-| Independent review before any product implementation                                         | P0 sign-off section and promotion gate                             | Pending review                                                                                                          |
-| Issue closure                                                                                | Only on owner acceptance of `T-01`..`T-06` plus independent review | Pending owner and reviewer                                                                                              |
+| #2220 criterion                                                                              | Where this candidate answers it                                    | Status                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Candidate actions, state machines, timing budgets, interruption rules, visual/input boundary | Action classes, state model, timing budgets, surfaces              | Addressed (design)                                                                                                                                                        |
+| Keyboard, Enter, paste, mode-switch, command-lifecycle latency and correctness invariants    | Action-class table, latency section, PTY-never-delayed rules       | Partially addressed: completion and lost-boundary policy defined, including `D` without an exit code, close, and disposal without an outcome; no live shell-mark evidence |
+| Reduced-motion and accessibility behavior                                                    | Accessibility and preferences; `T-01`, `T-02`                      | Partially addressed: no `--safe` renderer; contrast depends on the Theme Token Contract; announcements need the adapter                                                   |
+| High-load, slow-shell, and application-full-screen cases                                     | Performance and failure posture                                    | Partially addressed; design only, no live evidence                                                                                                                        |
+| Independent review before any product implementation                                         | P0 sign-off section and promotion gate                             | Pending review                                                                                                                                                            |
+| Issue closure                                                                                | Only on owner acceptance of `T-01`..`T-06` plus independent review | Pending owner and reviewer                                                                                                                                                |
 
 ## Security review
 
@@ -389,10 +411,13 @@ capability.
 ## Verification plan
 
 1. Phase machine: `ack` resolves within `80 ms`; `submitted`, `pasting`, and
-   `active` have the stated exits; `active` settles `done`/`failed`/`refused` on a
-   producer outcome, `unknown` on a lost boundary, and rests at `running`
-   otherwise; no phase schedules a periodic timer (only the one-shot
-   minimum-visible deadline exists); a boundary-less action returns to `idle`.
+   `active` have the stated exits; `active` settles at once — `done`/`failed` from
+   OSC 133 `D` with an exit code, `unknown` from `D` without one, a close, or a
+   disposal without an outcome, `refused` from a refusal — and rests at `running`
+   only when neither an outcome nor a loss is detectable; `settled` exits to
+   `idle` at the dwell deadline or the next action; no phase schedules a periodic
+   timer (only the one-shot hold deadline exists); a boundary-less action returns
+   to `idle`.
 2. Budgets: transitions `120..=180 ms`, ack `≤80 ms`, burst interpolation
    `≤300 ms` with holds excluded, the independent `300 ms` repeat-coalescing
    window, error dwell `≥2000 ms`, and candidate-key clamping to `[0, 80]` and
@@ -434,8 +459,9 @@ capability.
 
 - The identifier `OQ-UX-TEMPORAL-INPUT` remains unregistered; routing it to the
   `bitty-docs` open-question register is an owner action, not this record's.
-- Which producer supplies the finish mark or scope outcome, and how a lost
-  boundary is detected without a heartbeat; live shell-mark evidence is pending.
+- Which producer emits the finish mark and whether it carries an exit code, how a
+  scope disposition is reported, and how a lost boundary is detected without a
+  heartbeat; live shell-mark evidence is pending.
 - The `StatusProvider` amendment: interface name, version, metadata, filtering,
   and read capability (blocking T-03/T-04).
 - Whether `bar` and `statusline` may both render feedback, or configuration must
@@ -450,10 +476,12 @@ capability.
 1. A reviewer confirms no rule delays, reorders, duplicates, or drops PTY bytes,
    that the ack-versus-echo invariant is stated correctly, and that PB-4 is
    untouched by design; `T-01`..`T-06` are answered or fail-safe defaults recorded.
-2. Every action class has a defined state and completion policy; where a renderer
-   exists it is legible with motion disabled, and under `--safe` the documented
-   gap is that nothing renders. The state surface and indicator contract are
-   read-only and off the hot path and the render-loop plugin boundary.
+2. Every action class has a defined state and completion policy, and settlement is
+   immediate — the minimum-visible hold is presentation-only and never delays
+   `done`, `failed`, `refused`, or `unknown`. Where a renderer exists it is legible
+   with motion disabled, and under `--safe` the documented gap is that nothing
+   renders. The state surface and indicator contract are read-only and off the hot
+   path and the render-loop plugin boundary.
 3. No default indicator is claimed for Core or the bundled catalog, and no plugin
    read path is claimed before the status-provider amendment is accepted.
 4. bitty#2220's criteria are mapped as above; the issue closes only on owner
