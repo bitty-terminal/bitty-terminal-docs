@@ -398,14 +398,20 @@ repository-local file must not disable a data-loss guard.
 
 `workspace.layout` selects a layout-provider name; it is not the adaptive
 new-panel placement policy. `Mod+N` / `new_panel` uses the Core
-`PanelLayoutMode`, whose 0.0.27 default is `Balanced`: split the physically
-largest slot along the cell-aspect-aware axis and place the fresh pane after
-it (right or below). `Spiral`, `Dwindle`, and `BisectLargest` remain
-embedder-selectable runtime modes. The mode is exposed through
-`Runtime::panel_layout_mode` / `set_panel_layout_mode`; 0.0.27 has no TOML or
-Lua selector for it, and a user configuration cannot choose `Balanced` or any
-other mode. Explicit `new_split:<dir>` always splits the focused pane on the
-requested axis.
+`PanelLayoutMode`, whose shipped default is `Spiral` (0.0.28, `bitty`
+issue #2571): the fresh pane rotates clockwise (Right -> Down -> Left -> Up)
+around the focused pane, continuing only while the pane created by the
+previous split still holds focus, and the chain restarts at Right on any
+other focus or close. `Balanced` keeps the 0.0.27 bisect-largest policy
+(split the physically largest slot along the cell-aspect-aware axis and
+place the fresh pane after it, right or below) as an explicit opt-in since
+0.0.28; `Dwindle` always splits the focused pane right/down, and
+`BisectLargest` bisects the largest panel on the raw axis. The mode is
+exposed through `Runtime::panel_layout_mode` / `set_panel_layout_mode`; the
+shipped release has no TOML or Lua selector for it, and a user
+configuration cannot choose `Balanced`, `Spiral`, or any other mode.
+Explicit `new_split:<dir>` always splits the focused pane on the requested
+axis.
 
 Adaptive insertion is bounded by a gap-aware minimum pane of 10 columns by 4
 rows. A target is refused, with a warning and no layout change, when
@@ -413,10 +419,10 @@ rows. A target is refused, with a warning and no layout change, when
 inner gap of 0 cells a 20-column pane splits into two 10-column children. At a
 1-cell gap the same pane cannot split horizontally (9-column children) and
 falls back to a vertical split when its height allows; only a target that fits
-on neither axis is refused.
-
-`close_confirm` must not be declared by project layers: a
-repository-local file must not disable a data-loss guard.
+on neither axis is refused. Under the `Spiral` default, an ineligible focused
+slot instead sends the plan to the largest feasible `Balanced` target (with
+one bounded warning) so `Mod+N` keeps working; the chord is refused only when
+no leaf can host two usable 10x4 panes.
 
 ### `decoration` (logical px, Core-owned)
 
