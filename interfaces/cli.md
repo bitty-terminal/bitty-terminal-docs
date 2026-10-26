@@ -639,8 +639,10 @@ Path and configuration architecture are documented in
 
 Status: **implemented-only, source-qualified** at `bitty` `origin/main`
 (bitty #2708, commit `11582102`, CTX-1589; the read-only verbs first shipped
-with CTX-1404, issue #2187). This records implemented behaviour; it is not a
-stability promise and does not accept the candidate CLI grammar above.
+with CTX-1404, issue #2187; re-verified against the profile hardening merges
+bitty #2719/#2722/#2725, CTX-1597/CTX-1602/CTX-1608). This records implemented
+behaviour; it is not a stability promise and does not accept the candidate CLI
+grammar above.
 
 ```sh
 bitty config profile create NAME
@@ -663,9 +665,12 @@ rc files; `BITTY_PROFILE` is a launch input and never an output target.
 
 - `create NAME` writes a minimal valid profile; `clone SRC DST` copies SRC's
   Lua bytes verbatim. Both refuse an existing destination as a conflict.
-  `default` is reserved for `bitty init`: `create` refuses it, and `clone`
-  refuses it as a destination (cloning `default` to another name is the
-  intended path).
+  `clone` reads and validates the exact bytes it copies in one read: a source
+  that changes between read and copy, or that is not a regular file, is
+  refused, and the strict `bitty config check` gates run on the merged
+  configuration before DST is created. `default` is reserved for
+  `bitty init`: `create` refuses it, and `clone` refuses it as a destination
+  (cloning `default` to another name is the intended path).
 - `rename OLD NEW` renames the file in place and refuses an existing new name,
   renaming onto itself, and the reserved `default`.
 - `delete NAME` removes the file. `delete` and `rename` refuse the profile the
@@ -689,7 +694,9 @@ rc files; `BITTY_PROFILE` is a launch input and never an output target.
 - `get NAME PATH` prints the effective value at one documented dotted scalar
   path. `set NAME PATH VALUE` validates the value through the same strict
   loader `bitty config check` uses (including `local:<name>` theme
-  resolution), edits only that path inside the profile's returned Lua table,
+  resolution), on the merged stack of the profile chain under the current
+  selector or user file rather than the profile alone. It edits only that path
+  inside the profile's returned Lua table,
   re-reads the edited leaf through the merged candidate, and refuses to write
   on any mismatch. Accepted paths and the inherited-table pinning rule are in
   [Profile management commands](../configuration/lua-and-xdg.md#profile-management-commands);
@@ -700,7 +707,10 @@ Writes are fail-closed and atomic. The candidate bytes are parsed and merged
 before any change, then published through a unique same-directory temporary
 file, `sync_all`, and a rename over the target. A rejected value, a refused
 edit, or a failed write leaves the previous profile bytes byte-identical; a
-new profile uses exclusive creation instead of overwriting.
+new profile uses exclusive creation instead of overwriting. `set` re-checks
+the target file identity immediately before the rename, so a concurrent edit
+is refused as a conflict (exit 2) instead of overwriting it, and a symlink or
+non-regular target is refused without being followed.
 
 Every verb accepts `--json`, an alias for `--format json` (accepted before or
 after the `config` word; a bare `--json` outside `config` stays an unknown-flag
@@ -708,7 +718,8 @@ usage error). It prints one compact versioned envelope on stdout instead of the
 human text, for example
 `{"v":1,"command":"config profile list","ok":true,"result":{…}}` or
 `{"v":1,"command":"config profile set","ok":false,"error":{"class":"config","code":"E_PROFILE_INVALID","message":"…"}}`,
-with the human diagnostic on stderr for a failure. Exit codes are `0` success,
+with the human diagnostic on stderr for a failure. Shell completion offers
+`--json` after every profile verb. Exit codes are `0` success,
 `1` filesystem/I/O failure, and `2` usage, conflict, not-found, and
 invalid-input failures.
 

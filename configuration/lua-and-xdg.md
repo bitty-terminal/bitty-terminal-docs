@@ -502,7 +502,9 @@ and only multi-parent `extends` stays open.
 ### Profile management commands
 
 Status: **implemented-only** (read-only from `bitty` `origin/main`,
-`crates/bitty-terminal/src/profile.rs`, bitty #2708 at `11582102`, CTX-1589).
+`crates/bitty-terminal/src/profile.rs`, bitty #2708 at `11582102`, CTX-1589;
+re-verified against the profile hardening merges bitty #2719/#2722/#2725,
+CTX-1597/CTX-1602/CTX-1608).
 The profile model above remains the shipped contract; this subsection records
 the management surface and promises no stability.
 
@@ -541,14 +543,37 @@ Fail-closed rules:
   same versioned envelope. A legacy `init.lua` without the envelope is refused
   in favour of `bitty init --migrate`. Activation never reloads a running
   instance.
+- Validation gates on the merged configuration, never the profile alone:
+  `show` and `get` validate the resolved `extends`-chain merge, while `use`,
+  `clone`, and `set` merge the profile chain under the current user layer
+  (the persisted selector or its fallback) and run through the same strict
+  loader `bitty config check` uses — `local:<name>` theme resolution, keymap
+  resolution, runtime bounds, and the background-image root/header/decode
+  pipeline — including the selector's own overrides such as its theme, keymaps,
+  approved background-image roots, and outline overrides. A configuration that
+  only the merged stack accepts is accepted; a merged-invalid one is refused
+  even when the profile alone validates.
 - Every write parses and merges the candidate bytes before any file change,
   then publishes through a unique same-directory temporary file, `sync_all`,
   and a rename over the target. A refused edit or failed write leaves the
   previous bytes byte-identical; new profiles use exclusive creation.
+- Profiles are read and committed as plain regular files. `set` captures the
+  file identity (device, inode, length, modification time) through the open
+  handle that supplied the candidate bytes and re-checks it immediately before
+  the atomic replace, so a concurrent edit is refused as a conflict (exit 2)
+  instead of being overwritten; the check narrows the lost-update window
+  rather than eliminating it. Symlink and non-regular targets are refused
+  without being followed: a target swapped in at commit time is a conflict
+  (exit 2) on Unix, and elsewhere the same situation is reported as a
+  filesystem failure (exit 1).
 - `get` and `set` reject an unknown or malformed path, a non-finite number, a
   control character, and a value over the loader's line bound before any
   write. `set` re-reads the edited leaf through the merged candidate and
   refuses the write on a mismatch.
+- `list` emits sorted names from bounded directory metadata and evaluates no
+  Lua: the scan stops at a 256-name output cap over a 1024-entry directory
+  bound, the human output adds a truncation note, and the JSON result carries
+  `"truncated":true` when a bound cut the scan short.
 
 `get` and `set` accept 37 documented dotted scalar paths:
 
