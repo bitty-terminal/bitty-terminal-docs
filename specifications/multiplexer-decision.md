@@ -363,6 +363,7 @@ Nothing changes in this task; the effects apply only if the owner accepts.
 | [Panel Runtime RFC](panel-runtime-rfc.md)                                                           | No contract change; `RFC-OQ-9` remains the persistence open question.                                                                  |
 | [bittyd contract](bittyd-session-host-contract-candidate.md) and [charter](bittyd-scope-charter.md) | Unchanged; this decision consumes their answers and blocks implementation on their promotion.                                          |
 | [Remote infrastructure candidate](remote-infrastructure-candidate.md)                               | Remains candidate behind the ADR 0008 gate; this decision adds no remote method or transport.                                          |
+| [Remote Session Decision](remote-session-decision.md)                                               | Records the accepted remote decline for the v0.2.0 timeframe and the admission bar; `M-03` and `M-3` stay blocked on it.               |
 | [Terminal Feature Gap Analysis](terminal-feature-gap-analysis.md)                                   | Its session-restore row is the existing capability this decision builds on; no status change.                                          |
 | [Specifications index](README.md) and bitty#2218                                                    | Gain the Draft row and the design answer respectively; the issue stays open until owner acceptance and then gains scoped child issues. |
 
