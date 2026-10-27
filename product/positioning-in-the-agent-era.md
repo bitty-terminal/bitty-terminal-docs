@@ -299,7 +299,8 @@ would mean the bet is wrong, and they should be checked rather than argued:
 - Session staging:
   [ADR 0019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0019-bittyd-staging-advance.md),
   [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md),
-  [bittyd Session-Host Contract (Candidate)](../specifications/bittyd-session-host-contract-candidate.md).
+  [bittyd Session-Host Contract](../specifications/bittyd-session-host-contract.md),
+  [promotion record](../specifications/bittyd-session-host-promotion-record.md).
 - Agent and extension contracts:
   [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md),
   [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md).

@@ -1,43 +1,47 @@
 ---
-title: bittyd Session-Host Contract (Candidate)
-description: Candidate Core contract for the bittyd session host - D-01 through D-18 decisions, session identity and lifecycle, scoped service surface, stop and restart semantics, bounds, conformance matrix, fake-server harness plan, and the v0.2.0 implementation breakdown
+title: bittyd Session-Host Contract
+description: Accepted Core contract for the bittyd session host - D-01 through D-18 decisions, session identity and lifecycle, scoped service surface, stop and restart semantics, bounds, conformance matrix, fake-server harness plan, and the v0.2.0 implementation breakdown
 category: specifications
 audience: contributor
 document_type: specification
-status: draft
+status: accepted
 website_publish: false
 sidebar_order: 80
 ---
 
-# bittyd Session-Host Contract (Candidate)
+# bittyd Session-Host Contract
 
 ## Document status
 
-> Status: **candidate, not accepted and not implemented.** This document records
-> the Core-owned answers to decisions `D-01` through `D-18` raised by the
-> [Wheel consumer requirements](bittyd-session-host-requirements-candidate.md),
+> Status: **accepted on 2026-10-27 by the project owner; implementation is not
+> authorized until the independent security review records an APPROVE.** This
+> document records the Core-owned answers to decisions `D-01` through `D-18`
+> raised by the [Wheel consumer requirements](bittyd-session-host-requirements-candidate.md),
 > and the service surface, bounds, conformance matrix, and harness plan that
-> follow from those answers. `bittyd` does not ship, no `bittyd` crate or binary
-> exists, and nothing here authorizes daemon, transport, registry, or
-> fake-server code. The contract is promoted to `accepted` only after owner
-> sign-off and independent security review; see
-> [P0 Review Sign-off](#p0-review-sign-off).
+> follow from those answers. Acceptance covers the decisions and contract text;
+> it does not claim that `bittyd` ships. No `bittyd` crate or binary exists, and
+> nothing here authorizes daemon, transport, registry, or fake-server code on
+> its own. The promotion disposition, the dated sign-off status, the remaining
+> review scope, and the out-of-scope boundaries are recorded in the
+> [bittyd Session-Host Contract Promotion Record](bittyd-session-host-promotion-record.md).
 
-| Control          | Value                                                                               |
-| ---------------- | ----------------------------------------------------------------------------------- |
-| Status           | Candidate, reviewed by no one yet, authorizes no code                               |
-| Owner            | Core terminal platform (bitty#2546)                                                 |
-| Upstream records | ADR 0008, ADR 0019, ADR 0002, security corpus, `bitty-ipc` RC-9/RC-10               |
-| Consumer         | Wheel CTX-0036 adapter and fake-server conformance suite; other Agent harnesses     |
-| Implementation   | bitty v0.2.0 slice, tracked as the child issues of bitty#2546 (#2064, #2218)        |
-| Evidence status  | No vector in this document has been executed against a real `bittyd`                |
-| Change authority | Core owns the answers; the security corpus co-owns the trust boundary               |
-| Promotion gate   | Owner sign-off plus independent security-reviewer sign-off, then `status: accepted` |
+| Control          | Value                                                                                                                                          |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status           | Accepted 2026-10-27; independent security review required before implementation                                                                |
+| Owner            | Core terminal platform (bitty#2546)                                                                                                            |
+| Upstream records | ADR 0008, ADR 0019, ADR 0002, security corpus, `bitty-ipc` RC-9/RC-10                                                                          |
+| Consumer         | Wheel CTX-0036 adapter and fake-server conformance suite; other Agent harnesses                                                                |
+| Implementation   | bitty v0.2.0 slice, tracked as the child issues of bitty#2546 (#2064, #2218) and the contract-freeze issues #2664, #2665                       |
+| Evidence status  | No vector in this document has been executed against a real `bittyd`                                                                           |
+| Change authority | Core owns the answers; the security corpus co-owns the trust boundary                                                                          |
+| Promotion gate   | Owner sign-off recorded 2026-10-27; independent security review gates implementation start, and P0 evidence (bitty#2608) gates the first merge |
 
 This document is self-contained: a reader needs no other design record,
-archival capture, or unpublished conversation to apply it. Candidate wording, method
-names, field names, and numeric defaults are normative for conformance only
-after promotion; until then they are the fixed shape the fake server and the
+archival capture, or unpublished conversation to apply it. Method names, field
+names, lifecycle and reason vocabularies, and numeric defaults are normative
+for conformance from acceptance. Exact JSON key spellings and frame layout
+remain open until bitty#2664 and the conformance corpus freeze them; until
+then the spellings in this document are the fixed shape the fake server and the
 adapter target.
 
 ## Purpose and scope
@@ -91,7 +95,7 @@ Out of scope and owned elsewhere:
 
 ## Normative sources this specification must not weaken
 
-This candidate is subordinate to every accepted record below. Where a source
+This contract is subordinate to every accepted record below. Where a source
 and this document disagree, the source wins and this document is defective.
 
 | Source                                                                                                                               | What it binds here                                                                                                                                                                                                                                                                                                    |
@@ -144,9 +148,8 @@ records the increments and exclusions.
 
 ## Decision record (D-01 through D-18)
 
-Each row is decided. "Candidate" below means the contract is not yet accepted,
-not that the answer is optional. The sections after the table define the
-mechanics that conformance asserts.
+Each row is decided, accepted on 2026-10-27, and normative for conformance. The
+sections after the table define the mechanics that conformance asserts.
 
 | ID   | Decision                    | Answer                                                                                                                                                                                                                                                                                                                                                                                     |
 | ---- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -191,9 +194,12 @@ target it and receive a typed answer:
   security review accepts the spawn, environment, credential, cleanup, and
   audit behavior. The security review issue in the implementation breakdown
   owns that recommendation.
+- The 2026-10-27 promotion accepts the worker vocabulary and its refusal path;
+  it does not enable worker hosting and does not satisfy either enablement
+  condition.
 
 Consequences today: the Wheel adapter can be written and tested against the
-candidate surface, but its hosted worker path stays disabled until the
+accepted surface, but its hosted worker path stays disabled until the
 capability is advertised. The adapter must treat absence as typed and must not
 start an in-process worker as a fallback.
 
@@ -501,8 +507,9 @@ Operator capability:
 ### D-11: service API versioning and capabilities
 
 - The service version is `{major: u16, minor: u16}`. The first accepted
-  contract is `1.0`; the candidate surface is labeled `candidate` and is not a
-  versioned release.
+  contract is `1.0`. Exact JSON key spellings and frame layout are frozen by
+  bitty#2664 and the conformance corpus (see Open points), not by this
+  document.
 - Handshake carries the client version. The server accepts the same major and a
   client minor in `[min_client_minor, server_minor]`; `min_client_minor` starts
   at `0` for `1.0`. A different major, or a client minor outside that range, is
@@ -563,10 +570,11 @@ Operator capability:
 
 ### D-14: resource limits
 
-All values are advertised in `limits` at handshake. Values are candidate
+All values are advertised in `limits` at handshake. Values are the accepted
 defaults; user configuration may lower a default or raise it up to the
-advertised system maximum, never above it. System maxima are compiled constants;
-raising one requires an attributable contract revision and security review.
+advertised system maximum, never above it. System maxima are compiled
+constants; raising one requires an attributable contract revision and security
+review.
 
 | Limit                               | Default | System maximum | Rationale                                                                        |
 | ----------------------------------- | ------- | -------------- | -------------------------------------------------------------------------------- |
@@ -1102,10 +1110,10 @@ decision; V-25/V-27 remain gated on test infrastructure, not on the contract.
 The sequence exists so consumer work is not serialized behind a daemon. It does
 not turn fake-server results into daemon evidence.
 
-1. **Freeze the corpus (contract promotion).** The vector table, assertions,
-   injected limits, and typed results are the shared corpus. A test driver may
-   not fork expectations; a disagreement is a contract defect.
-2. **Fake server (Wheel CTX-0036).** Implement the candidate surface with
+1. **Frozen corpus (contract promotion, 2026-10-27).** The vector table,
+   assertions, injected limits, and typed results are the shared corpus. A test
+   driver may not fork expectations; a disagreement is a contract defect.
+2. **Fake server (Wheel CTX-0036).** Implement the accepted surface with
    injected monotonic time, injected limits, simulated lifecycle, transport
    fault injection, and a request log for V-32. Label every run
    `candidate-not-bittyd`. The fake server implements the handshake, create,
@@ -1153,25 +1161,25 @@ Harness rules:
 
 The v0.2.0 session-host slice is filed as child issues of bitty#2546 in
 `bitty` (bitty#2601, bitty#2602, bitty#2603, bitty#2604, bitty#2605, bitty#2606, bitty#2607, bitty#2608, bitty#2609), each
-labeled `feat`, `P1`, `area:architecture` and milestoned `v0.2.0`. None of them is authorized to merge before this contract is accepted
-and the security review records its evidence.
+labeled `feat`, `P1`, `area:architecture` and milestoned `v0.2.0`. None of them is authorized to merge before the independent security
+review records its APPROVE and the slice's P0 evidence exists (bitty#2608).
 
-| Issue      | Slice                           | Scope                                                                                                                                                                                                                                              | Depends on                |
-| ---------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| bitty#2606 | Crate and binary seam           | New library crate plus a `bittyd` binary; one-way dependency direction from the daemon to `bitty-term-state`, `bitty-pty`, `bitty-plugin-host`, and `bitty-ipc`; no mechanism crate depends on the daemon; handshake skeleton and service version. | Contract acceptance       |
-| bitty#2601 | Registry and generations        | Session records, instance/session ids, generation and revision counters, terminal-id uniqueness, retention, bounded registry, orphan records.                                                                                                      | Crate seam                |
-| bitty#2607 | IPC service                     | `bitty-ipc` v1 server loop, handshake, peer capture and re-check, endpoint lock and tamper detection, scope evaluation, method dispatch, error mapping.                                                                                            | Crate seam                |
-| bitty#2609 | Attach, detach, abort           | Leases, observer/controller roles, control token, control transfer, abort and kill pipeline, terminal reasons and cleanup classes.                                                                                                                 | Registry, IPC service     |
-| bitty#2602 | Event stream                    | Snapshot plus bounded backlog, revision ordering, control-frame reservation, terminal guarantee, `TerminalEventLost`, heartbeat and last-seen.                                                                                                     | Registry, attach          |
-| bitty#2603 | Limits and retention            | Compiled system maxima, advertised limits, registry and lease caps, event ring, idempotency store, retention TTL, audit sink bounds, fail-closed degradation.                                                                                      | Registry, events          |
-| bitty#2604 | Platform cells                  | Unix socket and peer credentials on Linux/macOS/FreeBSD; Windows named pipe and SID; single-instance lock; unsupported-cell refusal; native-runner evidence.                                                                                       | IPC service               |
-| bitty#2605 | Conformance harness             | Shared corpus runner, fake-server parity driver, real-service driver, injected time/limits, evidence records, CI wiring.                                                                                                                           | All implementation slices |
-| bitty#2608 | Security review and P0 evidence | Threat-model and risk-register update, P0-AC-021..026 evidence, secret minimization, child-scope proof, audit content proof, operator-capability review, and the D-01 worker-enablement recommendation.                                            | All implementation slices |
+| Issue      | Slice                           | Scope                                                                                                                                                                                                                                                                                                 | Depends on                                                    |
+| ---------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| bitty#2606 | Crate and binary seam           | New library crate plus a `bittyd` binary; one-way dependency direction from the daemon to `bitty-term-state`, `bitty-pty`, `bitty-plugin-host`, and `bitty-ipc`; no mechanism crate depends on the daemon; handshake skeleton and service version.                                                    | Contract acceptance                                           |
+| bitty#2601 | Registry and generations        | Session records, instance/session ids, generation and revision counters, terminal-id uniqueness, retention, bounded registry, orphan records.                                                                                                                                                         | Crate seam                                                    |
+| bitty#2607 | IPC service                     | `bitty-ipc` v1 server loop, handshake, peer capture and re-check, endpoint lock and tamper detection, scope evaluation, method dispatch, error mapping.                                                                                                                                               | Crate seam                                                    |
+| bitty#2609 | Attach, detach, abort           | Leases, observer/controller roles, control token, control transfer, abort and kill pipeline, terminal reasons and cleanup classes.                                                                                                                                                                    | Registry, IPC service                                         |
+| bitty#2602 | Event stream                    | Snapshot plus bounded backlog, revision ordering, control-frame reservation, terminal guarantee, `TerminalEventLost`, heartbeat and last-seen.                                                                                                                                                        | Registry, attach                                              |
+| bitty#2603 | Limits and retention            | Compiled system maxima, advertised limits, registry and lease caps, event ring, idempotency store, retention TTL, audit sink bounds, fail-closed degradation.                                                                                                                                         | Registry, events                                              |
+| bitty#2604 | Platform cells                  | Unix socket and peer credentials on Linux/macOS/FreeBSD; Windows named pipe and SID; single-instance lock; unsupported-cell refusal; native-runner evidence.                                                                                                                                          | IPC service                                                   |
+| bitty#2605 | Conformance harness             | Shared corpus runner, fake-server parity driver, real-service driver, injected time/limits, evidence records, CI wiring.                                                                                                                                                                              | All implementation slices                                     |
+| bitty#2608 | Security review and P0 evidence | Threat-model and risk-register update, P0-AC-021..026 evidence, secret minimization, child-scope proof, audit content proof, operator-capability review, and the D-01 worker-enablement recommendation. Design review of this contract precedes implementation; P0 evidence precedes the first merge. | Contract acceptance (design review); all slices (P0 evidence) |
 
 The bitty-ai/Wheel adapter dependency is explicit:
 
 - Wheel CTX-0036 owns the transport adapter and the fake server. It starts
-  against the candidate surface, with `worker_sessions=false`, and can proceed
+  against the accepted surface, with `worker_sessions=false`, and can proceed
   in parallel with Core implementation.
 - Wheel must not implement a daemon, registry, attach protocol, or worker
   supervisor. `wheel-session` stays a prototype and is not the contract.
@@ -1183,9 +1191,10 @@ The bitty-ai/Wheel adapter dependency is explicit:
 
 ## Security review
 
-This candidate decides a trust-bearing local service surface. It weakens no
+This contract decides a trust-bearing local service surface. It weakens no
 accepted control, and it does not claim any control is implemented. The review
-must confirm each item below before promotion.
+must confirm each item below before implementation starts, and record evidence
+for the evidenced items before the first implementation merge.
 
 | Control                                  | How this contract preserves it                                                                                                                                                                                                                            |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1229,21 +1238,23 @@ evidenced (no daemon exists), the gap is recorded rather than claimed.
 
 ## Verification plan
 
-Before promotion:
+At promotion (2026-10-27):
 
-1. Independent security review of this document against the security corpus and
-   the `bitty-ipc` accepted bounds, with a recorded APPROVE or a defect list.
-2. Owner sign-off on D-01, D-05, D-07, D-14, and D-15, because they decide
-   scope, destructive behavior, authority, and platform claims.
-3. Cross-check that every `D-01` through `D-18` answer cites a source where it
-   restates one, and that no answer weakens an accepted control.
-4. `just check` green in `bitty-terminal-docs` and `act -n` for the workflow
-   syntax, with no external provenance references and English-only content.
+1. Owner sign-off on D-01, D-05, D-07, D-14, and D-15 is recorded in the
+   [promotion record](bittyd-session-host-promotion-record.md).
+2. Every `D-01` through `D-18` answer was cross-checked against its cited
+   source; no answer weakens an accepted control.
+3. `just check` is green in `bitty-terminal-docs`; no external provenance
+   references and English-only content.
+4. The independent security review is **not** recorded. It gates
+   implementation, not the decision text, and its scope is fixed in the
+   [promotion record](bittyd-session-host-promotion-record.md#independent-security-review-requirements).
 
 Before the first implementation merge:
 
 1. The implementation issues reference this contract and the accepted
-   promotion record; no issue starts before acceptance.
+   promotion record; no implementation slice merges before the independent
+   security review records its APPROVE and the slice's P0 evidence exists.
 2. The fake-server suite passes every fake-capable vector and is labeled
    candidate-only.
 3. The real-service suite passes `C-01` through `C-08` and the real-required
@@ -1254,8 +1265,9 @@ Before the first implementation merge:
 
 Definition of done for this contract task: decisions recorded, service surface
 stated, conformance matrix complete, harness plan written, implementation issues
-filed, `just check` green, and the PR opened. The contract is not merged here;
-owner and security review are the merge gate.
+filed, `just check` green, and the promotion record merged. Promotion accepts
+the decisions; it does not authorize implementation. The independent security
+review named in the promotion record remains the first implementation gate.
 
 ## Alternatives considered
 
@@ -1287,7 +1299,7 @@ owner and security review are the merge gate.
 | [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) (accepted)            | Unchanged; the service uses its transport and method grammar and adds no content plane.                                                                                                   |
 | Security corpus (normative)                                                                                                          | Requires a threat-model, risk-register, and P0-evidence update before implementation; this document adds no control weakening.                                                            |
 | [Wheel consumer requirements](bittyd-session-host-requirements-candidate.md) (candidate)                                             | Its D items are answered here; its vectors feed the conformance matrix. It remains a consumer input, not an authority.                                                                    |
-| [Specifications register](README.md)                                                                                                 | Gains a Draft-table row; the Wheel requirements document gains a Core response pointer.                                                                                                   |
+| [Specifications register](README.md)                                                                                                 | Gains an Accepted-table row for this contract and the promotion record; the Wheel requirements document gains a Core response pointer.                                                    |
 | bitty#2546, #2064, #2218                                                                                                             | Contract decided; implementation issues are filed as children of #2546.                                                                                                                   |
 | bitty-execution execution-supervisor contract                                                                                        | No change. Worker hosting, if enabled later, must define its relationship to the existing execution-supervisor boundary rather than duplicate it.                                         |
 
@@ -1296,7 +1308,9 @@ owner and security review are the merge gate.
 These are not globally numbered open questions. They stay here until one blocks
 a current-milestone gate; the decisions above do not depend on them.
 
-- Owner sign-off and independent security-reviewer sign-off (promotion gate).
+- Owner sign-off is recorded (2026-10-27). The independent security-reviewer
+  sign-off remains open and gates implementation, not the accepted decision
+  text; see the [promotion record](bittyd-session-host-promotion-record.md).
 - D-01 worker enablement: the ADR 0019 amendment and the spawn/credential
   security review. Tracked by the security review issue.
 - Operator-capability mechanism: file versus a distinct operator endpoint. The
@@ -1339,21 +1353,29 @@ This contract is complete when:
 
 ## P0 Review Sign-off
 
-Not signed in this wave. This is a candidate, and the security review is a
-promotion gate, not a formality.
+Accepted on the owner sign-off recorded below. The independent security review
+is outstanding and gates implementation; this document claims no approval that
+is not listed here.
 
-| Reviewer                   | Required for                                                                                  | Status  |
-| -------------------------- | --------------------------------------------------------------------------------------------- | ------- |
-| Project initiator (owner)  | D-01, D-05, D-07, D-14, D-15 and final promotion                                              | Pending |
-| Security reviewer          | Trust boundary, scopes, tokens, operator capability, audit, child environment, orphan reaping | Pending |
-| Core architecture reviewer | Crate seam, single-writer rule, registry and counter semantics                                | Pending |
-| Wheel consumer reviewer    | Adapter boundary and vector mapping                                                           | Pending |
+| Reviewer                      | Required for                                                                                                   | Status 2026-10-27                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Project initiator (owner)     | D-01, D-05, D-07, D-14, D-15 and final promotion                                                               | APPROVED 2026-10-27 for decisions and contract text  |
+| Independent security reviewer | Trust boundary, IPC framing, capability and authentication, resource bounds, audit, failure modes (bitty#2608) | PENDING, required before implementation starts       |
+| Core architecture reviewer    | Crate seam, single-writer rule, registry and counter semantics                                                 | Not recorded as a separate sign-off                  |
+| Wheel consumer reviewer       | Adapter boundary and vector mapping                                                                            | Not recorded; Wheel stays a candidate consumer input |
+| bitty-ai consumer reviewer    | Hosted-worker boundary and `worker_sessions=false`                                                             | Not recorded; worker hosting stays disabled          |
 
-The security reviewer must record an explicit APPROVE or a defect list in the
-promotion PR. A missing sign-off is a merge blocker, not a comment.
+The security reviewer must record an explicit APPROVE or a defect list in
+bitty#2608 before implementation starts. The review scope and the evidence each
+area requires are fixed in the
+[promotion record](bittyd-session-host-promotion-record.md#independent-security-review-requirements).
+A missing review is an implementation blocker, not a comment.
 
 ## References
 
+- [bittyd Session-Host Contract Promotion Record](bittyd-session-host-promotion-record.md)
+  — the dated owner promotion, the D-01 through D-18 disposition table, the
+  sign-off status, and the independent security review scope.
 - [bittyd Scope Charter](bittyd-scope-charter.md) (draft) — the session-host
   mechanism floor and exclusion set that bounds this contract's scope; it
   changes no service-surface rule.
