@@ -298,7 +298,7 @@ called verified:
 
 | Gate                      | Evidence                                                                                                        |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Conformance vectors       | `V-01` through `V-34` from the consumer requirements, plus `C-01` through `C-17` from the contract.             |
+| Conformance vectors       | `V-01` through `V-34` from the consumer requirements, plus `C-01` through `C-19` from the contract.             |
 | Stale and foreign handles | Stale instance, stale session, stale generation, and foreign-principal requests refused before any effect.      |
 | Lease and control         | Attach, detach, expire, transfer, vacate, and one-controller invariants under concurrent clients.               |
 | Stop semantics            | Refuse, drain, force, host shutdown, double-drain refusal, and terminal-cause immutability.                     |
