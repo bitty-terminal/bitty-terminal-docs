@@ -13,8 +13,10 @@ sidebar_order: 80
 
 ## Document status
 
-> Status: **accepted on 2026-10-27 by the project owner; implementation is not
-> authorized until the third independent security review records an APPROVE.** This
+> Status: **accepted on 2026-10-27 by the project owner; implementation is
+> authorized under the third independent security review verdict
+> APPROVE-WITH-FOLLOWUPS, with `F-9` gating the idempotency slice and `F-12`
+> gating the plugin and peer-recheck evidence.** This
 > document records the Core-owned answers to decisions `D-01` through `D-18`
 > raised by the [Wheel consumer requirements](bittyd-session-host-requirements-candidate.md),
 > and the service surface, bounds, conformance matrix, and harness plan that
@@ -30,21 +32,22 @@ sidebar_order: 80
 > [Security review revision (2026-10-27)](#security-review-revision-2026-10-27),
 > together with the finding table. The revision is submitted, not approved: the
 > second review also returned `NEEDS-FIX`; the second revision is submitted and
-> the third independent security review is pending and still gates implementation.
+> the third independent security review returned APPROVE-WITH-FOLLOWUPS on
+> 2026-10-27, with `F-9` and `F-12` as slice gates.
 > The promotion disposition, the dated sign-off status, the remaining review
 > scope, and the out-of-scope boundaries are recorded in the
 > [bittyd Session-Host Contract Promotion Record](bittyd-session-host-promotion-record.md).
 
-| Control          | Value                                                                                                                                           |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status           | Accepted 2026-10-27; first and second reviews `NEEDS-FIX`; second revision submitted; third independent review pending                          |
-| Owner            | Core terminal platform (bitty#2546)                                                                                                             |
-| Upstream records | ADR 0008, ADR 0019, ADR 0002, security corpus, `bitty-ipc` RC-9/RC-10                                                                           |
-| Consumer         | Wheel CTX-0036 adapter and fake-server conformance suite; other Agent harnesses                                                                 |
-| Implementation   | bitty v0.2.0 slice, tracked as the child issues of bitty#2546 (#2064, #2218) and the contract-freeze issues #2664, #2665                        |
-| Evidence status  | No vector in this document has been executed against a real `bittyd`                                                                            |
-| Change authority | Core owns the answers; the security corpus co-owns the trust boundary                                                                           |
-| Promotion gate   | Owner sign-off recorded 2026-10-27; both security reviews `NEEDS-FIX`, second revision submitted, third independent review gates implementation |
+| Control          | Value                                                                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Status           | Accepted 2026-10-27; first and second reviews `NEEDS-FIX`; third review APPROVE-WITH-FOLLOWUPS (`F-9`, `F-12` slice gates)                             |
+| Owner            | Core terminal platform (bitty#2546)                                                                                                                    |
+| Upstream records | ADR 0008, ADR 0019, ADR 0002, security corpus, `bitty-ipc` RC-9/RC-10                                                                                  |
+| Consumer         | Wheel CTX-0036 adapter and fake-server conformance suite; other Agent harnesses                                                                        |
+| Implementation   | bitty v0.2.0 slice, tracked as the child issues of bitty#2546 (#2064, #2218) and the contract-freeze issues #2664, #2665                               |
+| Evidence status  | No vector in this document has been executed against a real `bittyd`                                                                                   |
+| Change authority | Core owns the answers; the security corpus co-owns the trust boundary                                                                                  |
+| Promotion gate   | Owner sign-off recorded 2026-10-27; third review APPROVE-WITH-FOLLOWUPS; `F-9`/`F-12` gate the affected slices; each slice still needs its P0 evidence |
 
 This document is self-contained: a reader needs no other design record,
 archival capture, or unpublished conversation to apply it. Method names, field
@@ -1884,8 +1887,10 @@ Harness rules:
 The v0.2.0 session-host slice is filed as child issues of bitty#2546 in
 `bitty` (bitty#2601, bitty#2602, bitty#2603, bitty#2604, bitty#2605, bitty#2606, bitty#2607, bitty#2608, bitty#2609), each
 labeled `feat`, `P1`, `area:architecture` and milestoned `v0.2.0`. None of them
-is authorized to merge before the third independent security review records
-its APPROVE and the slice's P0 evidence exists (bitty#2608).
+is authorized to merge under the third-review verdict APPROVE-WITH-FOLLOWUPS,
+provided the slice's gates are met: the idempotency slice waits for `F-9`, the
+plugin-adjacent slices wait for `F-12`, and every slice still needs its P0
+evidence (bitty#2608).
 
 | Issue      | Slice                           | Scope                                                                                                                                                                                                                                                                                                                                                                                                        | Depends on                                                    |
 | ---------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
@@ -2045,7 +2050,8 @@ Revision-level rules that follow from the table:
   fake server is implemented or claimed by it.
 - The revision does **not** record an approval. It was submitted for the second
   independent security review; after that review also returned `NEEDS-FIX`, the
-  third independent review is the implementation gate. A reviewer may reopen
+  third independent review returned APPROVE-WITH-FOLLOWUPS on 2026-10-27 with
+  `F-9`/`F-12` as slice gates. A reviewer may reopen
   any `B-*` row; a reopened row is a new tracked defect, never a silent
   edit.
 
@@ -2108,16 +2114,16 @@ At promotion (2026-10-27):
    [Security review revision (2026-10-27)](#security-review-revision-2026-10-27);
    the second review returned `NEEDS-FIX` on 2026-10-27 and its revision is in
    [Second security review revision (2026-10-27)](#second-security-review-revision-2026-10-27).
-   The third independent review is **not** recorded. It gates implementation,
-   not the decision text, and its scope is fixed in the
+   The third independent review is **recorded** (APPROVE-WITH-FOLLOWUPS,
+   2026-10-27); `F-9` and `F-12` gate their slices, and its scope is fixed in the
    [promotion record](bittyd-session-host-promotion-record.md#independent-security-review-requirements).
 
 Before the first implementation merge:
 
 1. The implementation issues reference this contract and the accepted
-   promotion record; no implementation slice merges before the third
-   independent security review records its APPROVE and the slice's P0 evidence
-   exists.
+   promotion record; no implementation slice merges before its gates are met —
+   the third review verdict (APPROVE-WITH-FOLLOWUPS with `F-9`/`F-12`) and the
+   slice's P0 evidence.
 2. The fake-server suite passes every fake-capable vector and is labeled
    candidate-only.
 3. The real-service suite passes `C-01` through `C-19` and the real-required
@@ -2209,9 +2215,9 @@ These are not globally numbered open questions. They stay here until one blocks
 a current-milestone gate; the decisions above do not depend on them.
 
 - Owner sign-off is recorded (2026-10-27). The first and second independent
-  security reviews returned `NEEDS-FIX` on 2026-10-27 and the second revision is
-  submitted; the third independent review remains open and gates implementation,
-  not the accepted decision text. See the
+  security reviews returned `NEEDS-FIX` on 2026-10-27; the third returned
+  APPROVE-WITH-FOLLOWUPS with `F-9`/`F-12` as slice gates, not a reopening of
+  the accepted decision text. See the
   [promotion record](bittyd-session-host-promotion-record.md) and
   [Second security review revision (2026-10-27)](#second-security-review-revision-2026-10-27).
 - D-01 worker enablement: the ADR 0019 amendment and the spawn/credential
@@ -2259,15 +2265,15 @@ This contract is complete when:
 8. The document is English-only, self-contained, and free of external
    provenance references.
 9. The 2026-10-27 first and second review revisions record a disposition for
-   every `B-1` through `B-13` and `F-1` through `F-8`/`F-11` finding, and claim
-   no approval: the third independent review remains the implementation gate.
+   every `B-1` through `B-13` and `F-1` through `F-8`/`F-11` finding; the third
+   review records APPROVE-WITH-FOLLOWUPS with `F-9`/`F-12` as slice gates.
 
 ## P0 Review Sign-off
 
 Accepted on the owner sign-off recorded below. The first and second independent
-security reviews returned `NEEDS-FIX`; the second revision is submitted and the
-third review is outstanding. This document claims no approval that is not listed
-here.
+security reviews returned `NEEDS-FIX`; the third review of the second revision
+returned APPROVE-WITH-FOLLOWUPS on 2026-10-27. This document claims no approval
+that is not listed here.
 
 | Reviewer                           | Required for                                                                                                   | Status 2026-10-27                                                        |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -2275,13 +2281,15 @@ here.
 | First independent security review  | Trust boundary, IPC framing, capability and authentication, resource bounds, audit, failure modes (bitty#2608) | NEEDS-FIX 2026-10-27; `B-1` through `B-13` dispositions recorded below   |
 | Second independent security review | The first revision, the `B-1` through `B-13` dispositions, and the residual-risk section                       | NEEDS-FIX 2026-10-27; `F-1` through `F-8`/`F-11` found and dispositioned |
 | Second revision                    | The `F-*` dispositions, the follow-up table, and the third-review checklist                                    | SUBMITTED 2026-10-27; no approval claimed                                |
-| Third independent security review  | The second revision and every `B-*`/`F-*` disposition                                                          | PENDING; required before implementation starts                           |
+| Third independent security review  | The second revision and every `B-*`/`F-*` disposition                                                          | APPROVE-WITH-FOLLOWUPS 2026-10-27; `F-9` and `F-12` remain slice gates   |
 | Core architecture reviewer         | Crate seam, single-writer rule, registry and counter semantics                                                 | Not recorded as a separate sign-off                                      |
 | Wheel consumer reviewer            | Adapter boundary and vector mapping                                                                            | Not recorded; Wheel stays a candidate consumer input                     |
 | bitty-ai consumer reviewer         | Hosted-worker boundary and `worker_sessions=false`                                                             | Not recorded; worker hosting stays disabled                              |
 
-The third security reviewer must record an explicit APPROVE or a defect list
-in bitty#2608 before implementation starts. A reopened `B-*` or `F-*` row is a
+The third security reviewer recorded APPROVE-WITH-FOLLOWUPS on 2026-10-27
+(bitty#2742). `F-9` (idempotency dedupe keys) gates the idempotency slice and
+`F-12` (peer re-check and plugin seccomp evidence) gates the plugin-adjacent
+slices; no other `B-*` or `F-*` row remains open. A reopened `B-*` or `F-*` row is a
 tracked defect, not a silent edit. The review scope and the evidence each area requires
 are fixed in the
 [promotion record](bittyd-session-host-promotion-record.md#independent-security-review-requirements).
