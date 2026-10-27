@@ -224,11 +224,17 @@ vocabulary, no per-consumer spelling, and no adapter-local aliasing.
   must serialize the frozen spelling and must not define a method, scope, or
   capability of its own.
 
-The physical home of the service half — new variants in the `bitty-ipc` `Scope`
-enum and its method map, or a `bittyd`-owned table that reuses the same method
-grammar and parser — is a mechanism choice deferred to bitty#2607. Both options
-must satisfy the ownership rule, the revision rule, and the one-spelling rule
-below.
+The physical home of the service half is **the `bittyd`-owned table**
+(`crates/bitty-daemon`, bitty#2607, decided 2026-10-28): the daemon owns the
+`session.*` and `daemon.*` names and their method map, reusing the `bitty-ipc`
+method grammar and validator rather than adding variants to the closed
+`bitty-ipc` `Scope` enum. `bitty-ipc`'s enum is not `#[non_exhaustive]` and
+carries exhaustive matches, so extending it would force a cross-repository
+release and pin bump for a surface whose meaning the accepted contract already
+places with the service. Consumers keep the one-spelling rule below and test
+against the wire, not against a client-side copy of the enum. A future
+extraction of the table into `bitty-ipc` is a mechanism change under the
+revision rule, not a change to any frozen name.
 
 ### Revision rule
 
@@ -370,7 +376,7 @@ refusal is a static typed result, never a partially applied negotiation.
 3. Exactly one `daemon.negotiate`, within the pre-authentication budget.
 4. Service-version range check.
 5. Operator-capability verification, only when `daemon.*` scopes are requested;
-   the failure code remains open.
+   a missing or invalid capability is `Unauthenticated`.
 6. Capability and limit advertisement, fixed for the connection.
 7. Method dispatch, server-side scope evaluation, then the visibility, control
    relation, generation, and idempotency checks in the order fixed by
@@ -378,9 +384,10 @@ refusal is a static typed result, never a partially applied negotiation.
 
 A version mismatch, an untrusted endpoint, a failed peer check, or a missing or
 invalid operator capability when `daemon.*` scopes are requested is a typed
-refusal and the connection closes. The refusal code for the operator-capability
-case is **not frozen** and remains an open point; the path grants no `daemon.*`
-scope. A `host_grant` that cannot be consumed does not close the connection: it
+refusal and the connection closes. The operator-capability case returns the same
+static `Unauthenticated` refusal as a failed peer check (decided 2026-10-28,
+bitty#2607), so the response never reveals whether the capability file exists;
+the path grants no `daemon.*` scope. A `host_grant` that cannot be consumed does not close the connection: it
 simply adds no `session.host` scope, and a later `session.create` fails with
 `Denied/ConsentRequired`. No session operation is possible before a successful
 negotiate.
@@ -758,19 +765,23 @@ incompatible by itself.
 The following items are deliberately not frozen here. Each names its owner and
 what this freeze does require of it.
 
-| Item                                                                                    | Owner                                                      | Constraint this freeze keeps                                                                                                                                |
-| --------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frame layout, JSON serialization, chunking, streaming, and key spelling on the wire     | bitty#2607 with `bitty-ipc` v1                             | The logical field names and method grammar in this document are the contract; the corpus pins the fixtures, not a second spelling                           |
-| Endpoint discovery, socket and pipe naming, mode checks, and per-cell transport details | bitty#2604 and bitty#2607                                  | Owner-private endpoint, peer credentials before parsing, no TCP, no fallback transport, typed "no endpoint"                                                 |
-| Numeric limit values and the `{effective, default, system_max}` schema                  | Accepted contract `D-14`, bitty#2603                       | Keys are the `D-14` names; a client reads `effective`; a `system_max` only moves upward through contract revision and review                                |
-| Physical home of the service scope registry                                             | bitty#2607                                                 | One registry, one spelling, additive revision, no v1 re-meaning                                                                                             |
-| Failure code for a missing or invalid operator capability at negotiate                  | Operator-capability mechanism decision and security review | One static refusal, connection closes, no file-existence oracle, no `daemon.*` scope granted; the code itself remains open                                  |
-| The `session.resize` method spelling                                                    | Core architecture review                                   | Required scope `terminal.manage`; the current controller lease is the authority; controller-only; revision increment; `Denied/ControllerRequired` otherwise |
-| Observer attach replay versus the keyed-method rule                                     | Security review with the consumer review                   | One behavior only; the corpus must not encode both; no second attach from a consumed grant                                                                  |
-| Duplicate handling for unkeyed `session.resize` and `daemon.host_grant` mint            | Security review with the consumer review                   | One behavior only; no key or fingerprint is invented here; the corpus must not encode both                                                                  |
-| Conformance vector ids and fixtures                                                     | bitty#2665                                                 | A fixture that disagrees with a frozen name in this document is a contract defect, not a corpus choice                                                      |
-| Platform advertisement order beyond Linux x86_64                                        | Accepted contract `D-15`, bitty#2604                       | Native-runner evidence before advertisement; `Denied/UnsupportedPlatform` or no endpoint elsewhere                                                          |
-| Worker hosting, remote transport, and restart persistence                               | ADR 0019, ADR 0008, accepted contract                      | `worker_sessions=false`; no remote listener; no persistence; no in-process fallback                                                                         |
+Two items previously listed here were resolved by bitty#2607 on 2026-10-28 and
+are recorded in place rather than deferred: the service scope registry lives in
+the `bittyd`-owned table ([ownership rule](#ownership-rule)), and a missing or
+invalid operator capability returns the static `Unauthenticated` refusal in the
+accept/refuse order above.
+
+| Item                                                                                    | Owner                                    | Constraint this freeze keeps                                                                                                                                |
+| --------------------------------------------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frame layout, JSON serialization, chunking, streaming, and key spelling on the wire     | bitty#2607 with `bitty-ipc` v1           | The logical field names and method grammar in this document are the contract; the corpus pins the fixtures, not a second spelling                           |
+| Endpoint discovery, socket and pipe naming, mode checks, and per-cell transport details | bitty#2604 and bitty#2607                | Owner-private endpoint, peer credentials before parsing, no TCP, no fallback transport, typed "no endpoint"                                                 |
+| Numeric limit values and the `{effective, default, system_max}` schema                  | Accepted contract `D-14`, bitty#2603     | Keys are the `D-14` names; a client reads `effective`; a `system_max` only moves upward through contract revision and review                                |
+| The `session.resize` method spelling                                                    | Core architecture review                 | Required scope `terminal.manage`; the current controller lease is the authority; controller-only; revision increment; `Denied/ControllerRequired` otherwise |
+| Observer attach replay versus the keyed-method rule                                     | Security review with the consumer review | One behavior only; the corpus must not encode both; no second attach from a consumed grant                                                                  |
+| Duplicate handling for unkeyed `session.resize` and `daemon.host_grant` mint            | Security review with the consumer review | One behavior only; no key or fingerprint is invented here; the corpus must not encode both                                                                  |
+| Conformance vector ids and fixtures                                                     | bitty#2665                               | A fixture that disagrees with a frozen name in this document is a contract defect, not a corpus choice                                                      |
+| Platform advertisement order beyond Linux x86_64                                        | Accepted contract `D-15`, bitty#2604     | Native-runner evidence before advertisement; `Denied/UnsupportedPlatform` or no endpoint elsewhere                                                          |
+| Worker hosting, remote transport, and restart persistence                               | ADR 0019, ADR 0008, accepted contract    | `worker_sessions=false`; no remote listener; no persistence; no in-process fallback                                                                         |
 
 ## Security review
 
