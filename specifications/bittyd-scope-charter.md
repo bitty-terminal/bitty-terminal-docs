@@ -16,10 +16,11 @@ sidebar_order: 81
 > because no other component can own them correctly, and what must remain in
 > the terminal core, the AI layer, or extensions. It does not change
 > [ADR 0019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0019-bittyd-staging-advance.md),
-> does not accept the
-> [bittyd Session-Host Contract (Candidate)](bittyd-session-host-contract-candidate.md),
-> and claims no implementation. Accepting this charter is a documentation act;
-> the session-host contract is accepted separately through its own P0 gate.
+> does not change the accepted
+> [bittyd Session-Host Contract](bittyd-session-host-contract.md),
+> and claims no implementation. The session-host contract was accepted
+> separately on 2026-10-27 through its own P0 gate; accepting this charter
+> remains a separate documentation act.
 
 ## Document status
 
@@ -34,8 +35,8 @@ It is the session-host counterpart of that floor, not a replacement for it.
   document defines none of their behavior.
 - Authority: it explains and constrains the already accepted staging in
   [ADR 0019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0019-bittyd-staging-advance.md)
-  and the candidate service surface in the
-  [bittyd Session-Host Contract](bittyd-session-host-contract-candidate.md).
+  and the accepted service surface in the
+  [bittyd Session-Host Contract](bittyd-session-host-contract.md).
   Where this charter and an accepted source disagree, the accepted source wins
   and this charter is corrected.
 - Implementation status: none is claimed. No `bittyd` crate or binary exists;
@@ -59,7 +60,7 @@ In scope:
 Out of scope:
 
 - the wire format, method set, counters, bounds, and lifecycle states — owned by
-  the [session-host contract](bittyd-session-host-contract-candidate.md) and
+  the [session-host contract](bittyd-session-host-contract.md) and
   [ADR 0019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0019-bittyd-staging-advance.md);
 - terminal behavior, rendering, and configuration — owned by the
   [Small-Core Capability Floor](small-core-capability-floor.md) and its cited
@@ -80,9 +81,10 @@ This charter must be read together with, and must not weaken:
 - [ADR 0019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0019-bittyd-staging-advance.md)
   (`accepted`): the v0.2.0 slice, per-domain single writer, service API
   versioning from day one, and `D5` daemon absence as a supported state.
-- [bittyd Session-Host Contract (Candidate)](bittyd-session-host-contract-candidate.md)
-  (`draft`): `D-01` through `D-18`, the single-writer rule `R-B09`, the
-  `worker_sessions=false` v0.2.0 decision, and the conformance matrix.
+- [bittyd Session-Host Contract](bittyd-session-host-contract.md)
+  (`accepted` 2026-10-27): `D-01` through `D-18`, the single-writer rule
+  `R-B09`, the `worker_sessions=false` v0.2.0 decision, and the conformance
+  matrix.
 - [Wheel consumer requirements for the bittyd session host](bittyd-session-host-requirements-candidate.md)
   (`draft`): consumer-facing fields, authority, and `V-01` through `V-34`.
 - [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)
@@ -290,8 +292,9 @@ same rule; being listed under the v0.2.0 milestone is not authorization.
 
 ## Verification plan
 
-No implementation is claimed. When the session-host contract is accepted, the
-following evidence is required before any floor row is called verified:
+No implementation is claimed. The session-host contract was accepted on
+2026-10-27; the following evidence is still required before any floor row is
+called verified:
 
 | Gate                      | Evidence                                                                                                        |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -326,7 +329,7 @@ synchronized with:
 
 - [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)
   and [ADR 0019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0019-bittyd-staging-advance.md);
-- [bittyd Session-Host Contract (Candidate)](bittyd-session-host-contract-candidate.md)
+- [bittyd Session-Host Contract](bittyd-session-host-contract.md)
   and [Wheel consumer requirements](bittyd-session-host-requirements-candidate.md);
 - [Small-Core Capability Floor](small-core-capability-floor.md) and
   [Core and Plugin Boundaries](../architecture/core-boundaries.md);
@@ -386,7 +389,7 @@ synchronized with:
   [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md),
   [ADR 0019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0019-bittyd-staging-advance.md).
 - Service surface:
-  [bittyd Session-Host Contract (Candidate)](bittyd-session-host-contract-candidate.md),
+  [bittyd Session-Host Contract](bittyd-session-host-contract.md),
   [Wheel consumer requirements](bittyd-session-host-requirements-candidate.md).
 - Core and extension ownership:
   [Small-Core Capability Floor](small-core-capability-floor.md),

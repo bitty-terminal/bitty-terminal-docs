@@ -36,10 +36,12 @@ sidebar_order: 79
 
 > **Core response.** The Core-owned answers to `D-01` through `D-18`, the
 > service surface, and the conformance harness plan are recorded in the
-> [bittyd Session-Host Contract (Candidate)](bittyd-session-host-contract-candidate.md).
-> That contract is a candidate until owner and security review; this document
+> [bittyd Session-Host Contract](bittyd-session-host-contract.md), accepted on
+> 2026-10-27 through the
+> [promotion record](bittyd-session-host-promotion-record.md). This document
 > remains the consumer input, and the contract states the Core answer wherever
-> the two differ.
+> the two differ. Acceptance does not authorize implementation: the independent
+> security review is still required first.
 
 ## 1. Purpose and scope
 
