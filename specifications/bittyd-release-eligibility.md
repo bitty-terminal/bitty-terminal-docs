@@ -34,7 +34,7 @@ sidebar_order: 84
 | Parent           | [bitty#2546](https://github.com/bitty-terminal/bitty/issues/2546) — define the bittyd session-host contract                                                                                                             |
 | Release train    | The stable release tracked by milestone `v0.2.0`; the exact tag and version are assigned by the release owner at tag time, not fixed here                                                                               |
 | Upstream records | Accepted [session-host contract](bittyd-session-host-contract.md), [promotion record](bittyd-session-host-promotion-record.md), the [IPC freeze](bittyd-ipc-contract.md), ADR 0008, ADR 0019, ADR 0002, security corpus |
-| Implementation   | bitty#2601 through #2609. No slice is merged on `main`; the `bitty-daemon` seam exists only on the task branch at `bitty@03871203`, with no listener, endpoint, registry, or conformance driver                         |
+| Implementation   | bitty#2601 through #2609. Only the `bitty-daemon` seam is merged on `main` (`a35041d8`); the session registry is in review (bitty#2601, PR #2751). No listener, endpoint, registry state, or conformance driver exists  |
 | Evidence status  | Zero conformance vectors have run; zero P0 evidence exists; no artifact, package, or channel has been produced for `bittyd`                                                                                             |
 | Change authority | Release owner owns the gate; the security corpus co-owns the P0 evidence rows; the Core platform owns the implementation rows                                                                                           |
 | Promotion gate   | Every row `MET` with a recorded artifact, then explicit owner authorization for the publication action, which this document never performs                                                                              |
@@ -154,7 +154,7 @@ At authoring (2026-10-27):
 | ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Contract and authority  | Partial | The session-host contract and promotion record are accepted; the IPC freeze is a candidate and the consumer/security sign-offs are pending |
 | Worker refusal          | `OPEN`  | The accepted text requires `worker_sessions=false`; no build exists to advertise it                                                        |
-| Implementation          | `OPEN`  | No implementation is merged on `main`; the crate seam is branch-only, with no listener or endpoint                                         |
+| Implementation          | `OPEN`  | Only the crate seam is merged on `main` (`a35041d8`); the registry is in review, and no listener or endpoint exists                        |
 | Conformance and parity  | `OPEN`  | No driver, no corpus run, no parity record                                                                                                 |
 | Platform cells          | `OPEN`  | No native run on any cell; Linux x86_64 is the only intended first cell                                                                    |
 | Artifacts and packaging | `OPEN`  | No `bittyd` artifact exists; `release.yml` builds only the `bitty` binary today                                                            |

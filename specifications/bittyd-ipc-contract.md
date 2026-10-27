@@ -32,24 +32,24 @@ sidebar_order: 83
 > choice here does not reopen a decision, and where the two disagree the
 > accepted contract wins.
 >
-> The `bitty-daemon` crate seam exists on the bittyd task branch
-> (`ctx-1616/feat-bittyd-seam` at `bitty@03871203`), but it is not merged to
-> `main`: it fixes the binary name, the version and capability handshake
-> constants, and a pure `daemon.negotiate` function. No listener, endpoint,
-> transport, service scope registry, session state, method dispatch, or fake
-> server exists, and nothing here authorizes one.
+> The `bitty-daemon` crate seam is merged on `main` (`a35041d8`): it fixes the
+> binary name, the version and capability handshake constants, and a pure
+> `daemon.negotiate` function. The session registry is in review (bitty#2601,
+> PR #2751) and is not merged. No listener, endpoint, transport, service scope
+> registry, session state, method dispatch, or fake server exists, and nothing
+> here authorizes one.
 
-| Control          | Value                                                                                                                                                                                                                                                                                                 |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status           | Candidate freeze; freezes accepted decisions and adds no new authority                                                                                                                                                                                                                                |
-| Issue            | [bitty#2664](https://github.com/bitty-terminal/bitty/issues/2664) — freeze bittyd IPC scopes, handshake, and version contract                                                                                                                                                                         |
-| Parent           | [bitty#2546](https://github.com/bitty-terminal/bitty/issues/2546) — define the bittyd session-host contract                                                                                                                                                                                           |
-| Upstream records | Accepted [bittyd Session-Host Contract](bittyd-session-host-contract.md), [promotion record](bittyd-session-host-promotion-record.md), ADR 0008, ADR 0019, `bitty-ipc` v1, security corpus                                                                                                            |
-| Consumers        | Wheel CTX-0036 adapter and fake server; `bitty` GUI, `bitty ctl`, and other local clients                                                                                                                                                                                                             |
-| Implementation   | Seam only. `crates/bitty-daemon` (binary `bittyd`, `daemon.negotiate` version and capability constants) exists on `ctx-1616/feat-bittyd-seam` at `bitty@03871203`, not on `main`; no listener, endpoint, registry, dispatch, or conformance driver exists. Implementation is bitty#2606, #2607, #2609 |
-| Evidence status  | No frame has been exchanged with a real `bittyd`; no conformance vector has run                                                                                                                                                                                                                       |
-| Change authority | Core terminal platform owns this freeze; the security corpus co-owns the trust boundary                                                                                                                                                                                                               |
-| Promotion gate   | Owner, consumer, architecture, independent security, and docs-curator reviews recorded, `just check` green, and no new authority introduced                                                                                                                                                           |
+| Control          | Value                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status           | Candidate freeze; freezes accepted decisions and adds no new authority                                                                                                                                                                                                                                                                                                       |
+| Issue            | [bitty#2664](https://github.com/bitty-terminal/bitty/issues/2664) — freeze bittyd IPC scopes, handshake, and version contract                                                                                                                                                                                                                                                |
+| Parent           | [bitty#2546](https://github.com/bitty-terminal/bitty/issues/2546) — define the bittyd session-host contract                                                                                                                                                                                                                                                                  |
+| Upstream records | Accepted [bittyd Session-Host Contract](bittyd-session-host-contract.md), [promotion record](bittyd-session-host-promotion-record.md), ADR 0008, ADR 0019, `bitty-ipc` v1, security corpus                                                                                                                                                                                   |
+| Consumers        | Wheel CTX-0036 adapter and fake server; `bitty` GUI, `bitty ctl`, and other local clients                                                                                                                                                                                                                                                                                    |
+| Implementation   | Seam only. `crates/bitty-daemon` (binary `bittyd`, `daemon.negotiate` version and capability constants) is merged on `main` at `a35041d8`; the session registry is in review (bitty#2601, PR #2751) and is not merged. No listener, endpoint, registry state, dispatch, or conformance driver exists. Implementation is bitty#2601, #2602, #2603, #2604, #2606, #2607, #2609 |
+| Evidence status  | No frame has been exchanged with a real `bittyd`; no conformance vector has run                                                                                                                                                                                                                                                                                              |
+| Change authority | Core terminal platform owns this freeze; the security corpus co-owns the trust boundary                                                                                                                                                                                                                                                                                      |
+| Promotion gate   | Owner, consumer, architecture, independent security, and docs-curator reviews recorded, `just check` green, and no new authority introduced                                                                                                                                                                                                                                  |
 
 ## Document status
 
@@ -158,14 +158,15 @@ extends, not a claim that this document's service family exists.
 - The wire envelope is version `1`; `SUPPORTED_WIRE_VERSIONS` contains only
   `1`; the correlation `id` is bounded to 64 bytes; the method name is bounded
   to 128 bytes and validated as lowercase dotted segments.
-- Neither `bitty-ipc` nor `bitty` `main` contains a `session.*` or `daemon.*`
-  scope name, method name, capability name, or handshake field. On `main`, the
-  service family is text only.
-- The `bitty-daemon` crate seam exists only on the bittyd task branch:
-  `ctx-1616/feat-bittyd-seam` at `bitty@03871203` carries `crates/bitty-daemon`
-  with `[[bin]] name = "bittyd"`, `NEGOTIATE_METHOD = "daemon.negotiate"`,
-  `CAPABILITY_NAMES`, and `NegotiateRequest`/`NegotiateResponse`. It is not
-  merged to `main`.
+- `bitty-ipc` still contains no `session.*` or `daemon.*` scope or method
+  name. `bitty` `main` carries only the seam's `daemon.negotiate` method name
+  and the six capability constants; every `session.*` method remains text
+  here.
+- The `bitty-daemon` crate seam is merged on `main` at `a35041d8`:
+  `crates/bitty-daemon` carries `[[bin]] name = "bittyd"`,
+  `NEGOTIATE_METHOD = "daemon.negotiate"`, `CAPABILITY_NAMES`, and
+  `NegotiateRequest`/`NegotiateResponse`. The session registry (bitty#2601,
+  PR #2751) is not merged.
 - The seam starts no listener, binds no endpoint, owns no session registry or
   session state, and serves no handshake: `handshake::negotiate` is a pure
   version and capability function. No service method dispatch, transport,
