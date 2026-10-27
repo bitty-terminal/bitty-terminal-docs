@@ -277,6 +277,13 @@ ensure `git status` clean and tag `v0.0.1` (deferring `0.1.0`). CI `Quality gate
 
 ## Binary preview nightly (research, no release in this task)
 
+> Superseded by the accepted
+> [Preview Release Contract](../specifications/preview-release-contract.md)
+> (2026-10-27): the 23:30 `Europe/Berlin` schedule, the
+> `vX.Y.Z-preview.YYYYMMDD` tag, the three-cell matrix, retention, and the
+> channel-isolation rules live there. This section remains the `8c88f3a`
+> research record and is not a contract.
+
 ### Binary identity
 
 - **`bitty-app` is never published to crates.io.** `crates/bitty-app/Cargo.toml:9`
