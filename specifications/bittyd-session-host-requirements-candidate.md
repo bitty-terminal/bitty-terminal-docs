@@ -40,11 +40,11 @@ sidebar_order: 79
 > 2026-10-27 through the
 > [promotion record](bittyd-session-host-promotion-record.md). This document
 > remains the consumer input, and the contract states the Core answer wherever
-> the two differ. Acceptance does not authorize implementation: the independent
-> second independent security review is still required first.
+> the two differ. Acceptance does not authorize implementation: the third
+> independent security review is still required first.
 >
-> **Security review revision, 2026-10-27.** The review narrowed three consumer
-> assumptions. `session.host` is not part of an ordinary client's baseline, so
+> **Security review revisions, 2026-10-27.** The 2026-10-27 revisions narrowed
+> three consumer assumptions. `session.host` is not part of an ordinary client's baseline, so
 > Wheel must request explicit per-client consent and also hold `process.spawn`
 > before `session.create`. A second client cannot attach as an observer just by
 > naming a session; the controller or the operator must mint a single-use

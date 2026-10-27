@@ -239,9 +239,11 @@ generation)`. The connection is bound to one instance at handshake; a request
   stores only `terminal_id_digest`, a truncated 128-bit SHA-256 digest, so the
   id cannot become an audit content channel. It is immutable for the
   session and unique among non-terminal sessions; a second live session with the
-  same `terminal_id` is refused with `TerminalAlreadyHosted`. After a session is
-  terminal and collected, the `terminal_id` may be reused, so reconnecting
-  clients fence with `(instance, session_id)`, not `terminal_id`.
+  same `terminal_id` is refused with `TerminalAlreadyHosted`. Once a session is
+  terminal, its `terminal_id` may be reused even while the terminal record is
+  retained; a retained record and a live session can therefore share an id, so
+  reconnecting clients fence with `(instance, session_id)`, not
+  `terminal_id`.
 - Handles from an earlier instance never resolve. The daemon does not consult
   the current registry, orphan records, or process ids to "find" them.
 
@@ -318,17 +320,19 @@ specific to the reason: `exit_code` for `exited`, `signal` for
 - `unverified`: the daemon could not verify the whole tree, including a
   descendant that left the process group via `setsid`/`setpgid` before the
   containment identity was established;
-- `not_started`: no worker was ever bound.
+- `not_started`: no worker process was ever spawned.
 
 Cleanup is a process-tree operation, not a one-pid observation. On every
 terminal transition, including a worker that exits on its own, the daemon first
 terminates the whole containment identity: a graceful signal to the tree, then a
 kill signal after `abort_grace_ms`, then it verifies the cgroup subtree empty
 (Linux x86_64) or the full subreaper descendant set gone. Only then does it
-classify `cleanup`. A surviving descendant keeps the transition pending, is
-recorded as an orphan/journal entry, and forces `unverified` if it cannot be
-verified gone. `worker_exit` does not mean the tree is gone, and a bare
-process-group check never yields `swept`.
+classify `cleanup`. A surviving descendant keeps the terminal transition pending
+through the grace and kill window; if the identity still cannot be verified
+gone, the daemon completes the transition with `cleanup: unverified`, records
+the surviving identity in the orphan journal, and reports it. `worker_exit`
+does not mean the tree is gone, and a bare process-group check never yields
+`swept`.
 
 A terminal session is read-only. `status` serves its snapshot until retention;
 attach, controller attach, abort, kill, and transfer are refused with
@@ -359,6 +363,12 @@ all modes; consumer adapters never issue it.
   `host_shutdown` when a signal initiated the drain), and is attributed to the
   operator who requested the escalation. Each transition carries its own
   revision. `refuse` during a drain returns `Denied/DaemonStopping`.
+- A session still in `created` when a drain deadline or a `force` reaches it is
+  cancelled through the same pre-bind cancel intent as the generation-0 abort,
+  with cleanup `not_started`, or `swept` when the spawn syscall had already
+  returned and the child was terminated before bind; the spawn path never binds
+  a child the stop covered. The terminal reason is the stop's reason
+  (`daemon_stop`, or `host_shutdown` after a signal).
 - No session reaches a terminal state without a reason, a revision, and an
   actor. A drain that cannot notify a lease closes that lease with
   `TerminalEventLost` before or at the terminal transition; it never silently
@@ -407,11 +417,14 @@ all modes; consumer adapters never issue it.
   examines orphan records:
   - a record from a different boot id is stale and is discarded (the boot id
     fences the old containment identity);
-  - a `reserved` record with the same boot id whose containment identity still
-    exists is reaped by terminating the **whole cgroup subtree or subreaper
-    descendant set**, even though no pid was committed; an empty or absent
-    identity is recorded as reaped; the record is `orphan_reaped` only when the
-    identity verifies empty;
+  - a `reserved` record with the same boot id is reaped through its containment
+    identity even though no pid was committed: a non-empty identity is
+    terminated (the whole cgroup subtree or subreaper descendant set) and must
+    verify empty, an empty or absent cgroup subtree is already reaped, and the
+    subreaper fallback with no pre-spawn identity is quarantined per the rule
+    below; the record is `orphan_reaped` only when the identity verifies empty
+    or the recorded cgroup subtree is absent, never when the identity is merely
+    unknown;
   - a `committed` record whose pid no longer exists but whose containment
     identity is non-empty is reaped through the identity, not discarded on the
     pid alone;
@@ -428,6 +441,12 @@ all modes; consumer adapters never issue it.
     after a crash before the first child is adopted), is quarantined as
     `orphan_unverified`, retained for `orphan_record_retention_ms`, reported,
     and never signalled by pid.
+- The startup scan and every actionable reap complete before the daemon binds
+  its endpoint, so no client can create a session while an earlier record is
+  still actionable. A containment identity left by a crash before its record
+  was reserved is empty by construction, because the reserve precedes the
+  spawn, and is removed at startup. The daemon never signals a process it did
+  not record.
 - The subreaper fallback has a stated double-run residual: a crash after the
   spawn syscall but before the child is adopted cannot be fenced by pid, so the
   daemon cannot prove the child is gone. The record stays quarantined, and the
@@ -446,12 +465,13 @@ all modes; consumer adapters never issue it.
   by pidfd, so a descendant that calls `setsid` or `setpgid` is still inside
   the identity. A process-group-only check is never sufficient for `swept`.
 - `daemon.orphans.verify` (`daemon.control`) re-runs verification on demand and
-  returns counts by class (`reaped`, `unverified`, `reserved`, `stale`) with no
-  process ids. It may signal only exact matches, applies the same never-signal
-  rule to quarantined records, and is idempotent. The operator may also retire a
-  quarantined record explicitly; retirement is attributed, removes only the
-  journal record, never signals, never adopts a session, and frees the slot so a
-  quarantine cannot block new spawns for the whole retention window.
+  returns counts by class (`reaped`, `unverified`, `reserved`, `committed`,
+  `stale`) with no process ids. It may signal only exact matches, applies the
+  same never-signal rule to quarantined records, and is idempotent. The operator
+  may also retire a quarantined record explicitly; retirement is attributed,
+  removes only the journal record, never signals, never adopts a session, and
+  frees the slot so a quarantine cannot block new spawns for the whole retention
+  window.
 - Reaping never uses a name, pattern, port, or "newest process" heuristic, and
   never signals a process the daemon did not record. A reaped orphan never
   becomes a session and never receives a terminal event.
@@ -499,8 +519,11 @@ Rules:
   `session.host` consent grant is `Denied/ConsentRequired`; a missing
   `process.spawn` is `Denied/ScopeViolation`. Both are decided before any spawn,
   and the two codes never substitute for each other: one static code per missing
-  authority. An inspect-only client cannot create a session, and a
-  `process.spawn` holder without host consent cannot make the daemon host one.
+  authority. When both are missing, the daemon returns `Denied/ScopeViolation`;
+  `Denied/ConsentRequired` is returned only to a caller that already holds
+  `process.spawn`, so the response never reveals consent state to a client
+  without spawn authority. An inspect-only client cannot create a session, and
+  a `process.spawn` holder without host consent cannot make the daemon host one.
   The create response, including an idempotent duplicate, is the only place the
   initial control token appears.
 - `session.host` consent has a real channel: the operator-only
@@ -551,7 +574,10 @@ control is vacant and the request presents the current control token. The
 `session.control` scope is necessary and never sufficient, and an observer
 lease is always denied `Denied/ControllerRequired`. This rule applies to
 `session.grant`, `session.grant.revoke`, `session.abort` with a consumer
-reason, `session.control.transfer`, and detach/revoke of another lease. A live
+reason, `session.control.transfer`, and detach/revoke of another lease. A
+controller claim is the same relation read at vacuity: it requires
+`session.control` and the current control token, and the claim creates the
+controller lease rather than promoting an observer lease in place. A live
 controller elsewhere is `Denied/ControlHeld`; a missing, stale, or rotated token
 when control is vacant is `Denied/InvalidControlToken`. The operator paths
 (`daemon.control`, `session.kill`, and the `operator` abort reason) use the
@@ -585,10 +611,11 @@ Controller authority is the control token:
 - Revocation is explicit and attributed. The operator may revoke any lease,
   including the controller lease, through `daemon.control`; the current
   controller may revoke an observer lease on its own session through
-  `session.control`. Revoking the controller vacates control, rotates the token
-  so the revoked token cannot reclaim, and requires an operator-initiated claim
-  or a new session to regain control. There is no recovery method that reveals
-  the token.
+  `session.control`. Revoking the controller vacates control and rotates the
+  token, so neither the revoked token nor any other client can reclaim control;
+  the session continues detached, and only an operator kill or stop ends it.
+  Regaining a controller for that session requires a new session. There is no
+  recovery method that reveals the token.
 - Never placed in a child environment, argv, audit record, or diagnostic
   export. A consumer that persists it must use an owner-private secret store
   (`0600`) in its own state directory.
@@ -934,14 +961,22 @@ bounded by `audit_file_bytes × audit_segments` (4,194,304 bytes at the system
 maxima) and the orphan journal by `max_orphan_records × orphan_record_bytes`
 (262,144 bytes), so the **session-host metadata state** including bounded sinks
 is 76,514,304 bytes. No registry, lease, connection, create, grant, audit, or
-journal structure grows without one of these bounds.
+journal structure grows without one of these bounds; a per-connection record is
+fixed by the closed scope and capability sets plus
+`max_attaches_per_connection`, and is not a growing store.
 
-The content plane is counted separately because it is owned by the terminal
-core, not the session-host registry. ADR 0019 `D3`'s explicit cap for this slice
-is `max_content_bytes_per_session` = 268,435,456 bytes (256 MiB, matching the
-accepted `IMG-4` image-store ceiling) inclusive of grid, scrollback, and images
-for one session; the content owner prunes to fit. At the system maxima the
-content-plane bound is `max_sessions × max_content_bytes_per_session` =
+The content plane is counted separately because it is terminal content, not
+session-host registry metadata; for a hosted session the daemon holds it under
+the accepted terminal content contracts. ADR 0008 requires maximum scrollback
+cells and image-store bytes per terminal, and ADR 0019 `D3` keeps that bound;
+this contract sets the per-session content cap the daemon advertises as
+`max_content_bytes_per_session` = 268,435,456 bytes (256 MiB), inclusive of
+grid, scrollback, and images for one session, and the content owner prunes to
+fit. The accepted `IMG-4` aggregate image budget (256 MiB per window across all
+protocols and terminals) still governs Core's image store and is not weakened;
+the per-session cap is a memory ceiling, not an image entitlement. At the system
+maxima the worst-case content allocation is
+`max_sessions × max_content_bytes_per_session` =
 17,179,869,184 bytes (16 GiB), and the combined session-host plus content bound
 is 17,256,383,488 bytes. This contract does not redefine the content plane; it
 fixes the per-session cap the daemon advertises and accounts for it separately
@@ -1109,11 +1144,21 @@ method                   1 byte
 target kind              1 byte
 target                  16 bytes  (session/attach/grant id, or terminal-id digest)
 fingerprint             16 bytes  (truncated SHA-256 of method, target, generation, reason class or spawn digest)
-result descriptor       48 bytes  (status 2, result class 2, session id 16, generation 8, revision 8, flags 4, reserved 8)
+result descriptor       48 bytes  (status 2, result class 2, session id 16, generation 8, revision 8, flags 4, result ref 8)
 alignment/reserved      30 bytes
 total                  128 bytes per entry
 512 keys × 128 bytes = 65,536 bytes = max_idempotency_bytes_per_session
 ```
+
+`result ref` is a 64-bit index into the session's lease or observer-grant record
+created by the original call; it is not a raw id and is never reused while the
+entry exists. A duplicate `session.attach` or `session.grant` mint returns the
+same `attach_id` or `grant_id` (and the same unconsumed bearer for a mint) while
+that record exists, and `not_attached`/`not_active` after it is gone. A
+lease-bound result is replayed only on the connection that created it; a
+duplicate presented on another connection is refused with
+`IdempotencyConflict`. `session.create` stays replayable across connections so a
+lost create response can be recovered.
 
 A replay returns the stored descriptor and, for a live session, the client
 reads `session.status` for the current snapshot; snapshots are recomputed, not
@@ -1169,9 +1214,10 @@ environment, or reuse it for a different spawn specification.
   effect.
 - Retirement cannot permit a duplicate effect. A key is retired only when
   (a) its stored result is a refusal that applied nothing, (b) its session is
-  terminal and the `create_idempotency_ttl_ms` floor has passed, or (c) its
-  result is a terminal descriptor that the client can still reconcile through
-  `status`. The daemon never evicts a key whose retirement would let a retry
+  terminal and the `create_idempotency_ttl_ms` floor has passed, or (c) for a
+  session-scoped key, its result is a terminal descriptor that the client can
+  still reconcile through `status`; a create key additionally waits for the
+  floor in (b). The daemon never evicts a key whose retirement would let a retry
   apply the mutation twice; at capacity it refuses new keyed work instead.
 - The create-key store is in memory and does not survive a restart. After a
   restart a client that retries a create with the same key gets a new session;
@@ -1490,8 +1536,15 @@ Request: `session_id`, `generation`. No idempotency key and no control token.
 
 - Operator-only (`daemon.control`). Immediately terminates the whole
   containment identity, then reaps. Terminal reason is `operator_abort`;
-  cleanup is `swept` only when the containment identity verifies empty,
-  otherwise `unverified`.
+  cleanup is `not_started` when no worker process was ever spawned, `swept` only
+  when the containment identity verifies empty, otherwise `unverified`.
+- A generation-0 kill commits the same pre-bind cancel intent as the
+  generation-0 abort and `daemon.stop`: the spawn path never binds a child the
+  kill covered, and cleanup is `not_started` when nothing was spawned or `swept`
+  when the spawn syscall had already returned and the child was terminated
+  before bind. A kill that loses the race to a committed bind is
+  `StaleGeneration` with the current generation and revision and applies
+  nothing; the operator re-issues at the current generation.
 - Not available to consumer adapters and never gated by a key store. This is
   the only immediate-kill path; a duplicate after terminal returns the terminal
   snapshot.
@@ -1502,8 +1555,8 @@ Request: `session_id`, `generation`. No idempotency key and no control token.
 
 - Returns daemon state (`running` or `stopping`), instance id, pid
   (observational), uptime, session counts by state, orphan counts by class
-  (`reaped`, `unverified`, `reserved`, `stale`), `audit_degraded`, advertised
-  limits, and the drain deadline when stopping.
+  (`reaped`, `unverified`, `reserved`, `committed`, `stale`), `audit_degraded`,
+  advertised limits, and the drain deadline when stopping.
 - `daemon.inspect` is required for `daemon.status`; the handshake facts are the
   only daemon information an ordinary consumer connection receives.
 
@@ -1616,38 +1669,38 @@ Transport and framing errors stay in the accepted `bitty-ipc` taxonomy. Session
 outcomes are service results, never transport errors, and the two are never
 substituted for each other.
 
-| Condition                                               | Result                                                                         |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Major or minor version mismatch                         | `VersionMismatch` (transport-level)                                            |
-| Peer credential failure                                 | `Unauthenticated`                                                              |
-| Endpoint tamper                                         | `Unauthenticated`, then daemon exit 6                                          |
-| Frame or payload over bound                             | `FrameTooLarge` / `PayloadTooLarge` / `LimitExceeded` with counts              |
-| Pending-request or queue over bound                     | `PendingLimitExceeded` / `ChannelFull`; control frames close the lease instead |
-| Rate limit                                              | `Denied/RateLimited`                                                           |
-| Missing scope                                           | `Denied/ScopeViolation`                                                        |
-| Missing, expired, or invalid `session.host` consent     | `Denied/ConsentRequired`                                                       |
-| Scope present but not the controller                    | `Denied/ControllerRequired` (observer or other lease is always denied)         |
-| Stale, rotated, or missing token when control is vacant | `Denied/InvalidControlToken`                                                   |
-| Observer attach without a valid grant                   | `Denied/ObserverGrantRequired`                                                 |
-| Second negotiate or pre-auth frame                      | `Denied/AlreadyNegotiated`, connection closes                                  |
-| Resize without the controller lease                     | `Denied/ControllerRequired`                                                    |
-| Worker kind disabled                                    | `Denied/UnsupportedCapability`                                                 |
-| Unsupported platform cell                               | `Denied/UnsupportedPlatform`                                                   |
-| Instance mismatch                                       | `Denied/StaleInstance`                                                         |
-| Generation mismatch                                     | `Denied/StaleGeneration` with current generation and revision                  |
-| Unknown, collected, or invisible                        | `NotFound`                                                                     |
-| Controller already held                                 | `Denied/ControlHeld`                                                           |
-| Session stopping                                        | `Denied/SessionStopping`                                                       |
-| Terminal session mutation                               | `Denied/NotRunning` or the terminal snapshot for an idempotent repeat          |
-| Duplicate live terminal id                              | `Denied/TerminalAlreadyHosted`                                                 |
-| Active sessions on default stop                         | `Denied/ActiveSessions` with counts                                            |
-| Drain already in progress                               | `Denied/DaemonStopping`                                                        |
-| Idempotency fingerprint conflict                        | `Denied/IdempotencyConflict`                                                   |
-| Idempotency store full (keyed methods only)             | `Denied/IdempotencyCapacity`; termination is keyless and never refused         |
-| Terminal event could not be queued                      | Close the lease with `Denied/TerminalEventLost`                                |
-| Request deadline                                        | `Timeout` with the request id and bound                                        |
-| Audit sink unavailable                                  | `Denied/Internal`, no state change, `audit_degraded=true`                      |
-| Invariant failure                                       | `Internal`, fail closed; no partial mutation without a typed result            |
+| Condition                                                 | Result                                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Major or minor version mismatch                           | `VersionMismatch` (transport-level)                                            |
+| Peer credential failure                                   | `Unauthenticated`                                                              |
+| Endpoint tamper                                           | `Unauthenticated`, then daemon exit 6                                          |
+| Frame or payload over bound                               | `FrameTooLarge` / `PayloadTooLarge` / `LimitExceeded` with counts              |
+| Pending-request or queue over bound                       | `PendingLimitExceeded` / `ChannelFull`; control frames close the lease instead |
+| Rate limit                                                | `Denied/RateLimited`                                                           |
+| Missing scope                                             | `Denied/ScopeViolation`                                                        |
+| Missing, expired, or invalid `session.host` consent       | `Denied/ConsentRequired`                                                       |
+| Scope present but not the controller, on a control method | `Denied/ControllerRequired` (observer or other lease is denied)                |
+| Stale, rotated, or missing token when control is vacant   | `Denied/InvalidControlToken`                                                   |
+| Observer attach without a valid grant                     | `Denied/ObserverGrantRequired`                                                 |
+| Second negotiate or pre-auth frame                        | `Denied/AlreadyNegotiated`, connection closes                                  |
+| Resize without the controller lease                       | `Denied/ControllerRequired`                                                    |
+| Worker kind disabled                                      | `Denied/UnsupportedCapability`                                                 |
+| Unsupported platform cell                                 | `Denied/UnsupportedPlatform`                                                   |
+| Instance mismatch                                         | `Denied/StaleInstance`                                                         |
+| Generation mismatch                                       | `Denied/StaleGeneration` with current generation and revision                  |
+| Unknown, collected, or invisible                          | `NotFound`                                                                     |
+| Controller already held                                   | `Denied/ControlHeld`                                                           |
+| Session stopping                                          | `Denied/SessionStopping`                                                       |
+| Terminal session mutation                                 | `Denied/NotRunning` or the terminal snapshot for an idempotent repeat          |
+| Duplicate live terminal id                                | `Denied/TerminalAlreadyHosted`                                                 |
+| Active sessions on default stop                           | `Denied/ActiveSessions` with counts                                            |
+| Drain already in progress                                 | `Denied/DaemonStopping`                                                        |
+| Idempotency fingerprint or connection conflict            | `Denied/IdempotencyConflict`                                                   |
+| Idempotency store full (keyed methods only)               | `Denied/IdempotencyCapacity`; termination is keyless and never refused         |
+| Terminal event could not be queued                        | Close the lease with `Denied/TerminalEventLost`                                |
+| Request deadline                                          | `Timeout` with the request id and bound                                        |
+| Audit sink unavailable                                    | `Denied/Internal`, no state change, `audit_degraded=true`                      |
+| Invariant failure                                         | `Internal`, fail closed; no partial mutation without a typed result            |
 
 The `Denied.code` values above are a closed service-level set. Unknown codes
 are surfaced as a static `Internal` and never parsed as text. Refusals carry
@@ -1656,43 +1709,43 @@ another session's details.
 
 ## State transitions and disposition
 
-| Event                                 | Session and worker outcome                                                                                                             | Counters and leases                                                           | Client-visible result                                                                  |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Client transport closes, no detach    | Worker continues; session stays `running`; derived `attached` becomes false when the last lease expires.                               | Generation unchanged; lease expires after the TTL; attach count decrements.   | No terminal event; the next status shows `attached=false`.                             |
-| Explicit detach                       | Worker continues; session stays `running` or detached.                                                                                 | Lease removed immediately; revision increments.                               | Detach acknowledgement; a repeat is `not_attached`.                                    |
-| Create without `session.host` consent | No session registered; no process spawned.                                                                                             | None.                                                                         | `Denied/ConsentRequired`; missing `process.spawn` is `ScopeViolation`.                 |
-| Observer attach without a grant       | No lease created; session unchanged.                                                                                                   | None; no revision.                                                            | `Denied/ObserverGrantRequired`; no content or control handle.                          |
-| Observer grant expired or consumed    | No lease created; grant stays consumed or expired.                                                                                     | None; the grant is unusable.                                                  | `Denied/ObserverGrantRequired`; a fresh grant is required.                             |
-| Observer grant revoked                | An unconsumed grant is invalidated; a live observer lease is revoked.                                                                  | Revision increments; target receives `lease_revoked`.                         | Attributed revocation; the observer reconciles with status.                            |
-| Observer resize attempt               | No PTY resize; session unchanged.                                                                                                      | None; no revision.                                                            | `Denied/ControllerRequired`; the observer letterboxes locally.                         |
-| Controller resize                     | PTY resized by the single controller.                                                                                                  | Revision increments; generation unchanged.                                    | Accepted resize with the new revision.                                                 |
-| Controller abort, current generation  | Worker terminated under supervision; reason `consumer_cancel`.                                                                         | Generation unchanged; revision increments; repeat returns the terminal state. | Terminal event with reason, actor, and cleanup.                                        |
-| Controller abort, timeout reason      | Same as above with `consumer_timeout`.                                                                                                 | Same as above.                                                                | Terminal event distinguishable from cancellation.                                      |
-| Abort with stale generation           | No state change; worker untouched.                                                                                                     | Current generation and revision returned.                                     | `StaleGeneration`; the adapter reconciles and stops.                                   |
-| Unauthorized abort or detach          | No state change.                                                                                                                       | None.                                                                         | `NotFound` if invisible; observer is `ControllerRequired`; no target details.          |
-| Stale or rotated control token        | No state change.                                                                                                                       | None.                                                                         | `Denied/InvalidControlToken`; the token is never reissued.                             |
-| Termination while key store is full   | Abort, kill, or stop proceeds; no key is stored.                                                                                       | Terminal transition or daemon stop as usual.                                  | Terminal snapshot, accepted stop, or typed daemon result; never `IdempotencyCapacity`. |
-| Worker crash by signal                | Session becomes `failed`; signal and cleanup recorded; no restart.                                                                     | Generation unchanged; terminal state immutable.                               | Terminal event; a retry is a new session.                                              |
-| Worker normal exit                    | Session becomes `exited`; exit code recorded; no restart.                                                                              | Same as above.                                                                | Terminal event; process exit 0 is not task success.                                    |
-| `daemon.stop` default with sessions   | No session changes; typed refusal with counts.                                                                                         | None.                                                                         | `ActiveSessions`; CLI exit 3.                                                          |
-| `daemon.stop drain`                   | Notify, refuse new work, wait the deadline, then terminate the remainder.                                                              | Each transition attributed and revisioned.                                    | `daemon_stopping` then terminal events, or `TerminalEventLost` for a closed lease.     |
-| `daemon.stop force`                   | All active sessions terminate with `daemon_stop`, reaped and recorded.                                                                 | Same as above.                                                                | Terminal events where the transport exists; otherwise the client reconciles.           |
-| `force` during an active drain        | Drain grace is skipped; the remainder terminates with `daemon_stop`, or `host_shutdown` after a signal.                                | Each transition attributed; escalation is attributed to its operator.         | Escalation accepted; terminal events or `TerminalEventLost` per lease.                 |
-| Endpoint tamper or auth invariant     | Daemon exits 6 without terminal transitions; live workers keep reserved/committed journal records.                                     | No revision or terminal record; next start reaps or quarantines.              | Transport failure; `Unauthenticated` where a connection still exists.                  |
-| Generation-0 abort wins the bind race | The spawn is cancelled or the unbound child is terminated; cleanup is `not_started` or `swept`.                                        | Terminal transition and revision; no generation increment.                    | Terminal event with the requested reason; no orphan.                                   |
-| Generation-0 abort loses the race     | Bind committed; no state change from the stale abort.                                                                                  | Current generation and revision returned.                                     | `StaleGeneration`; the adapter re-issues at the current generation or stops.           |
-| Daemon crash                          | No terminal state guaranteed; workers may be orphaned.                                                                                 | Registry gone; next start has a new instance id.                              | Transport failure, then `StaleInstance`/`NotFound`; outcome unknown.                   |
-| Clean daemon restart                  | All sessions end; no persistence.                                                                                                      | New instance id; empty registry.                                              | `StaleInstance`; never resumed.                                                        |
-| Request or transport timeout          | No partial mutation without a typed result; a mutation may have applied.                                                               | Outcome unknown until reconciled; revision reflects any applied mutation.     | Typed timeout; reconcile with status, retry only with key and generation.              |
-| Lease expiry / last-seen stale        | Detach only; worker continues.                                                                                                         | Attach count decrements; generation unchanged.                                | No terminal event; status shows detached.                                              |
-| Reattach, same client                 | New controller lease with the current token, which rotates; worker continues.                                                          | Generation must match; snapshot at the current revision.                      | Snapshot plus `backlog_truncated` when history was dropped.                            |
-| Reattach, different client            | Observer only with a grant; control requires a transfer.                                                                               | New lease; attach count increments; generation unchanged.                     | Snapshot with role and co-attachment.                                                  |
-| Attach cap exceeded                   | Existing leases unaffected; the new attach is shed.                                                                                    | Attach count unchanged; refusal carries the cap.                              | Typed limit refusal; no tight retry loop.                                              |
-| Terminal record collected             | Record removed after the TTL.                                                                                                          | Handle becomes unknown.                                                       | `NotFound`; treat as lost, never as success.                                           |
-| Host reboot                           | All sessions gone; no persistence promise.                                                                                             | New instance, new identity, empty registry.                                   | `StaleInstance` or unavailable; do not resume.                                         |
-| Session id reused across instances    | Never binds a stale client to a new session.                                                                                           | Instance mismatch refused before lookup.                                      | `StaleInstance`; never session-id-only fencing.                                        |
-| Orphan exact identity after crash     | The old worker or reserved cgroup subtree is reaped only if the boot-id-matched record and containment identity verify; never adopted. | New instance has no lease or revision for it.                                 | No client event; `daemon.status` reports the reap count.                               |
-| Unverifiable orphan                   | Quarantined, retained, reported; never signalled by pid; subreaper fallback states the double-run residual.                            | None.                                                                         | `daemon.status` and `daemon.orphans.verify` report `orphan_unverified`.                |
+| Event                                         | Session and worker outcome                                                                                                             | Counters and leases                                                           | Client-visible result                                                                                     |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Client transport closes, no detach            | Worker continues; session stays `running`; derived `attached` becomes false when the last lease expires.                               | Generation unchanged; lease expires after the TTL; attach count decrements.   | No terminal event; the next status shows `attached=false`.                                                |
+| Explicit detach                               | Worker continues; session stays `running` or detached.                                                                                 | Lease removed immediately; revision increments.                               | Detach acknowledgement; a repeat is `not_attached`.                                                       |
+| Create without `session.host` consent         | No session registered; no process spawned.                                                                                             | None.                                                                         | `Denied/ConsentRequired`; missing `process.spawn` is `ScopeViolation`.                                    |
+| Observer attach without a grant               | No lease created; session unchanged.                                                                                                   | None; no revision.                                                            | `Denied/ObserverGrantRequired`; no content or control handle.                                             |
+| Observer grant expired or consumed            | No lease created; grant stays consumed or expired.                                                                                     | None; the grant is unusable.                                                  | `Denied/ObserverGrantRequired`; a fresh grant is required.                                                |
+| Observer grant revoked                        | An unconsumed grant is invalidated; a live observer lease is revoked.                                                                  | Revision increments; target receives `lease_revoked`.                         | Attributed revocation; the observer reconciles with status.                                               |
+| Observer resize attempt                       | No PTY resize; session unchanged.                                                                                                      | None; no revision.                                                            | `Denied/ControllerRequired`; the observer letterboxes locally.                                            |
+| Controller resize                             | PTY resized by the single controller.                                                                                                  | Revision increments; generation unchanged.                                    | Accepted resize with the new revision.                                                                    |
+| Controller abort, current generation          | Worker terminated under supervision; reason `consumer_cancel`.                                                                         | Generation unchanged; revision increments; repeat returns the terminal state. | Terminal event with reason, actor, and cleanup.                                                           |
+| Controller abort, timeout reason              | Same as above with `consumer_timeout`.                                                                                                 | Same as above.                                                                | Terminal event distinguishable from cancellation.                                                         |
+| Abort with stale generation                   | No state change; worker untouched.                                                                                                     | Current generation and revision returned.                                     | `StaleGeneration`; the adapter reconciles and stops.                                                      |
+| Unauthorized abort or detach                  | No state change.                                                                                                                       | None.                                                                         | `NotFound` if invisible; observer is `ControllerRequired`; no target details.                             |
+| Stale or rotated control token                | No state change.                                                                                                                       | None.                                                                         | `Denied/InvalidControlToken`; the token is never reissued.                                                |
+| Termination while key store is full           | Abort, kill, or stop proceeds; no key is stored.                                                                                       | Terminal transition or daemon stop as usual.                                  | Terminal snapshot, accepted stop, or typed daemon result; never `IdempotencyCapacity`.                    |
+| Worker crash by signal                        | Session becomes `failed`; signal and cleanup recorded; no restart.                                                                     | Generation unchanged; terminal state immutable.                               | Terminal event; a retry is a new session.                                                                 |
+| Worker normal exit                            | Session becomes `exited`; whole containment identity terminated and cleanup recorded; exit code recorded; no restart.                  | Same as above.                                                                | Terminal event; process exit 0 is not task success.                                                       |
+| `daemon.stop` default with sessions           | No session changes; typed refusal with counts.                                                                                         | None.                                                                         | `ActiveSessions`; CLI exit 3.                                                                             |
+| `daemon.stop drain`                           | Notify, refuse new work, wait the deadline, then terminate the remainder.                                                              | Each transition attributed and revisioned.                                    | `daemon_stopping` then terminal events, or `TerminalEventLost` for a closed lease.                        |
+| `daemon.stop force`                           | All active sessions terminate with `daemon_stop`, reaped and recorded.                                                                 | Same as above.                                                                | Terminal events where the transport exists; otherwise the client reconciles.                              |
+| `force` during an active drain                | Drain grace is skipped; the remainder terminates with `daemon_stop`, or `host_shutdown` after a signal.                                | Each transition attributed; escalation is attributed to its operator.         | Escalation accepted; terminal events or `TerminalEventLost` per lease.                                    |
+| Endpoint tamper or auth invariant             | Daemon exits 6 without terminal transitions; live workers keep reserved/committed journal records.                                     | No revision or terminal record; next start reaps or quarantines.              | Transport failure; `Unauthenticated` where a connection still exists.                                     |
+| Generation-0 abort or kill wins the bind race | The spawn is cancelled or the unbound child is terminated; cleanup is `not_started` or `swept`.                                        | Terminal transition and revision; no generation increment.                    | Terminal event with the requested or operator reason; no orphan.                                          |
+| Generation-0 abort or kill loses the race     | Bind committed; no state change from the stale request.                                                                                | Current generation and revision returned.                                     | `StaleGeneration`; the adapter reconciles and stops, the operator may re-issue at the current generation. |
+| Daemon crash                                  | No terminal state guaranteed; workers may be orphaned.                                                                                 | Registry gone; next start has a new instance id.                              | Transport failure, then `StaleInstance`/`NotFound`; outcome unknown.                                      |
+| Clean daemon restart                          | All sessions end; no persistence.                                                                                                      | New instance id; empty registry.                                              | `StaleInstance`; never resumed.                                                                           |
+| Request or transport timeout                  | No partial mutation without a typed result; a mutation may have applied.                                                               | Outcome unknown until reconciled; revision reflects any applied mutation.     | Typed timeout; reconcile with status, retry only with key and generation.                                 |
+| Lease expiry / last-seen stale                | Detach only; worker continues.                                                                                                         | Attach count decrements; generation unchanged.                                | No terminal event; status shows detached.                                                                 |
+| Reattach, same client                         | New controller lease with the current token, which rotates; worker continues.                                                          | Generation must match; snapshot at the current revision.                      | Snapshot plus `backlog_truncated` when history was dropped.                                               |
+| Reattach, different client                    | Observer only with a grant; control requires a transfer.                                                                               | New lease; attach count increments; generation unchanged.                     | Snapshot with role and co-attachment.                                                                     |
+| Attach cap exceeded                           | Existing leases unaffected; the new attach is shed.                                                                                    | Attach count unchanged; refusal carries the cap.                              | Typed limit refusal; no tight retry loop.                                                                 |
+| Terminal record collected                     | Record removed after the TTL.                                                                                                          | Handle becomes unknown.                                                       | `NotFound`; treat as lost, never as success.                                                              |
+| Host reboot                                   | All sessions gone; no persistence promise.                                                                                             | New instance, new identity, empty registry.                                   | `StaleInstance` or unavailable; do not resume.                                                            |
+| Session id reused across instances            | Never binds a stale client to a new session.                                                                                           | Instance mismatch refused before lookup.                                      | `StaleInstance`; never session-id-only fencing.                                                           |
+| Orphan exact identity after crash             | The old worker or reserved cgroup subtree is reaped only if the boot-id-matched record and containment identity verify; never adopted. | New instance has no lease or revision for it.                                 | No client event; `daemon.status` reports the reap count.                                                  |
+| Unverifiable orphan                           | Quarantined, retained, reported; never signalled by pid; subreaper fallback states the double-run residual.                            | None.                                                                         | `daemon.status` and `daemon.orphans.verify` report `orphan_unverified`.                                   |
 
 ## Conformance matrix
 
@@ -1701,61 +1754,61 @@ vectors `C-01` through `C-19` for properties a consumer adapter cannot prove.
 "Fake" is what a fake server can validate with injected time and limits. "Real"
 names what only the real service can prove.
 
-| Vector | Area            | Decisions        | Fake server                                                                  | Real service requirement                                                                    |
-| ------ | --------------- | ---------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| V-01   | Handshake       | D-08, D-11, D-14 | Yes: all fields, fresh instance, server-assigned client id, limits present   | Required on each advertised cell for identity facts.                                        |
-| V-02   | Handshake       | D-11             | Yes: typed refusal, connection closed, no downgrade                          | Required to prove the real binary honors its own version.                                   |
-| V-03   | Handshake       | D-01             | Yes: `worker_sessions=false` and typed unsupported                           | Required to prove the delivered daemon advertises false and spawns nothing.                 |
-| V-04   | Handshake       | D-14             | Yes: frame-bound refusal with actual and limit                               | Required for real transport framing.                                                        |
-| V-05   | Attach          | D-03, D-09       | Yes: observer lease, count, revision, distinct attach id                     | Required for real lease lifecycle.                                                          |
-| V-06   | Attach          | D-09, D-12       | Yes with injected clock: expiry detaches, worker alive, generation unchanged | Required to prove no abort on silence.                                                      |
-| V-07   | Attach          | D-09, D-18       | Yes: idempotent detach, no revision change on repeat                         | Required for real registry behavior.                                                        |
-| V-08   | Attach          | D-14             | Yes with injected cap: shed, no eviction                                     | Required to prove the compiled cap and advertised value agree.                              |
-| V-09   | Attach          | D-07             | Yes: uniform `NotFound`, no content                                          | Required to prove peer filtering and audit attribution.                                     |
-| V-10   | Attach          | D-09             | Yes: two leases, only one controller                                         | Required for real lease identity.                                                           |
-| V-11   | Lifecycle       | D-03, D-04       | Yes: simulated cancellation and terminal snapshot                            | Required for real signal, reap, and terminal reason.                                        |
-| V-12   | Lifecycle       | D-03             | Yes: stale generation refusal, no state change                               | Required to prove the real counter cannot be spoofed.                                       |
-| V-13   | Lifecycle       | D-07             | Yes: scope/token denial and static result                                    | Required for real peer and scope evaluation.                                                |
-| V-14   | Lifecycle       | D-04, D-17       | Partial: simulated crash and terminal event                                  | Required: real signal death, cleanup, no restart.                                           |
-| V-15   | Lifecycle       | D-04, D-17       | Partial: simulated normal exit                                               | Required: real wait status and immutable terminal record.                                   |
-| V-16   | Stop            | D-05             | Yes: typed active-session refusal                                            | Required: CLI exit code and daemon still running.                                           |
-| V-17   | Stop            | D-05             | Partial: protocol shape of force stop                                        | Required: real two-session force, terminal events, reaping.                                 |
-| V-18   | Restart         | D-02, D-06       | No: instance change can be simulated, not a crash                            | Required: real crash, new instance, stale handle, empty registry.                           |
-| V-19   | Timeout         | D-13, D-18       | Yes with injected request deadline                                           | Required: real request bound and dedupe.                                                    |
-| V-20   | Retention       | D-14             | Yes with injected clock                                                      | Required: real TTL and collection.                                                          |
-| V-21   | Reattach        | D-10             | Yes: snapshot, bounded backlog, truncation marker                            | Required: real retained ring behavior.                                                      |
-| V-22   | Reattach        | D-09             | Yes: second client needs a single-use grant; no control transfer             | Required: real grant store, lease, and token checks.                                        |
-| V-23   | Bounds          | D-14             | Yes: pending cap shed                                                        | Required: real queue pressure and attribution.                                              |
-| V-24   | Bounds          | D-12, D-14       | Yes with injected clock: partial frame closed                                | Required: real socket stall and isolation.                                                  |
-| V-25   | Trust (Unix)    | D-07, D-15       | No                                                                           | Required: second uid; peer rejection before parsing.                                        |
-| V-26   | Trust (Unix)    | D-07, D-15       | No                                                                           | Required: endpoint mode/owner tamper and fail-closed exit.                                  |
-| V-27   | Trust (Windows) | D-15             | No                                                                           | Required on a Windows runner: SID mismatch and remote-pipe rejection.                       |
-| V-28   | Trust           | D-15             | No                                                                           | Required: startup scan shows no TCP listener.                                               |
-| V-29   | Adapter         | D-01             | Yes: driver with no server returns typed unavailable                         | Adapter-only; the real daemon absence is a supported state.                                 |
-| V-30   | Adapter         | D-01             | Yes: fake daemon receives no connection                                      | Adapter-only.                                                                               |
-| V-31   | Adapter         | D-13, D-18       | Yes: drop during abort, unknown outcome, reconcile                           | Required to prove the real request cannot be applied twice.                                 |
-| V-32   | Adapter         | D-07             | Yes: fake server counts exactly one abort and sees no pid                    | Required to prove no out-of-band signal path.                                               |
-| V-33   | Adapter         | D-16             | Yes: fake server identity fields in Wheel audit                              | Adapter-only; the real audit content rule is C-07.                                          |
-| V-34   | Cancellation    | D-04, D-13       | Yes: distinct simulated reasons                                              | Required: real cancel and timeout reasons and cleanup.                                      |
-| C-01   | Identity        | D-02             | No                                                                           | Instance id freshness, session id non-reuse, terminal id uniqueness.                        |
-| C-02   | Trust           | D-07             | No                                                                           | Peer re-check before each privileged action, including after peer exit.                     |
-| C-03   | Orphans         | D-06             | No                                                                           | Two-phase exact-identity reap; pid-reuse and unverifiable records never signalled.          |
-| C-04   | Counters        | D-03             | Partial: revision increments can be simulated                                | Real revision increments and no increment on heartbeat.                                     |
-| C-05   | Containment     | D-14             | Partial: refusal shapes                                                      | Real refusal leaves no partial mutation without a typed result; daemon survives.            |
-| C-06   | Events          | D-10             | Yes with injected queue pressure                                             | Real control frame is never shed; `TerminalEventLost` on failure.                           |
-| C-07   | Audit           | D-16             | No                                                                           | Audit sink modes, content-free records, bounded rotation, refusal budget, `audit_degraded`. |
-| C-08   | Daemon absence  | D-01, D-05       | Yes: no endpoint                                                             | Real `bitty --safe`, headless tests, and plain invocation work without `bittyd`.            |
-| C-09   | Authorization   | D-07             | Yes: full scope×method matrix; inspect-only create refused                   | Real scope evaluation: `session.host` consent and `process.spawn` both required.            |
-| C-10   | Attach          | D-09             | Yes with injected clock: grant single-use, TTL, revoke                       | Real grant store, consume-once, expiry, and revocation.                                     |
-| C-11   | Control         | D-09             | Yes: old token refused, new token works, terminal is `NotRunning`            | Real token rotation, lease binding, and refusal after transfer/revoke.                      |
-| C-12   | Child scope     | D-07             | Partial: refusal shape                                                       | Real child `/proc/self/fd` scan and `close_range(..., CLOEXEC)` proof.                      |
-| C-13   | Orphans         | D-06             | No                                                                           | Two-phase journal crash injection, reserved-record cgroup reap, and containment identity.   |
-| C-14   | Audit           | D-16             | Partial: refusal-budget shape                                                | Flood budget/aggregation, rotation, redacted `Debug`, no core dumps.                        |
-| C-15   | Trust (plugin)  | D-07             | No                                                                           | Plugin host denies `connect()` to the daemon endpoint; negative test.                       |
-| C-16   | Trust           | D-07             | No                                                                           | Per-message `SCM_CREDENTIALS` mismatch closes; fd-passing residual tested.                  |
-| C-17   | Session         | D-03, D-09       | Yes: observer resize refused, revision increments                            | Real controller-only resize and revision increment.                                         |
-| C-18   | Termination     | D-18             | Yes with injected full store: abort/kill/stop still succeed                  | Real termination is keyless and never returns `IdempotencyCapacity`.                        |
-| C-19   | Consent         | D-07             | Yes: host grant consume/expire/revoke and one code per missing authority     | Real `daemon.host_grant`, peer binding, TTL, audit, and create refusal codes.               |
+| Vector | Area            | Decisions        | Fake server                                                                                       | Real service requirement                                                                    |
+| ------ | --------------- | ---------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| V-01   | Handshake       | D-08, D-11, D-14 | Yes: all fields, fresh instance, server-assigned client id, limits present                        | Required on each advertised cell for identity facts.                                        |
+| V-02   | Handshake       | D-11             | Yes: typed refusal, connection closed, no downgrade                                               | Required to prove the real binary honors its own version.                                   |
+| V-03   | Handshake       | D-01             | Yes: `worker_sessions=false` and typed unsupported                                                | Required to prove the delivered daemon advertises false and spawns nothing.                 |
+| V-04   | Handshake       | D-14             | Yes: frame-bound refusal with actual and limit                                                    | Required for real transport framing.                                                        |
+| V-05   | Attach          | D-03, D-09       | Yes: observer lease, count, revision, distinct attach id                                          | Required for real lease lifecycle.                                                          |
+| V-06   | Attach          | D-09, D-12       | Yes with injected clock: expiry detaches, worker alive, generation unchanged                      | Required to prove no abort on silence.                                                      |
+| V-07   | Attach          | D-09, D-18       | Yes: idempotent detach, no revision change on repeat                                              | Required for real registry behavior.                                                        |
+| V-08   | Attach          | D-14             | Yes with injected cap: shed, no eviction                                                          | Required to prove the compiled cap and advertised value agree.                              |
+| V-09   | Attach          | D-07             | Yes: uniform `NotFound`, no content                                                               | Required to prove peer filtering and audit attribution.                                     |
+| V-10   | Attach          | D-09             | Yes: two leases, only one controller                                                              | Required for real lease identity.                                                           |
+| V-11   | Lifecycle       | D-03, D-04       | Yes: simulated cancellation and terminal snapshot                                                 | Required for real signal, reap, and terminal reason.                                        |
+| V-12   | Lifecycle       | D-03             | Yes: stale generation refusal, no state change                                                    | Required to prove the real counter cannot be spoofed.                                       |
+| V-13   | Lifecycle       | D-07             | Yes: scope/token denial and static result                                                         | Required for real peer and scope evaluation.                                                |
+| V-14   | Lifecycle       | D-04, D-17       | Partial: simulated crash and terminal event                                                       | Required: real signal death, cleanup, no restart.                                           |
+| V-15   | Lifecycle       | D-04, D-17       | Partial: simulated normal exit                                                                    | Required: real wait status, whole-tree reap and cleanup class, immutable terminal record.   |
+| V-16   | Stop            | D-05             | Yes: typed active-session refusal                                                                 | Required: CLI exit code and daemon still running.                                           |
+| V-17   | Stop            | D-05             | Partial: protocol shape of force stop                                                             | Required: real two-session force, terminal events, reaping.                                 |
+| V-18   | Restart         | D-02, D-06       | No: instance change can be simulated, not a crash                                                 | Required: real crash, new instance, stale handle, empty registry.                           |
+| V-19   | Timeout         | D-13, D-18       | Yes with injected request deadline                                                                | Required: real request bound and dedupe.                                                    |
+| V-20   | Retention       | D-14             | Yes with injected clock                                                                           | Required: real TTL and collection.                                                          |
+| V-21   | Reattach        | D-10             | Yes: snapshot, bounded backlog, truncation marker                                                 | Required: real retained ring behavior.                                                      |
+| V-22   | Reattach        | D-09             | Yes: second client needs a single-use grant; no control transfer                                  | Required: real grant store, lease, and token checks.                                        |
+| V-23   | Bounds          | D-14             | Yes: pending cap shed                                                                             | Required: real queue pressure and attribution.                                              |
+| V-24   | Bounds          | D-12, D-14       | Yes with injected clock: partial frame closed                                                     | Required: real socket stall and isolation.                                                  |
+| V-25   | Trust (Unix)    | D-07, D-15       | No                                                                                                | Required: second uid; peer rejection before parsing.                                        |
+| V-26   | Trust (Unix)    | D-07, D-15       | No                                                                                                | Required: endpoint mode/owner tamper and fail-closed exit.                                  |
+| V-27   | Trust (Windows) | D-15             | No                                                                                                | Required on a Windows runner: SID mismatch and remote-pipe rejection.                       |
+| V-28   | Trust           | D-15             | No                                                                                                | Required: startup scan shows no TCP listener.                                               |
+| V-29   | Adapter         | D-01             | Yes: driver with no server returns typed unavailable                                              | Adapter-only; the real daemon absence is a supported state.                                 |
+| V-30   | Adapter         | D-01             | Yes: fake daemon receives no connection                                                           | Adapter-only.                                                                               |
+| V-31   | Adapter         | D-13, D-18       | Yes: drop during abort, unknown outcome, reconcile                                                | Required to prove the real request cannot be applied twice.                                 |
+| V-32   | Adapter         | D-07             | Yes: fake server counts exactly one abort and sees no pid                                         | Required to prove no out-of-band signal path.                                               |
+| V-33   | Adapter         | D-16             | Yes: fake server identity fields in Wheel audit                                                   | Adapter-only; the real audit content rule is C-07.                                          |
+| V-34   | Cancellation    | D-04, D-13       | Yes: distinct simulated reasons                                                                   | Required: real cancel and timeout reasons and cleanup.                                      |
+| C-01   | Identity        | D-02             | No                                                                                                | Instance id freshness, session id non-reuse, terminal id uniqueness.                        |
+| C-02   | Trust           | D-07             | No                                                                                                | Peer re-check before each privileged action, including after peer exit.                     |
+| C-03   | Orphans         | D-06             | No                                                                                                | Two-phase exact-identity reap; pid-reuse and unverifiable records never signalled.          |
+| C-04   | Counters        | D-03             | Partial: revision increments can be simulated                                                     | Real revision increments and no increment on heartbeat.                                     |
+| C-05   | Containment     | D-14             | Partial: refusal shapes                                                                           | Real refusal leaves no partial mutation without a typed result; daemon survives.            |
+| C-06   | Events          | D-10             | Yes with injected queue pressure                                                                  | Real control frame is never shed; `TerminalEventLost` on failure.                           |
+| C-07   | Audit           | D-16             | No                                                                                                | Audit sink modes, content-free records, bounded rotation, refusal budget, `audit_degraded`. |
+| C-08   | Daemon absence  | D-01, D-05       | Yes: no endpoint                                                                                  | Real `bitty --safe`, headless tests, and plain invocation work without `bittyd`.            |
+| C-09   | Authorization   | D-07             | Yes: full scope×method matrix; inspect-only create refused                                        | Real scope evaluation: `session.host` consent and `process.spawn` both required.            |
+| C-10   | Attach          | D-09             | Yes with injected clock: grant single-use, TTL, revoke                                            | Real grant store, consume-once, expiry, and revocation.                                     |
+| C-11   | Control         | D-09             | Yes: old token refused, new token works, terminal is `NotRunning`                                 | Real token rotation, lease binding, and refusal after transfer/revoke.                      |
+| C-12   | Child scope     | D-07             | Partial: refusal shape                                                                            | Real child `/proc/self/fd` scan and `close_range(..., CLOEXEC)` proof.                      |
+| C-13   | Orphans         | D-06             | No                                                                                                | Two-phase journal crash injection, reserved-record cgroup reap, and containment identity.   |
+| C-14   | Audit           | D-16             | Partial: refusal-budget shape                                                                     | Flood budget/aggregation, rotation, redacted `Debug`, no core dumps.                        |
+| C-15   | Trust (plugin)  | D-07             | No                                                                                                | Plugin host denies `connect()` to the daemon endpoint; negative test.                       |
+| C-16   | Trust           | D-07             | No                                                                                                | Per-message `SCM_CREDENTIALS` mismatch closes; fd-passing residual tested.                  |
+| C-17   | Session         | D-03, D-09       | Yes: observer resize refused, revision increments                                                 | Real controller-only resize and revision increment.                                         |
+| C-18   | Termination     | D-18             | Yes with injected full store: abort/kill/stop still succeed                                       | Real termination is keyless and never returns `IdempotencyCapacity`.                        |
+| C-19   | Consent         | D-07             | Yes: host grant consume/expire/revoke, one code per missing authority, and the both-missing order | Real `daemon.host_grant`, peer binding, TTL, audit, and create refusal codes.               |
 
 Vectors blocked by an earlier decision are now unblocked by this contract:
 V-03 by D-01, V-08/V-20 by D-14, V-16/V-17 by D-05, V-18 by D-06, V-10/V-22 by
@@ -1990,9 +2043,10 @@ Revision-level rules that follow from the table:
   deny-by-default, bounded, and attributed.
 - The revision is a text change only. No daemon, crate, transport, registry, or
   fake server is implemented or claimed by it.
-- The revision does **not** record an approval. It is submitted for the second
-  independent security review, which is the implementation gate. A reviewer may
-  reopen any `B-*` row; a reopened row is a new tracked defect, never a silent
+- The revision does **not** record an approval. It was submitted for the second
+  independent security review; after that review also returned `NEEDS-FIX`, the
+  third independent review is the implementation gate. A reviewer may reopen
+  any `B-*` row; a reopened row is a new tracked defect, never a silent
   edit.
 
 ## Second security review revision (2026-10-27)
@@ -2004,17 +2058,17 @@ through `F-16`. This revision applies the blocking `F-1` through `F-8` and
 `F-11`, records the remaining findings in
 [Follow-ups (review 2)](#follow-ups-review-2), and claims no approval.
 
-| ID   | Finding                                                                                                                                                      | Disposition                                                                                                                                                                                                                                                                                                                                                                  | Applied in                                                                          |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| F-1  | A full idempotency store could refuse `session.abort`, `session.kill`, or `daemon.stop`, turning a dedupe bound into a termination denial.                   | Termination methods are keyless and never consult either store; they are idempotent by session/generation or daemon instance/mode. The key store can refuse only keyed methods, and C-18 asserts termination under a full store.                                                                                                                                             | D-18; abort/kill; `daemon.stop`; error taxonomy; state transitions; C-18.           |
-| F-2  | Method authorization contradicted D-07/D-09: grant, grant revoke, abort, and transfer accepted scope alone or an optional token, and an observer could pass. | A single control-relation rule now applies: current controller lease, or current token at a vacant control relation; `session.control` is necessary and never sufficient; an observer is always `Denied/ControllerRequired`. Added `Denied/InvalidControlToken` for stale/rotated/missing tokens and applied it at grant, revoke, abort, transfer, detach-other, and attach. | D-07; D-09; grant/revoke; abort; transfer; detach-other; attach; error taxonomy.    |
-| F-3  | A reserved record had no pid, so it could not be reaped, and D-18 called the old worker an "orphan candidate" without a fence.                               | The containment identity is created before reserve and recorded in the reserved record; startup reaps a boot-id-matched reserved record through its cgroup subtree/subreaper set. The subreaper fallback states the double-run residual and requires adapters never to retry an unfenced create. D-18's orphan-candidate claim is corrected.                                 | D-06; D-18; D-05 exit 6; state transitions; C-13.                                   |
-| F-4  | The aggregate omitted retained-session event rings/idempotency stores and the content plane.                                                                 | Event rings and per-session idempotency stores are released at the terminal transition; retained records are metadata only. Added the separate `max_content_bytes_per_session` cap (256 MiB, 16 GiB at system maxima) sourced from the accepted `IMG-4`/terminal caps, and renamed the 76.5 MB figure to session-host metadata state.                                        | D-14; D-18; limits table; aggregate; B-9 disposition.                               |
-| F-5  | The idempotency byte bounds were infeasible at 1024 keys × 64 KiB and stored snapshots.                                                                      | Stored results are bounded descriptors; snapshots are recomputed on replay. Session store is 512 × 128 B = 65,536 B; create store is 128 × 256 B = 32,768 B. The create entry stores `terminal_id_digest` once and the token as 32 bytes. The arithmetic is in D-18.                                                                                                         | D-18; limits table.                                                                 |
-| F-6  | Raw `terminal_id` was an audit content channel; grants had no non-secret target.                                                                             | `terminal_id` is restricted to a safe opaque alphabet and audit stores only `terminal_id_digest`; raw values stay in memory. Added the non-secret `grant_id` (32 hex) as the audit and revoke target for host and observer grants.                                                                                                                                           | D-02; D-16; grant/revoke; `daemon.host_grant`; limits.                              |
-| F-7  | `session.host` consent had no channel, and `ConsentRequired`/`ScopeViolation` were ambiguous.                                                                | Added operator-only `daemon.host_grant`: single-use, peer-bound, TTL-bounded, revocable, audited, consumed at negotiate. One static code per missing authority: `ConsentRequired` for host consent, `ScopeViolation` for `process.spawn`. Stated the same-uid intent-gate residual.                                                                                          | D-07; handshake; `daemon.host_grant`; create surface; error taxonomy; limits; C-19. |
-| F-8  | `swept` could be false, and a normal worker exit did not reap the tree.                                                                                      | `swept` requires the whole cgroup subtree or subreaper descendant set empty. Every terminal transition, including `worker_exit`, terminates the identity (graceful then kill) and verifies it empty before cleanup classification; survivors become journal records and force `unverified`.                                                                                  | D-04; D-06; kill; state transitions; C-13.                                          |
-| F-11 | The promotion record's review scope listed five mechanisms, not seven.                                                                                       | The promotion record now lists the control token, operator capability, explicit child environments, two-phase orphan reaping, observer grants, the pre-session create-key store, and the worker-disabled state, and carries a third-review checklist.                                                                                                                        | Promotion record review-wide obligations and sign-off section.                      |
+| ID   | Finding                                                                                                                                                      | Disposition                                                                                                                                                                                                                                                                                                                                                                                                                    | Applied in                                                                          |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| F-1  | A full idempotency store could refuse `session.abort`, `session.kill`, or `daemon.stop`, turning a dedupe bound into a termination denial.                   | Termination methods are keyless and never consult either store; they are idempotent by session/generation or daemon instance/mode. The key store can refuse only keyed methods, and C-18 asserts termination under a full store.                                                                                                                                                                                               | D-18; abort/kill; `daemon.stop`; error taxonomy; state transitions; C-18.           |
+| F-2  | Method authorization contradicted D-07/D-09: grant, grant revoke, abort, and transfer accepted scope alone or an optional token, and an observer could pass. | A single control-relation rule now applies: current controller lease, or current token at a vacant control relation; `session.control` is necessary and never sufficient; an observer is always `Denied/ControllerRequired`. Added `Denied/InvalidControlToken` for stale/rotated/missing tokens and applied it at grant, revoke, abort, transfer, detach-other, and attach.                                                   | D-07; D-09; grant/revoke; abort; transfer; detach-other; attach; error taxonomy.    |
+| F-3  | A reserved record had no pid, so it could not be reaped, and D-18 called the old worker an "orphan candidate" without a fence.                               | The containment identity is created before reserve and recorded in the reserved record; startup reaps a boot-id-matched reserved record through its cgroup subtree/subreaper set. The subreaper fallback states the double-run residual and requires adapters never to retry an unfenced create. D-18's orphan-candidate claim is corrected.                                                                                   | D-06; D-18; D-05 exit 6; state transitions; C-13.                                   |
+| F-4  | The aggregate omitted retained-session event rings/idempotency stores and the content plane.                                                                 | Event rings and per-session idempotency stores are released at the terminal transition; retained records are metadata only. Added the separate `max_content_bytes_per_session` cap (256 MiB, 16 GiB worst case at system maxima) sourced from ADR 0008's per-terminal scrollback and image-store caps and bounded by the accepted `IMG-4` per-window aggregate, and renamed the 76.5 MB figure to session-host metadata state. | D-14; D-18; limits table; aggregate; B-9 disposition.                               |
+| F-5  | The idempotency byte bounds were infeasible at 1024 keys × 64 KiB and stored snapshots.                                                                      | Stored results are bounded descriptors; snapshots are recomputed on replay. Session store is 512 × 128 B = 65,536 B; create store is 128 × 256 B = 32,768 B. The create entry stores `terminal_id_digest` once and the token as 32 bytes; the descriptor carries an 8-byte result reference to the lease or grant it created. The arithmetic is in D-18.                                                                       | D-18; limits table.                                                                 |
+| F-6  | Raw `terminal_id` was an audit content channel; grants had no non-secret target.                                                                             | `terminal_id` is restricted to a safe opaque alphabet and audit stores only `terminal_id_digest`; raw values stay in memory. Added the non-secret `grant_id` (32 hex) as the audit and revoke target for host and observer grants.                                                                                                                                                                                             | D-02; D-16; grant/revoke; `daemon.host_grant`; limits.                              |
+| F-7  | `session.host` consent had no channel, and `ConsentRequired`/`ScopeViolation` were ambiguous.                                                                | Added operator-only `daemon.host_grant`: single-use, peer-bound, TTL-bounded, revocable, audited, consumed at negotiate. One static code per missing authority: `ConsentRequired` for host consent, `ScopeViolation` for `process.spawn`. Stated the same-uid intent-gate residual.                                                                                                                                            | D-07; handshake; `daemon.host_grant`; create surface; error taxonomy; limits; C-19. |
+| F-8  | `swept` could be false, and a normal worker exit did not reap the tree.                                                                                      | `swept` requires the whole cgroup subtree or subreaper descendant set empty. Every terminal transition, including `worker_exit`, terminates the identity (graceful then kill) and verifies it empty before cleanup classification; survivors become journal records and force `unverified`.                                                                                                                                    | D-04; D-06; kill; state transitions; C-13.                                          |
+| F-11 | The promotion record's review scope listed five mechanisms, not seven.                                                                                       | The promotion record now lists the control token, operator capability, explicit child environments, two-phase orphan reaping, observer grants, the pre-session create-key store, and the worker-disabled state, and carries a third-review checklist.                                                                                                                                                                          | Promotion record review-wide obligations and sign-off section.                      |
 
 The first-review `B-*` rows stay as recorded; this revision closes the remaining
 partial rows through the `F-*` dispositions rather than rewriting history.
@@ -2027,15 +2081,15 @@ owner gate and no silent fix. The finding text for `F-9`, `F-12`, and
 `F-14`–`F-16` is recorded in the second-review record (bitty#2608); this table
 records disposition only.
 
-| ID   | Disposition                                                                                                                                                                       |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| F-9  | Tracked follow-up; no contract text change in this revision. Must close before the first implementation merge or become an accepted residual.                                     |
-| F-10 | Fixed: the lost-token sentence now distinguishes pre-claim recovery through an idempotent duplicate create from irreversible loss after rotation.                                 |
-| F-12 | Tracked follow-up; owner to triage before the third review. No contract change claimed.                                                                                           |
-| F-13 | Fixed: privileged vector setup wording now names the required second-uid/pid-namespace, cgroup, seccomp, and per-message-credential setup, and requires a typed skip when absent. |
-| F-14 | Tracked follow-up; no contract change in this revision.                                                                                                                           |
-| F-15 | Tracked follow-up; no contract change in this revision.                                                                                                                           |
-| F-16 | Tracked follow-up; no contract change in this revision.                                                                                                                           |
+| ID   | Disposition                                                                                                                                                                                        |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F-9  | Tracked follow-up; the third-review result-reference clarification in D-18 does not close the dedupe-key finding. Must close before the first implementation merge or become an accepted residual. |
+| F-10 | Fixed: the lost-token sentence now distinguishes pre-claim recovery through an idempotent duplicate create from irreversible loss after rotation.                                                  |
+| F-12 | Tracked follow-up; owner to triage before the first implementation merge. No contract change claimed.                                                                                              |
+| F-13 | Fixed: privileged vector setup wording now names the required second-uid/pid-namespace, cgroup, seccomp, and per-message-credential setup, and requires a typed skip when absent.                  |
+| F-14 | Tracked follow-up; no contract change in this revision.                                                                                                                                            |
+| F-15 | Tracked follow-up; no contract change in this revision.                                                                                                                                            |
+| F-16 | Tracked follow-up; no contract change in this revision.                                                                                                                                            |
 
 ## Verification plan
 
@@ -2112,7 +2166,7 @@ gate.
 | Contract                                                                                                                             | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | [ADR 0008](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md) (accepted)               | Authoritative; narrowed by dated note. This document supplies the session-host mechanics under its definitions, ownership, persistence, and trust gates. The 2026-10-27 narrowing: ADR 0008's reattach sketch is not adopted. A session id never receives a new PTY/Terminal pair after the worker exits; the session is terminal and an `NotRunning` reattach is refused. `Attached <-> Detached` is not a lifecycle state; `attached` is a derived flag. A retry is a new session with a new id and token.                                                                                                                                                                   |
-| [ADR 0019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0019-bittyd-staging-advance.md) (accepted) | Unchanged. D-01 does not expand the slice; worker enablement requires an amendment. `D3`'s explicit content cap for this slice is supplied here as `max_content_bytes_per_session` (256 MiB per session, 16 GiB at the system maxima).                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| [ADR 0019](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0019-bittyd-staging-advance.md) (accepted) | Unchanged. D-01 does not expand the slice; worker enablement requires an amendment. `D3` keeps ADR 0008's per-terminal scrollback and image-store caps; this contract supplies `max_content_bytes_per_session` (256 MiB per session, 16 GiB worst case at the system maxima), and the accepted `IMG-4` per-window aggregate image budget is unchanged.                                                                                                                                                                                                                                                                                                                         |
 | [ADR 0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0002-platform-support-tiers.md) (accepted) | Unchanged; D-15 applies its tiers to the daemon cells.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `bitty-ipc` v1 (accepted)                                                                                                            | Consumed unchanged for framing, wire version, scopes, peer credentials, error classes, and RC-9/RC-10. Existing guarantees verified in the source: `SO_PEERCRED`/`LOCAL_PEERCRED` at accept (`crates/bitty-ipc-auth/src/auth.rs`), server-side per-request scope evaluation with `process.spawn` separate (`crates/bitty-ipc-api/src/scope.rs`), wire envelope and `<=64`-byte correlation (`crates/bitty-ipc-api/src/wire.rs`), RC-9/RC-10 bounds (`crates/bitty-ipc-core/src/limits.rs`). The additive `session.*`/`daemon.*` family needs one registry revision, and the service binding adds per-message `SCM_CREDENTIALS` on Linux; neither changes an existing v1 scope. |
 | [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md) (accepted)            | Unchanged; the service uses its transport and method grammar and adds no content plane.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -2154,12 +2208,12 @@ contradicting it.
 These are not globally numbered open questions. They stay here until one blocks
 a current-milestone gate; the decisions above do not depend on them.
 
-- Owner sign-off is recorded (2026-10-27). The first independent security review
-  returned `NEEDS-FIX` on 2026-10-27 and the revision is submitted; the second
-  independent review remains open and gates implementation, not the accepted
-  decision text. See the
+- Owner sign-off is recorded (2026-10-27). The first and second independent
+  security reviews returned `NEEDS-FIX` on 2026-10-27 and the second revision is
+  submitted; the third independent review remains open and gates implementation,
+  not the accepted decision text. See the
   [promotion record](bittyd-session-host-promotion-record.md) and
-  [Security review revision (2026-10-27)](#security-review-revision-2026-10-27).
+  [Second security review revision (2026-10-27)](#second-security-review-revision-2026-10-27).
 - D-01 worker enablement: the ADR 0019 amendment and the spawn/credential
   security review. Tracked by the security review issue.
 - Operator-capability mechanism: file versus a distinct operator endpoint. The
@@ -2178,8 +2232,8 @@ a current-milestone gate; the decisions above do not depend on them.
   sink) beyond the stated properties.
 - Platform advertisement order after Linux x86_64, driven by native-runner
   evidence.
-- The second security review may reopen any `B-1` through `B-13` row; a reopened
-  row becomes a tracked defect, never a silent contract edit.
+- The third security review may reopen any `B-1` through `B-13` or `F-*` row; a
+  reopened row becomes a tracked defect, never a silent contract edit.
 
 ## Acceptance criteria
 
@@ -2215,16 +2269,16 @@ security reviews returned `NEEDS-FIX`; the second revision is submitted and the
 third review is outstanding. This document claims no approval that is not listed
 here.
 
-| Reviewer                           | Required for                                                                                                   | Status 2026-10-27                                                      |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Project initiator (owner)          | D-01, D-05, D-07, D-14, D-15 and final promotion                                                               | APPROVED 2026-10-27 for decisions and contract text                    |
-| First independent security review  | Trust boundary, IPC framing, capability and authentication, resource bounds, audit, failure modes (bitty#2608) | NEEDS-FIX 2026-10-27; `B-1` through `B-13` dispositions recorded below |
-| Second independent security review | The first revision, the `B-1` through `B-13` dispositions, and the residual-risk section                       | NEEDS-FIX 2026-10-27; `F-1` through `F-8`/`F-11` revised               |
-| Second revision                    | The `F-*` dispositions, the follow-up table, and the third-review checklist                                    | SUBMITTED 2026-10-27; no approval claimed                              |
-| Third independent security review  | The second revision and every `B-*`/`F-*` disposition                                                          | PENDING; required before implementation starts                         |
-| Core architecture reviewer         | Crate seam, single-writer rule, registry and counter semantics                                                 | Not recorded as a separate sign-off                                    |
-| Wheel consumer reviewer            | Adapter boundary and vector mapping                                                                            | Not recorded; Wheel stays a candidate consumer input                   |
-| bitty-ai consumer reviewer         | Hosted-worker boundary and `worker_sessions=false`                                                             | Not recorded; worker hosting stays disabled                            |
+| Reviewer                           | Required for                                                                                                   | Status 2026-10-27                                                        |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Project initiator (owner)          | D-01, D-05, D-07, D-14, D-15 and final promotion                                                               | APPROVED 2026-10-27 for decisions and contract text                      |
+| First independent security review  | Trust boundary, IPC framing, capability and authentication, resource bounds, audit, failure modes (bitty#2608) | NEEDS-FIX 2026-10-27; `B-1` through `B-13` dispositions recorded below   |
+| Second independent security review | The first revision, the `B-1` through `B-13` dispositions, and the residual-risk section                       | NEEDS-FIX 2026-10-27; `F-1` through `F-8`/`F-11` found and dispositioned |
+| Second revision                    | The `F-*` dispositions, the follow-up table, and the third-review checklist                                    | SUBMITTED 2026-10-27; no approval claimed                                |
+| Third independent security review  | The second revision and every `B-*`/`F-*` disposition                                                          | PENDING; required before implementation starts                           |
+| Core architecture reviewer         | Crate seam, single-writer rule, registry and counter semantics                                                 | Not recorded as a separate sign-off                                      |
+| Wheel consumer reviewer            | Adapter boundary and vector mapping                                                                            | Not recorded; Wheel stays a candidate consumer input                     |
+| bitty-ai consumer reviewer         | Hosted-worker boundary and `worker_sessions=false`                                                             | Not recorded; worker hosting stays disabled                              |
 
 The third security reviewer must record an explicit APPROVE or a defect list
 in bitty#2608 before implementation starts. A reopened `B-*` or `F-*` row is a
