@@ -20,12 +20,23 @@ sidebar_order: 82
 > owner approved the decisions and the contract text on 2026-10-27 through the
 > promotion gate [bitty#2663](https://github.com/bitty-terminal/bitty/issues/2663).
 >
-> The independent security review is **not** recorded. Acceptance and
+> The independent security review is **not** approved. Acceptance and
 > implementation authorization are deliberately separate: the decision record is
-> accepted now, and the independent security review named in
+> accepted now, the first review returned `NEEDS-FIX` on 2026-10-27 and its
+> revision was submitted, then the second review returned `NEEDS-FIX` on
+> 2026-10-27 with `F-1` through `F-8` and `F-11` blocking. The second revision is
+> submitted and the third independent security review named in
 > [Independent security review requirements](#independent-security-review-requirements)
 > must record an APPROVE before implementation starts. No security,
 > architecture, Wheel, or bitty-ai approval is implied by this record.
+>
+> The first revision applies findings `B-1` through `B-13`; the second revision
+> applies `F-1` through `F-8` and `F-11`. The dated dispositions live in the
+> contract's
+> [Security review revision (2026-10-27)](bittyd-session-host-contract.md#security-review-revision-2026-10-27)
+> and
+> [Second security review revision (2026-10-27)](bittyd-session-host-contract.md#second-security-review-revision-2026-10-27)
+> sections. This record records the sign-off state only and claims no approval.
 >
 > The contract document was renamed from
 > `bittyd-session-host-contract-candidate.md` to
@@ -38,15 +49,15 @@ sidebar_order: 82
 > endpoint, registry, transport, or fake-server implementation exists, and this
 > record authorizes none of them by itself.
 
-| Control         | Value                                                                                         |
-| --------------- | --------------------------------------------------------------------------------------------- |
-| Status          | Accepted 2026-10-27; implementation gated on independent security review                      |
-| Owner           | Project initiator (owner decision, 2026-10-27); Core terminal platform owns the contract text |
-| Gate            | [bitty#2663](https://github.com/bitty-terminal/bitty/issues/2663), parent [#2546]             |
-| Contract        | [bittyd Session-Host Contract](bittyd-session-host-contract.md) (`status: accepted`)          |
-| Consumer input  | [Wheel consumer requirements](bittyd-session-host-requirements-candidate.md) (still `draft`)  |
-| Implementation  | Nine v0.2.0 slices ([#2601] through [#2609]) plus [#2664], [#2665], [#2666]                   |
-| Evidence status | No vector has run against a real `bittyd`; no P0 evidence exists yet                          |
+| Control         | Value                                                                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status          | Accepted 2026-10-27; first review `NEEDS-FIX`; second review `NEEDS-FIX` 2026-10-27; third review APPROVE-WITH-FOLLOWUPS (`F-9`/`F-12` slice gates) |
+| Owner           | Project initiator (owner decision, 2026-10-27); Core terminal platform owns the contract text                                                       |
+| Gate            | [bitty#2663](https://github.com/bitty-terminal/bitty/issues/2663), parent [#2546]                                                                   |
+| Contract        | [bittyd Session-Host Contract](bittyd-session-host-contract.md) (`status: accepted`)                                                                |
+| Consumer input  | [Wheel consumer requirements](bittyd-session-host-requirements-candidate.md) (still `draft`)                                                        |
+| Implementation  | Nine v0.2.0 slices ([#2601] through [#2609]) plus [#2664], [#2665], [#2666]                                                                         |
+| Evidence status | No vector has run against a real `bittyd`; no P0 evidence exists yet; `B-1..B-13` and `F-1..F-8`/`F-11` revised in text only                        |
 
 ## Purpose and scope
 
@@ -61,7 +72,8 @@ In scope:
   unlocks and the boundary it leaves closed;
 - the sign-off rows, recorded honestly, including the reviews that do **not**
   exist yet;
-- the independent security review scope that gates implementation;
+- the independent security review scope that gates implementation, now at the
+  third review after the first and second returned `NEEDS-FIX`;
 - the out-of-scope boundary for remote transport, plugin access, and
   Windows/macOS advertisement;
 - the cross-reference each dependent issue needs so its body can be repointed.
@@ -103,7 +115,8 @@ this record disagree, the source wins and this record is defective.
 ## Promotion decision and rationale
 
 **Decision: promote `D-01` through `D-18` to an accepted Core contract; keep
-implementation blocked on the independent security review.**
+implementation blocked on the third independent security review after the first
+and second returned `NEEDS-FIX` and the second revision was submitted.**
 
 Scope of the acceptance:
 
@@ -148,26 +161,26 @@ Each row is the accepted disposition, the slice it unlocks, and the exact
 boundary it leaves closed. Mechanics live in the
 [contract](bittyd-session-host-contract.md#decision-record-d-01-through-d-18).
 
-| ID   | Accepted disposition                                                                                                                                                                                                                                                                                                 | Unlocks (slice / issue)                                                                                                          | Exact boundary that stays closed                                                                                                                                                       |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D-01 | Terminal sessions only in v0.2.0. The `worker` kind is defined so consumers can target it: every build advertises `worker_sessions=false` and refuses worker create with `Denied/UnsupportedCapability` before any spawn.                                                                                            | Session-kind field in the registry ([#2601]); method surface ([#2607]); attach/abort paths ([#2609]); crate seam ([#2606]).      | No worker spawn, supervision, credential inheritance, or advertisement. Enablement needs an ADR 0019 amendment and the dedicated spawn/credential/cleanup review ([#2608]).            |
-| D-02 | 128-bit random `daemon_instance_id` and `session_id`; the instance is checked before any session lookup; `session_id` is never reused within an instance; `terminal_id` is immutable and unique among live sessions.                                                                                                 | Registry identity and lookup ([#2601]); handshake instance binding ([#2607]); adapter handles ([#2609]).                         | No session-id-only fencing, no adoption, no handle resolution across instances; `terminal_id` reuse only after a session is terminal and collected.                                    |
-| D-03 | `generation` starts at 0 and increments once on worker bind (0 or 1 in v0.2.0); `state_revision` increments once per snapshot-visible mutation and never on heartbeat or last-seen.                                                                                                                                  | Registry counters ([#2601]); generation checks on effectful requests ([#2609]); snapshot and event revisions ([#2602]).          | No rebind and no generation above 1; no revision bump for heartbeat, `last_seen_at`, `last_worker_seen_at`, or a no-op idempotent repeat.                                              |
-| D-04 | Closed states `created`, `running`, `stopping`, `exited`, `failed`, `terminated`; `attached` is a derived flag; terminal reasons keep cancel, timeout, operator abort, daemon stop, host shutdown, exit, signal, spawn failure, and supervision failure distinct; every terminal transition carries a cleanup class. | Registry lifecycle ([#2601]); abort and stop classification ([#2609]); terminal events ([#2602]); stop modes ([#2607]).          | No extra states or reasons; transport errors never substitute for a reason; terminal records are immutable and never revived.                                                          |
-| D-05 | `daemon.stop` refuses by default with `Denied/ActiveSessions`; `drain` notifies, refuses new work, waits `drain_grace_ms`, then terminates the remainder; `force` terminates immediately. Signals run drain with `host_shutdown`.                                                                                    | Daemon stop dispatch and CLI exit codes ([#2607]); `V-16`/`V-17` ([#2665]); release eligibility ([#2666]).                       | No force-by-default, no autostart, no restart persistence; exit code 6 stays reserved for endpoint tamper or a failed authentication invariant.                                        |
-| D-06 | No persistence and no adoption: a restart gets a new instance id and an empty registry, and old handles are refused. Only an exact orphan identity (boot id, pid, process start time, recorded group) may be signalled; an unverifiable record is reported and never signalled.                                      | Registry retention and orphan journal ([#2601]); crash and restart behavior ([#2607]); `C-03` ([#2665]).                         | Sessions never survive a restart; no registry replay; no name, pattern, port, or newest-process signal heuristic.                                                                      |
-| D-07 | Additive, deny-by-default `session.*` and `daemon.*` families separate from `terminal.*`; controller authority requires the session control token; daemon-scoped actions require the operator capability.                                                                                                            | Scope evaluation and handshake grants ([#2607]); control-token pipeline ([#2609]); cross-repository scope freeze ([#2664]).      | `terminal.*` never covers session administration; a connection, session id, or terminal id grants nothing; consumer adapters never receive `daemon.*`.                                 |
-| D-08 | Server-assigned random per-connection `client_id`; the server captures the authenticated peer identity; `client_instance` is audit-only and bounded.                                                                                                                                                                 | Handshake identity fields ([#2607]); audit attribution ([#2603]).                                                                | No durable client identity and no client-supplied id, header, or path parameter as authority; a reconnect always gets a new `client_id`.                                               |
-| D-09 | One controller plus bounded observers; control is claimed with the control token and moves only by explicit, attributed `control.transfer`; a controller disconnect vacates at lease expiry; the controller lease owns terminal input.                                                                               | Lease model and transfer ([#2609]); lease expiry and events ([#2602]).                                                           | No second controller, no implicit transfer, no observer input, no control acquisition by reconnect without the token.                                                                  |
-| D-10 | Attach returns a snapshot at the current revision plus a bounded backlog with explicit truncation; per-session revision order; at-least-once within a live lease; control frames are never silently shed, otherwise the lease closes with `TerminalEventLost`.                                                       | Event ring and terminal-event guarantee ([#2602]); `V-21`, `V-23`, `V-24`, `C-06` ([#2665]).                                     | No unbounded replay; no PTY bytes, terminal text, prompts, tool output, or provider payloads in the session stream; `status` remains the reconciliation read.                          |
-| D-11 | `{major, minor}` version; same major with `min_client_minor <= client minor <= server minor` is accepted, every other case is a typed refusal before any operation; capabilities are explicit and fixed per connection.                                                                                              | Handshake negotiation ([#2607]); service version constants ([#2606]); version freeze ([#2664]); `V-01`/`V-02` ([#2665]).         | No best-effort downgrade, feature-probe fallback, or second served major; an unknown method is `InvalidMethod`, never a silent no-op.                                                  |
-| D-12 | Clients heartbeat their leases; the server monotonic clock is authoritative; any successful request naming a lease refreshes it; staleness detaches only and never aborts.                                                                                                                                           | Lease expiry and heartbeat ([#2602], [#2609]); `V-06` ([#2665]).                                                                 | No abort on silence, no wall-clock trust, no terminal reason produced by staleness; transport idle closes the connection only.                                                         |
-| D-13 | The daemon owns transport idle, request, spawn bind, attach lease, retention, abort grace, drain grace, and orphan reap bounds; the consumer owns the execution deadline and expresses it as an abort with `consumer_timeout`; there is no default execution deadline.                                               | Bounds enforcement ([#2603]); abort and request-timeout handling ([#2609]); `V-19` ([#2665]).                                    | No daemon-imposed execution deadline; a consumer timeout never collapses into generic cancellation; an unknown outcome is reconciled with `status` before any mutating retry.          |
-| D-14 | Every limit is advertised at handshake and enforced with whole-request refusal; system maxima are compiled; user configuration may lower a value but never raise it above the maximum.                                                                                                                               | Limit table and enforcement ([#2603]); transport-bound inheritance ([#2607], [#2664]); `V-04`, `V-08`, `V-20`, `V-23` ([#2665]). | No system-maximum increase without an attributable contract revision and security review; no partial state on refusal; no registry structure without a bound.                          |
-| D-15 | ADR 0002 tiers apply. Linux x86_64 is the first cell; Windows x86_64 and macOS ARM64 are conformance-gated and unadvertised until native-runner evidence; unsupported cells return typed `UnsupportedPlatform` or no endpoint.                                                                                       | Platform-cell implementation ([#2604]); release eligibility ([#2666]); `V-25` through `V-28` ([#2665]).                          | No Windows/macOS advertisement, no fallback or weaker transport, no TCP listener, no cross-compilation or emulation as evidence; namespace, SID, and elevation mismatches fail closed. |
-| D-16 | Lifecycle and refusal records only: peer identity, client id, instance, session, generation, revision, action, static result code, counts, and limits. Never terminal content, argv, env, clipboard, prompts, provider payloads, or tokens; the sink is owner-private, bounded, and not readable over the service.   | Audit sink and attribution ([#2603]); `C-07`, `V-33` ([#2665]); `P0-AC-026` evidence ([#2608]).                                  | No terminal data, secrets, or tokens in audit or diagnostics; audit is not a durable ledger; `audit_degraded` refuses mutations closed while reads continue.                           |
-| D-17 | The daemon never restarts a worker and never rebinds a session; a retry is a new session with a new id, a new control token, and a generation starting at 0.                                                                                                                                                         | Abort and failure disposition ([#2609]); no-restart terminal events ([#2602], [#2665]).                                          | No automatic repair, no second worker for a run that may still be alive, and no rebind after a future worker enablement without a superseding contract.                                |
-| D-18 | Mutating methods carry a client-generated 128-bit key scoped to the authenticated user, the target, and the method; duplicates return the first result or the terminal snapshot; fingerprint conflicts are refused; the store is bounded and fails closed.                                                           | Idempotency store ([#2603]); create/abort/kill/transfer dedupe ([#2609]); `V-07`, `V-19`, `V-31` ([#2665]).                      | No eviction that could permit a duplicate effect; `session.create` keys are secrets; a conflict or capacity refusal applies nothing.                                                   |
+| ID   | Accepted disposition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Unlocks (slice / issue)                                                                                                          | Exact boundary that stays closed                                                                                                                                                                                                                       |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| D-01 | Terminal sessions only in v0.2.0. The `worker` kind is defined so consumers can target it: every build advertises `worker_sessions=false` and refuses worker create with `Denied/UnsupportedCapability` before any spawn.                                                                                                                                                                                                                                                                             | Session-kind field in the registry ([#2601]); method surface ([#2607]); attach/abort paths ([#2609]); crate seam ([#2606]).      | No worker spawn, supervision, credential inheritance, or advertisement. Enablement needs an ADR 0019 amendment and the dedicated spawn/credential/cleanup review ([#2608]).                                                                            |
+| D-02 | 128-bit random `daemon_instance_id` and `session_id`; the instance is checked before any session lookup; `session_id` is never reused within an instance; `terminal_id` is immutable and unique among live sessions.                                                                                                                                                                                                                                                                                  | Registry identity and lookup ([#2601]); handshake instance binding ([#2607]); adapter handles ([#2609]).                         | No session-id-only fencing, no adoption, no handle resolution across instances; `terminal_id` reuse is allowed once a session is terminal, and a retained record is fenced by session id.                                                              |
+| D-03 | `generation` starts at 0 and increments once on worker bind (0 or 1 in v0.2.0); `state_revision` increments once per snapshot-visible mutation and never on heartbeat or last-seen.                                                                                                                                                                                                                                                                                                                   | Registry counters ([#2601]); generation checks on effectful requests ([#2609]); snapshot and event revisions ([#2602]).          | No rebind and no generation above 1; no revision bump for heartbeat, `last_seen_at`, `last_worker_seen_at`, or a no-op idempotent repeat.                                                                                                              |
+| D-04 | Closed states `created`, `running`, `stopping`, `exited`, `failed`, `terminated`; `attached` is a derived flag; terminal reasons keep cancel, timeout, operator abort, daemon stop, host shutdown, exit, signal, spawn failure, and supervision failure distinct; every terminal transition carries a cleanup class.                                                                                                                                                                                  | Registry lifecycle ([#2601]); abort and stop classification ([#2609]); terminal events ([#2602]); stop modes ([#2607]).          | No extra states or reasons; transport errors never substitute for a reason; terminal records are immutable and never revived.                                                                                                                          |
+| D-05 | `daemon.stop` refuses by default with `Denied/ActiveSessions`; `drain` notifies, refuses new work, waits `drain_grace_ms`, then terminates the remainder; `force` terminates immediately. Signals run drain with `host_shutdown`.                                                                                                                                                                                                                                                                     | Daemon stop dispatch and CLI exit codes ([#2607]); `V-16`/`V-17` ([#2665]); release eligibility ([#2666]).                       | No force-by-default, no autostart, no restart persistence; exit code 6 stays reserved for endpoint tamper or a failed authentication invariant.                                                                                                        |
+| D-06 | No persistence and no adoption: a restart gets a new instance id and an empty registry, and old handles are refused. A boot-id-matched orphan record is reaped through its pre-recorded containment identity, including a reserved record with no pid; an unverifiable record is quarantined and reported, never guessed at.                                                                                                                                                                          | Registry retention and orphan journal ([#2601]); crash and restart behavior ([#2607]); `C-03` ([#2665]).                         | Sessions never survive a restart; no registry replay; no name, pattern, port, or newest-process signal heuristic.                                                                                                                                      |
+| D-07 | Additive, deny-by-default `session.*` and `daemon.*` families separate from `terminal.*`; the baseline is `session.inspect`, `session.attach`, and `session.control`; `session.host` is never baseline and create requires explicit per-client consent plus `process.spawn`; controller authority requires the current session control token; daemon-scoped actions require the operator capability.                                                                                                  | Scope evaluation and handshake grants ([#2607]); control-token pipeline ([#2609]); cross-repository scope freeze ([#2664]).      | `terminal.*` never covers session administration; a connection, session id, or terminal id grants nothing; consumer adapters never receive a `daemon.*` grant (the capability file is not hidden from a same-uid adapter); inspect-only cannot create. |
+| D-08 | Server-assigned random per-connection `client_id`; the server captures the authenticated peer identity; a consumer correlation value is hashed and only its digest is audited.                                                                                                                                                                                                                                                                                                                        | Handshake identity fields ([#2607]); audit attribution ([#2603]).                                                                | No durable client identity and no client-supplied id, header, or path parameter as authority; a reconnect always gets a new `client_id`; raw correlation strings are never stored.                                                                     |
+| D-09 | One controller plus bounded observers; observation requires a single-use, TTL-bound, attributed, revocable grant minted by the controller or operator; control is claimed with the control token, which rotates onto the claiming lease, and moves only by explicit, attributed `control.transfer`; a controller disconnect vacates at lease expiry; the controller lease owns terminal input and is the only lease that may resize.                                                                  | Lease model and transfer ([#2609]); lease expiry and events ([#2602]).                                                           | No second controller, no self-granted observation, no implicit transfer, no observer input or resize, no control acquisition by reconnect without the token.                                                                                           |
+| D-10 | Attach returns a snapshot at the current revision plus a bounded backlog with explicit truncation; per-session revision order; at-least-once within a live lease; control frames are never silently shed, otherwise the lease closes with `TerminalEventLost`.                                                                                                                                                                                                                                        | Event ring and terminal-event guarantee ([#2602]); `V-21`, `V-23`, `V-24`, `C-06` ([#2665]).                                     | No unbounded replay; no PTY bytes, terminal text, prompts, tool output, or provider payloads in the session stream; `status` remains the reconciliation read.                                                                                          |
+| D-11 | `{major, minor}` version; same major with `min_client_minor <= client minor <= server minor` is accepted, every other case is a typed refusal before any operation; capabilities are explicit and fixed per connection.                                                                                                                                                                                                                                                                               | Handshake negotiation ([#2607]); service version constants ([#2606]); version freeze ([#2664]); `V-01`/`V-02` ([#2665]).         | No best-effort downgrade, feature-probe fallback, or second served major; an unknown method is `InvalidMethod`, never a silent no-op.                                                                                                                  |
+| D-12 | Clients heartbeat their leases; the server monotonic clock is authoritative; any successful request naming a lease refreshes it; staleness detaches only and never aborts.                                                                                                                                                                                                                                                                                                                            | Lease expiry and heartbeat ([#2602], [#2609]); `V-06` ([#2665]).                                                                 | No abort on silence, no wall-clock trust, no terminal reason produced by staleness; transport idle closes the connection only.                                                                                                                         |
+| D-13 | The daemon owns transport idle, request, spawn bind, attach lease, retention, abort grace, drain grace, and orphan reap bounds; the consumer owns the execution deadline and expresses it as an abort with `consumer_timeout`; there is no default execution deadline.                                                                                                                                                                                                                                | Bounds enforcement ([#2603]); abort and request-timeout handling ([#2609]); `V-19` ([#2665]).                                    | No daemon-imposed execution deadline; a consumer timeout never collapses into generic cancellation; an unknown outcome is reconciled with `status` before any mutating retry.                                                                          |
+| D-14 | Every limit is advertised at handshake as `{effective, default, system_max}` and enforced with whole-request refusal; system maxima are compiled; user configuration may lower the effective value but never raise it above the maximum. The contract's Resource limits section is normative for enforcement.                                                                                                                                                                                         | Limit table and enforcement ([#2603]); transport-bound inheritance ([#2607], [#2664]); `V-04`, `V-08`, `V-20`, `V-23` ([#2665]). | No system-maximum increase without an attributable contract revision and security review; no partial mutation without a typed result on refusal; no registry, lease, connection, or journal structure without a bound.                                 |
+| D-15 | ADR 0002 tiers apply. Linux x86_64 is the first cell; Windows x86_64 and macOS ARM64 are conformance-gated and unadvertised until native-runner evidence; unsupported cells return typed `UnsupportedPlatform` or no endpoint.                                                                                                                                                                                                                                                                        | Platform-cell implementation ([#2604]); release eligibility ([#2666]); `V-25` through `V-28` ([#2665]).                          | No Windows/macOS advertisement, no fallback or weaker transport, no TCP listener, no cross-compilation or emulation as evidence; namespace, SID, and elevation mismatches fail closed.                                                                 |
+| D-16 | Lifecycle and refusal records only: peer identity, client id, instance, session, generation, revision, action, static result code, counts, and limits. Never terminal content, argv, env, clipboard, prompts, provider payloads, or tokens; the sink is owner-private, bounded, and not readable over the service.                                                                                                                                                                                    | Audit sink and attribution ([#2603]); `C-07`, `V-33` ([#2665]); `P0-AC-026` evidence ([#2608]).                                  | No terminal data, secrets, or tokens in audit or diagnostics; audit is not a durable ledger; `audit_degraded` refuses mutations closed while reads continue.                                                                                           |
+| D-17 | The daemon never restarts a worker and never rebinds a session; a retry is a new session with a new id, a new control token, and a generation starting at 0.                                                                                                                                                                                                                                                                                                                                          | Abort and failure disposition ([#2609]); no-restart terminal events ([#2602], [#2665]).                                          | No automatic repair, no second worker for a run that may still be alive, and no rebind after a future worker enablement without a superseding contract.                                                                                                |
+| D-18 | Keyed methods (create, attach, grant mint, transfer) carry a client-generated 128-bit key; abort, kill, stop, detach-other, and grant revoke are keyless and naturally idempotent, so capacity can never block termination or revocation. `session.create` uses a separate pre-session store indexed by `(uid or SID, key)`; duplicates return a descriptor or the terminal snapshot; snapshots are recomputed on replay; fingerprint conflicts are refused; both stores are bounded and fail closed. | Idempotency store ([#2603]); create/abort/kill/transfer dedupe ([#2609]); `V-07`, `V-19`, `V-31` ([#2665]).                      | No eviction or retirement that could permit a duplicate effect; create keys are token-equivalent secrets; a conflict or capacity refusal applies nothing; create idempotency does not survive a restart.                                               |
 
 No decision in the table is conditional on another decision. The ordering in the
 next section is a delivery order, not a precedence order.
@@ -196,20 +209,26 @@ they freeze vocabulary the slices consume:
   blocked by this promotion and by the security design review, not by the
   implementation.
 - [#2665] freezes the shared `V-01` through `V-34` and `C-01` through
-  `C-08` corpus. The corpus is frozen by this promotion; the drivers are not.
+  `C-19` corpus. The corpus is frozen by this promotion and extended by the
+  2026-10-27 revision; the drivers are not built.
 
 ## Promotion sign-off (P0 review)
 
-Exactly one sign-off exists. The table records it and the reviews that do not
-exist yet; a missing row is not an approval.
+One owner approval exists and no security approval exists. The table records the
+dated sign-off state and the reviews that do not exist yet; a missing row is not
+an approval.
 
-| Reviewer                      | Required for                                                                                      | Status 2026-10-27                                           | Evidence or next gate                                                               |
-| ----------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Project initiator (owner)     | `D-01`, `D-05`, `D-07`, `D-14`, `D-15`, and final promotion of the decision set                   | **APPROVED 2026-10-27** for the decisions and contract text | This record; gate [bitty#2663](https://github.com/bitty-terminal/bitty/issues/2663) |
-| Independent security reviewer | Trust boundary, IPC framing, capability and authentication, resource bounds, audit, failure modes | **PENDING** — required before implementation starts         | [#2608] must record an explicit APPROVE or a defect list                            |
-| Core architecture reviewer    | Crate seam, single-writer rule, registry and counter semantics                                    | **NOT RECORDED** as a separate sign-off                     | No claim is made; the first architecture review is the [#2606] crate-seam review    |
-| Wheel consumer reviewer       | Adapter boundary, lifecycle truth ownership, and the `V-01` through `V-34` mapping                | **NOT RECORDED**                                            | Requirements remain candidate input; Wheel adapter work stays fake-server-only      |
-| bitty-ai consumer reviewer    | Hosted-worker boundary and `worker_sessions=false`                                                | **NOT RECORDED**                                            | Worker hosting stays disabled regardless; no build may advertise it                 |
+| Reviewer                           | Required for                                                                                      | Status 2026-10-27                                                                                                       | Evidence or next gate                                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Project initiator (owner)          | `D-01`, `D-05`, `D-07`, `D-14`, `D-15`, and final promotion of the decision set                   | **APPROVED 2026-10-27** for the decisions and contract text                                                             | This record; gate [bitty#2663](https://github.com/bitty-terminal/bitty/issues/2663)                                          |
+| First independent security review  | Trust boundary, IPC framing, capability and authentication, resource bounds, audit, failure modes | **NEEDS-FIX 2026-10-27**; `B-1` through `B-13` recorded                                                                 | Dispositions in the contract's [first revision section](bittyd-session-host-contract.md#security-review-revision-2026-10-27) |
+| First revision                     | Apply every `B-*` finding, choosing least privilege where a choice is offered                     | **SUBMITTED 2026-10-27** for the second review                                                                          | No approval claimed                                                                                                          |
+| Second independent security review | The revised contract, the `B-1` through `B-13` dispositions, and the residual-risk section        | **NEEDS-FIX 2026-10-27**; `F-1` through `F-8` and `F-11` blocking; `F-9`/`F-12`–`F-16` tracked, `F-10` and `F-13` fixed | [#2608]; contract's [second revision section](bittyd-session-host-contract.md#second-security-review-revision-2026-10-27)    |
+| Second revision                    | Apply every `F-*` P0/P1 finding and record follow-up dispositions                                 | **SUBMITTED 2026-10-27**; reviewed by the third review                                                                  | This table; no independent approval claimed for the revision text itself                                                     |
+| Third independent security review  | The second revision, the `F-*` dispositions, and the follow-up table                              | **APPROVE-WITH-FOLLOWUPS 2026-10-27**; `F-9`/`F-12` gate their slices                                                   | Recorded here; the verification remains in [#2608]                                                                           |
+| Core architecture reviewer         | Crate seam, single-writer rule, registry and counter semantics                                    | **NOT RECORDED** as a separate sign-off                                                                                 | No claim is made; the first architecture review is the [#2606] crate-seam review                                             |
+| Wheel consumer reviewer            | Adapter boundary, lifecycle truth ownership, and the `V-01` through `V-34` mapping                | **NOT RECORDED**                                                                                                        | Requirements remain candidate input; Wheel adapter work stays fake-server-only                                               |
+| bitty-ai consumer reviewer         | Hosted-worker boundary and `worker_sessions=false`                                                | **NOT RECORDED**                                                                                                        | Worker hosting stays disabled regardless; no build may advertise it                                                          |
 
 The owner approval covers scope, destructive behavior, authority, platform
 claims, and the contract text. It does not cover, and must not be cited as:
@@ -219,15 +238,66 @@ claims, and the contract text. It does not cover, and must not be cited as:
 - a Wheel or bitty-ai consumer confirmation;
 - evidence that any control is implemented.
 
-The implementation-authorization line is: **no Core implementation slice starts
-before the independent security design review records an APPROVE, and no slice
-merges before its P0 evidence exists.**
+The implementation-authorization line is: **the third independent security
+design review recorded APPROVE-WITH-FOLLOWUPS on 2026-10-27; `F-9` gates the
+idempotency slice, `F-12` gates the plugin-adjacent slices, and no slice merges
+before its P0 evidence exists.** Neither `NEEDS-FIX` is an
+authorization and neither revision is an approval.
+
+### Third-review checklist
+
+The third independent review must verify, in addition to the six areas and the
+seven mechanisms:
+
+1. **F-1** — `session.abort`, `session.kill`, and `daemon.stop` are keyless and
+   can never be refused by idempotency capacity; D-18, the abort/kill surface,
+   and C-18 agree.
+2. **F-2** — `session.grant`, `session.grant.revoke`, `session.abort`,
+   `session.control.transfer`, detach-other, and a controller claim
+   (`session.attach` with role `controller`) require the current controller
+   lease or the current token at a vacant control relation; scope alone never
+   suffices; observers are always denied; `ControllerRequired` and
+   `InvalidControlToken` are applied consistently.
+3. **F-3** — a reserved record is actionable through its pre-recorded
+   containment identity; the subreaper double-run residual is stated; D-18 no
+   longer calls an old worker an "orphan candidate"; the adapter never retries
+   an unfenced create.
+4. **F-4** — event rings and per-session idempotency stores are released at the
+   terminal transition; the 256 MiB per-session content cap is explicit and
+   separate from the metadata aggregate; the arithmetic includes every store.
+5. **F-5** — the stored-result descriptor arithmetic is feasible at the stated
+   count and byte bounds; snapshots are recomputed on replay; the create record
+   stores the terminal id once as a digest and the token as 32 bytes; the
+   descriptor's result reference names the lease or grant it created.
+6. **F-6** — raw `terminal_id` never enters audit; `terminal_id_digest` and the
+   non-secret `grant_id` are the audit targets.
+7. **F-7** — `daemon.host_grant` is operator-only, peer-bound, TTL-bounded, and
+   audited; one static code applies per missing authority
+   (`ConsentRequired` for host consent, `ScopeViolation` for `process.spawn`).
+8. **F-8** — `swept` means the whole cgroup subtree or subreaper descendant set
+   is empty; every terminal transition terminates that identity before cleanup
+   classification; surviving descendants become journal records.
+9. **Follow-ups** — `F-9`, `F-10`, `F-12`, `F-13`, `F-14`, `F-15`, and `F-16`
+   each have a disposition in the contract's review-2 table; `F-10` and `F-13`
+   are fixed, the rest are tracked.
+10. **Scope** — the review-wide obligations list seven mechanisms, not five.
+11. **No approval claim** — the first two reviews remain `NEEDS-FIX`, and the
+    third review alone can record an APPROVE.
 
 ## Independent security review requirements
 
 The review covers six areas. Each area names what must be checked and what
 evidence closes it. A review that covers fewer areas is incomplete and does not
 authorize implementation.
+
+> **Revision note, 2026-10-27.** The first review returned `NEEDS-FIX` with
+> findings `B-1` through `B-13`; its revision is recorded in the contract's
+> [first revision section](bittyd-session-host-contract.md#security-review-revision-2026-10-27).
+> The second review returned `NEEDS-FIX` with `F-1` through `F-8` and `F-11`
+> blocking and `F-9`/`F-12`–`F-16` tracked, with `F-10` and `F-13` fixed; its revision is in the
+> [second revision section](bittyd-session-host-contract.md#second-security-review-revision-2026-10-27).
+> The six areas below still apply; the third review additionally verifies every
+> `B-*` and `F-*` disposition and that no disposition weakens a P0 control.
 
 ### 1. Trust boundary
 
@@ -293,8 +363,9 @@ authorize implementation.
   file mechanism or require a replacement. Confirm it is absent from
   environments, children, logs, diagnostics, and consumer surfaces, and that a
   consumer adapter can never present it.
-- `client_id` is server-assigned and non-authoritative; `client_instance` is
-  audit-only; no client-supplied id, header, or path parameter grants authority.
+- `client_id` is server-assigned and non-authoritative; a consumer correlation
+  value is hashed to an audit-only digest; no client-supplied id, header, or
+  path parameter grants authority.
 - No bypass API, no temporary privileged path, and no scope widening without a
   new connection and a new server-side grant.
 - Required evidence: the scope matrix, token-absence and token-theft tests, a
@@ -313,7 +384,7 @@ authorize implementation.
 - Refusal is whole-request: no partial session, no partial lease, no partial
   idempotency record, and no daemon exit. A refusal carries counts and the limit
   that was hit, and echoes no caller bytes.
-- The aggregate registry bound in the contract is argued against actual allocations, not accepted as arithmetic: `(max_sessions + max_retained_terminal_records) x session_record_bytes + max_sessions x (max_event_backlog_bytes + max_idempotency_bytes_per_session)`.
+- The aggregate bound in the contract is argued against actual allocations, not accepted as arithmetic: session records, live-session event rings and descriptor idempotency stores, connection pending/outbound buffers, lease queues, create keys, observer grants, and host-consent grants total 72,057,856 bytes of session-host metadata (76,514,304 with audit and journal). Event rings and idempotency stores are released at the terminal transition, so retained records cost metadata only. The content plane is separate: `max_content_bytes_per_session` is 256 MiB and the system-maximum worst-case content allocation is 16 GiB, satisfying ADR-0019 `D3`'s per-terminal bound; the accepted `IMG-4` per-window aggregate image budget is unchanged.
 - The event ring, retention TTL, idempotency store, orphan journal, spawn
   specification, audit segments, and lease caps are each bounded, and capacity
   failure fails closed instead of evicting a live record.
@@ -346,8 +417,8 @@ authorize implementation.
 
 ### 6. Failure modes
 
-- A refused request leaves no partial state, keeps the daemon responsive, and
-  never takes an unrelated session down.
+- A refused request leaves no partial mutation without a typed result, keeps
+  the daemon responsive, and never takes an unrelated session down.
 - A stale generation, stale instance, or collected session returns the typed
   result and applies nothing; `status` remains the reconciliation read.
 - Terminal-event loss is always visible as a delivered event or a typed
@@ -364,7 +435,7 @@ authorize implementation.
   invocation work with no daemon, and no startup or diagnostics path requires it.
 - Required evidence: fault injection for transport drop during abort, queue
   pressure, pending limit, partial frame, instance change, and peer death;
-  `C-01` through `C-08` results from the real service; daemon-absence tests.
+  `C-01` through `C-19` results from the real service; daemon-absence tests.
 
 ### Review-wide obligations
 
@@ -373,8 +444,9 @@ Beyond the six areas, the reviewer must:
 - update the threat model for the local-daemon transition and record
   risk-register entries for the new mechanisms;
 - record `P0-AC-021` through `P0-AC-026` evidence or a tracked defect for each;
-- scrutinize the five new mechanisms named by the contract: the control token,
-  the operator capability, explicit child environments, orphan reaping, and the
+- scrutinize the seven new mechanisms named by the contract: the control token,
+  the operator capability, explicit child environments, two-phase orphan
+  reaping, observer grants, the pre-session create-key store, and the
   worker-disabled state;
 - confirm the session scope family is additive and that `terminal.*` semantics
   are unchanged;
@@ -454,7 +526,7 @@ by this documentation change. Each body needs the same two mechanical updates:
 Canonical replacement line for the `Contract:` field:
 
 ```text
-Contract: specifications/bittyd-session-host-contract.md (accepted 2026-10-27 via bitty#2663; independent security review required before implementation).
+Contract: specifications/bittyd-session-host-contract.md (accepted 2026-10-27 via bitty#2663; revised twice 2026-10-27 for B-1..B-13 and F-1..F-8/F-11; third independent security review required before implementation).
 ```
 
 | Issue                                                        | Slice                             | Decisions consumed                     | Body update needed                                                                                                                 |
@@ -481,19 +553,29 @@ gates implementation rather than the decision record.
 
 Local gates for this documentation change:
 
-- `just check` in `bitty-terminal-docs` — Prettier format check, markdownlint,
-  local links, frontmatter metadata, English-only language, `AGENTS.md`/
-  `TODO.md` budgets, hygiene, SVG well-formedness, and `actionlint`;
+- the pinned docs gates in `bitty-terminal-docs`, run directly because Bun
+  segfaults on this host: Prettier 3.9.6 format check, markdownlint-cli2
+  0.23.1, `check-docs` local links, frontmatter metadata, English-only
+  language, `AGENTS.md`/`TODO.md` budgets, hygiene, and actionlint 1.7.12;
 - `git diff --check` for whitespace errors;
 - no workflow file changed, so no `act -n` re-run is required by this diff;
 - the contract rename is verified by the local link gate, which fails on any
-  remaining in-repository reference to the old path.
+  remaining in-repository reference to the old path;
+- both 2026-10-27 revisions are Markdown prose only: no code, script, workflow,
+  configuration, lockfile, fixture, or submodule pin changes, and no vector was
+  executed against a real `bittyd`;
+- `just check` is **not** recorded green on this host: Bun segfaults, so the
+  pinned Prettier, markdownlint-cli2, check-docs, and actionlint gates were run
+  directly (see the delivery report and the contract's verification section).
 
 Review checklist for this record:
 
 1. Every `D-01` through `D-18` row has a disposition, an unlocked slice, and a
    closed boundary; no row restates mechanics that belong to the contract.
-2. No sign-off is claimed beyond the owner's 2026-10-27 approval.
+2. No sign-off is claimed beyond the owner's 2026-10-27 approval and the third
+   review's APPROVE-WITH-FOLLOWUPS; both security reviews are recorded as
+   `NEEDS-FIX`, the second revision as submitted, and `F-9`/`F-12` as slice
+   gates.
 3. The security review scope covers all six areas and names the evidence each
    one requires.
 4. Remote transport, plugin access, and Windows/macOS advertisement are recorded
@@ -514,25 +596,27 @@ Review checklist for this record:
 
 ## Affected contracts
 
-| Contract                                                                                     | Effect                                                                                                                                                     |
-| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [bittyd Session-Host Contract](bittyd-session-host-contract.md)                              | Becomes `status: accepted`, loses the `-candidate` suffix, and gains the dated acceptance statement and the promotion-record pointer. Mechanics unchanged. |
-| [Specifications register](README.md)                                                         | The contract moves from the draft table to the accepted table; this record gains its own accepted row.                                                     |
-| [bittyd Scope Charter](bittyd-scope-charter.md)                                              | Stays `draft`; its references to the contract now read `accepted` instead of `candidate`/`draft`. No mechanism-floor change.                               |
-| [Wheel consumer requirements](bittyd-session-host-requirements-candidate.md)                 | Stays `draft` consumer input; its Core-response pointer now names the accepted contract and this record.                                                   |
-| [Multiplexer Decision](multiplexer-decision.md)                                              | Status qualifiers for the contract change from draft to accepted; the decision's own rules are unchanged.                                                  |
-| [Remote Session Decision](remote-session-decision.md)                                        | Status qualifiers for the contract change; the no-remote exclusion is confirmed, not weakened.                                                             |
-| [Positioning in the Agent Era](../product/positioning-in-the-agent-era.md)                   | The contract reference drops its candidate label; no product claim changes.                                                                                |
-| ADR 0008, ADR 0019, ADR 0002, security corpus, `bitty-ipc` `RC-9`/`RC-10`, IPC and Agent RFC | Unchanged and authoritative. This record adds no scope and weakens no control.                                                                             |
-| `bitty` issues [#2601] through [#2609], [#2664] through [#2666]                              | Not edited here; each needs the repoint and status update listed in [Dependent issues](#dependent-issues).                                                 |
+| Contract                                                                                     | Effect                                                                                                                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [bittyd Session-Host Contract](bittyd-session-host-contract.md)                              | Becomes `status: accepted`, loses the `-candidate` suffix, and gains the dated acceptance statement and the promotion-record pointer. Mechanics revised twice on 2026-10-27: `B-1` through `B-13`, then `F-1` through `F-8` and `F-11`; neither revision claims approval. |
+| [Specifications register](README.md)                                                         | The contract moves from the draft table to the accepted table; this record gains its own accepted row.                                                                                                                                                                    |
+| [bittyd Scope Charter](bittyd-scope-charter.md)                                              | Stays `draft`; its references to the contract now read `accepted` instead of `candidate`/`draft`. No mechanism-floor change.                                                                                                                                              |
+| [Wheel consumer requirements](bittyd-session-host-requirements-candidate.md)                 | Stays `draft` consumer input; its Core-response pointer now names the accepted contract and this record.                                                                                                                                                                  |
+| [Multiplexer Decision](multiplexer-decision.md)                                              | Status qualifiers for the contract change from draft to accepted; the decision's own rules are unchanged.                                                                                                                                                                 |
+| [Remote Session Decision](remote-session-decision.md)                                        | Status qualifiers for the contract change; the no-remote exclusion is confirmed, not weakened.                                                                                                                                                                            |
+| [Positioning in the Agent Era](../product/positioning-in-the-agent-era.md)                   | The contract reference drops its candidate label; no product claim changes.                                                                                                                                                                                               |
+| ADR 0008, ADR 0019, ADR 0002, security corpus, `bitty-ipc` `RC-9`/`RC-10`, IPC and Agent RFC | Unchanged and authoritative. This record adds no scope and weakens no control.                                                                                                                                                                                            |
+| `bitty` issues [#2601] through [#2609], [#2664] through [#2666]                              | Not edited here; each needs the repoint and status update listed in [Dependent issues](#dependent-issues).                                                                                                                                                                |
 
 ## Open points
 
 These are not globally numbered open questions; they stay here until one blocks
 a current-milestone gate. None of them blocks the accepted decision set.
 
-- Independent security review across the six areas, before implementation
-  starts. Owned by [#2608].
+- The third independent security review across the six areas, before
+  implementation starts. Owned by [#2608]. Both prior reviews returned
+  `NEEDS-FIX` on 2026-10-27; the second revision is submitted. A reopened
+  `B-*` or `F-*` row becomes a tracked defect.
 - `#2608`'s body currently schedules the review after the implementation
   slices. The owner split recorded here makes the design review a
   pre-implementation gate and the P0 evidence a pre-merge gate; the issue body
@@ -567,37 +651,45 @@ This promotion record is complete when:
    and a closed boundary, and the contract remains the only mechanics source.
 2. The owner approval is dated and scoped, and no security, architecture, Wheel,
    or bitty-ai approval is fabricated.
-3. The independent security review scope covers the trust boundary, IPC framing,
-   capability and authentication, resource bounds, audit, and failure modes, and
-   names the evidence each requires.
+3. The third independent security review scope covers the trust boundary, IPC
+   framing, capability and authentication, resource bounds, audit, and failure
+   modes, names the evidence each requires, and verifies every `B-1` through
+   `B-13` and `F-1` through `F-8`/`F-11` disposition.
 4. Remote transport, plugin access, and Windows/macOS advertisement are recorded
    as out of scope with their owning sources.
 5. Every dependent issue is cross-referenced with the exact body update it
    needs, and no other repository is edited by this change.
 6. The contract status, this record, the specifications register, the charter
    reference, the requirements pointer, and the two decision records agree.
-7. `just check` and `git diff --check` are green on the change.
+7. Every `B-1` through `B-13` and `F-1` through `F-8`/`F-11` finding has a dated
+   disposition in the contract and the third independent review recorded
+   APPROVE-WITH-FOLLOWUPS with `F-9`/`F-12` as slice gates.
+8. The pinned docs gates and `git diff --check` are green on the change;
+   `just check` is not recorded because Bun segfaults on the revision host.
 
 ## P0 Review Sign-off
 
 The promotion sign-off table above is the single source of truth; this section
 records the P0 disposition only.
 
-| Control                                  | Disposition                                                                                         |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| P0-AC-021 endpoint and peer credentials  | Not evidenced. Design accepted; security review before implementation, evidence before first merge. |
-| P0-AC-022 per-action scopes              | Not evidenced. Scope family accepted; review must confirm additive, deny-by-default, no bypass API. |
-| P0-AC-023 child process scope limitation | Not evidenced. Explicit child environment accepted; no worker spawn exists to test.                 |
-| P0-AC-024 Agent read-only default        | Not evidenced. Worker hosting disabled; no content plane in the session stream.                     |
-| P0-AC-025 DevTools scopes                | Not evidenced. The session family grants no debug, trace, or control scope.                         |
-| P0-AC-026 secret minimization            | Not evidenced. Content-free audit accepted; seeded-secret tests are a review obligation.            |
-| Bounded persistence and containment      | Not evidenced. In-memory registry, bounded sinks, and whole-request refusal accepted as design.     |
-| Single writer and single PTY owner       | Not evidenced. Accepted as design; negative tests are implementation acceptance criteria.           |
-| Daemon absence                           | Not evidenced. `bitty --safe`, headless, CI, and plain invocation must keep working with no daemon. |
+| Control                                  | Disposition                                                                                                                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P0-AC-021 endpoint and peer credentials  | Not evidenced. Design accepted; security review before implementation, evidence before first merge.                                                                      |
+| P0-AC-022 per-action scopes              | Not evidenced. Scope family accepted; review must confirm additive, deny-by-default, no bypass API.                                                                      |
+| P0-AC-023 child process scope limitation | Not evidenced. Explicit child environment accepted; no worker spawn exists to test.                                                                                      |
+| P0-AC-024 Agent read-only default        | Not evidenced. Worker hosting disabled; no content plane in the session stream; `session.host` is not baseline and create needs per-client consent plus `process.spawn`. |
+| P0-AC-025 DevTools scopes                | Not evidenced. The session family grants no debug, trace, or control scope.                                                                                              |
+| P0-AC-026 secret minimization            | Not evidenced. Content-free audit accepted; seeded-secret tests are a review obligation.                                                                                 |
+| Bounded persistence and containment      | Not evidenced. In-memory registry, bounded sinks, whole-request refusal, and the `B-6`/`B-9` journal and limit rules accepted as design.                                 |
+| Single writer and single PTY owner       | Not evidenced. Accepted as design; negative tests are implementation acceptance criteria.                                                                                |
+| Daemon absence                           | Not evidenced. `bitty --safe`, headless, CI, and plain invocation must keep working with no daemon.                                                                      |
 
 No P0 control is downgraded, waived, or converted into a suggestion by this
-promotion. Where evidence cannot exist yet, the gap is recorded here and assigned
-to [#2608].
+promotion or by the 2026-10-27 revision. Where evidence cannot exist yet, the gap
+is recorded here and assigned to [#2608]. Both security reviews are
+`NEEDS-FIX`, the second revision is submitted, and the third review recorded
+APPROVE-WITH-FOLLOWUPS with `F-9`/`F-12` as slice gates;
+this table claims no approval for the revision text itself.
 
 ## References
 

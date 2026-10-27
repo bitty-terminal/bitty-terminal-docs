@@ -121,13 +121,24 @@ that ownership, and ADR 0015/ADR 0016 keep process, permission, and resource
 enforcement in Core. Option A moves ownership out of the only layer allowed to own
 it. Option B moves a daemon into the layer that must work without one.
 
-| Seam element                             | Core owns                                                          | Extension receives                                     |
-| ---------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------ |
-| Session descriptors                      | Stable ids, lifecycle, attach count, controller presence           | Bounded read-only values; no PTY handle or grid buffer |
-| Attach and detach requests               | Authorization, lease creation, input routing, stale-handle refusal | Success or a typed refusal with counts and limits      |
-| Lifecycle events                         | Create, attach, detach, expiry, terminal state, reason             | Cold-path events, never the render or input hot path   |
-| Snapshot and restore                     | Codec, atomic write, validation, fail-closed restore               | Commands that request or select a snapshot             |
-| Naming, ordering, picker, restore policy | Nothing                                                            | Extension policy over the descriptors and commands     |
+| Seam element                             | Core owns                                                                                                                                                                                            | Extension receives                                     |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Session descriptors                      | A cached, read-only descriptor for its own view; never the authoritative attach count, lease, or lifecycle record. `bittyd` is the sole writer of session, lease, attach-count, and last-seen truth. | Bounded read-only values; no PTY handle or grid buffer |
+| Attach, detach, and resize requests      | Authorization, lease creation, input routing, controller-only resize, stale-handle refusal                                                                                                           | Success or a typed refusal with counts and limits      |
+| Lifecycle events                         | Create, attach, detach, expiry, terminal state, reason                                                                                                                                               | Cold-path events, never the render or input hot path   |
+| Snapshot and restore                     | Codec, atomic write, validation, fail-closed restore                                                                                                                                                 | Commands that request or select a snapshot             |
+| Naming, ordering, picker, restore policy | Nothing                                                                                                                                                                                              | Extension policy over the descriptors and commands     |
+
+> **Dated clarification, 2026-10-27.** The "attach count" in the first row is a
+> displayed value, not a second writer. `bittyd` owns the attach count, leases,
+> and controller presence; Core's descriptor is a cache refreshed from the
+> service and never an authority. This is the same single-writer rule the
+> [session-host contract](bittyd-session-host-contract.md) states. Resize follows
+> the same rule: only the controller lease may resize, resize requires
+> `terminal.manage`, and it increments `state_revision`; an observer letterboxes
+> or scales locally. The contract's
+> [security review revision](bittyd-session-host-contract.md#security-review-revision-2026-10-27)
+> records the disposition.
 
 The extension never talks to the session host; Core mediates every call. It never
 receives a descriptor, grid reference, or scrollback buffer — only values and
@@ -135,24 +146,24 @@ commands, the same rule the plugin platform already applies.
 
 ## Server question
 
-**The recommended option needs no dedicated server. It rides the `bittyd`
-candidate.**
+**The recommended option needs no dedicated server. It rides the accepted
+`bittyd` session-host contract.**
 
 A separate multiplexer server is wrong because it would be a second PTY owner and
 a second session registry (ADR 0008 makes the first a conformance violation and
 the second a split-brain "who is attached" answer); it would duplicate leases,
-counters, and refusal audit the candidate already defines; it would create a
+counters, and refusal audit the accepted contract already defines; it would create a
 second extension-facing authority, contradicting the charter rule that Core
 mediates session calls; and it would give Bitty two daemons instead of one
 supported absence.
 
-| Prerequisite                                                                              | Why the multiplexer depends on it                                                                                                                                                                        | State                                 |
-| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| [bittyd Session-Host Contract](bittyd-session-host-contract.md) accepted                  | Fixes `D-07` scopes, `D-09` leases, control, and the `session.attach`/`session.detach` surface, `D-10` delivery, `D-11` versioning, `D-14` bounds, and `D-16` audit; `D-06` excludes restart persistence | Accepted; review pending              |
-| Additive `session.*` / `daemon.*` scopes registered in the IPC registry                   | `terminal.*` must not grant session administration; a lease must not grant terminal content                                                                                                              | Open                                  |
-| `bittyd` Linux x86_64 conformance for attach, detach, expiry, transfer, and stale handles | An attach design is not evidence; other cells stay unadvertised per ADR 0002                                                                                                                             | No daemon                             |
-| This Core seam accepted as a focused contract                                             | The extension API must be reviewed before an extension can target it, and this decision fixes the boundary rather than the exact API                                                                     | This candidate                        |
-| `bitty-ipc` framing, peer-credential, and RC-9/RC-10 evidence                             | The attach path inherits the local transport and its ceilings                                                                                                                                            | Accepted contract, no daemon evidence |
+| Prerequisite                                                                              | Why the multiplexer depends on it                                                                                                                                                                        | State                                                                                                                              |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| [bittyd Session-Host Contract](bittyd-session-host-contract.md) accepted                  | Fixes `D-07` scopes, `D-09` leases, control, and the `session.attach`/`session.detach` surface, `D-10` delivery, `D-11` versioning, `D-14` bounds, and `D-16` audit; `D-06` excludes restart persistence | Accepted 2026-10-27; first and second security reviews `NEEDS-FIX`, third review APPROVE-WITH-FOLLOWUPS (`F-9`/`F-12` slice gates) |
+| Additive `session.*` / `daemon.*` scopes registered in the IPC registry                   | `terminal.*` must not grant session administration; a lease must not grant terminal content                                                                                                              | Open                                                                                                                               |
+| `bittyd` Linux x86_64 conformance for attach, detach, expiry, transfer, and stale handles | An attach design is not evidence; other cells stay unadvertised per ADR 0002                                                                                                                             | No daemon                                                                                                                          |
+| This Core seam accepted as a focused contract                                             | The extension API must be reviewed before an extension can target it, and this decision fixes the boundary rather than the exact API                                                                     | Accepted 2026-10-26                                                                                                                |
+| `bitty-ipc` framing, peer-credential, and RC-9/RC-10 evidence                             | The attach path inherits the local transport and its ceilings                                                                                                                                            | Accepted contract, no daemon evidence                                                                                              |
 
 The multiplexer also depends on what `bittyd` deliberately does not own: layout
 (Core, ADR 0014), the session file (Core codec), naming and organization
