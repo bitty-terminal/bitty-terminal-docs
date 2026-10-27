@@ -84,6 +84,19 @@ sidebar_order: 22
   not future optimizations): Linux ARM64 matrix entry, Alpine musl build,
   `.pkg.tar.zst` naming, and the dummy terminfo.
 
+### Preview channel (accepted companion)
+
+The daily preview channel is an accepted companion to this matrix, not a row in
+it. The [Preview Release Contract](../specifications/preview-release-contract.md)
+fixes three Tier 1 cells (Linux x86_64 glibc, macOS arm64, Windows x64), archives
+only, no package-manager payload, no stable pointer, and no R2 object. A preview
+is a public GitHub pre-release with the bare base version in the archive names,
+`prerelease: true`, `make_latest: false`, and no installer; macOS preview
+archives are unsigned and unnotarized, exactly like the stable DMG flow. The
+window is 14 releases of 8 assets each, with ≤128 MiB per archive and ≤2 GiB
+total. A preview proves nothing about the stable matrix, the timing gate, or the
+platform tiers below.
+
 ## Verified current truth
 
 First-hand verification against the `bitty` checkout at the time of writing

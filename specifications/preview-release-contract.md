@@ -1,40 +1,42 @@
 ---
-title: Preview Release Contract (Candidate)
-description: Candidate contract for a daily preview release channel - 23:30 local schedule and UTC mapping, preview tag format, matrix and artifacts, stable-channel isolation proof, provenance, retention, promotion, required gates, and owner decisions
+title: Preview Release Contract
+description: Accepted contract for a daily preview release channel - 23:30 Europe/Berlin schedule and UTC mapping, preview tag format, matrix and artifacts, stable-channel isolation proof, provenance, retention, promotion, and required gates
 category: specifications
 audience: contributor
 document_type: specification
-status: draft
+status: accepted
 website_publish: false
 sidebar_order: 82
 ---
 
-# Preview Release Contract (Candidate)
+# Preview Release Contract
 
 ## Document status
 
-> Status: **candidate, not accepted and not implemented.** This document records
-> the contract shape bitty#2655 requires before any preview workflow exists. The
-> `bitty` repository has no preview workflow; the stable `release.yml` accepts
-> stable `vX.Y.Z` tags and a manual dispatch that publishes nothing. No workflow,
-> script, release, tag, or channel change is authorized by this document.
+> Status: **accepted on 2026-10-27 by the project owner.** All sixteen owner
+> decisions `P-01` through `P-16` are decided as the candidate recommended; the
+> [decision register](#decision-register) records each disposition and its
+> rationale. The contract defines the preview channel
+> [bitty#2655](https://github.com/bitty-terminal/bitty/issues/2655) asks for: a
+> nightly build near 23:30 local time that stays outside every stable pointer,
+> channel, and package index. It authorizes no workflow, script, tag, release,
+> or channel change, and it claims no preview run has ever executed.
 
-| Control          | Value                                                                                                                                            |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Status           | Candidate, reviewed by no one yet, authorizes no code                                                                                            |
-| Owner            | Release surface (bitty#2655, Task CTX-0153); schedule owner is an open decision (`P-01`)                                                         |
-| Repository       | `bitty-terminal-docs` (this contract) and `bitty` (future implementation, not authorized here)                                                   |
-| Issue            | [bitty#2655](https://github.com/bitty-terminal/bitty/issues/2655) — `[0.1.0] Define nightly preview release cadence around 23:30`                |
-| Upstream records | `bitty` `release.yml`, `packaging/README.md` R2 and channel layout, bootstrap install scripts, ADR 0002 tiers                                    |
-| Implementation   | None. No `.github/workflows/preview.yml`, no preview tag, no preview release, no test exists                                                     |
-| Evidence status  | Current-state claims verified against `bitty` `main` at `87900ada` (2026-10-26); `main` has advanced since, and no preview run has ever executed |
-| Change authority | Release owner owns the candidate; the security corpus co-owns the trust boundary and supply-chain controls                                       |
-| Promotion gate   | Owner decisions `P-01` through `P-16`, independent review, and security review; then `status: accepted`                                          |
+| Control          | Value                                                                                                                                     |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Status           | Accepted (2026-10-27); authorizes the contract, not an implementation                                                                     |
+| Owner            | Release surface (bitty#2655, Task CTX-0161); the schedule owner is the release owner (`P-01`)                                             |
+| Repository       | `bitty-terminal-docs` (this contract) and `bitty` (future implementation, not authorized here)                                            |
+| Issue            | [bitty#2655](https://github.com/bitty-terminal/bitty/issues/2655) — `[0.1.0] Define nightly preview release cadence around 23:30`         |
+| Upstream records | `bitty` `release.yml`, `packaging/README.md` R2 and channel layout, bootstrap install scripts, ADR 0002 tiers                             |
+| Implementation   | None. No `.github/workflows/preview.yml`, no preview tag, no preview release, no test exists; bitty#2655 carries the implementation half  |
+| Evidence status  | Current-state claims re-verified against `bitty` `origin/main` at `10804c5d` (2026-10-27) with no drift; no preview run has ever executed |
+| Change authority | Release owner owns the contract; the security corpus co-owns the trust boundary and supply-chain controls                                 |
+| Promotion gate   | Satisfied 2026-10-27 for the contract; the implementation needs its own task, independent review, and security review                     |
 
-Candidate wording uses "must" to describe what the accepted contract would
-require. It is not a current obligation, and it is not evidence that any control
-is implemented. The stable tags `v0.0.28` and `v0.0.29` are immutable history:
-nothing in this contract moves, recreates, or repoints them.
+Accepted wording uses "must" for what this contract requires. It is not evidence
+that any control is implemented. The stable tags `v0.0.28` and `v0.0.29` are
+immutable history: nothing in this contract moves, recreates, or repoints them.
 
 ## Purpose and scope
 
@@ -44,7 +46,7 @@ workflow is CI-only, and the release workflow is a stable-channel pipeline that
 refuses anything except a stable `vX.Y.Z` tag. Pushing a preview-shaped tag into
 that pipeline fails validation rather than producing a preview.
 
-This document decides, as a candidate, the questions bitty#2655 leaves open:
+This document decides the questions bitty#2655 leaves open:
 
 1. The exact schedule, including the timezone-to-UTC mapping and the behavior of
    daylight-saving transitions (`Schedule`).
@@ -59,7 +61,7 @@ retention`).
 6. Which gates a preview must pass, and which stable gates it may skip
    (`Required gates`).
 
-In scope: the contract above and the owner decisions that block acceptance.
+In scope: the contract above and the owner decisions `P-01` through `P-16`.
 
 Out of scope and owned elsewhere:
 
@@ -72,6 +74,12 @@ Out of scope and owned elsewhere:
 - support commitments for preview users (`P-12`);
 - the maturity ladder: a preview does not make any slice `Implemented`,
   `Verified`, or `Compatible`.
+
+Implementation is a separate slice and stays unauthorized here. bitty#2655
+remains the follow-up issue for `.github/workflows/preview.yml`,
+`scripts/tests/check-preview-isolation.test.sh`, the explicit stable-tag
+predicate in `release.yml`, and the pre-merge plan in `Verification plan`; this
+task accepts the contract, not the workflow.
 
 ## Normative sources this specification must not weaken
 
@@ -101,7 +109,7 @@ any stable key, pointer, repository, or package index.
 | Term                 | Meaning in this document                                                                                                                                   |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Stable tag           | A git tag matching `^v[0-9]+\.[0-9]+\.[0-9]+$` that the stable pipeline publishes.                                                                         |
-| Preview tag          | A git tag matching the candidate grammar in `Tag format`; never a stable tag.                                                                              |
+| Preview tag          | A git tag matching the accepted grammar in `Tag format`; never a stable tag.                                                                               |
 | Preview base version | The `X.Y.Z` in `[workspace.package] version` at the previewed commit.                                                                                      |
 | Cadence date         | The local calendar date on which the preview run passes its preflight; stamped `YYYYMMDD` in the tag.                                                      |
 | Cadence slot         | The nominal 23:30 local time on a cadence date.                                                                                                            |
@@ -112,9 +120,10 @@ any stable key, pointer, repository, or package index.
 
 ## Current state (verified)
 
-Verified against `bitty` `main` at `87900ada` (2026-10-26; `main` has advanced
-past that revision). These facts are the reason the contract looks the way it
-does; if they drift, the contract is re-verified before acceptance.
+Verified against `bitty` `origin/main` at `10804c5d` (2026-10-27; the original
+evidence set was captured at `87900ada` on 2026-10-26 and re-checked at
+acceptance with no drift). These facts are the reason the contract looks the way
+it does; if they drift, the contract is re-verified before implementation.
 
 | Fact                                | Evidence                                                                                                                                                                  |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -128,37 +137,41 @@ does; if they drift, the contract is re-verified before acceptance.
 | `r2-mirror` has no dash guard       | It gates on `refs/tags/v*` and `needs: release`; its only preview barrier today is the failing `validate` job.                                                            |
 | Bootstrap scripts reject prerelease | `scripts/install.sh` and `scripts/install.ps1` fail on any version containing `-`.                                                                                        |
 | No signatures, attestations, SBOM   | `release.yml` writes `SHA256SUMS` and `provenance.json` only; `install.sh` states that 0.1.0 is hash-only and that Sigstore/cosign remains a follow-up.                   |
-| Version base equals newest stable   | Workspace version at `87900ada` is `0.0.29`; the newest stable tag is `v0.0.29`. The equality case is open (`P-11`).                                                      |
+| Version base equals newest stable   | Workspace version at `10804c5d` is `0.0.29`; the newest stable tag is `v0.0.29`. Preview eligibility for that case is decided by `P-11`.                                  |
 | Manual dispatch cannot publish      | `workflow_dispatch` runs validation and build jobs, but `release` and every channel job are gated on a tag ref.                                                           |
 
-## Schedule (candidate)
+## Schedule
 
 ### Cadence and timezone
 
-- One preview per local calendar day, nominally at **23:30 local time**.
-- The IANA timezone is an owner decision (`P-01`). The candidate is
-  `Europe/Berlin`; the product cadence has no canonical timezone record today,
-  and the schedule owner is also undecided.
+- The IANA timezone is **`Europe/Berlin`** (`P-01`), and the release owner is
+  the schedule owner: the same owner who authorizes promotions owns the cron,
+  the lateness window, and schedule re-enablement.
+- One preview per local calendar day, nominally at **23:30 `Europe/Berlin`**
+  time.
 - GitHub Actions evaluates `schedule` cron expressions in UTC on the default
   branch only. A fixed UTC expression cannot follow daylight saving, so the
-  candidate uses two UTC slots and a local-time preflight.
+  accepted shape is two UTC slots plus a local-time preflight: `30 21 * * *`
+  (Cron A) and `30 22 * * *` (Cron B), both off the hour boundary.
 
 | Local season                     | Offset | 23:30 local is | Cron A `30 21 * * *` | Cron B `30 22 * * *`         |
 | -------------------------------- | ------ | -------------- | -------------------- | ---------------------------- |
 | CET (last Sun Oct–last Sun Mar)  | UTC+1  | 22:30 UTC      | 22:30 local — no-op  | 23:30 local — run            |
 | CEST (last Sun Mar–last Sun Oct) | UTC+2  | 21:30 UTC      | 23:30 local — run    | 00:30 local next day — no-op |
 
-Both crons are off the hour boundary, matching the repository's existing
-scheduler convention. The off-season firing is a successful no-op, not a failure.
+Cron A covers CEST (21:30 UTC = 23:30 local) and Cron B covers CET (22:30 UTC =
+23:30 local); the off-season firing is a successful no-op, not a failure. No
+UTC slot fires at 23:30 local in both offsets, which is why two crons plus the
+preflight are the accepted mechanism (`P-02`) and a calendar table is not.
 
 ### Preflight
 
 The first job of a preview run is a preflight that decides whether the run is a
-real cadence slot. It uses the same timezone the owner selects, derives the
-cadence date from that zone, and never guesses a date in UTC.
+real cadence slot. It uses the accepted `Europe/Berlin` zone, derives the cadence
+date from that zone, and never guesses a date in UTC.
 
 ```bash
-PREVIEW_TZ="Europe/Berlin"          # candidate; P-01 decides the real value
+PREVIEW_TZ="Europe/Berlin"          # accepted P-01 value
 local_hm="$(TZ="$PREVIEW_TZ" date +%H:%M)"
 local_date="$(TZ="$PREVIEW_TZ" date +%Y%m%d)"
 if [[ "$local_hm" < "23:25" || "$local_hm" > "23:59" ]]; then
@@ -178,15 +191,16 @@ echo "cadence_date=${local_date}" >> "$GITHUB_OUTPUT"
   `if: needs.preflight.outputs.run == 'true'`, and the preflight writes its
   reason to `$GITHUB_STEP_SUMMARY` so an off-slot night is visible without a
   failed run.
-- The candidate lateness window is `23:25`–`23:59` local. A run delayed past
-  local midnight is a missed night, not a backdated preview (`P-02`). No preview
-  is ever stamped with a date other than the cadence date.
+- The accepted lateness window (`P-02`) is `23:25`–`23:59` local. A run delayed
+  past local midnight is a missed night, not a backdated preview. No preview is
+  ever stamped with a date other than the cadence date.
 - The preflight resolves `main` once, records that SHA, and the run tags that
   SHA. If `main` advances mid-build, the run still publishes the preflight SHA
   and the next cadence slot picks up the new head; nothing in the run
   re-resolves, moves, or re-points the tag.
-- A timezone without daylight saving (for example UTC) collapses to one cron and
-  keeps the same preflight; a fixed-offset zone uses the same two-slot shape.
+- A future timezone change is a new `P-01` decision: a fixed-offset zone would
+  collapse to one cron and keep the same preflight shape, and a zone with
+  daylight saving keeps the two-slot shape with its own offsets.
 - GitHub may start a scheduled run late under load. The preflight is the only
   authority on whether a run belongs to a cadence slot; the cron expression is
   a trigger, not a guarantee.
@@ -210,7 +224,7 @@ no tag, when any of the following is true:
    outside the 14-release window (`Retention and cleanup`). A same-date run for
    a different commit is refused.
 4. The workspace base version is not strictly greater than the newest stable tag
-   (candidate, `P-11`).
+   (accepted rule, `P-11`).
 
 A no-op is not a failure and must not be reported as a published preview.
 
@@ -225,8 +239,10 @@ A no-op is not a failure and must not be reported as a published preview.
   then-current `main`; if the failed commit is still the head, it is retried
   naturally. A manual dispatch may publish on a later date using that date's
   stamp; it never backdates a tag.
-- A failed night is visible as a failed workflow run. Whether it also opens an
-  issue or notifies a channel is an owner decision (`P-13`).
+- A failed night is visible as a failed workflow run only: no issue is opened
+  automatically, no chat or paging channel is notified, and no retry is queued
+  (`P-13`). The release owner watches the nightly result; a manual dispatch on a
+  later date is the recovery path.
 
 ### Concurrency
 
@@ -234,13 +250,14 @@ A no-op is not a failure and must not be reported as a published preview.
   `cancel-in-progress: false`. A manual dispatch queues behind a scheduled run
   rather than racing it.
 - Every job carries `timeout-minutes`, and their sum is an upper bound on the wall
-  clock a run can hold the group. Candidate bounds: preflight 5, build 60, packaging 20,
-  release 10, cleanup 10. Without them a hung run queues every later night
-  forever, because `cancel-in-progress: false` never cancels it.
+  clock a run can hold the group. Accepted bounds: preflight 5, build 60,
+  packaging 20, release 10, cleanup 10 — 105 minutes in total. Without them a hung
+  run queues every later night forever, because `cancel-in-progress: false` never
+  cancels it.
 - Tags and releases are created only after every matrix leg has produced and
   verified its bytes, so two runs cannot interleave a partial release.
 
-## Tag format (candidate)
+## Tag format
 
 ### Grammar
 
@@ -250,7 +267,7 @@ preview-tag := "v" X "." Y "." Z "-preview." YYYYMMDD
 
 - `X.Y.Z` is the workspace version at the previewed commit, read through
   `scripts/check-release-version.sh --print`; it is not typed by hand.
-- `YYYYMMDD` is the cadence date in the owner-selected timezone, zero-padded.
+- `YYYYMMDD` is the cadence date in `Europe/Berlin`, zero-padded.
 - Example: `v0.0.30-preview.20261027`.
 - No `+build` metadata and no commit SHA in the tag. Build metadata is ignored
   in semver precedence, so two different previews could compare equal; the
@@ -260,8 +277,8 @@ preview-tag := "v" X "." Y "." Z "-preview." YYYYMMDD
   described in `Retention and cleanup` may delete a preview tag beyond the
   14-release window.
 - At most one preview tag per cadence date. A same-date rerun for a different
-  commit is refused; a second preview in one day needs a different date stamp or
-  a future owner decision (`P-08`).
+  commit is refused; a second preview in one day is not admitted (`P-08`) and
+  would need a new tag grammar and a new decision.
 
 ### Ordering against stable tags
 
@@ -273,13 +290,14 @@ preview-tag := "v" X "." Y "." Z "-preview." YYYYMMDD
 | `v0.0.30-preview.20261027` vs `v0.0.31-preview.20261027` | Lower core version is lower.                                       |
 | `v0.0.30-preview.20261027` vs any stable tag             | Never equal; the `-preview.` segment makes the strings distinct.   |
 
-The candidate rule is that the preview base must be **strictly greater** than
-the newest stable tag, so every preview sorts above every published stable
-release. Right now the workspace version equals the newest stable tag
-(`0.0.29`), so that rule would block previews until the next version bump. The
+The accepted rule (`P-11`) is that the preview base must be **strictly greater**
+than the newest stable tag, so every preview sorts above every published stable
+release. At acceptance the workspace version equals the newest stable tag
+(`0.0.29` == `v0.0.29`), so previews stay blocked until the version bump that
+follows a stable release; that outcome is a no-op, not a failure. The rejected
 alternative — allow equality and accept that the preview sorts below the just
-released stable — is owner decision `P-11`. Either way, the preview is never
-`latest`.
+released stable — is recorded in the [decision register](#decision-register).
+Either way, the preview is never `latest`.
 
 ### Why existing stable readers cannot parse it as stable
 
@@ -305,13 +323,13 @@ GitHub does not start new workflow runs from events caused by `GITHUB_TOKEN`.
 If an operator later creates preview tags with a personal token, the stable
 workflow runs and fails validation; that guard is intentional and must stay.
 
-## Matrix and artifacts (candidate)
+## Matrix and artifacts
 
 ### Build matrix
 
-A preview is a release build, not a compatibility run. The candidate is the
-three Tier 1 cells that cover the platforms the product claims first, with the
-same runners the stable workflow already uses.
+A preview is a release build, not a compatibility run. The accepted matrix
+(`P-07`) is the three Tier 1 cells that cover the platforms the product claims
+first, with the same runners the stable workflow already uses.
 
 | Cell               | Runner           | Target                     | Archive name                                            |
 | ------------------ | ---------------- | -------------------------- | ------------------------------------------------------- |
@@ -322,14 +340,14 @@ same runners the stable workflow already uses.
 `<BASE_VERSION>` is the bare `X.Y.Z` from `[workspace.package] version` at the
 previewed commit, for example `0.0.30`. Preview identity is carried by the tag,
 the pre-release, and `provenance.json`; it is deliberately **not** in the
-filename. This is option (a) in `P-15`, and it is the only option that works
-without changing the packers: `make-unix-bundle.sh` and
+filename. This is the accepted option (a) in `P-15`, and it is the only option
+that works without changing the packers: `make-unix-bundle.sh` and
 `make-windows-zip.sh` reject a `--version` that is not `X.Y.Z`,
 `check-version-output.sh` asserts that `--version` equals the archive-derived
 version, and `bitty --version` prints `CARGO_PKG_VERSION`, so no binary can ever
-print a preview tag. Option (b) — extend both packers, the Windows ZIP
-verifier, and `check-version-output.sh` with a preview-specific version
-assertion — remains the alternative under `P-15`.
+print a preview tag. The rejected option (b) — extend both packers, the Windows
+ZIP verifier, and `check-version-output.sh` with a preview-specific version
+assertion — is recorded in the [decision register](#decision-register).
 
 The build must set `BITTY_CHANNEL=preview`; `build.rs` honors a caller value and
 defaults to `stable` for release profiles. That channel is what makes a preview
@@ -341,17 +359,18 @@ macOS is the exception to shape reuse. Stable macOS delivery is
 `unix-bundle` job and `make-unix-bundle.sh` are Linux-only (they pack desktop
 integration and `terminfo/`), and `verify-unix-bundle` fails on any target
 outside its known list. The macOS preview archive is therefore a **new artifact
-shape that requires a new packer and a new verifier**; the candidate does not
-pass a Darwin binary through the Linux packer.
+shape that requires a new packer and a new verifier**; the accepted matrix does
+not pass a Darwin binary through the Linux packer.
 
 Adding Linux aarch64, macOS x86_64, Windows ARM64, FreeBSD, or any compatibility
-cell is out of the candidate and is owner decision `P-07`.
+cell is out of the accepted matrix. `P-07` fixes three cells; breadth needs a new
+decision and a new cost argument.
 
 Smoke scope is `P-07`: the Linux bundle runs `bin/bitty --version` and starts
 headless, the Windows ZIP unzips and runs `bitty.exe --version`, and macOS has
-no launch smoke because the preview ships no `.app` bundle. Windows smoke is the
-candidate default, not a required stable gate; none of these smoke runs is
-compatibility evidence.
+no launch smoke because the preview ships no `.app` bundle. Windows smoke is
+accepted as a required preview gate, though it is not a stable gate; none of
+these smoke runs is compatibility evidence.
 
 ### Artifact contents
 
@@ -375,17 +394,21 @@ pre-release; there is no bootstrap script for them.
 | `setup.exe`, MSI, MSIX, winget          | No      | Windows installers are stable-channel work and carry signing and SmartScreen implications.                                                                                                                           |
 | GitHub "latest" release                 | No      | `prerelease: true`, `make_latest: false`.                                                                                                                                                                            |
 | `latest.txt`                            | No      | Stable pointer only; the preview workflow cannot write it (`Isolation proof`).                                                                                                                                       |
-| R2 object (any prefix)                  | No      | Candidate v1 publishes no R2 object at all; the preview workflow holds no Cloudflare credential (`P-05`).                                                                                                            |
+| R2 object (any prefix)                  | No      | The accepted v1 (`P-05`) publishes no R2 object at all; the preview workflow holds no Cloudflare credential.                                                                                                         |
 | Homebrew, Scoop, AUR, APT, Copr, Cachix | No      | Stable channels only; `P-04`.                                                                                                                                                                                        |
 | crates.io                               | No      | The binary is never a crates.io artifact and previews never run `cargo publish`.                                                                                                                                     |
 
-A future R2 preview mirror, if the owner ever wants one (`P-05`), is reserved to
-`bitty/preview/<TAG>/` and cannot reuse `bitty/releases/`, `bitty/install/`, or
-`bitty/apt/`. That reservation is a namespace statement, not an authorization.
+A future R2 preview mirror stays refused by the accepted `P-05`; if the owner
+later reverses that decision, the mirror is reserved to `bitty/preview/<TAG>/`
+and cannot reuse `bitty/releases/`, `bitty/install/`, or `bitty/apt/`. That
+reservation is a namespace statement, not an authorization.
 
-## Isolation proof (candidate)
+## Isolation proof
 
 ### Design principles
+
+The five principles below are accepted contract, not suggestions. The isolation
+test in `Required assertions` fails closed when any of them is violated.
 
 1. **Separate workflow.** The preview channel is a new
    `.github/workflows/preview.yml`. It never calls, reuses, or copies a job from
@@ -413,7 +436,7 @@ A future R2 preview mirror, if the owner ever wants one (`P-05`), is reserved to
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `bitty/install/latest.txt`                 | Written only by `r2-stable`; job requires `!contains(ref_name, '-')` and re-checks the stable regex.  | Preview workflow has no R2 credential and no `wrangler` step.                                     | Static: preview workflow contains no `wrangler`, `bitty/install`, or `latest.txt`.                           |
 | `bitty/install/install.sh` / `install.ps1` | Written only by `r2-stable` on the same stable-only path.                                             | Same as above.                                                                                    | Static: no `bitty/install` or install-script upload step in the preview workflow.                            |
-| `bitty/releases/<TAG>/`                    | Written by `r2-mirror`; `needs: release`, tag push. No dash guard today.                              | Preview never uploads to R2; future preview prefix is `bitty/preview/<TAG>/` only.                | Static: no `bitty/releases/` literal; the key builder requires an explicit prefix argument.                  |
+| `bitty/releases/<TAG>/`                    | Written by `r2-mirror`; `needs: release`, tag push. No dash guard today.                              | Preview never uploads to R2 (`P-05`); `bitty/preview/<TAG>/` stays reserved, not authorized.      | Static: no `bitty/releases/` literal; the key builder requires an explicit prefix argument.                  |
 | GitHub "latest" release                    | `release` job is stable-gated and creates `prerelease: false`.                                        | Preview release uses `prerelease: true` and `make_latest: false`.                                 | Static: both fields present; runtime: `gh release view` reports `isPrerelease: true` and `latest` unchanged. |
 | Homebrew tap                               | `homebrew` job: `needs: r2-mirror`, tag prefix, `vars.HOMEBREW_PUBLISH == 'true'`.                    | No job, no tap token, no formula rendering.                                                       | Static: preview workflow contains no `homebrew`, tap URL, or `HOMEBREW` token name.                          |
 | Scoop bucket                               | `scoop` job: same shape.                                                                              | No job, no bucket token.                                                                          | Static: no `scoop`, bucket URL, or `SCOOP` token name.                                                       |
@@ -438,14 +461,31 @@ implementation is authorized:
 
 1. A shared stable-tag predicate on **every** publishing job (`release`,
    `r2-mirror`, `r2-stable`, `aur`, `aur-bin`, `homebrew`, `scoop`, `copr`,
-   `apt`, `nix`), independent of the `needs` chain. Candidate mechanism: a
-   `stable` output from `validate` (`true` only for `^vX.Y.Z$`) that every
-   publisher requires, plus `!contains(github.ref_name, '-')` for defense in
-   depth.
+   `apt`, `nix`), independent of the `needs` chain, as follows.
 2. A static isolation test, `scripts/tests/check-preview-isolation.test.sh`,
    modeled on the existing channel-regression tests, that fails when the
    preview workflow gains a stable surface or when a publisher loses its
    stable predicate. The preview workflow runs it before building.
+
+The predicate has one definition, evaluated per job rather than inherited from a
+successful predecessor:
+
+- `validate` publishes `stable=true` only when the pushed tag matches
+  `^v[0-9]+\.[0-9]+\.[0-9]+$`, and `stable=false` for every other ref.
+- Every publishing job listed above declares `needs: validate` in addition to
+  its existing needs and starts only when the `stable` output is `true`
+  (`needs.validate.outputs.stable == 'true'`). Adding `validate` to a job that
+  already depends on `build` costs no extra runner: `build` needs `validate`
+  already.
+- Each of those jobs also keeps `!contains(github.ref_name, '-')` as defense in
+  depth. A stable tag never contains `-`, so the guard rejects nothing that
+  should publish.
+- `apt`, `copr`, and `nix` keep their default-on conditions
+  (`vars.APT_PUBLISH != 'false'`, `vars.COPR_PUBLISH != 'false'`,
+  `vars.NIX_PUBLISH != 'false'`) but lose their sole reliance on
+  `startsWith(github.ref, 'refs/tags/v')`. That expression matches
+  `v0.0.30-preview.20261027`; it is a trigger predicate, not a stability proof,
+  and it is not a preview barrier.
 
 ### Required assertions (fails closed)
 
@@ -479,7 +519,7 @@ should automate rather than leave to a per-run operator habit.
    are byte-identical and unmoved. A preview that changes any of them is a
    release-blocking defect, even if the workflow reports success.
 
-## Provenance and retention (candidate)
+## Provenance and retention
 
 ### Provenance and attestation
 
@@ -490,22 +530,42 @@ should automate rather than leave to a per-run operator habit.
   `toolchain`, `build_runner`) and adds `"channel": "preview"` and
   `"base_version": "X.Y.Z"`. The added fields are additive; no stable consumer
   reads this file today.
-- Candidate attestation: `actions/attest-build-provenance` for every archive,
-  verified in the run with `gh attestation verify`. This is build provenance,
-  not a code signature.
-- Candidate signature posture: **none**. No codesign, notarization, Authenticode,
-  GPG, or Sigstore/cosign signature in v1. `install.sh` already documents that
-  0.1.0 is hash-only, and a preview must not imply otherwise. Signing previews is
-  owner decision `P-10`.
-- Candidate SBOM: none in v1. The stable pipeline produces none today, and a
-  preview-only SBOM would create an evidence asymmetry without a consumer. Also
-  `P-10`.
+- Accepted attestation (`P-10`): `actions/attest-build-provenance` for every
+  archive, verified in the run with `gh attestation verify`. This is build
+  provenance, not a code signature, and it is the only cryptographic evidence
+  the preview channel carries.
+- Accepted signature posture (`P-10`): **none**. No codesign, `notarytool`,
+  notarization, Authenticode, GPG, or Sigstore/cosign signature in v1. macOS
+  preview archives ship unsigned and unnotarized exactly like the stable
+  unsigned DMG flow (`macos-universal` runs no `codesign`/`notarytool`), so the
+  Gatekeeper and quarantine caveat applies to both channels. `install.sh`
+  already documents that 0.1.0 is hash-only, and a preview must not imply
+  otherwise.
+- Accepted SBOM posture (`P-10`): none in v1. The stable pipeline produces none
+  today, and a preview-only SBOM would create an evidence asymmetry without a
+  consumer.
 
 ### Retention and cleanup
+
+Every retention bound is explicit. The per-archive and per-run caps fail closed
+before upload; the 14-release window is enforced by the post-publish prune in
+`P-06`, so the two mechanisms cannot be confused.
+
+| Bound                       | Value             | Enforcement                                                                                              |
+| --------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------- |
+| Preview releases retained   | 14                | Prune after each successful preview; oldest first, by release creation time                              |
+| Assets per preview release  | 8                 | 3 archives, 3 `.sha256` sidecars, `SHA256SUMS`, `provenance.json`                                        |
+| Size per archive            | ≤ 128 MiB         | Per-asset tripwire; the build fails before tag creation when any archive exceeds it                      |
+| Preview release assets      | ≤ 2 GiB total     | Binds over the per-asset cap: a run that would cross it fails and requires a prune before the next night |
+| Workflow artifact retention | 7 days            | `retention-days: 7` on the build artifacts; failed-run triage only                                       |
+| Workflow artifact volume    | ≤ 256 MiB per run | Per-run cap; at most one run per cadence date                                                            |
 
 - Keep the most recent **14** preview releases (two weeks), plus any preview
   whose target commit is also a stable tag target. Age is measured by release
   creation time, not tag string.
+- At the archive sizes observed at `v0.0.29` (under 10 MiB per archive), a
+  preview release is roughly 25 MiB and the window stays near 350 MiB, so the
+  2 GiB ceiling leaves about a 6× margin before a nightly run is refused.
 - Prune after a successful new preview, never before it. Cleanup lists
   prereleases, filters by the preview tag regex, sorts newest first, and deletes
   beyond the window with `gh release delete --cleanup-tag --yes`.
@@ -514,11 +574,13 @@ should automate rather than leave to a per-run operator habit.
   preview. A refused deletion is reported, not forced.
 - Workflow artifacts of preview builds are retained for seven days for triage;
   release assets follow the release retention above.
-- There is no R2 copy to prune in v1. If `P-05` later adds `bitty/preview/`, that
-  prefix uses the same window and its own cleanup step.
-- Whether a prune failure should fail the run or only report is `P-06`. The
-  candidate is: the new preview stays published, and the run fails visibly so
-  the backlog is not silent.
+- There is no R2 copy to prune in v1 (`P-05` refuses the mirror). A later
+  reversal would add `bitty/preview/` under the same window and its own cleanup
+  step.
+- Accepted prune-failure semantics (`P-06`): the new preview stays published,
+  and the run fails visibly so the backlog is not silent. That ordering keeps a
+  usable build available while making an unpruned channel visible instead of
+  silently unbounded.
 
 ### Promotion
 
@@ -537,9 +599,9 @@ relabel the preview bytes**:
    the next cadence slot, and that later preview becomes the promotion
    candidate. An earlier preview is never relabeled, retagged, or re-pointed at
    the prep commit.
-4. The owner (or delegated release owner) approves the promotion. The stable
-   `vX.Y.Z` tag is created on the **exact promoted preview commit**. The preview
-   tag is not moved, re-pointed, or deleted.
+4. The owner (or delegated release owner) approves the promotion (`P-14`). The
+   stable `vX.Y.Z` tag is created on the **exact promoted preview commit**. The
+   preview tag is not moved, re-pointed, or deleted by promotion.
 5. The stable tag push runs `release.yml`, which builds stable channel artifacts
    from that commit through the stable pipeline. Preview archives are never
    copied, renamed, or uploaded as stable assets; stable bytes must come from the
@@ -547,11 +609,17 @@ relabel the preview bytes**:
 6. The promoted preview release remains available as evidence and is excluded
    from retention pruning by the stable-commit rule.
 
+The promotion rule `P-14` accepts is: no preview tag is ever moved, re-pointed,
+or reused — not for a rerun, not for changelog prep, and not for promotion. Only
+the retention cleanup in this section may delete a preview tag, and only once it
+falls outside the 14-release window; a deleted preview tag is never recreated,
+and deletion is never a route to reusing a date stamp.
+
 "Never rebuild" means never promote a different source revision and never reuse
 preview binaries as stable artifacts. It does not promise byte-identical output
 between the preview and stable builds.
 
-## Required gates (candidate)
+## Required gates
 
 A preview is a release, not a nightly test run. It does not repeat the full test
 matrix that `main` CI already ran; it proves that the exact commit it publishes
@@ -563,7 +631,7 @@ that the release metadata is sound.
 | Exact commit is on `main` and its `CI` run is green         | Required                                            | Implied by release review, not machine-checked         | Preview queries the commit's check runs via the `checks: read` scope; a red or missing run fails closed.                                                                         |
 | `scripts/check-release-version.sh` (in-repo consistency)    | Required                                            | Required                                               | Same script; no tag-equality mode for previews.                                                                                                                                  |
 | Version output matches the archive-derived base version     | Required                                            | Required                                               | `check-version-output.sh <base> <binary>`, unchanged; `BITTY_CHANNEL=preview` makes the preview channel visible. A preview-tag assertion is only needed under `P-15` option (b). |
-| Workspace base version is valid for a preview (`P-11`)      | Required                                            | Not applicable                                         | Candidate: strictly greater than the newest stable tag.                                                                                                                          |
+| Workspace base version is valid for a preview (`P-11`)      | Required                                            | Not applicable                                         | Accepted: strictly greater than the newest stable tag; equality is a no-op.                                                                                                      |
 | Static isolation test                                       | Required                                            | Not applicable                                         | `scripts/tests/check-preview-isolation.test.sh`.                                                                                                                                 |
 | `actionlint` on the preview workflow                        | Required at review time                             | Required                                               | No workflow merges without it.                                                                                                                                                   |
 | `act -n` dry run of the preview workflow                    | Required at review time                             | Required                                               | Syntax only; not runtime evidence.                                                                                                                                               |
@@ -573,7 +641,7 @@ that the release metadata is sound.
 | `scripts/check-binary-arch.sh` per binary                   | Required                                            | Required                                               | Architecture claim matches bytes.                                                                                                                                                |
 | `SHA256SUMS`, sidecars, read-back verification              | Required                                            | Required                                               | No release without verified bytes.                                                                                                                                               |
 | Linux bundle install smoke (`--version` + headless start)   | Required                                            | Required across four distros                           | Preview uses one clean container.                                                                                                                                                |
-| Windows unzip-and-run smoke                                 | Required by candidate default (`P-07`)              | Required                                               | Preview may skip only by explicit owner decision.                                                                                                                                |
+| Windows unzip-and-run smoke                                 | Required (`P-07`)                                   | Required                                               | Preview unzips the archive and runs `bitty.exe --version`; not a stable gate.                                                                                                    |
 | macOS launch smoke                                          | Not required                                        | Required (DMG mount)                                   | Previews have no DMG, no app bundle, and no notarization.                                                                                                                        |
 | Six-cell matrix + Alpine + FreeBSD                          | Not required                                        | Required                                               | Preview builds three cells.                                                                                                                                                      |
 | `.deb`/`.rpm`/`.apk`/`.pkg.tar.zst`, DMG, setup.exe, winget | Not required                                        | Required                                               | Previews ship no installers.                                                                                                                                                     |
@@ -587,22 +655,24 @@ and before upload. There is no partial preview and no "publish what passed".
 
 ## Security review
 
-This candidate introduces a recurring publication path. It weakens no accepted
-control, and it claims no implemented control. The review must confirm each row.
+The accepted contract introduces a recurring publication path. It weakens no
+accepted control, and it claims no implemented control. The security review must
+confirm each row before the implementation merges.
 
-| Threat                                           | Control in this contract                                                                                                                                                           |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tag confusion reaches a stable channel           | Preview grammar is distinct; stable readers reject it; every publisher gains an explicit stable predicate; isolation test.                                                         |
-| Preview holds stable credentials                 | No `environment: release`, no Cloudflare/APT/AUR/Homebrew/Scoop/Copr/Cachix secret, minimal `permissions`; static token allowlist test.                                            |
-| Preview poisons `latest.txt` or a stable pointer | No R2 credential, no `wrangler`, no tap/bucket/index write; before/after pointer read-back is a release-blocking check.                                                            |
-| Artifact substitution or silent corruption       | `--locked`, pinned actions, SHA-pinned toolchain, per-asset checksums, read-back verification, build provenance attestation.                                                       |
-| Prerelease treated as supported                  | Release body and README state previews are unsupported; no bootstrap install; no package channel; `latest` never points at a preview.                                              |
-| Tag moved or reused                              | Tags are annotated and immutable; preflight refuses an existing tag; cleanup deletes only preview tags beyond the window.                                                          |
-| Preview bytes relabeled as stable on promotion   | Promotion creates the stable tag on the same commit; the stable pipeline rebuilds; preview assets are never copied to stable keys.                                                 |
-| Scheduled workflow drift or silent disablement   | Preflight records the cadence date; a missed night is visible as no release; the schedule owner owns re-enablement (`P-01`).                                                       |
-| Security fix disclosed by a public preview       | Candidate: a security fix is held out of public previews until its stable release and advisory ship, because a preview discloses the issue before users can update. Open (`P-16`). |
-| Unbounded retention or disk growth               | Fixed 14-release window, seven-day workflow artifacts, no R2 copy in v1.                                                                                                           |
-| New secret surface                               | None: the only credential is the repository `GITHUB_TOKEN` and the OIDC token used for attestation.                                                                                |
+| Threat                                           | Control in this contract                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tag confusion reaches a stable channel           | Preview grammar is distinct; stable readers reject it; every publisher gains an explicit stable predicate; isolation test.                                                                                                                                                                                               |
+| Preview holds stable credentials                 | No `environment: release`, no Cloudflare/APT/AUR/Homebrew/Scoop/Copr/Cachix secret, minimal `permissions`; static token allowlist test.                                                                                                                                                                                  |
+| Preview poisons `latest.txt` or a stable pointer | No R2 credential, no `wrangler`, no tap/bucket/index write; before/after pointer read-back is a release-blocking check.                                                                                                                                                                                                  |
+| Artifact substitution or silent corruption       | `--locked`, pinned actions, SHA-pinned toolchain, per-asset checksums, read-back verification, build provenance attestation.                                                                                                                                                                                             |
+| Prerelease treated as supported                  | Release body and README state previews are unsupported; no bootstrap install; no package channel; `latest` never points at a preview.                                                                                                                                                                                    |
+| Tag moved or reused                              | Tags are annotated and immutable; preflight refuses an existing tag; cleanup deletes only preview tags beyond the window.                                                                                                                                                                                                |
+| Preview bytes relabeled as stable on promotion   | Promotion creates the stable tag on the same commit; the stable pipeline rebuilds; preview assets are never copied to stable keys.                                                                                                                                                                                       |
+| Scheduled workflow drift or silent disablement   | Preflight records the cadence date; a missed night is visible as no release; the schedule owner owns re-enablement (`P-01`).                                                                                                                                                                                             |
+| Security fix disclosed by a public preview       | Accepted (`P-16`): an undisclosed security fix never enters a public preview. The fix is developed on a private branch and merged to `main` only when the stable release and advisory publish; a nightly slot whose candidate commit would disclose it is skipped by the release owner and recorded in the step summary. |
+| Unbounded retention or disk growth               | Fixed 14-release window, 8 assets per release, 128 MiB per archive, 2 GiB total preview assets, seven-day workflow artifacts, no R2 copy in v1.                                                                                                                                                                          |
+| Preview mistaken for a supported or signed build | Public pre-release with `prerelease: true`; unsupported support policy (`P-12`); build provenance but no signature (`P-10`); `BITTY_CHANNEL=preview`; no installer (`P-04`).                                                                                                                                             |
+| New secret surface                               | None: the only credential is the repository `GITHUB_TOKEN` and the OIDC token used for attestation.                                                                                                                                                                                                                      |
 
 The security reviewer must specifically challenge the default-on APT/Copr/Nix
 publishers, the broad `r2-mirror` condition, and the temptation to copy
@@ -611,22 +681,22 @@ isolation proof can be lost without a visible diff in the preview file.
 
 ## Verification plan
 
-Before acceptance of this contract:
+Acceptance record (completed 2026-10-27):
 
-1. Record owner decisions `P-01` through `P-16`, or record an explicit deferral
-   with an owner and a date for each.
-2. Obtain an independent review `APPROVE` from an agent other than the author.
-3. Obtain a security review `APPROVE` covering the isolation proof, credential
-   posture, tag confusion, and promotion.
-4. Confirm every current-state claim against the pinned `bitty` revision and
-   record any drift instead of silently updating the contract.
-5. Confirm the isolation assertions are concrete enough to implement as tests,
-   with named files and expected exit behavior.
-6. Synchronize the affected documents listed in `Affected contracts`.
-7. Run `just check` in this repository and `git diff --check`.
+1. `P-01` through `P-16` are decided in the
+   [decision register](#decision-register); none is deferred.
+2. The owner decision is recorded in [P0 Review Sign-off](#p0-review-sign-off);
+   the independent and security reviews are required by the pull request for
+   this delivery and by the implementation task.
+3. Every current-state claim was re-checked against `bitty` `origin/main`
+   `10804c5d`; no drift was found and nothing was patched silently.
+4. The isolation assertions name files, guards, and expected exit behavior.
+5. The affected documents in `Affected contracts` are synchronized in this
+   delivery.
+6. `just check` and `git diff --check` are green.
 
-Before the first implementation merge (a separate, future task; not authorized
-here):
+Before the first implementation merge (a separate, future task under bitty#2655;
+not authorized here):
 
 1. Add `.github/workflows/preview.yml` and
    `scripts/tests/check-preview-isolation.test.sh`; pass `actionlint` and
@@ -643,9 +713,10 @@ here):
 6. Repeat on a second night to prove idempotence: the second night is a no-op if
    `main` has not advanced, and a new dated preview if it has.
 
-Definition of done for this contract task: the candidate is written, the index
-row exists, `just check` is green, and the open owner decisions are listed. The
-contract is not accepted by this task.
+Definition of done for this task: the contract is accepted in place, the index
+row moves to `Accepted`, the decisions and owner sign-off are recorded, `just
+check` is green, and the diff contains no implementation claim or workflow
+change. Implementation stays with bitty#2655 and its own review gates.
 
 ## Alternatives considered
 
@@ -653,62 +724,70 @@ contract is not accepted by this task.
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | `nightly-YYYYMMDD+sha` tags (superseded sketch)  | Not semver, build metadata is ignored in precedence, and existing readers have no shared interpretation.                        | Rejected.                                                                             |
 | `vX.Y.Z-preview.N` with a per-preview counter    | Needs mutable state and a race-free counter; a rerun can reuse or skip a number.                                                | Rejected; the date is idempotent per day and human-readable.                          |
-| Reuse `release.yml` with a `prerelease` input    | One pipeline to maintain, but mixes stable and preview paths; APT/Copr/Nix are default-on and would need delicate guards.       | Rejected; separate workflow with no stable credentials is the stronger isolation.     |
-| One fixed UTC cron                               | Simplest schedule; drifts by one hour across daylight saving.                                                                   | Rejected for the Berlin candidate; acceptable if `P-01` chooses a fixed-offset zone.  |
+| Reuse `release.yml` with a `prerelease` input    | One pipeline to maintain, but mixes stable and preview paths; APT/Copr/Nix are default-on and would need delicate guards.       | Rejected; a separate workflow with no stable credentials is the stronger isolation.   |
+| One fixed UTC cron                               | Simplest schedule; drifts by one hour across daylight saving.                                                                   | Rejected; `P-01` accepts `Europe/Berlin`, so a fixed cron would drift.                |
 | One cron plus a DST calendar table               | One trigger per day; brittle on transition dates and in leap years.                                                             | Rejected; two crons plus a local preflight is simpler and self-correcting.            |
-| Publish previews to `bitty/preview/` in R2       | Easier downloads and CDN caching; adds a Cloudflare credential and a second cleanup surface to the preview workflow.            | Deferred to `P-05`; v1 has no R2 contact.                                             |
-| Package-manager preview channels                 | Users could install previews through familiar tools; every channel would gain a prerelease version grammar and rollback burden. | Rejected by candidate; `P-04` is the owner decision.                                  |
+| Publish previews to `bitty/preview/` in R2       | Easier downloads and CDN caching; adds a Cloudflare credential and a second cleanup surface to the preview workflow.            | Refused by `P-05`; v1 has no R2 contact.                                              |
+| Package-manager preview channels                 | Users could install previews through familiar tools; every channel would gain a prerelease version grammar and rollback burden. | Rejected by `P-04`; no preview channel is admitted.                                   |
 | Rebuild or repackage preview artifacts as stable | Saves a stable build; risks shipping bytes that the stable pipeline never produced.                                             | Rejected; promote by retagging the commit and rebuilding through the stable pipeline. |
 | One preview tag per commit                       | Finer granularity; unbounded tags and releases, and no daily cadence.                                                           | Rejected.                                                                             |
-| Draft releases instead of prereleases            | Hidden from the public; still requires a tag and gives no installable preview.                                                  | Rejected.                                                                             |
-| Run the full stable matrix every night           | Maximum coverage; multiplies build minutes and failure probability for a channel that publishes no installers.                  | Rejected; three cells, with breadth as `P-07`.                                        |
+| Draft releases instead of prereleases            | Hidden from the public; still requires a tag and gives no installable preview.                                                  | Rejected; `P-03` chooses public prereleases.                                          |
+| Run the full stable matrix every night           | Maximum coverage; multiplies build minutes and failure probability for a channel that publishes no installers.                  | Rejected; `P-07` accepts three cells, and breadth needs a new decision.               |
 | Automatic retry of a failed night                | Fewer missed previews; can hide a persistent failure and publish a stale commit under a fresh date.                             | Rejected; fail visibly, fix forward, allow a manual dispatch on a later date.         |
 
 ## Affected contracts
 
-| Contract                                                                             | Effect                                                                                                                                                                                                                                                                                                              |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Release Distribution Matrix and Hardening Plan](../product/release-distribution.md) | Gains the preview row, the no-channel-installer rule, and the macOS preview archive reconciliation (a new `.tar.zst` shape with its own packer and verifier, because the stable matrix ships `Bitty-<VERSION>-universal.dmg`) when this contract is accepted; the stable matrix and timing gate do not change here. |
-| [Release Pre-Study](../product/release-pre-study.md)                                 | Its binary-preview research is superseded by this contract once accepted; until then it remains research and this document is the candidate.                                                                                                                                                                        |
-| [Release Ladder](../product/release-ladder.md)                                       | Unchanged maturity mapping. A preview is not `Implemented`, `Verified`, or `Compatible` evidence.                                                                                                                                                                                                                   |
-| [Release mechanics](../development/release-mechanics.md)                             | Crate publish order is unchanged; previews publish no crate.                                                                                                                                                                                                                                                        |
-| `bitty` `packaging/README.md`                                                        | R2 key layout unchanged. `bitty/preview/<TAG>/` is reserved only if `P-05` is accepted; stable key classes never move.                                                                                                                                                                                              |
-| `bitty` `.github/workflows/release.yml`                                              | Future hardening: an explicit stable-tag predicate on every publisher, independent of `needs`. The stable contract itself does not change.                                                                                                                                                                          |
-| `bitty` `scripts/install.sh` / `install.ps1`                                         | Unchanged; their prerelease rejection is part of the isolation proof.                                                                                                                                                                                                                                               |
-| `bitty` `scripts/tests/`                                                             | Gains the isolation test named in this contract when implementation is authorized.                                                                                                                                                                                                                                  |
-| [Specifications index](README.md)                                                    | Gains the Draft row for this candidate.                                                                                                                                                                                                                                                                             |
-| [bitty#2655](https://github.com/bitty-terminal/bitty/issues/2655)                    | This document answers the contract half. The implementation half remains unauthorized until acceptance.                                                                                                                                                                                                             |
+| Contract                                                                             | Effect                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Release Distribution Matrix and Hardening Plan](../product/release-distribution.md) | Records the preview channel as an accepted companion row: three cells, archives only, no channel installer, unsigned/unnotarized macOS preview archive, and the 14-release window. The stable matrix, timing gate, and hardening order do not change. |
+| [Release Pre-Study](../product/release-pre-study.md)                                 | Its `nightly-YYYYMMDD+sha` / `vX.Y.Z-preview.N+sha` sketch is superseded by this accepted contract; the section stays as the `8c88f3a` research record and carries a supersession pointer.                                                            |
+| [Release Ladder](../product/release-ladder.md)                                       | Unchanged maturity mapping. A preview is not `Implemented`, `Verified`, or `Compatible` evidence.                                                                                                                                                     |
+| [Release mechanics](../development/release-mechanics.md)                             | Crate publish order is unchanged; previews publish no crate.                                                                                                                                                                                          |
+| `bitty` `packaging/README.md`                                                        | R2 key layout unchanged. `bitty/preview/<TAG>/` is refused by `P-05`; a later reversal would reserve that prefix and never reuse a stable key class.                                                                                                  |
+| `bitty` `.github/workflows/release.yml`                                              | Implementation hardening: an explicit stable-tag predicate on every publisher, independent of `needs`. The stable release contract itself does not change.                                                                                            |
+| `bitty` `scripts/install.sh` / `install.ps1`                                         | Unchanged; their prerelease rejection is part of the isolation proof.                                                                                                                                                                                 |
+| `bitty` `scripts/tests/`                                                             | Gains the isolation test named in this contract when implementation is authorized.                                                                                                                                                                    |
+| [Specifications index](README.md)                                                    | Moves this document from the Draft row to the `Accepted` row.                                                                                                                                                                                         |
+| [bitty#2655](https://github.com/bitty-terminal/bitty/issues/2655)                    | This document answers the contract half. The implementation half is the follow-up slice under the same issue and remains unauthorized here.                                                                                                           |
 
-## Open points
+## Decision register
 
-Every item below is an owner decision. The candidate column is a default for
-review, not a decision made by this document.
+Every row is an owner decision taken on 2026-10-27. All sixteen were decided as
+the candidate recommended; no item is deferred and no item is silently resolved.
+The rationale records why the disposition holds, not only what it is.
 
-| ID   | Decision                                                                | Candidate default                                                                           | Why it is open                                                                                                                                                                                                       |
-| ---- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P-01 | Timezone, exact UTC schedule, and schedule owner                        | `Europe/Berlin`, two crons, release owner as schedule owner                                 | The product cadence names 23:30 local but never names a zone or an owner; the mapping changes with the zone.                                                                                                         |
-| P-02 | Lateness window and DST mechanism                                       | Two crons plus a local preflight; accept 23:25–23:59 local                                  | A wider window absorbs scheduler delay but moves the nominal time; a narrower window misses more nights.                                                                                                             |
-| P-03 | Whether previews are public                                             | Public GitHub prereleases, explicitly unsupported                                           | A public preview is discoverable and useful; it also invites support expectations and wider exposure of unfinished builds.                                                                                           |
-| P-04 | Whether package managers ever receive previews                          | Never                                                                                       | Any preview channel in Homebrew/Scoop/AUR/APT/Copr creates a second version grammar and a rollback path.                                                                                                             |
-| P-05 | Whether previews mirror to R2 under `bitty/preview/<TAG>/`              | No R2 contact in v1                                                                         | A mirror improves download reliability but adds a Cloudflare credential and a second retention surface.                                                                                                              |
-| P-06 | Retention count/window and prune-failure semantics                      | 14 releases; prune failure fails the run after the preview is published                     | Retention is a policy choice; failing the run on a prune error is stricter than some owners want.                                                                                                                    |
-| P-07 | Matrix breadth and smoke scope                                          | Three cells; Linux smoke required, Windows smoke candidate                                  | More cells increase coverage and cost; macOS has no headless launch proof.                                                                                                                                           |
-| P-08 | Multiple previews per day and manual dispatch policy                    | One per date; dispatch may run only on a later date, never backdate                         | A second same-day preview needs a suffix grammar the tag format does not define.                                                                                                                                     |
-| P-09 | Whether docs-only or non-binary commits trigger a preview               | Any advancement of `main` triggers                                                          | Path filtering reduces noise but needs a maintained list of build-relevant paths and can miss a real change.                                                                                                         |
-| P-10 | Signing, attestation, and SBOM posture                                  | Build attestation only; no signature, no SBOM                                               | Signing and SBOMs add supply-chain evidence but also secrets, tools, and a stable-parity gap.                                                                                                                        |
-| P-11 | Rule when the base version equals the newest stable tag                 | Require strictly greater; block until the next bump                                         | Equality would let previews run immediately but make them sort below the just-released stable.                                                                                                                       |
-| P-12 | Support policy and user expectation for previews                        | Unsupported, no upgrade path, download-and-run only                                         | The owner must decide how much documentation and triage preview users receive.                                                                                                                                       |
-| P-13 | Failed-night notification and visibility                                | Failed run is visible; no automatic issue; owner chooses notification                       | Notification volume and on-call expectations need an owner; schedule ownership itself sits in `P-01`.                                                                                                                |
-| P-14 | Promotion authority and checklist                                       | Release owner approves; same-commit retag; stable pipeline rebuilds                         | Who may promote and which evidence is mandatory is an authority decision, not a technical one.                                                                                                                       |
-| P-15 | Preview identity in archive filenames                                   | Bare base version in names; preview identity in the tag, release, and provenance (option a) | Option (b) needs both packers, the Windows ZIP verifier, and `check-version-output.sh` extended for a non-`X.Y.Z` version; option (a) reuses today's packers, but a filename alone no longer identifies the channel. |
-| P-16 | Whether a security fix may ship in a public preview before its advisory | No: hold the fix out of public previews until the stable release publishes the advisory     | Early preview testing helps, but a public preview discloses the vulnerability before users can update, and the security corpus does not settle it.                                                                   |
+| ID   | Decision                                                                | Disposition                                                                                                                                                                          | Rationale                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P-01 | Timezone, exact UTC schedule, and schedule owner                        | `Europe/Berlin`; Cron A `30 21 * * *` and Cron B `30 22 * * *`; the release owner is the schedule owner                                                                              | The cadence names 23:30 local and Berlin is the owner's zone. Two UTC slots keep 23:30 local in both offsets (CEST 21:30 UTC, CET 22:30 UTC) without a DST calendar table; the local preflight, not the cron, decides the slot. Tying schedule ownership to promotion authority leaves one owner answerable for both.                                                                       |
+| P-02 | Lateness window and DST mechanism                                       | Two crons plus a local preflight; accept 23:25–23:59 local; a run past local midnight is a missed night, never backdated                                                             | The 34-minute window absorbs ordinary scheduler delay while keeping the nominal 23:30 slot and the invariant that `YYYYMMDD` equals the local date on which the run passed preflight. A wider window would move the nominal time; a narrower one would miss more nights.                                                                                                                    |
+| P-03 | Whether previews are public                                             | Public GitHub pre-release (`prerelease: true`, `make_latest: false`), explicitly unsupported                                                                                         | Previews exist to widen testing and downloads; a private channel would need per-user grants and hide artifacts from the users the cadence targets. Exposure is bounded by the unsupported policy (`P-12`), the absence of installers (`P-04`), no signature (`P-10`), and no stable pointer.                                                                                                |
+| P-04 | Whether package managers ever receive previews                          | Never: no Homebrew, Scoop, AUR, APT, Copr, Cachix, or crates.io payload                                                                                                              | Every package channel would gain a second version grammar plus an upgrade and rollback path for builds that may be broken. The bootstrap scripts already reject any version containing `-`, so a preview package would be uninstallable through supported tooling anyway.                                                                                                                   |
+| P-05 | Whether previews mirror to R2 under `bitty/preview/<TAG>/`              | No R2 contact in v1; the preview workflow holds no Cloudflare credential; `bitty/preview/<TAG>/` stays reserved only                                                                 | GitHub Releases is sufficient for unsupported daily builds. An R2 mirror adds a Cloudflare credential and a second retention and cleanup surface to a channel that must stay unable to touch `bitty/install/` and `bitty/releases/`. A reversal is a new decision with its own bounds.                                                                                                      |
+| P-06 | Retention count/window and prune-failure semantics                      | 14 releases by creation time; 8 assets per release; ≤128 MiB per archive; ≤2 GiB preview assets; 7-day workflow artifacts; prune failure fails the run after the preview publishes   | Fourteen daily releases cover two weeks of evidence and stay in the low hundreds of MiB at observed archive sizes (under 10 MiB each), and the caps make growth bounded rather than incidental. Publishing first and then failing on a prune error keeps a usable build available while making an unpruned channel visible instead of silent.                                               |
+| P-07 | Matrix breadth and smoke scope                                          | Three Tier 1 cells (Linux x86_64 glibc, macOS arm64, Windows x64); Linux headless smoke and Windows unzip-and-run smoke required; no macOS launch smoke                              | These are the platforms the product claims first and they reuse the stable runners. macOS previews ship no `.app` or DMG, so a launch smoke would test a bundle that does not exist. More cells multiply cost for a channel that ships no installers and need a new decision.                                                                                                               |
+| P-08 | Multiple previews per day and manual dispatch policy                    | One preview per cadence date; a manual dispatch may publish only on a later local date; never backdate                                                                               | The tag grammar has no same-day suffix, so a second preview would need a new grammar and would break the one-tag-per-date idempotence that makes reruns safe. Date-stamped dispatch preserves the cadence-date invariant the preflight enforces.                                                                                                                                            |
+| P-09 | Whether docs-only or non-binary commits trigger a preview               | Any advancement of `main` triggers a preview; no path filtering                                                                                                                      | A maintained build-relevant path list drifts and can silently skip a real change. The date stamp already distinguishes builds, and a night with no new commit is a cheap no-op.                                                                                                                                                                                                             |
+| P-10 | Signing, attestation, and SBOM posture                                  | Build provenance attestation only; no codesign, `notarytool`, notarization, Authenticode, GPG, or Sigstore signature; no SBOM; macOS archives unsigned and unnotarized               | Stable 0.1.0 delivery is hash-only and its macOS DMG runs no `codesign`/`notarytool`, so signing only previews would imply an assurance the stable channel does not provide, and add secrets and tooling. Attestation is cheap, uses OIDC rather than a long-lived secret, and proves the producing commit. An SBOM would be an evidence asymmetry with no consumer until stable ships one. |
+| P-11 | Rule when the base version equals the newest stable tag                 | Require strictly greater than the newest stable tag; equality is a no-op and previews wait for the next bump                                                                         | Strictly greater keeps every preview sorting above every published stable and stops a preview of already-released code from reading as progress. The block is a successful no-op, not a failure, and clears on the bump that follows a stable release (at acceptance `0.0.29` == `v0.0.29`).                                                                                                |
+| P-12 | Support policy and user expectation for previews                        | Unsupported; no upgrade path; download-and-run from the pre-release page only; no SLA, backport, or migration                                                                        | A daily build cannot carry commitments the stable channel has not defined. Stating the policy in the release body and README keeps expectations honest; an issue is triaged only when it reproduces on a stable build.                                                                                                                                                                      |
+| P-13 | Failed-night notification and visibility                                | The failed workflow run is the only signal; no automatic issue, no chat or paging notification, no retry                                                                             | One owner watches the nightly result, and automatic issues or pages would create noise for a channel with no on-call commitment (`P-12`). A manual dispatch on a later date is the recovery path.                                                                                                                                                                                           |
+| P-14 | Promotion authority and checklist                                       | The release owner approves; the stable `vX.Y.Z` tag is created on the exact previewed commit; the stable pipeline rebuilds; preview assets are never promoted, copied, or relabelled | Retagging the commit keeps the preview as evidence and keeps stable bytes produced only by the stable pipeline, so promotion cannot smuggle preview build settings or artifacts into the stable channel. The no-move, no-reuse rule below makes the tag history auditable.                                                                                                                  |
+| P-15 | Preview identity in archive filenames                                   | Option (a): bare `<BASE_VERSION>` in names; preview identity in the tag, the release, and `provenance.json`; `BITTY_CHANNEL=preview` in the build                                    | The packers reject a non-`X.Y.Z` `--version`, `check-version-output.sh` asserts the archive-derived version, and `bitty --version` prints `CARGO_PKG_VERSION`, so option (b) would change both packers and the Windows verifier for no user-visible gain. The channel stays identifiable through `BITTY_CHANNEL` and provenance.                                                            |
+| P-16 | Whether a security fix may ship in a public preview before its advisory | No: an undisclosed security fix never enters a public preview; it is held on a private branch and merged to `main` when the stable release and advisory publish                      | A public preview discloses the vulnerability before users can update, which is exactly the window the fix is meant to close. Path filtering cannot detect a security fix, so the hold is an owner gate on the merge, and the skipped nightly slot is recorded in the step summary.                                                                                                          |
+
+Two rules from this register are restated because implementation can drift from
+them silently: the preview workflow writes **no** `latest.txt`, **no** R2 object
+under any prefix, and **no** package-channel state; and every stable publisher
+carries the explicit stable predicate described in `The weakest current link`,
+because `apt`, `copr`, and `nix` are default-on and gated only on
+`refs/tags/v*` today.
 
 ## Acceptance criteria
 
 This contract is complete when:
 
-1. `P-01` through `P-16` are decided, or each is explicitly deferred with a
-   named owner and date; no open item is silently resolved.
+1. `P-01` through `P-16` are decided in the `Decision register` (2026-10-27);
+   none is deferred and none is silently resolved.
 2. An independent reviewer records `APPROVE` on the diff.
 3. A security reviewer approves the isolation proof, specifically the default-on
    APT/Copr/Nix publishers, the broad `r2-mirror` condition, the no-credential
@@ -725,21 +804,23 @@ This contract is complete when:
 8. The document is English-only, self-contained, and free of external
    provenance references.
 
-Moving from candidate to accepted records the owner decisions and reviewer
-sign-offs in this document and updates `status` to `accepted`. Implementation
-remains a separate task with its own acceptance gates.
+Acceptance on 2026-10-27 records the owner decisions and the owner sign-off in
+this document and sets `status: accepted`; items 2 and 3 stay open until the
+pull request for this delivery and the implementation task are reviewed.
+Implementation remains a separate task with its own acceptance gates.
 
 ## P0 Review Sign-off
 
-Not signed. This is a candidate; owner decisions and the security review are
-promotion gates, not formalities.
+The owner decision is recorded. The reviewer rows remain gates for the pull
+request that carries this delivery and for the implementation task, not for the
+owner's decision itself.
 
-| Reviewer                     | Required for                                                                             | Status  |
-| ---------------------------- | ---------------------------------------------------------------------------------------- | ------- |
-| Project initiator (owner)    | `P-01` through `P-16`, schedule ownership, and final promotion                           | Pending |
-| Security reviewer            | Credential scope, tag confusion, channel isolation, provenance, retention, and promotion | Pending |
-| Release engineering reviewer | Schedule mechanics, matrix, artifact naming, gate selection, and promotion runbook       | Pending |
-| Docs curator                 | Document spine, index row, language, status, and cross-document synchronization          | Pending |
+| Reviewer                     | Required for                                                                             | Status                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Project initiator (owner)    | `P-01` through `P-16`, schedule ownership, and the promotion rule                        | Accepted 2026-10-27; all sixteen decided as recommended             |
+| Security reviewer            | Credential scope, tag confusion, channel isolation, provenance, retention, and promotion | Pending; required before any preview workflow merges (`bitty#2655`) |
+| Release engineering reviewer | Schedule mechanics, matrix, artifact naming, gate selection, and promotion runbook       | Pending; required before any preview workflow merges (`bitty#2655`) |
+| Docs curator                 | Document spine, index row, language, status, and cross-document synchronization          | Pending; this delivery is submitted for review                      |
 
 ## References
 
