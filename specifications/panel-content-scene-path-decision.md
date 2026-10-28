@@ -96,9 +96,10 @@ identity and bounded content, but no declared route to the frame.
 
 ## Implementation status
 
-The recorded gap is historical. The Core mechanism and the present-loop
-consumption now exist as `Implemented-only` (not `Verified`), but no shipped
-binary reaches them yet:
+The recorded gap is historical. The Core mechanism, the present-loop
+consumption, the production scene host, and the `ui.rich` attach route now
+exist as `Implemented-only` (not `Verified`), and a shipped binary reaches
+them:
 
 - **Paint mechanism.** `bitty-render::scene` turns an admitted `Scene` into a
   bounded, leaf-clipped paint list: fills, overlay-seam text, and image
@@ -126,21 +127,37 @@ binary reaches them yet:
   the frame and the scene text is not published to the window's accessibility
   tree.
 
-Two preconditions keep these slots unreachable in a shipped binary, tracked as
-`bitty` #2785:
+- **Production ownership and startup install.** The composition root
+  (`bitty-terminal` plugin discovery) constructs one `PanelRuntime` and one
+  `bitty-runtime::scene_host::SceneHost` over it, installs the scene backend
+  before activation, and returns the shared handle to the app. The app installs
+  that same handle into `Runtime` at startup, and the scene panel is bound to
+  the Core-published focused leaf, so `placement_panel_of(view)` resolves in a
+  shipped build. The plugin never selects a view, panel, workspace, or tier.
+  Panels with no attached scene keep the grid path unchanged.
+- **`ui.rich` mount attach.** `bitty.ui.mount("terminal", tree)` and
+  `bitty.ui.update(handle, tree)` read through the v2 rich reader
+  (`read_rich_component`), convert through `scene_bridge::mount_rich_node`, and
+  attach with `PanelRuntime::attach_panel_scene` under `SCN-1..5`. Scene
+  handles are generation-owned and encoded so a released handle still reports
+  `Ok(false)` instead of a parse error. `suspend`, `dispose`, and `reload`
+  release the generation's scene, placement bind, and Core-owned panel
+  through `clear_ui_blocks`; a second plugin generation cannot displace an
+  attached scene (`E_UI_UNAVAILABLE`, no silent replacement).
+- **Render evidence.** The shipped composition root is exercised end to end by
+  a plugin mount through the real Lua path: one presented frame asserts the
+  bounded paint list, damage clipped to the leaf content rect, pixels changed
+  only inside that rect, accessibility parity with an independently re-derived
+  paint list, an update on the same handle, and a suspend that clears the
+  scene, the placement bind, and the panel (`bitty` #2799, CTX-1641).
 
-1. **Production ownership and startup install.** No production code constructs
-   a `PanelRuntime`; `Runtime::install_scene_host` has test callers only, and
-   the app owns a bare `PanelRegistry` with no placement binds, so
-   `placement_panel_of(view)` cannot resolve a panel leaf.
-2. **`ui.rich` mount attach.** The plugin mount path still validates through
-   the v1 reader and never calls `scene_bridge::mount_rich_node` /
-   `PanelRuntime::attach_panel_scene`, so no plugin mount attaches a `Scene`.
-
-Until both land and render evidence is captured, no shipped frame paints a
-`Scene`; this record stays **draft**, the gap-analysis row stays **confirmed**,
-and plugin rich content must not be described as shipping. `bitty` #2760 stays
-open until both preconditions land; the present-loop half is `bitty` #2784.
+What remains open is **image-node forwarding**: `SceneNode::Image` is admitted
+and counted as a placement reference in the paint list, but the present path
+does not forward it to the admitted image plane or decode/blit it. That is a
+separate slice; until it lands, do not describe scene images as painted. The
+record also stays **draft** and the gap-analysis row stays **confirmed** until
+an acceptance wave promotes it; `bitty` #2760 remains open for the image
+forwarding and decision acceptance. The present-loop half is `bitty` #2784.
 
 ## Direction
 
