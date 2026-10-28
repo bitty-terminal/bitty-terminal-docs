@@ -537,8 +537,8 @@ Rules:
   `client_correlation_digest`. A client presents it in `daemon.negotiate`; a
   successful consume adds `session.host` to that connection's scopes. Mint,
   consume, expiry, and revoke are attributed. The operator may revoke a grant
-  by `grant_id`; a consumed, expired, wrong-peer, or revoked grant is
-  `Denied/ConsentRequired`.
+  by `grant_id`; a consumed, expired, wrong-peer, wrong-correlation, or revoked
+  grant is `Denied/ConsentRequired`.
 - The operator capability is an intent gate, not an isolation boundary: a
   same-uid client that can read the capability file can mint its own host grant
   and thereby obtain `session.host`. The consent channel exists to make that
@@ -668,12 +668,17 @@ Operator capability:
 
 - `client_id` is a 128-bit random value assigned per connection at handshake.
   It is never supplied by the client and never used as a durable identity.
-- `client_correlation` is an optional, bounded (128 bytes) consumer value used
-  only to correlate reconnects in audit. It must be valid UTF-8 with no control
-  characters; the daemon hashes it on receipt and records only a truncated 128-bit
-  SHA-256 digest as `client_correlation_digest`. The raw value is never stored,
-  logged, echoed, or evaluated for authorization. A malformed value is refused
-  with `InvalidRequest` rather than normalized.
+- `client_correlation` is an optional, bounded (128 bytes) consumer value. It
+  must be valid UTF-8 with no control characters; the daemon hashes it on
+  receipt and records only the 32-hex (128-bit) SHA-256 digest as
+  `client_correlation_digest`. The raw value is never stored, logged, or
+  echoed. The digest is audit metadata **and** the optional grant-binding
+  condition: a host grant minted with `client_correlation_digest`
+  (`daemon.host_grant`) and an observer grant minted with
+  `observer_correlation_digest` (`session.grant`) are usable only from the
+  connection whose negotiated digest matches. The value is not a scope, does
+  not identify the client, and grants nothing by itself. A malformed value is
+  refused with `InvalidRequest` rather than normalized.
 - The server records the authenticated peer identity (Unix uid or Windows SID),
   the peer pid, and the process start time at handshake. The pid is
   informational because it can be reused.
