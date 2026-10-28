@@ -147,9 +147,13 @@ else in this record is implemented.
   `E_UI_UNAVAILABLE` because this build has no vertical band host; no handle is
   returned, no block is stored, and no columns are reserved
   (`bitty#2234`, CTX-1341).
-- `terminal` mounts fail closed with `E_UI_UNAVAILABLE` (no terminal-attached
-  block host). `tabline` fails closed with `E_UI_UNAVAILABLE` (reserved for
-  panel tabs, PW-10).
+- `terminal` is the terminal-attached scene slot: its value is read with the
+  v2 rich vocabulary (`SceneNode` kinds, `SCN-1..5`) and attached to the
+  focused leaf by the Core scene host (`bitty` #2799, CTX-1641). The scene
+  composes inside the leaf content rect and never replaces grid presentation,
+  the cursor, or scrollback. A mount with no installed scene host fails closed
+  with `E_UI_UNAVAILABLE`. `tabline` fails closed with `E_UI_UNAVAILABLE`
+  (reserved for panel tabs, PW-10).
 - `statusline` is not a slot in this build. Core removed it as a breaking
   change in CTX-1140 (`bitty#1962`); the name is rejected as an unknown slot
   with `E_UI_COMPONENT_INVALID`, and status presentation is a `bottom`-band

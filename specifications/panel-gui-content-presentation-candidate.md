@@ -166,11 +166,14 @@ implemented.
   256-event queue, 4096-byte events, drop-oldest overflow, and Core-owned
   release on submit, cancel, focus switch, unload, crash, and timeout. It is
   modal, transient, and counted in the `4+1` envelope; it is not panel content.
-- The Scene-consumption path is not wired to the app paint path:
-  `cw_present` derives `ScenePresent` and `NonTerminalPresent`, but no
-  `bitty-render`, `bitty-runtime`, or `bitty-terminal` consumer paints a
-  panel's scene. Non-terminal panel content still degrades to the per-leaf grid
-  snapshot. This is the dependency recorded by
+- The Scene-consumption path is wired to the app paint path for the
+  `terminal` slot: the composition root installs the Core scene host, and
+  `bitty.ui.mount("terminal", tree)`/`ui.update` attach an admitted `Scene` to
+  the focused leaf, which the present loop paints inside the leaf content rect
+  (`bitty` #2799, CTX-1641). Scene images are admitted and counted but not yet
+  forwarded to the image plane. This candidate's panel content-kind swap
+  (replacing a panel's terminal presentation) is **not** implemented by that
+  slice: it remains the dependency recorded by
   [OQ-051](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)
   and the [Panel Content Scene Path Decision](panel-content-scene-path-decision.md).
 - The PTY pipeline already drains the primary session and every pane session on
