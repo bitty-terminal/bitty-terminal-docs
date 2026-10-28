@@ -97,30 +97,50 @@ identity and bounded content, but no declared route to the frame.
 ## Implementation status
 
 The recorded gap is historical. The Core mechanism and the present-loop
-consumption now exist as `Implemented-only` (not `Verified`):
+consumption now exist as `Implemented-only` (not `Verified`), but no shipped
+binary reaches them yet:
 
 - **Paint mechanism.** `bitty-render::scene` turns an admitted `Scene` into a
   bounded, leaf-clipped paint list: fills, overlay-seam text, and image
   placement references, with typed refusal past the paint budgets and one
   bounded damage rectangle (`bitty` PR #2762, CTX-1628).
-- **Present loop.** The shipped `bitty-runtime` present path resolves each
-  visible panel leaf's compositor-owned content rect and live cell metrics,
-  calls `PanelRuntime::scene_paint_for`, and composes the list into the frame:
-  fills join the leaf fill layer, glyphs use the existing overlay text seam,
-  image placements stay references, and damage enters the frame descriptor
-  through `SnapshotDamage::with_extra_regions`. A typed refusal paints
-  nothing, keeps the previously presented scene for the unchanged surface, and
-  is attributed (`bitty` CTX-1630).
-- **Accessibility.** The same paint list's lines are pushed through
-  `UiSnapshotHost::push_scene_text`, so the projected text is exactly the
-  painted text under the existing bounds.
+- **Present loop.** The `bitty-runtime` present path resolves each visible
+  panel leaf's compositor-owned content rect and live cell metrics, calls
+  `PanelRuntime::scene_paint_for`, and composes the list into the frame when a
+  `PanelRuntime` scene host is installed: fills join the leaf fill layer,
+  glyphs use the existing overlay text seam, image placements stay references,
+  and damage enters the frame descriptor through
+  `SnapshotDamage::with_extra_regions`. That damage only changes paint work on
+  a partial plan; the combined present still paints a full frame, where the
+  full-surface rectangle subsumes every scene rectangle. A typed refusal paints
+  nothing, keeps the previously presented scene while the leaf surface, clip,
+  fade, occluder set, and atlas epoch are unchanged, and is attributed
+  (`bitty` CTX-1630).
+- **Accessibility.** Per-frame parity evidence, not a live tree. The present
+  loop pushes the same paint list's lines through
+  `UiSnapshotHost::push_scene_text` into a scratch host and records the result
+  in `Runtime::scene_frame()`, so recorded text can be compared with the paint
+  list under the existing bounds. The projection is built before float
+  occlusion filters the glyph layer, deliberately: occlusion is visual, so
+  text behind a higher float stays projected. The scratch host is dropped with
+  the frame and the scene text is not published to the window's accessibility
+  tree.
 
-What remains open is the **producer** side: the `ui.rich` plugin mount path
-still validates through the v1 reader and does not attach a `Scene` to its
-panel, so no live plugin mount reaches these slots in a shipped binary yet.
-Until that mount slice lands and render evidence is captured, this record stays
-**draft**, the gap-analysis row stays **confirmed**, and plugin rich content
-must not be described as shipping.
+Two preconditions keep these slots unreachable in a shipped binary, tracked as
+`bitty` #2785:
+
+1. **Production ownership and startup install.** No production code constructs
+   a `PanelRuntime`; `Runtime::install_scene_host` has test callers only, and
+   the app owns a bare `PanelRegistry` with no placement binds, so
+   `placement_panel_of(view)` cannot resolve a panel leaf.
+2. **`ui.rich` mount attach.** The plugin mount path still validates through
+   the v1 reader and never calls `scene_bridge::mount_rich_node` /
+   `PanelRuntime::attach_panel_scene`, so no plugin mount attaches a `Scene`.
+
+Until both land and render evidence is captured, no shipped frame paints a
+`Scene`; this record stays **draft**, the gap-analysis row stays **confirmed**,
+and plugin rich content must not be described as shipping. `bitty` #2760 stays
+open until both preconditions land; the present-loop half is `bitty` #2784.
 
 ## Direction
 
