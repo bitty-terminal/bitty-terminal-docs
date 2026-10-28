@@ -37,7 +37,7 @@ sidebar_order: 83
 > catalog below, and runs the conformance corpus through both the reference fake
 > and the real binary on Linux x86_64. The security-sign-off corrections this
 > revision records are in review as PR #2794 (`0a584577`) plus a follow-up that
-> refuses a post-flush pre-handshake frame; the merged corpus carries 36 vectors
+> pins the pre-write refusal boundary; the merged corpus carries 36 vectors
 > and PR #2794 adds five. Two catalog methods are not served:
 > `daemon.orphans.verify` refuses `UnsupportedCapability` and `session.resize`
 > refuses `ScopeViolation` because the daemon grants no `terminal.*` scope. No
@@ -466,13 +466,14 @@ negotiate.
   one — is refused with `Denied/AlreadyNegotiated` whose response omits `id`,
   and the connection closes after that refusal frame drains. The queued bytes
   are never read, parsed, or resumed, so a partial second frame cannot become a
-  fresh request and no pipelined method is ever served after the handshake. A
-  post-flush pending-input check refuses the same way: bytes already pending
-  when the negotiate response has drained are refused with the same no-`id`
-  result instead of being reinterpreted as a post-handshake request. This
-  refusal and the over-long-`id` refusal are the only two no-`id` shapes; both
-  are consequences of refusing bytes the server must not parse. There is still
-  exactly one handshake per connection.
+  fresh request and no pipelined method is ever served after the handshake.
+  The decision is taken at the last instant before the negotiate response's
+  first byte is written: bytes queued at that point are refused as a whole,
+  never parsed. A byte that arrives after the response write begins is a
+  post-handshake frame; it is parsed only once the connection is negotiated and
+  is never refused on that basis. This refusal and the over-long-`id` refusal
+  are the only two no-`id` shapes; both are consequences of refusing bytes the
+  server must not parse. There is still exactly one handshake per connection.
 - The handshake completes within `negotiate_timeout_ms` and may send at most
   `pre_auth_max_bytes` before the response. Exceeding the deadline closes the
   connection with one aggregated `Timeout` audit record and no response frame;
