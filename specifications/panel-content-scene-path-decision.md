@@ -15,14 +15,16 @@ sidebar_order: 43
 
 > Status: **draft** decision record resolving
 > [OQ-051](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
-> The [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md) records
+> The [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md) recorded
 > the gap as **confirmed** — "Panel is not Terminal: non-terminal panels
-> degrade to a character grid" — because the bounded `SceneNode` model is not
-> consumed by the render pipeline and panel content rides the per-leaf grid
+> degrade to a character grid" — because the bounded `SceneNode` model was not
+> consumed by the render pipeline and panel content rode the per-leaf grid
 > snapshot path. This record states the candidate direction that closes the
 > gap, names what each accepted contract keeps owning, and lists what a
 > successor acceptance must decide. It accepts nothing, promotes nothing to
-> **Verified** or **Compatible**, and changes no accepted text.
+> **Verified** or **Compatible**, and changes no accepted text. The paint and
+> present-loop mechanism has since landed (`Implemented-only`); see
+> [Implementation status](#implementation-status).
 
 ## Purpose and scope
 
@@ -91,6 +93,34 @@ The gap analysis records, at `bitty` head `2a26480`:
 
 That combination is why non-terminal panels currently degrade: they have typed
 identity and bounded content, but no declared route to the frame.
+
+## Implementation status
+
+The recorded gap is historical. The Core mechanism and the present-loop
+consumption now exist as `Implemented-only` (not `Verified`):
+
+- **Paint mechanism.** `bitty-render::scene` turns an admitted `Scene` into a
+  bounded, leaf-clipped paint list: fills, overlay-seam text, and image
+  placement references, with typed refusal past the paint budgets and one
+  bounded damage rectangle (`bitty` PR #2762, CTX-1628).
+- **Present loop.** The shipped `bitty-runtime` present path resolves each
+  visible panel leaf's compositor-owned content rect and live cell metrics,
+  calls `PanelRuntime::scene_paint_for`, and composes the list into the frame:
+  fills join the leaf fill layer, glyphs use the existing overlay text seam,
+  image placements stay references, and damage enters the frame descriptor
+  through `SnapshotDamage::with_extra_regions`. A typed refusal paints
+  nothing, keeps the previously presented scene for the unchanged surface, and
+  is attributed (`bitty` CTX-1630).
+- **Accessibility.** The same paint list's lines are pushed through
+  `UiSnapshotHost::push_scene_text`, so the projected text is exactly the
+  painted text under the existing bounds.
+
+What remains open is the **producer** side: the `ui.rich` plugin mount path
+still validates through the v1 reader and does not attach a `Scene` to its
+panel, so no live plugin mount reaches these slots in a shipped binary yet.
+Until that mount slice lands and render evidence is captured, this record stays
+**draft**, the gap-analysis row stays **confirmed**, and plugin rich content
+must not be described as shipping.
 
 ## Direction
 
