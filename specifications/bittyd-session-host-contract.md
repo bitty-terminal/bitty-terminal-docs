@@ -534,7 +534,9 @@ Rules:
   grant (default `host_grant_ttl_ms`, at most the system maximum) and returns
   its non-secret `grant_id` plus the bearer value once. The grant is bound to
   the authenticated peer uid or SID that presents it and optionally to a
-  `client_correlation_digest`. A client presents it in `daemon.negotiate`; a
+  `client_correlation_digest` naming the derived digest. The minting caller
+  supplies that digest; the later client presents the raw `client_correlation`
+  at `daemon.negotiate` and the daemon derives the digest to compare. A
   successful consume adds `session.host` to that connection's scopes. Mint,
   consume, expiry, and revoke are attributed. The operator may revoke a grant
   by `grant_id`; a consumed, expired, wrong-peer, wrong-correlation, or revoked
@@ -669,14 +671,19 @@ Operator capability:
 - `client_id` is a 128-bit random value assigned per connection at handshake.
   It is never supplied by the client and never used as a durable identity.
 - `client_correlation` is an optional, bounded (128 bytes) consumer value. It
-  must be valid UTF-8 with no control characters; the daemon hashes it on
-  receipt and records only the 32-hex (128-bit) SHA-256 digest as
-  `client_correlation_digest`. The raw value is never stored, logged, or
-  echoed. The digest is audit metadata **and** the optional grant-binding
-  condition: a host grant minted with `client_correlation_digest`
-  (`daemon.host_grant`) and an observer grant minted with
-  `observer_correlation_digest` (`session.grant`) are usable only from the
-  connection whose negotiated digest matches. The value is not a scope, does
+  must be valid UTF-8 with no control characters. The daemon derives
+  `client_correlation_digest` on receipt as the first 16 bytes of `SHA-256` over
+  `prefix` + `raw_value`, where `prefix` is the 28 ASCII bytes
+  `bittyd:client_correlation:v1` plus one NUL byte (`0x00`), rendered as 32
+  lowercase hex characters. The domain separation is part of the contract: a
+  plain `SHA-256` of the raw value, or any other truncation, never matches. The
+  raw value is never stored, logged, or echoed. The digest is audit metadata
+  **and** the optional grant-binding condition: `daemon.host_grant`
+  (`client_correlation_digest`) and `session.grant`
+  (`observer_correlation_digest`) carry the derived digest as the binding, and
+  each grant is usable only from the connection whose derived digest matches.
+  The mint carries the digest; the later connection presents the raw value at
+  `daemon.negotiate` and the daemon derives it. The value is not a scope, does
   not identify the client, and grants nothing by itself. A malformed value is
   refused with `InvalidRequest` rather than normalized.
 - The server records the authenticated peer identity (Unix uid or Windows SID),
