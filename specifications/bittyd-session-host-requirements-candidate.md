@@ -146,19 +146,19 @@ wire spelling.
 
 ### 4.1 Handshake and connection
 
-| Field (candidate)     | Semantics                                                                                            | Authority                         | Wheel requirement |
-| --------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------- | ----------------- |
-| `service_api_version` | Contract version of the service, plus the supported client range.                                    | Server, immutable per connection  | `R-S01`           |
-| `daemon_instance_id`  | Fresh opaque value per daemon start; changes on every restart.                                       | Server, immutable                 | `R-S02`           |
-| `daemon_pid`          | Observational only; never a signal or authority input.                                               | Server                            | `R-S03`           |
-| `server_identity`     | Observational OS identity and endpoint ownership facts; tamper detection, not server authentication. | Server                            | `R-S04`           |
-| `peer_identity`       | Authenticated peer facts: OS identity and process id for attribution.                                | Server, from the transport        | `R-S05`           |
-| `client_id`           | Server-assigned identity for this connection. Client-supplied values are never authority.            | Server                            | `R-S06`           |
-| `client_correlation`  | Optional consumer-supplied value, hashed on receipt; only the digest is audited.                     | Client, ignored for authorization | `R-S07`           |
-| `scopes`              | Effective scopes granted to this client, evaluated server-side.                                      | Server                            | `R-S08`           |
-| `capabilities`        | Advertised feature set, including whether worker sessions are hosted at all.                         | Server                            | `R-S09`           |
-| `limits`              | Advertised frame, queue, attach, retention, and timeout bounds.                                      | Server                            | `R-S10`           |
-| `server_monotonic_ms` | Monotonic server clock for age computation without trusting the client clock.                        | Server                            | `R-S11`           |
+| Field (candidate)     | Semantics                                                                                                                                                            | Authority                                        | Wheel requirement |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ----------------- |
+| `service_api_version` | Contract version of the service, plus the supported client range.                                                                                                    | Server, immutable per connection                 | `R-S01`           |
+| `daemon_instance_id`  | Fresh opaque value per daemon start; changes on every restart.                                                                                                       | Server, immutable                                | `R-S02`           |
+| `daemon_pid`          | Observational only; never a signal or authority input.                                                                                                               | Server                                           | `R-S03`           |
+| `server_identity`     | Observational OS identity and endpoint ownership facts; tamper detection, not server authentication.                                                                 | Server                                           | `R-S04`           |
+| `peer_identity`       | Authenticated peer facts: OS identity and process id for attribution.                                                                                                | Server, from the transport                       | `R-S05`           |
+| `client_id`           | Server-assigned identity for this connection. Client-supplied values are never authority.                                                                            | Server                                           | `R-S06`           |
+| `client_correlation`  | Optional consumer-supplied value; the raw value is never stored or echoed, and only the 32-hex digest is recorded for audit and the optional grant binding (`D-08`). | Client; never a scope, an identity, or authority | `R-S07`           |
+| `scopes`              | Effective scopes granted to this client, evaluated server-side.                                                                                                      | Server                                           | `R-S08`           |
+| `capabilities`        | Advertised feature set, including whether worker sessions are hosted at all.                                                                                         | Server                                           | `R-S09`           |
+| `limits`              | Advertised frame, queue, attach, retention, and timeout bounds.                                                                                                      | Server                                           | `R-S10`           |
+| `server_monotonic_ms` | Monotonic server clock for age computation without trusting the client clock.                                                                                        | Server                                           | `R-S11`           |
 
 `R-S01`: A version mismatch is a typed refusal before any session operation.
 There is no "best effort" mode and no downgrade by feature probing.
