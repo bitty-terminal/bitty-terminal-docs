@@ -1043,6 +1043,11 @@ freeze does not re-spell framing, chunking, or correlation mechanics.
 | Success   | `{"v": 1, "id": <string>, "ok": true, "result": <object>}`                                                              |
 | Refusal   | `{"v": 1, "id": <string>, "ok": false, "error": {"class": <string>, "code": <string>, "message": <string>, "counts"?}}` |
 
+A request-deadline `Timeout` adds two keys to `error`: `request_id` (string, the
+echoed envelope `id`) and `timeout_ms` (u64, the effective
+`request_timeout_ms`). The negotiate-deadline `Timeout` is audit-only and has no
+response frame, so it carries neither key on the wire.
+
 Rules that apply to every method:
 
 1. `v` is the integer `1`. `id` is 1 to 64 bytes and is echoed; it is an opaque
@@ -1052,7 +1057,10 @@ Rules that apply to every method:
    lowercase dotted name of at most 128 bytes. `params` is a JSON object when
    present; an absent or `null` `params` is the same as an empty object.
 2. Every served success `result` is a JSON object. A refusal is never a partial
-   result and applies nothing; the `error.code` vocabulary is the closed set in
+   result and applies nothing, with one exception: the request-deadline
+   `Timeout` is decided after the handler ran, so a timed-out effect may already
+   have applied (reconcile with `session.status` or replay a keyed request). The
+   `error.code` vocabulary is the closed set in
    [Refusal taxonomy](#refusal-taxonomy), and `counts` is
    `{"actual": <u64>, "limit": <u64>}` when present.
 3. Every value is case-sensitive. An identifier in the wrong case is
@@ -1382,19 +1390,19 @@ not authority: it never selects a signal target or grants a lease.
 
 Controller success result:
 
-| Result key            | Type            | Presence | Notes                                                                                                                                                    |
-| --------------------- | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `session`             | object          | required | Snapshot after the claim.                                                                                                                                |
-| `attach_id`           | string          | required | 32 lowercase hex.                                                                                                                                        |
-| `role`                | string          | required | `controller`.                                                                                                                                            |
-| `lease_expires_at_ms` | u64             | required | Server monotonic milliseconds.                                                                                                                           |
-| `control_token`       | string          | required | 64 lowercase hex; the rotated token, returned once.                                                                                                      |
-| `replayed`            | bool            | required | `false`.                                                                                                                                                 |
-| `scopes`              | array of string | required | Effective connection scopes at attach: service scopes in catalog order, then transport scopes. Not a per-role lease authority set.                       |
-| `server_monotonic_ms` | u64             | required | The request's server monotonic clock.                                                                                                                    |
-| `backlog`             | array           | optional | Present only when the connection negotiated `events: true`; the retained ring routed to the new lease, bounded by the effective `max_lease_queue_bytes`. |
-| `backlog_truncated`   | bool            | optional | Present with `backlog`; `true` when the ring or the byte-bound replay dropped older events.                                                              |
-| `earliest_revision`   | u64 or null     | optional | Present with `backlog`; the first revision the replay covers, or `null` for an empty replay.                                                             |
+| Result key            | Type            | Presence | Notes                                                                                                                                                                                                                                                                                                           |
+| --------------------- | --------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session`             | object          | required | Snapshot after the claim.                                                                                                                                                                                                                                                                                       |
+| `attach_id`           | string          | required | 32 lowercase hex.                                                                                                                                                                                                                                                                                               |
+| `role`                | string          | required | `controller`.                                                                                                                                                                                                                                                                                                   |
+| `lease_expires_at_ms` | u64             | required | Server monotonic milliseconds.                                                                                                                                                                                                                                                                                  |
+| `control_token`       | string          | required | 64 lowercase hex; the rotated token, returned once.                                                                                                                                                                                                                                                             |
+| `replayed`            | bool            | required | `false`.                                                                                                                                                                                                                                                                                                        |
+| `scopes`              | array of string | required | Effective connection scopes at attach: service scopes in catalog order, then transport scopes. Not a per-role lease authority set.                                                                                                                                                                              |
+| `server_monotonic_ms` | u64             | required | The request's server monotonic clock.                                                                                                                                                                                                                                                                           |
+| `backlog`             | array of object | optional | Present only when the connection negotiated `events: true`; the retained ring routed to the new lease, bounded by the effective `max_lease_queue_bytes`; each element is one event body (the `event` object of [Event schema and capability](#event-schema-and-capability) without the per-frame `v` and `id`). |
+| `backlog_truncated`   | bool            | optional | Present with `backlog`; `true` when the ring or the byte-bound replay dropped older events.                                                                                                                                                                                                                     |
+| `earliest_revision`   | u64 or null     | optional | Present with `backlog`; the first revision the replay covers, or `null` for an empty replay.                                                                                                                                                                                                                    |
 
 Controller replay result: `{"session": object, "attach_id": string or null,
 "role": "controller", "replayed": true, "not_attached": bool,
@@ -1404,18 +1412,18 @@ resolves, and `not_attached` is then `true`.
 
 Observer success result:
 
-| Result key            | Type            | Presence | Notes                                                                                                                                                    |
-| --------------------- | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `session`             | object          | required | Snapshot after the attach and grant consume.                                                                                                             |
-| `attach_id`           | string          | required | 32 lowercase hex.                                                                                                                                        |
-| `role`                | string          | required | `observer`.                                                                                                                                              |
-| `lease_expires_at_ms` | u64             | required | Server monotonic milliseconds.                                                                                                                           |
-| `replayed`            | bool            | required | `false`.                                                                                                                                                 |
-| `scopes`              | array of string | required | Effective connection scopes at attach: service scopes in catalog order, then transport scopes. Not a per-role lease authority set.                       |
-| `server_monotonic_ms` | u64             | required | The request's server monotonic clock.                                                                                                                    |
-| `backlog`             | array           | optional | Present only when the connection negotiated `events: true`; the retained ring routed to the new lease, bounded by the effective `max_lease_queue_bytes`. |
-| `backlog_truncated`   | bool            | optional | Present with `backlog`; `true` when the ring or the byte-bound replay dropped older events.                                                              |
-| `earliest_revision`   | u64 or null     | optional | Present with `backlog`; the first revision the replay covers, or `null` for an empty replay.                                                             |
+| Result key            | Type            | Presence | Notes                                                                                                                                                                                                                                                                                                           |
+| --------------------- | --------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session`             | object          | required | Snapshot after the attach and grant consume.                                                                                                                                                                                                                                                                    |
+| `attach_id`           | string          | required | 32 lowercase hex.                                                                                                                                                                                                                                                                                               |
+| `role`                | string          | required | `observer`.                                                                                                                                                                                                                                                                                                     |
+| `lease_expires_at_ms` | u64             | required | Server monotonic milliseconds.                                                                                                                                                                                                                                                                                  |
+| `replayed`            | bool            | required | `false`.                                                                                                                                                                                                                                                                                                        |
+| `scopes`              | array of string | required | Effective connection scopes at attach: service scopes in catalog order, then transport scopes. Not a per-role lease authority set.                                                                                                                                                                              |
+| `server_monotonic_ms` | u64             | required | The request's server monotonic clock.                                                                                                                                                                                                                                                                           |
+| `backlog`             | array of object | optional | Present only when the connection negotiated `events: true`; the retained ring routed to the new lease, bounded by the effective `max_lease_queue_bytes`; each element is one event body (the `event` object of [Event schema and capability](#event-schema-and-capability) without the per-frame `v` and `id`). |
+| `backlog_truncated`   | bool            | optional | Present with `backlog`; `true` when the ring or the byte-bound replay dropped older events.                                                                                                                                                                                                                     |
+| `earliest_revision`   | u64 or null     | optional | Present with `backlog`; the first revision the replay covers, or `null` for an empty replay.                                                                                                                                                                                                                    |
 
 `scopes` is the **effective connection set**, not the lease's authority. It is
 the same set the handshake reports, evaluated at attach time; an observer result
@@ -1922,6 +1930,7 @@ code.
 | Reserved ambient field `auth`, `scope`, or `role` at depth 1                              | `InvalidRequest`, never ignored as an authority field                                                                                                               |
 | Well-formed unknown method field                                                          | Ignored, except the method-scoped cross-fields and the reserved names above                                                                                         |
 | Negotiate deadline                                                                        | `Timeout` in the audit record; no response frame; connection closes                                                                                                 |
+| Post-handshake request completed at or past `request_timeout_ms`                          | `Timeout` with `error.request_id` and `error.timeout_ms`; the connection stays open and the effect may have applied                                                 |
 | Unknown, collected, or invisible session                                                  | `NotFound` (live-vacant-control carve-out aside)                                                                                                                    |
 | Invariant failure without a typed service result                                          | `Internal`; fail closed                                                                                                                                             |
 
