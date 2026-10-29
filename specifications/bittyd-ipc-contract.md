@@ -160,7 +160,7 @@ surface that merge actually serves:
   under the method that raised it (`daemon.orphans.verify`).
 - **Unsupported cell.** The method answers `Denied/UnsupportedCapability` after
   the scope and peer checks and applies nothing.
-- **Status.** `daemon.status.orphans` is a served object on every cell, not the
+- **Status.** `daemon.status.orphans` is a served object on every served cell, not the
   earlier `{"verify": "deferred"}` placeholder. Its exact keys are frozen under
   [`daemon.status`](#daemonstatus); the served branch reports
   `verify: "served"`, `mechanism`, `claim`, `fallback`, and the stored
@@ -313,7 +313,7 @@ satisfies a P0 control.
 - **Orphans served:** `src/orphan/runtime.rs` opens the owner-private journal
   only when the containment report is enforced; `src/service/dispatch.rs`
   serves `daemon.orphans.verify` with the `verify` and `retire` actions and
-  renders `daemon.status.orphans` on every cell. A verify pass may signal only
+  renders `daemon.status.orphans` on every served cell. A verify pass may signal only
   an exact containment match and quarantines everything it cannot prove; a
   retire removes one quarantined record and never signals or adopts. The
   result carries counts by class and never a pid.
@@ -995,7 +995,7 @@ Request: no required parameter; only the common `daemon_instance_id` is read.
 | `limits`             | array       | required | Array of `limits` entries; same values as the handshake.                                                                                                                  |
 | `orphans`            | object      | required | The orphan verification state; one of the two frozen branches below.                                                                                                      |
 
-`orphans` is a served object on every cell. It has exactly one of two shapes
+`orphans` is a served object on every served cell. It has exactly one of two shapes
 and never carries a pid, path, process group, executable digest, or caller
 text.
 
@@ -1009,14 +1009,14 @@ Served cell (an enforced containment mechanism and an opened journal):
 | `fallback`  | string or null | required | The static reason a weaker mechanism is enforced; `null` when the primary mechanism ran. |
 | `records`   | object         | required | Stored journal counts: `{"reserved": u64, "committed": u64, "unverified": u64}`.         |
 
-Unsupported cell (no enforced mechanism, or no boot id for the journal):
+Unsupported cell (a served cell whose containment probe refused):
 
-| Key         | Type   | Presence | Notes                                                                      |
-| ----------- | ------ | -------- | -------------------------------------------------------------------------- |
-| `verify`    | string | required | `unsupported_capability`.                                                  |
-| `mechanism` | string | required | `none`.                                                                    |
-| `cell`      | string | required | The compiled platform cell, for example `macos-arm64` or `windows-x86_64`. |
-| `reason`    | string | required | Static refusal text; never a path or caller text.                          |
+| Key         | Type   | Presence | Notes                                                   |
+| ----------- | ------ | -------- | ------------------------------------------------------- |
+| `verify`    | string | required | `unsupported_capability`.                               |
+| `mechanism` | string | required | `none`.                                                 |
+| `cell`      | string | required | The compiled platform cell, for example `linux-x86_64`. |
+| `reason`    | string | required | Static refusal text; never a path or caller text.       |
 
 The `records` object is narrower than accepted `D-06`, which asks `daemon.status`
 for counts by class including `reaped` and `stale`; the merged object carries
@@ -1070,9 +1070,10 @@ the duplicate policy is the open point named in
 
 #### `daemon.orphans.verify`
 
-Served on an enforced-containment Linux x86_64 cell. On a cell without an
-enforced containment mechanism, or without a boot id to fence the journal, the
-method answers `Denied/UnsupportedCapability` and applies nothing.
+Served on an enforced-containment Linux x86_64 cell. On a served cell without an enforced containment mechanism, the method answers
+`Denied/UnsupportedCapability` and applies nothing. A missing boot id is not a
+wire branch: the daemon refuses to start before the endpoint binds, like an
+unsupported platform cell.
 
 | Request key | Type   | Presence              | Notes                                                                                       |
 | ----------- | ------ | --------------------- | ------------------------------------------------------------------------------------------- |
