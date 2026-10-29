@@ -1,6 +1,6 @@
 ---
 title: bittyd IPC Contract (Candidate)
-description: Candidate-for-sign-off freeze of the served bittyd IPC surface - one scope registry and revision rule, handshake fields, method and scope table, authorization order, closed refusal set, and the 1.x compatibility rule
+description: Candidate-for-sign-off freeze of the served bittyd IPC surface - one logical scope registry and revision rule, handshake fields, per-method request and result schema, method and scope table, authorization order, closed refusal set, and the 1.x compatibility rule
 category: specifications
 audience: contributor
 document_type: specification
@@ -14,11 +14,11 @@ sidebar_order: 83
 > Status: **candidate for sign-off.** This document freezes the cross-repository
 > IPC surface that bitty#2664 asks for, limited to what the merged `bittyd`
 > service loop and conformance corpus actually serve: the service scope families
-> and their registry, the handshake fields, the method and scope table, the
-> authorization order, the closed refusal set, and the compatibility rule. It
-> restates decisions already accepted in the
-> [bittyd Session-Host Contract](bittyd-session-host-contract.md) on 2026-10-27
-> and adds no new authority.
+> and their registry, the handshake fields, the per-method request and result
+> JSON schema, the method and scope table, the authorization order, the closed
+> refusal set, and the compatibility rule. It restates decisions already
+> accepted in the [bittyd Session-Host Contract](bittyd-session-host-contract.md)
+> on 2026-10-27 and adds no new authority.
 >
 > It is not `accepted`. The Owner, Security, Architecture, and Consumer reviews
 > that bitty#2664 lists as acceptance criteria are **not all recorded**: the
@@ -27,10 +27,20 @@ sidebar_order: 83
 > this document is verified, and a merged implementation or a green corpus is
 > not a sign-off.
 >
+> The per-method [Wire schema](#wire-schema) and the served-versus-accepted
+> table were added on 2026-10-29 after the Architecture and Consumer reviews
+> returned NEEDS-FIX because a consumer had to read `dispatch.rs` to learn a
+> field name. The addition freezes only the shapes the merged code serves; it
+> changes no scope, no decision, and no control, and the Security sign-off still
+> covers the same trust boundary.
+>
 > The accepted session-host contract owns every decision; this document owns
-> only the spelling and ordering of the service-interface surface. A spelling
-> choice here does not reopen a decision, and where the two disagree the
-> accepted contract wins.
+> only the spelling, field shape, and ordering of the service-interface surface.
+> A spelling or wire-shape choice here does not reopen a decision. Where the two
+> disagree, the accepted contract's decision stands and the wire difference is
+> recorded as a **dated narrowing** in
+> [Dated narrowings](#dated-narrowings), not as a blanket rule that the accepted
+> text silently overrides the served schema.
 >
 > The service surface is served by `crates/bitty-daemon` on `main` (PR #2761,
 > `d360b442f`), with the P1 corrections in PRs #2770 and #2776, the grant-expiry
@@ -45,9 +55,14 @@ sidebar_order: 83
 > methods are not served:
 > `daemon.orphans.verify` refuses `UnsupportedCapability` and `session.resize`
 > refuses `ScopeViolation` because the daemon grants no `terminal.*` scope. No
-> event frame is pushed on a connection. Worker spawn, containment, terminal
-> content, and event delivery are deferred, not promised. Grant expiry now
-> bumps `state_revision`; an expiry event is still deferred.
+> event frame is pushed on a connection, so `events` is frozen `false` for
+> service `1.0`; the merged build advertises `true`, which is a recorded
+> served-versus-frozen deviation (bitty#2792), not a promise. `session.create`
+> is served as a **registry-only** method: it registers a `created` session at
+> `generation: 0` and starts no process or PTY and opens no content plane.
+> Worker spawn, containment, terminal content, and event delivery are deferred,
+> not promised. Grant expiry now bumps `state_revision`; an expiry event is
+> still deferred.
 
 | Control          | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -57,9 +72,10 @@ sidebar_order: 83
 | Upstream records | Accepted [bittyd Session-Host Contract](bittyd-session-host-contract.md), [promotion record](bittyd-session-host-promotion-record.md), ADR 0008, ADR 0019, `bitty-ipc` v1, security corpus                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Consumers        | Wheel CTX-0036 adapter and fake server; `bitty` GUI, `bitty ctl`, and other local clients                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Implementation   | `crates/bitty-daemon` on `main`: `bittyd start` binds a per-user Unix socket and serves the `bitty-ipc` v1 envelope. The scope registry, handshake, grants, dispatch, audit sink, and peer re-check are merged in PR #2761 (`d360b442f`); the session registry in PR #2751 (`c593afd7`); the P1 corrections in PR #2770 (`57d459f7`); the repeat-detach and grant-revision fixes in PR #2776 (`a1c5639a`); the grant-expiry revision in PR #2786; the conformance harness in PR #2769 (`87463f34`) and PR #2771 (`0b9483f2`); the security-sign-off corrections are merged in PR #2794 (`ea0de791`) |
-| Served methods   | 15 of the 17 catalog methods. `daemon.orphans.verify` is `Denied/UnsupportedCapability`; `session.resize` is `Denied/ScopeViolation`. No event frame is pushed. Worker spawn, containment, terminal content, and event delivery are deferred                                                                                                                                                                                                                                                                                                                                                        |
-| Evidence         | 41 corpus vectors on `main`: 29 shared by the fake and real drivers, 8 real-only, 4 fake-only; the parity gate compares the 29 shared vectors. The fake driver executes 33 and records 8 typed skips; the real driver executes 37 and records 4. The corpus parses through one strict model and runs in `bitty` CI on Linux x86_64. Evidence records are per-cell JSON; a fake run never closes a real row                                                                                                                                                                                          |
-| Evidence gaps    | No event-wire vector, no `session.resize` success path, no containment/orphan-adoption path, no second served platform cell, and no independent security evidence set. See [Deferred items](#deferred-items)                                                                                                                                                                                                                                                                                                                                                                                        |
+| Served methods   | 15 of the 17 catalog methods, each with a request and result schema in [Wire schema](#wire-schema). `daemon.orphans.verify` is `Denied/UnsupportedCapability`; `session.resize` is `Denied/ScopeViolation`. `session.create` is registry-only (`generation: 0`, no process, PTY, or content plane). `events` is frozen `false`; no event frame is pushed. Worker spawn, containment, terminal content, and event delivery are deferred                                                                                                                                                              |
+| Wire schema      | One table per catalog method in [Wire schema](#wire-schema), read from `crates/bitty-daemon/src/service/dispatch.rs` and `src/service/wire.rs` at `ea0de791`; 15 served methods carry a success result, 2 unserved methods carry only their typed refusal. Shared shapes are frozen once and referenced by key                                                                                                                                                                                                                                                                                      |
+| Evidence         | 41 corpus vectors on `main`: 29 shared by the fake and real drivers, 8 real-only, 4 fake-only; the parity gate compares the 29 shared vectors. The fake driver executes 33 and records 8 typed skips; the real driver executes 37 and records 4. The corpus parses through one strict model and runs in `bitty` CI on Linux x86_64. Evidence records are per-cell JSON; a fake run never closes a real row. The wire schema has no separate vector; it is read from the merged handlers and pinned by the corpus only where a vector names the key                                                  |
+| Evidence gaps    | No event-wire vector, no `session.create` process or PTY, no `session.resize` success path, no containment/orphan-adoption path, no request-deadline vector, no second served platform cell, and no independent security evidence set. See [Deferred items](#deferred-items)                                                                                                                                                                                                                                                                                                                        |
 | Change authority | Core terminal platform owns this freeze; the security corpus co-owns the trust boundary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Promotion gate   | Owner, Security, Architecture, and Consumer sign-off recorded, `just check` green, and no new authority introduced                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
@@ -70,6 +86,11 @@ sidebar_order: 83
 - It fixes **names**: scope family names, method names, capability names,
   handshake field names, event kinds, refusal codes, and the identifier formats
   already fixed by the accepted contract.
+- It fixes **wire shape**: for every served method, the exact request parameter
+  keys, their JSON types and requiredness, the exact success-result keys, and
+  the branch that produces each result. A consumer no longer reads
+  `dispatch.rs` to learn a field name; the schema is normative here and the code
+  is its evidence.
 - It fixes **ordering**: the accept/refuse order, the per-request authorization
   order, and the conditions that must not be distinguishable to a client.
 - It fixes **compatibility**: what may change inside service major `1`, and what
@@ -78,8 +99,13 @@ sidebar_order: 83
   document disagree, the accepted contract wins and this document is defective.
 - It freezes only what the merged code and corpus actually serve. A method,
   field, event, or control that the code does not serve is named under
-  [Deferred items](#deferred-items) or [Open points](#open-points); this
-  document does not convert a plan into a promise.
+  [Deferred items](#deferred-items), [Accepted fields not served in 1.0](#accepted-fields-not-served-in-10),
+  or [Open points](#open-points); this document does not convert a plan into a
+  promise.
+- It records where the served wire differs from the accepted prose as a
+  **dated narrowing** with a named owner. A narrowing is not a second decision
+  and it does not authorize the accepted contract to be read as if it described
+  the wire.
 - It does not fix the numeric limit values, the per-cell endpoint discovery
   mechanism, or the conformance fixtures. Those stay with `D-14` and bitty#2603,
   accepted contract `D-15`, and bitty#2605, and the corpus pins the fixtures.
@@ -112,6 +138,8 @@ In scope:
 - the handshake request and response fields, the version axes, and the
   accept/refuse order;
 - the normative method and scope table for the v0.2.0 terminal-only slice;
+- the per-method request and result JSON schema, including field presence,
+  shared object shapes, and the dated narrowings against the accepted prose;
 - the per-request authorization order and the no-existence-oracle rules;
 - the closed refusal set and the conditions that are never distinguishable;
 - the `1.x` additive compatibility rule and the `2.0` breaking rule.
@@ -147,22 +175,24 @@ Out of scope and owned elsewhere:
 
 ## Terminology
 
-| Term                | Meaning in this document                                                                                                                                                              |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Wire version        | The `bitty-ipc` envelope version `v` carried on every frame, with `1` the only supported value. It describes framing, envelope, and correlation.                                      |
-| Service version     | The `{major, minor}` contract version negotiated in `daemon.negotiate`. It describes the session surface, never the framing.                                                          |
-| Negotiation         | The single pre-authentication `daemon.negotiate` exchange that fixes the service version, scopes, capabilities, limits, and identity for one connection.                              |
-| Scope registry      | The single table that maps a scope name to its meaning and a method to its required scope. v1 families live in `bitty-ipc`; the service families are frozen here.                     |
-| Baseline grant      | The scopes an ordinary consumer connection receives: `session.inspect`, `session.attach`, and `session.control`. `session.host` is never baseline.                                    |
-| Capability          | An explicit, per-connection boolean that gates a method family. It never changes meaning inside a major.                                                                              |
-| Control relation    | The authorization rule that requires the current controller lease, or the current control token while control is vacant. Scope alone is never sufficient.                             |
-| Frozen spelling     | The single name a scope, method, capability, field, event, or refusal code uses in the contract, the registry, the corpus, and every consumer.                                        |
-| Existence oracle    | A response that lets a client learn whether a session, grant, or endpoint it may not see exists. The service provides exactly one deliberate exception: the live-vacant-control code. |
-| Live vacant control | A live session with no current controller lease. A control method that names it and presents no valid token answers `Denied/InvalidControlToken`; that is the one oracle exception.   |
-| Served method       | A catalog method the merged daemon can execute to a success or a typed refusal. `daemon.orphans.verify` and `session.resize` are not served.                                          |
-| Keyed method        | A method that carries a client-generated 128-bit idempotency key and consults a bounded store: create, controller attach, grant mint, and transfer.                                   |
-| Keyless method      | A method that is naturally idempotent by its target and never consults an idempotency store, so capacity can never block termination or revocation.                                   |
-| Unkeyed method      | A method that carries no key and is not naturally idempotent: `daemon.host_grant` mint. Its duplicate rule is not frozen and stays with security review.                              |
+| Term                | Meaning in this document                                                                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Wire version        | The `bitty-ipc` envelope version `v` carried on every frame, with `1` the only supported value. It describes framing, envelope, and correlation.                                                                                                 |
+| Service version     | The `{major, minor}` contract version negotiated in `daemon.negotiate`. It describes the session surface, never the framing.                                                                                                                     |
+| Negotiation         | The single pre-authentication `daemon.negotiate` exchange that fixes the service version, scopes, capabilities, limits, and identity for one connection.                                                                                         |
+| Scope registry      | **One logical registry with two disjoint physical homes and one grammar.** The v1 families live in `bitty-ipc`; the service families live in the `bittyd` table; both use the same method grammar and naming rule, and no name has two meanings. |
+| Baseline grant      | The scopes an ordinary consumer connection receives: `session.inspect`, `session.attach`, and `session.control`. `session.host` is never baseline.                                                                                               |
+| Capability          | An explicit, per-connection boolean that gates a method family. It never changes meaning inside a major.                                                                                                                                         |
+| Control relation    | The authorization rule that requires the current controller lease, or the current control token while control is vacant. Scope alone is never sufficient.                                                                                        |
+| Frozen spelling     | The single name a scope, method, capability, field, event, or refusal code uses in the contract, the registry, the corpus, and every consumer.                                                                                                   |
+| Wire schema         | The normative request and result table for a served method: exact JSON keys, JSON types, required or optional presence, result branch, and notes. Code is evidence, not the schema.                                                              |
+| Dated narrowing     | A served-wire fact that is narrower than the accepted prose, recorded with the date and the owning issue. It never widens a control and is replaced only by a reviewed revision.                                                                 |
+| Existence oracle    | A response that lets a client learn whether a session, grant, or endpoint it may not see exists. The service provides exactly one deliberate exception: the live-vacant-control code.                                                            |
+| Live vacant control | A live session with no current controller lease. A control method that names it and presents no valid token answers `Denied/InvalidControlToken`; that is the one oracle exception.                                                              |
+| Served method       | A catalog method the merged daemon can execute to a success or a typed refusal. `daemon.orphans.verify` and `session.resize` are not served.                                                                                                     |
+| Keyed method        | A method that carries a client-generated opaque idempotency key of 1 to 128 bytes and consults a bounded store: create, controller attach, grant mint, and transfer. The daemon derives a 128-bit store key from it.                             |
+| Keyless method      | A method that is naturally idempotent by its target and never consults an idempotency store, so capacity can never block termination or revocation.                                                                                              |
+| Unkeyed method      | A method that carries no key and is not naturally idempotent: `daemon.host_grant` mint. Its duplicate rule is not frozen and stays with security review.                                                                                         |
 
 ## Implementation evidence
 
@@ -196,6 +226,21 @@ satisfies a P0 control.
   order, the refusal constructors, the control relation, the no-oracle
   mapping, and per-method handlers. `src/service/server.rs` owns admission,
   the pre-auth gate, frame credentials, and the single-threaded loop.
+- **Wire schema:** every request key and result key in
+  [Wire schema](#wire-schema) is read from the handlers in
+  `src/service/dispatch.rs` and the typed parameter helpers in
+  `src/service/wire.rs` at `ea0de791`; `session_json` in `dispatch.rs` owns the
+  shared `session` object. The schema is not a second encoder: the daemon
+  renders the `bitty-ipc` v1 envelope and these handlers build its `result`.
+- **Registry-only create:** `session.create` inserts a `created` record with
+  `generation: 0`, `state_revision: 0`, no attach, and no worker. It reads no
+  spawn specification and starts no process, PTY, or content plane; a created
+  session can be inspected, attached (metadata only), aborted, or killed, but
+  it never reaches `running` in this slice.
+- **Advertised but unenforced:** `request_timeout_ms` is in the `limits` array
+  (`src/limits.rs`, `RequestTimeoutMs`), but the only `Refusal::timeout` call
+  site is the negotiate deadline in `src/service/server.rs`. No
+  post-handshake request deadline is enforced; the deferred row is bitty#2805.
 - **Grants:** `src/service/grants.rs` owns host and observer grants, the
   single-use bearer, the peer and correlation-digest binding, the TTLs, the cap
   refusals, and the sweep. `src/lease/host.rs` records the revision bump for
@@ -214,6 +259,12 @@ satisfies a P0 control.
   is disabled (`worker_sessions=false`, bitty#2790). Grant expiry bumps
   `state_revision` once per affected session (merged in PR #2786); it still
   emits no event.
+- **Events deviation:** the merged build advertises the `events` capability
+  `true` while sending no frame. This freeze sets `events` to `false` for
+  service `1.0`; the advertised `true` is a served-versus-frozen deviation
+  dated 2026-10-29 and owned by bitty#2792. Flipping the bit to `true` after a
+  delivered event frame is an additive minor change; no `1.0` client may rely
+  on event delivery because of the advertised bit.
 
 ## Version sources and ownership
 
@@ -221,13 +272,14 @@ Two version axes are independent, and each has exactly one owner. A supported
 wire version never implies a supported service version, and a service version
 never implies a wire version.
 
-| Axis            | Owner                      | Single source of truth                                                               | Changes when                                                                                                     | Refusal                                                 |
-| --------------- | -------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Wire version    | `bitty-ipc`                | `WIRE_VERSION` and `SUPPORTED_WIRE_VERSIONS`, carried per frame as `v`               | The framing, envelope, or correlation contract changes; that is a `bitty-ipc` contract revision, not this one.   | `VersionMismatch`, connection closes                    |
-| Service version | This contract, `1.0` today | `{major, minor}` in `daemon.negotiate`, plus `min_client_minor` in the response      | Additive method, scope, capability, or field inside major `1` bumps the minor; a breaking change requires `2.0`. | `VersionMismatch`, connection closes                    |
-| Scope registry  | Split, see below           | `bitty-ipc` for v1 families; the `bittyd`-owned table for `session.*` and `daemon.*` | A scope or method is added, removed, renamed, or re-meant, per the revision rule.                                | `NotFound`, `InvalidMethod`, or `Denied/ScopeViolation` |
-| Capability set  | This document              | The six capability names in [Capabilities and methods](#capabilities-and-methods)    | A capability is added inside a minor; its name and meaning never change inside a major.                          | `Denied/UnsupportedCapability`                          |
-| Limit values    | Accepted contract `D-14`   | The `D-14` table and the Resource limits section                                     | A system maximum may only change upward, through an attributable contract revision plus security review.         | `LimitExceeded`, `Denied/*` by method                   |
+| Axis             | Owner                           | Single source of truth                                                                                                | Changes when                                                                                                                                                     | Refusal                                                 |
+| ---------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Wire version     | `bitty-ipc`                     | `WIRE_VERSION` and `SUPPORTED_WIRE_VERSIONS`, carried per frame as `v`                                                | The framing, envelope, or correlation contract changes; that is a `bitty-ipc` contract revision, not this one.                                                   | `VersionMismatch`, connection closes                    |
+| Service version  | This contract, `1.0` today      | `{major, minor}` in `daemon.negotiate`, plus `min_client_minor` in the response                                       | Additive method, scope, capability, or field inside major `1` bumps the minor; a breaking change requires `2.0`.                                                 | `VersionMismatch`, connection closes                    |
+| Scope registry   | One logical registry, two homes | `bitty-ipc` for v1 families; the `bittyd`-owned table for `session.*` and `daemon.*`; one grammar and one naming rule | A scope or method is added, removed, renamed, or re-meant, per the revision rule.                                                                                | `NotFound`, `InvalidMethod`, or `Denied/ScopeViolation` |
+| Capability set   | This document                   | The six capability names in [Capabilities and methods](#capabilities-and-methods)                                     | A capability is added inside a minor; its name and meaning never change inside a major.                                                                          | `Denied/UnsupportedCapability`                          |
+| Limit values     | Accepted contract `D-14`        | The `D-14` table and the Resource limits section                                                                      | A system maximum may only change upward, through an attributable contract revision plus security review.                                                         | `LimitExceeded`, `Denied/*` by method                   |
+| Request deadline | Accepted `D-13`                 | `request_timeout_ms` in the advertised `limits`; enforcement is deferred to bitty#2805                                | An enforced request deadline is an additive behavior change that must name its typed result and get a corpus vector; the advertised value alone changes nothing. | `Timeout` when enforced; no wire result in `1.0`        |
 
 Rules that follow:
 
@@ -253,8 +305,10 @@ Rules that follow:
 
 ### Ownership rule
 
-The service has exactly **one** authoritative registry. There is no second
-vocabulary, no per-consumer spelling, and no adapter-local aliasing.
+The service has **one logical registry, two disjoint physical homes, and one
+grammar**. The v1 families and the service families are stored in different
+crates, but there is no second vocabulary, no per-consumer spelling, and no
+adapter-local aliasing: a name has exactly one meaning across both homes.
 
 - The v1 families (`terminal.*`, `view.*`, `config.*`, `plugin.*`,
   `process.spawn`, `debug.*`, `ai.*`) stay owned by `bitty-ipc`. Their names,
@@ -285,15 +339,16 @@ revision rule, not a change to any frozen name.
 
 ### Revision rule
 
-| Change                                                                                 | Required revision                                                                                                     |
-| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Add a scope name to `session.*` or `daemon.*`                                          | Service minor bump; registry revision                                                                                 |
-| Add a method that uses only existing scopes                                            | Service minor bump; registry revision; method catalog row                                                             |
-| Add a capability                                                                       | Service minor bump; name and meaning fixed for the major; clients ignore a capability they do not know                |
-| Add an optional response field or an optional request field with unchanged default     | Service minor bump; no existing field changes meaning; absence preserves the previous behavior                        |
-| Change a scope meaning, method name, refusal code, or the meaning of an existing field | Service major bump (`2.0`); a new accepted contract; independent security review; one major served at a time          |
-| Remove a scope, method, capability, or field                                           | Service major bump; same gate as a meaning change                                                                     |
-| Raise a compiled `system_max`                                                          | Upward only, through an attributable contract revision plus security review; this document does not carry the numbers |
+| Change                                                                                                  | Required revision                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Add a scope name to `session.*` or `daemon.*`                                                           | Service minor bump; registry revision                                                                                             |
+| Add a method that uses only existing scopes                                                             | Service minor bump; registry revision; method catalog row                                                                         |
+| Add a capability                                                                                        | Service minor bump; name and meaning fixed for the major; clients ignore a capability they do not know                            |
+| Add an optional response field or an optional request field with unchanged default                      | Service minor bump; no existing field changes meaning; absence preserves the previous behavior                                    |
+| Serve `session.resize` (per-connection `terminal.manage` at negotiate, then controller-lease authority) | Service minor bump; registry revision; method-catalog row; the handshake `scopes` array carries the new grant; conformance vector |
+| Change a scope meaning, method name, refusal code, or the meaning of an existing field                  | Service major bump (`2.0`); a new accepted contract; independent security review; one major served at a time                      |
+| Remove a scope, method, capability, or field                                                            | Service major bump; same gate as a meaning change                                                                                 |
+| Raise a compiled `system_max`                                                                           | Upward only, through an attributable contract revision plus security review; this document does not carry the numbers             |
 
 Rules:
 
@@ -321,24 +376,36 @@ only the spelling. The one spelling the accepted contract does not state,
 `session.resize`, is fixed in the table; its unserved status is recorded under
 [Deferred items](#deferred-items), not treated as a new decision.
 
-| Kind               | Frozen spellings                                                                                                                                                                                                                                                                                                                    |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scopes             | `session.inspect`, `session.host`, `session.attach`, `session.control`, `daemon.inspect`, `daemon.control`                                                                                                                                                                                                                          |
-| Methods            | `daemon.negotiate`, `daemon.status`, `daemon.stop`, `daemon.host_grant`, `daemon.orphans.verify`, `session.create`, `session.status`, `session.list`, `session.attach`, `session.grant`, `session.grant.revoke`, `session.detach`, `session.control.transfer`, `session.resize`, `session.abort`, `session.kill`, `lease.heartbeat` |
-| Capabilities       | `terminal_sessions`, `worker_sessions`, `events`, `observer_grants`, `control_transfer`, `idempotent_mutations`                                                                                                                                                                                                                     |
-| Handshake request  | `client_version`, `client_correlation`, `operator_capability`, `host_grant`                                                                                                                                                                                                                                                         |
-| Handshake response | `wire_version`, `service_api_version`, `daemon_instance_id`, `daemon_pid`, `server_identity`, `peer_identity`, `client_id`, `scopes`, `capabilities`, `limits`, `server_monotonic_ms`, `daemon_state`                                                                                                                               |
-| Event kinds        | `session_state`, `session_terminal`, `control_transfer`, `lease_revoked`, `daemon_stopping`                                                                                                                                                                                                                                         |
-| Identifier formats | `daemon_instance_id`, `session_id`, and `attach_id` are 32 lowercase hex characters; `grant_id` is 32 lowercase hex characters; the control token, observer grant, and host grant are 256-bit bearers; an idempotency key is 128 bits encoded in at most 128 bytes                                                                  |
+| Kind               | Frozen spellings                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scopes             | `session.inspect`, `session.host`, `session.attach`, `session.control`, `daemon.inspect`, `daemon.control`                                                                                                                                                                                                                                                                                                              |
+| Methods            | `daemon.negotiate`, `daemon.status`, `daemon.stop`, `daemon.host_grant`, `daemon.orphans.verify`, `session.create`, `session.status`, `session.list`, `session.attach`, `session.grant`, `session.grant.revoke`, `session.detach`, `session.control.transfer`, `session.resize`, `session.abort`, `session.kill`, `lease.heartbeat`                                                                                     |
+| Capabilities       | `terminal_sessions`, `worker_sessions`, `events`, `observer_grants`, `control_transfer`, `idempotent_mutations`                                                                                                                                                                                                                                                                                                         |
+| Handshake request  | `client_version`, `client_correlation`, `operator_capability`, `host_grant`                                                                                                                                                                                                                                                                                                                                             |
+| Handshake response | `wire_version`, `service_api_version`, `daemon_instance_id`, `daemon_pid`, `server_identity`, `peer_identity`, `client_id`, `scopes`, `capabilities`, `limits`, `server_monotonic_ms`, `daemon_state`                                                                                                                                                                                                                   |
+| Event kinds        | `session_state`, `session_terminal`, `control_transfer`, `lease_revoked`, `daemon_stopping`                                                                                                                                                                                                                                                                                                                             |
+| Identifier formats | `daemon_instance_id`, `session_id`, `attach_id`, and `grant_id` are 32 lowercase hex characters. A supplied `terminal_id` is 1 to 128 bytes (the `terminal_id_bytes` system maximum) from `[A-Za-z0-9._:-]`; an absent one is assigned 32 lowercase hex characters. The control token, observer grant, and host grant are 256-bit bearers (64 lowercase hex). An idempotency key is an opaque string of 1 to 128 bytes. |
 
 `session.resize` is the one method spelling the accepted contract does not
 state: it fixes the resize authority, the revision effect, and the refusal, but
 not the method name. This freeze fixes `session.resize` so the corpus has one
 name, and the merged catalog and corpus `C-05`/`V-13` use it. The method is not
 served in this slice: the daemon grants no `terminal.*` scope, so every
-`session.resize` request is `Denied/ScopeViolation` before target lookup. The
-spelling is frozen; the success path is deferred to bitty#2790 and stays in
-[Deferred items](#deferred-items).
+`session.resize` request is `Denied/ScopeViolation` before target lookup.
+
+The intended success mechanism is fixed here but not served: the connection
+receives a per-connection `terminal.manage` grant at `daemon.negotiate` (the
+scope set is immutable for the connection, so the grant must be negotiated,
+never added mid-connection), and the method then requires the current
+controller lease rather than an operator path. Resize changes the PTY size,
+increments `state_revision`, and is controller-only; an observer letterboxes or
+scales locally. Serving it is a **method addition under an existing scope**:
+service minor bump, registry revision, method-catalog row, a `terminal.manage`
+row in the handshake `scopes` array, and a conformance vector. The revision
+class is the `Add a method that uses only existing scopes` row in
+[Revision rule](#revision-rule), with the additional handshake-scope grant
+recorded as a scope-delivery change, not a scope-meaning change. The success
+path is deferred to bitty#2790 and stays in [Deferred items](#deferred-items).
 
 ## Scope families
 
@@ -515,8 +582,9 @@ negotiate.
    the raw value at `daemon.negotiate` and the daemon derives it. A plain
    `SHA-256` of the raw value, or any other truncation, never matches. It is not
    a scope, not an identity, and not a lookup key. The wire envelope's `id` is a
-   different field: at most 64 bytes, server-generated for events, unique per
-   connection, and never supplied by the client for an event.
+   different field: at most 64 bytes, an opaque per-connection correlation
+   value, server-generated for events, unique per connection, never supplied by
+   the client for an event, and never a UUID or a durable identity.
 5. No client-supplied id, header, path parameter, `scope`, `role`, or `auth`
    field is ever authority. The transport rejects ambient-authority envelope
    fields; the service evaluates the real grant server-side.
@@ -530,25 +598,25 @@ that violates the wire grammar is `InvalidMethod`. Neither is a silent no-op,
 and neither falls through to a default grant. The v1 families keep their own
 registry and method map, which this freeze does not change.
 
-| Method                     | Served | Scope grant                                                         | Authority beyond scope                                                                                                                                                                                                                                                | Idempotency                                                                     | Notes                                                                                                                                                                                                                                                                                                                                                     |
-| -------------------------- | ------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `daemon.negotiate`         | yes    | none (pre-authentication)                                           | Endpoint, peer, and wire checks precede it; exactly one per connection                                                                                                                                                                                                | keyless                                                                         | Consumes `host_grant` when possible; a present `operator_capability` is verified, an absent one grants nothing.                                                                                                                                                                                                                                           |
-| `daemon.status`            | yes    | `daemon.inspect`                                                    | Operator capability obtained at negotiate                                                                                                                                                                                                                             | keyless                                                                         | Daemon state, lifecycle counts, `audit_degraded`, limits, drain deadline, `tcp_listeners`, and `orphans: {verify: "deferred"}`.                                                                                                                                                                                                                           |
-| `daemon.stop`              | yes    | `daemon.control`                                                    | Peer re-check; operator capability                                                                                                                                                                                                                                    | keyless                                                                         | `mode` is `refuse`, `drain`, or `force`; a repeated stop is `Denied/DaemonStopping`; a default stop with active sessions is `Denied/ActiveSessions`.                                                                                                                                                                                                      |
-| `daemon.host_grant`        | yes    | `daemon.control`                                                    | Peer re-check; operator capability                                                                                                                                                                                                                                    | no key; `revoke` idempotent by `grant_id`; `mint` creates a new grant each call | `action` is `mint` or `revoke`; mint returns the bearer once plus the non-secret `grant_id`; a consumed-but-unexpired grant can still be revoked (bitty#2763). Mint accepts `ttl_ms` and `client_correlation_digest`; see [Grant request fields](#grant-request-fields).                                                                                  |
-| `daemon.orphans.verify`    | no     | `daemon.control`                                                    | None reached; the handler refuses before any orphan action                                                                                                                                                                                                            | keyless                                                                         | Always `Denied/UnsupportedCapability` after the scope check; no orphan is claimed verified. Containment and orphan verification are bitty#2791.                                                                                                                                                                                                           |
-| `session.create`           | yes    | `session.host` **and** `process.spawn`                              | Consumed host consent; peer re-check                                                                                                                                                                                                                                  | keyed (pre-session store)                                                       | The create-key lookup runs before the `terminal_id` uniqueness check; `kind: worker` is `Denied/UnsupportedCapability` once create authority is present, while a caller without consent gets the earlier `Denied/ConsentRequired` (or `Denied/ScopeViolation` without `process.spawn`); the response is the only place the initial control token appears. |
-| `session.status`           | yes    | `session.inspect`                                                   | Visibility: operator view (`daemon.inspect`), a live lease on this connection, the current control token, or the immutable terminal snapshot for a connection that held a lease                                                                                       | keyless                                                                         | Never refuses on a stale generation; the authoritative reconciliation read. It does not map a missing token to `InvalidControlToken` (that mapping is control-method only).                                                                                                                                                                               |
-| `session.list`             | yes    | `session.inspect`                                                   | Live lease on this connection; `daemon.inspect` for the operator view                                                                                                                                                                                                 | keyless                                                                         | A consumer connection never enumerates another client's sessions; the operator view requires `daemon.inspect` and carries metadata only.                                                                                                                                                                                                                  |
-| `session.attach`           | yes    | observer: `session.attach`; controller: `session.control`           | Observer: valid single-use grant. Controller: current control token and matching `expected_generation`                                                                                                                                                                | controller keyed; observer single-use grant, not keyed                          | The request role is `attach_role` (`controller` or `observer`); the response is `role`. A claim creates a controller lease; it never promotes an observer lease in place.                                                                                                                                                                                 |
-| `session.grant`            | yes    | `session.control` or `daemon.control`                               | Control relation (current controller lease, or vacant control with the current token), or the `daemon.control` operator path, which is ungated                                                                                                                        | keyed                                                                           | Mints one single-use observer grant; the bearer appears only in the mint response. `ttl_ms` and `observer_correlation_digest` are optional; see [Grant request fields](#grant-request-fields). A terminal session is `Denied/NotRunning`.                                                                                                                 |
-| `session.grant.revoke`     | yes    | `session.control` or `daemon.control`                               | A retained grant is checked against the caller's correlation binding first: a non-operator mismatch gets the unknown-grant `not_active` success and revokes nothing; otherwise visibility and the control relation run; the `daemon.control` operator path is ungated | keyless (`grant_id`)                                                            | Revokes an unconsumed grant; a matching revoke still requires the control relation and bumps `state_revision`; a second revoke is `not_active`, not a refusal. A retained grant on a terminal session is `Denied/NotRunning`. `ttl_ms` and the digest fields are mint-only.                                                                               |
-| `session.detach`           | yes    | own lease: none; other lease: `session.control` or `daemon.control` | Own detach is always allowed; detaching another lease is a revocation and requires the control relation or the operator path                                                                                                                                          | keyless (`attach_id`)                                                           | A repeat detach of a handle this connection already detached or revoked is `was_attached: false`, `not_attached: true`, no revision bump. Never aborts or changes the generation.                                                                                                                                                                         |
-| `session.control.transfer` | yes    | `session.control`                                                   | Control relation; the target is a live observer lease with `session.control`                                                                                                                                                                                          | keyed                                                                           | Rotates the token onto the target exactly once; the token is delivered to the target on its next lease response, never in the requester's response.                                                                                                                                                                                                       |
-| `session.resize`           | no     | `terminal.manage`                                                   | Not reached; the daemon grants no `terminal.*` scope                                                                                                                                                                                                                  | no key; not deduped by generation (policy open)                                 | Always `Denied/ScopeViolation` before target lookup. The controller-only success path and its revision effect are deferred to bitty#2790.                                                                                                                                                                                                                 |
-| `session.abort`            | yes    | `session.control`; operator reason: `daemon.control`                | Control relation for `cancel` and `timeout`; the `operator` reason uses the operator path and accepts no control token                                                                                                                                                | keyless                                                                         | `reason_class` is `cancel`, `timeout`, or `operator`; a request after terminal returns `accepted: false`, `not_running: true`, not a refusal.                                                                                                                                                                                                             |
-| `session.kill`             | yes    | `daemon.control`                                                    | Peer re-check; operator capability                                                                                                                                                                                                                                    | keyless                                                                         | Immediate whole-identity termination; a request after terminal returns `accepted: false`, `not_running: true`. Never available to a consumer adapter.                                                                                                                                                                                                     |
-| `lease.heartbeat`          | yes    | none beyond lease ownership                                         | The named `attach_id` must belong to this connection                                                                                                                                                                                                                  | keyless                                                                         | Refreshes `lease_expires_at`; a foreign lease is `NotFound` and is not refreshed; it also delivers a pending rotated control token to the target.                                                                                                                                                                                                         |
+| Method                     | Served | Scope grant                                                         | Authority beyond scope                                                                                                                                                                                                                                                | Idempotency                                                                     | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| -------------------------- | ------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `daemon.negotiate`         | yes    | none (pre-authentication)                                           | Endpoint, peer, and wire checks precede it; exactly one per connection                                                                                                                                                                                                | keyless                                                                         | Consumes `host_grant` when possible; a present `operator_capability` is verified, an absent one grants nothing.                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `daemon.status`            | yes    | `daemon.inspect`                                                    | Operator capability obtained at negotiate                                                                                                                                                                                                                             | keyless                                                                         | Daemon state, lifecycle counts, `audit_degraded`, limits, drain deadline, and `tcp_listeners`. The `orphans` key is a transitional placeholder, not a frozen field; uptime, pid, and orphan counts are not served (bitty#2791, bitty#2806).                                                                                                                                                                                                                                                                            |
+| `daemon.stop`              | yes    | `daemon.control`                                                    | Peer re-check; operator capability                                                                                                                                                                                                                                    | keyless                                                                         | `mode` is `refuse`, `drain`, or `force`; a repeated stop is `Denied/DaemonStopping`; a default stop with active sessions is `Denied/ActiveSessions`.                                                                                                                                                                                                                                                                                                                                                                   |
+| `daemon.host_grant`        | yes    | `daemon.control`                                                    | Peer re-check; operator capability                                                                                                                                                                                                                                    | no key; `revoke` idempotent by `grant_id`; `mint` creates a new grant each call | `action` is `mint` or `revoke`; mint returns the bearer once plus the non-secret `grant_id`; a consumed-but-unexpired grant can still be revoked (bitty#2763). Mint accepts `ttl_ms` and `client_correlation_digest`; see [Grant request fields](#grant-request-fields).                                                                                                                                                                                                                                               |
+| `daemon.orphans.verify`    | no     | `daemon.control`                                                    | None reached; the handler refuses before any orphan action                                                                                                                                                                                                            | keyless                                                                         | Always `Denied/UnsupportedCapability` after the scope check; no orphan is claimed verified. The accepted `action`/`retire` form is not served and is not in the open PR #2801 head; containment and orphan verification are bitty#2791.                                                                                                                                                                                                                                                                                |
+| `session.create`           | yes    | `session.host` **and** `process.spawn`                              | Consumed host consent; peer re-check                                                                                                                                                                                                                                  | keyed (pre-session store)                                                       | **Registry-only:** registers a `created` session at `generation: 0`; starts no process or PTY and opens no content plane; a spawn specification is not read. The create-key lookup runs before the `terminal_id` uniqueness check; `kind: worker` is `Denied/UnsupportedCapability` once create authority is present, while a caller without consent gets the earlier `Denied/ConsentRequired` (or `Denied/ScopeViolation` without `process.spawn`); the response is the only place the initial control token appears. |
+| `session.status`           | yes    | `session.inspect`                                                   | Visibility: operator view (`daemon.inspect`), a live lease on this connection, the current control token, or the immutable terminal snapshot for a connection that held a lease                                                                                       | keyless                                                                         | Never refuses on a stale generation; the authoritative reconciliation read. It does not map a missing token to `InvalidControlToken` (that mapping is control-method only).                                                                                                                                                                                                                                                                                                                                            |
+| `session.list`             | yes    | `session.inspect`                                                   | Live lease on this connection; `daemon.inspect` for the operator view                                                                                                                                                                                                 | keyless                                                                         | A consumer connection never enumerates another client's sessions; the operator view requires `daemon.inspect` and carries metadata only.                                                                                                                                                                                                                                                                                                                                                                               |
+| `session.attach`           | yes    | observer: `session.attach`; controller: `session.control`           | Observer: valid single-use grant. Controller: current control token and matching `expected_generation`                                                                                                                                                                | controller keyed; observer single-use grant, not keyed                          | The request role is `attach_role` (`controller` or `observer`); the response is `role`. A claim creates a controller lease; it never promotes an observer lease in place.                                                                                                                                                                                                                                                                                                                                              |
+| `session.grant`            | yes    | `session.control` or `daemon.control`                               | Control relation (current controller lease, or vacant control with the current token), or the `daemon.control` operator path, which is ungated                                                                                                                        | keyed                                                                           | Mints one single-use **observer** grant; the bearer appears only in the mint response. `kind` is not a served request field: a present `kind` is ignored under the unknown-field rule and never selects a grant kind, so `kind: observer` is the only conforming value and clients omit it. `ttl_ms` and `observer_correlation_digest` are optional; see [Grant request fields](#grant-request-fields). A terminal session is `Denied/NotRunning`.                                                                     |
+| `session.grant.revoke`     | yes    | `session.control` or `daemon.control`                               | A retained grant is checked against the caller's correlation binding first: a non-operator mismatch gets the unknown-grant `not_active` success and revokes nothing; otherwise visibility and the control relation run; the `daemon.control` operator path is ungated | keyless (`grant_id`)                                                            | Revokes an unconsumed grant; a matching revoke still requires the control relation and bumps `state_revision`; a second revoke is `not_active`, not a refusal. A retained grant on a terminal session is `Denied/NotRunning`. `ttl_ms` and the digest fields are mint-only.                                                                                                                                                                                                                                            |
+| `session.detach`           | yes    | own lease: none; other lease: `session.control` or `daemon.control` | Own detach is always allowed; detaching another lease is a revocation and requires the control relation or the operator path                                                                                                                                          | keyless (`attach_id`)                                                           | A repeat detach of a handle this connection already detached or revoked is `was_attached: false`, `not_attached: true`, no revision bump. Never aborts or changes the generation.                                                                                                                                                                                                                                                                                                                                      |
+| `session.control.transfer` | yes    | `session.control`                                                   | Control relation; the target is a live observer lease with `session.control`                                                                                                                                                                                          | keyed                                                                           | Rotates the token onto the target exactly once; the token is delivered to the target on its next lease response, never in the requester's response.                                                                                                                                                                                                                                                                                                                                                                    |
+| `session.resize`           | no     | `terminal.manage`                                                   | Not reached; the daemon grants no `terminal.*` scope                                                                                                                                                                                                                  | no key; not deduped by generation (policy open)                                 | Always `Denied/ScopeViolation` before target lookup and before payload parsing. The intended controller-only mechanism is a per-connection `terminal.manage` grant at negotiate plus the controller-lease check; the success path is deferred to bitty#2790.                                                                                                                                                                                                                                                           |
+| `session.abort`            | yes    | `session.control`; operator reason: `daemon.control`                | Control relation for `cancel` and `timeout`; the `operator` reason uses the operator path and accepts no control token                                                                                                                                                | keyless                                                                         | `reason_class` is `cancel`, `timeout`, or `operator`; a request after terminal returns `accepted: false`, `not_running: true`, not a refusal.                                                                                                                                                                                                                                                                                                                                                                          |
+| `session.kill`             | yes    | `daemon.control`                                                    | Peer re-check; operator capability                                                                                                                                                                                                                                    | keyless                                                                         | Immediate whole-identity termination; a request after terminal returns `accepted: false`, `not_running: true`. Never available to a consumer adapter.                                                                                                                                                                                                                                                                                                                                                                  |
+| `lease.heartbeat`          | yes    | none beyond lease ownership                                         | The singular `attach_id` must belong to this connection                                                                                                                                                                                                               | keyless                                                                         | Refreshes the named lease; a foreign lease is `NotFound` and is not refreshed; it also delivers a pending rotated control token to the target. The accepted multi-`attach_id` request form is not served; see [Dated narrowings](#dated-narrowings).                                                                                                                                                                                                                                                                   |
 
 **Stopping is not one state.** A stopping **daemon** refuses every mutating
 method except a repeated `daemon.stop` with `Denied/DaemonStopping`; reads
@@ -562,15 +630,21 @@ mint or revoke with `Denied/NotRunning`, while `session.abort` and
 `not_running: true`. `Denied/NotRunning` is not the daemon-stopping code; the
 two names are not interchangeable.
 
-The contract defines five event kinds (`session_state`, `session_terminal`,
-`control_transfer`, `lease_revoked`, `daemon_stopping`) and no subscribe
-method. The merged service sends **no event frame on any connection**; the
-`events` capability is advertised `true`, but that bit is not evidence of event
-delivery. `session.status` and `session.list` are the only reconciliation reads
-in this slice. Event envelope, routing, ordering, backlog, the terminal-event
-guarantee, and the wire vectors stay deferred (bitty#2792 for wire delivery,
-bitty#2605 for the corpus); no consumer may implement event-driven behavior
-against this surface until a vector exists.
+**The event model is frozen; only delivery is deferred.** `D-10` already fixes
+the five event kinds (`session_state`, `session_terminal`, `control_transfer`,
+`lease_revoked`, `daemon_stopping`), the `v: 1` event envelope with a
+server-generated `id` of at most 64 bytes, per-lease routing, per-session
+revision ordering, the bounded backlog with explicit truncation, and the
+terminal-event guarantee. This freeze restates that model and adds no event
+kind and no subscribe method. The only deferred part is that the merged service
+pushes **no event frame on any connection**: `events` is frozen `false` for
+service `1.0`, the merged build's advertised `true` is a recorded deviation,
+and the wire delivery plus its vectors are deferred to bitty#2792 and
+bitty#2605. The envelope `id` is an **opaque per-connection correlation value**
+chosen by the server; it is not a UUID, not a durable identity, and never an
+input to authorization. `session.status` and `session.list` are the only
+reconciliation reads in this slice; no consumer may implement event-driven
+behavior against this surface until a vector exists and the bit is `true`.
 
 ### Capabilities and methods
 
@@ -578,22 +652,25 @@ against this surface until a vector exists.
 | ---------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `terminal_sessions`    | true                | `session.create` with `kind: terminal`                                                                                                                                                                                                    |
 | `worker_sessions`      | false               | `session.create` with `kind: worker`; false means `Denied/UnsupportedCapability` once create authority is present, while missing consent answers first with `Denied/ConsentRequired` (or `Denied/ScopeViolation` without `process.spawn`) |
-| `events`               | true                | Events on live leases, including the control-frame reservation rule                                                                                                                                                                       |
+| `events`               | false               | Events on live leases, including the control-frame reservation rule. Frozen `false` until a frame is delivered; `false` to `true` is an additive minor change (bitty#2792)                                                                |
 | `observer_grants`      | true                | `session.grant`, `session.grant.revoke`, and observer `session.attach`                                                                                                                                                                    |
 | `control_transfer`     | true                | `session.control.transfer`                                                                                                                                                                                                                |
 | `idempotent_mutations` | true                | `session.create`, `session.attach`, `session.grant` mint, and `session.control.transfer`                                                                                                                                                  |
 
 Rules:
 
-1. The v0.2.0 profile advertises `terminal_sessions=true`,
-   `worker_sessions=false`, and `events`, `observer_grants`,
+1. The `1.0` profile freezes `terminal_sessions=true`,
+   `worker_sessions=false`, `events=false`, and `observer_grants`,
    `control_transfer`, and `idempotent_mutations` true. The accepted contract
-   has no reduced variant of this surface; a build that cannot provide one of
-   the four is a different capability profile and needs its own review before a
-   release describes it as the v0.2.0 surface. `worker_sessions` is the only
-   capability the contract deliberately advertises false; with create authority
-   present it yields the typed `D-01` refusal, and without consent the earlier
-   scope/consent answer applies.
+   has no reduced variant of this surface; a build that cannot provide
+   `observer_grants`, `control_transfer`, or `idempotent_mutations` is a
+   different capability profile and needs its own review before a release
+   describes it as the v0.2.0 surface. `worker_sessions` and `events` are
+   deliberately false in `1.0`: with create authority present, `worker_sessions`
+   yields the typed `D-01` refusal, and without consent the earlier
+   scope/consent answer applies; `events` becomes true only when a frame is
+   delivered and a vector passes (bitty#2792), and `false` to `true` is
+   additive inside major `1`.
 2. A client must refuse to use a method whose capability is absent. It returns
    its own typed unavailable result to its caller; it must not probe, retry with
    a different method, or fall back to an in-process substitute.
@@ -602,22 +679,29 @@ Rules:
 4. An unknown capability name is ignored by a forward-compatible client. A
    well-formed unknown method is `NotFound`; a malformed method name is
    `InvalidMethod`. Neither is a silent no-op.
-5. The merged build advertises `events: true` but serves no event frame. A
-   consumer must not treat that bit as evidence that events work; it is a
-   contract-target value, not a delivered behavior. The same caveat applies to
-   `worker_sessions: false`: the bit is honest, but the typed refusal is the
-   only proof in this slice.
+5. The merged build advertises `events: true` while this freeze says `false`.
+   The frozen value is `false`; a consumer must follow the freeze and must not
+   treat the advertised bit as evidence that events work. The deviation is
+   dated 2026-10-29 and owned by bitty#2792; correcting the bit to match the
+   freeze does not require a contract revision, and flipping it to `true` after
+   a delivered, vector-backed event frame is the additive minor change. The
+   `worker_sessions: false` bit is honest, and its typed refusal is the only
+   proof in this slice.
 
 ### Keyed and keyless methods
 
 - **Keyed**: `session.create`, controller `session.attach`, `session.grant`
   mint, and `session.control.transfer`. Each carries a client-generated
-  128-bit key, encoded in at most 128 bytes. Session-scoped keys share the
-  bounded per-session descriptor store; `session.create` uses the separate
-  pre-session store indexed by `(uid or SID, key)`. An observer
-  `session.attach` is not keyed at the wire: it validates and consumes the
-  single-use grant before any store lookup, so a replay is
-  `Denied/ObserverGrantRequired` (corpus `V-22`).
+  **opaque string of 1 to 128 bytes** in `idempotency_key`; the daemon derives
+  the 128-bit store key as the first 16 bytes of `SHA-256` over the 25 ASCII
+  bytes `bittyd/idempotency-key/v1` plus one NUL byte plus the raw bytes. The
+  wire value is not a 128-bit hex id, and the client never sees the derived
+  key. Session-scoped keys share the bounded per-session descriptor store;
+  `session.create` uses the separate pre-session store indexed by
+  `(uid or SID, key)`. An observer `session.attach` is not keyed at the wire:
+  it validates and consumes the single-use grant before any store lookup, so a
+  replay is `Denied/ObserverGrantRequired` (corpus `V-22`). A key on a keyless
+  method is ignored under the unknown-field rule and confers nothing.
 - **Keyless and naturally idempotent**: `session.abort`, `session.kill`,
   `daemon.stop`, `session.detach` of another lease, `session.grant.revoke`, and
   `lease.heartbeat`. They are naturally idempotent by `(session_id, generation)`,
@@ -696,6 +780,538 @@ slice. A consumer that tracks authority must reconcile with `session.status`;
 revision-based reconciliation of expiry is available through `C-10`, and event
 delivery remains deferred to bitty#2792.
 
+## Wire schema
+
+This section is the normative request and result schema for service `1.0`. It
+closes the gap that let a consumer learn a field name only by reading
+`crates/bitty-daemon/src/service/dispatch.rs`: every served method has an exact
+request table and an exact result table, and the two unserved catalog methods
+have a typed refusal instead of a result. The code at `ea0de791` is the
+evidence; this section is the contract. Where a handler and this section
+disagree, the handler is defective until the difference is recorded here as a
+revision, never the reverse.
+
+The schema covers the 15 served methods of the 17-method catalog.
+`daemon.orphans.verify` and `session.resize` are unserved and appear under
+[Unserved catalog methods](#unserved-catalog-methods). The handshake fields are
+already fixed in [Handshake](#handshake); `daemon.negotiate` points at that
+section instead of restating it.
+
+### Envelope and common conventions
+
+The request and response envelope is the accepted `bitty-ipc` v1 envelope; this
+freeze does not re-spell framing, chunking, or correlation mechanics.
+
+| Direction | Shape                                                                                                                   |
+| --------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Request   | `{"v": 1, "id": <string>, "method": <string>, "params": <object or absent>}`                                            |
+| Success   | `{"v": 1, "id": <string>, "ok": true, "result": <object>}`                                                              |
+| Refusal   | `{"v": 1, "id": <string>, "ok": false, "error": {"class": <string>, "code": <string>, "message": <string>, "counts"?}}` |
+
+Rules that apply to every method:
+
+1. `v` is the integer `1`. `id` is 1 to 64 bytes and is echoed; it is an opaque
+   per-connection correlation value, not a UUID, not a durable identity, and
+   never authority. The client chooses the request `id`; the server chooses an
+   event `id` and never accepts a client-supplied event id. `method` is a
+   lowercase dotted name of at most 128 bytes. `params` is a JSON object when
+   present; an absent or `null` `params` is the same as an empty object.
+2. Every served success `result` is a JSON object. A refusal is never a partial
+   result and applies nothing; the `error.code` vocabulary is the closed set in
+   [Refusal taxonomy](#refusal-taxonomy), and `counts` is
+   `{"actual": <u64>, "limit": <u64>}` when present.
+3. Every value is case-sensitive. An identifier in the wrong case is
+   `InvalidRequest`, never normalized. A hex identifier is lowercase.
+4. **Presence.** `required` means the key must be present with the stated type;
+   a missing key, an explicit `null`, or a different JSON type is
+   `InvalidRequest`. `optional` means the key may be omitted; the frozen
+   encoding is omission. An explicit `null` is not a valid optional encoding:
+   the merged parser treats it as absent for a few string and integer helpers,
+   but refuses it for `ttl_ms`, a digest, `generation`, and `target_attach_id`,
+   and that tolerance is not a wire promise. A `1.0` client must omit an
+   optional field rather than send `null`.
+5. **Unknown fields.** A well-formed field that a method does not read is
+   ignored, except for the transport-reserved ambient names `auth`, `scope`,
+   and `role` at depth 1, which are `InvalidRequest`, and the method-scoped
+   cross-field rules named in the method table. The service never silently
+   applies a field that belongs to another method.
+6. **Instance binding.** `daemon_instance_id` is accepted on every
+   post-handshake served method: a string of 32 lowercase hex characters. A
+   malformed value is `InvalidRequest`; a value different from the serving
+   instance is `Denied/StaleInstance`. It is checked after the scope stage and
+   before the handler's target lookup, so a caller without the method scope
+   learns nothing from it. `daemon.negotiate` is the handshake and is not a
+   post-handshake request.
+7. **Idempotency.** `idempotency_key` is a string of 1 to 128 bytes (UTF-8
+   bytes, not characters) and is opaque to the daemon; empty or over-long is
+   `InvalidRequest`. It is required on the four keyed methods and is ignored on
+   a keyless method. A duplicate with the same derived key and the same
+   fingerprint replays the stored descriptor with a recomputed snapshot and
+   applies nothing; a different fingerprint is `Denied/IdempotencyConflict`.
+   A lease-bound result replays only on the connection that created it;
+   `session.create` replays across connections so a lost response is
+   recoverable. A full store refuses a keyed method with
+   `Denied/IdempotencyCapacity` and never blocks termination or revocation.
+8. **Generation and target aliases.** `generation` is the canonical unsigned
+   integer on `session.abort`, `session.kill`, and
+   `session.control.transfer`. `expected_generation` is the canonical name on
+   `session.attach` and a deprecated alias on the other three. On
+   `session.control.transfer`, `target_attach_id` is canonical and `attach_id`
+   is a deprecated alias. `attach_id` is the canonical name on
+   `session.detach` and `lease.heartbeat`; no alias is read there. Both
+   spellings with the same value are accepted; both with different values are
+   `InvalidRequest` and apply nothing. The aliases
+   remain accepted for the whole of major `1`; removing one is a `2.0` change,
+   because a `1.x` removal would refuse input `1.0` accepted.
+9. **Bounds and digits.** A `u64` is a non-negative JSON integer; a fractional,
+   negative, or string-encoded number is `InvalidRequest`. A `u32` is a
+   non-negative JSON integer no greater than `4294967295`.
+
+### Shared object shapes
+
+`session` is one object, rendered by `session_json` and reused by every method
+that returns a session. It is metadata only: no terminal text, PTY bytes,
+scrollback, clipboard content, content handle, owner peer, controller presence,
+or pending-grant count.
+
+| Key               | Type           | Presence    | Meaning                                                                                                                                                                                                  |
+| ----------------- | -------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session_id`      | string         | required    | 32 lowercase hex. Server-assigned; never client-supplied.                                                                                                                                                |
+| `kind`            | string         | required    | `terminal` in `1.0`.                                                                                                                                                                                     |
+| `terminal_id`     | string         | required    | The supplied id, or the server-assigned 32-hex id when the request omitted one.                                                                                                                          |
+| `state`           | string         | required    | `created`, `running`, `stopping`, `exited`, `failed`, or `terminated`.                                                                                                                                   |
+| `generation`      | u64            | required    | `0` for every session in `1.0`; no worker is bound.                                                                                                                                                      |
+| `state_revision`  | u64            | required    | Monotonic revision; it changes on a snapshot-visible mutation.                                                                                                                                           |
+| `attach_count`    | u64            | required    | Number of live and retained attach leases recorded for the session.                                                                                                                                      |
+| `attached`        | bool           | required    | Derived from `attach_count > 0`; not a lifecycle state.                                                                                                                                                  |
+| `created_at_ms`   | u64            | required    | Server monotonic milliseconds.                                                                                                                                                                           |
+| `last_seen_ms`    | u64            | required    | Server monotonic milliseconds of the last session activity.                                                                                                                                              |
+| `terminal_reason` | string or null | conditional | Present only when `state` is terminal; `worker_exit`, `worker_signal`, `spawn_failed`, `supervision_failed`, `consumer_cancel`, `consumer_timeout`, `operator_abort`, `daemon_stop`, or `host_shutdown`. |
+| `cleanup`         | string or null | conditional | Present only when `state` is terminal; `swept`, `unverified`, or `not_started`.                                                                                                                          |
+
+`counts` is the `daemon.status` `sessions` object:
+
+| Key        | Type | Presence | Meaning                                   |
+| ---------- | ---- | -------- | ----------------------------------------- |
+| `created`  | u64  | required | Sessions registered and not yet bound.    |
+| `running`  | u64  | required | Bound sessions that are alive.            |
+| `stopping` | u64  | required | Sessions draining after an accepted stop. |
+| `terminal` | u64  | required | Retained terminal records.                |
+
+A `limits` entry is `{"name": string, "effective": u64, "default": u64, "system_max": u64}`.
+The `1.0` handshake and `daemon.status` advertise 54 entries; a client reads
+`effective` and never hardcodes the count.
+
+### Served methods
+
+Each table below is the complete request and success-result schema for one
+method. A refusal replaces the result and is listed only where the method has a
+non-obvious refusal. Keys are exact; order is not significant.
+
+#### `daemon.negotiate`
+
+Request and result: the [Handshake](#handshake) tables. No other key is read.
+Exactly one negotiate per connection; a second is `Denied/AlreadyNegotiated`
+and the connection closes. The method is pre-authentication, so
+`daemon_instance_id` is not a field here.
+
+#### `daemon.status`
+
+Request: no required parameter; only the common `daemon_instance_id` is read.
+
+| Result key           | Type        | Presence | Notes                                                                                                                                                                     |
+| -------------------- | ----------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `daemon_instance_id` | string      | required | 32 lowercase hex; the serving instance.                                                                                                                                   |
+| `daemon_state`       | string      | required | `running` or `stopping`.                                                                                                                                                  |
+| `active_sessions`    | u64         | required | `created + running + stopping`.                                                                                                                                           |
+| `sessions`           | object      | required | The `counts` object above.                                                                                                                                                |
+| `audit_degraded`     | bool        | required | `true` when the audit sink is degraded.                                                                                                                                   |
+| `drain_deadline_ms`  | u64 or null | required | Server monotonic milliseconds; `null` while running.                                                                                                                      |
+| `tcp_listeners`      | u32 or null | required | This process's listening TCP sockets; `null` outside Linux or when `/proc/self` is unavailable. The served cell reports `0`; the field is observational, never authority. |
+| `limits`             | array       | required | Array of `limits` entries; same values as the handshake.                                                                                                                  |
+
+The merged build also emits `orphans: {"verify": "deferred"}`. It is a
+transitional placeholder, not a `1.0` field: it is omitted from the frozen key
+set above, no consumer may read it, and orphan counts and verification state
+are deferred to bitty#2791. `daemon_pid`, uptime, and orphan counts are **not
+served**; see
+[Accepted fields not served in 1.0](#accepted-fields-not-served-in-10).
+
+#### `daemon.stop`
+
+| Request key | Type   | Presence | Notes                                    |
+| ----------- | ------ | -------- | ---------------------------------------- |
+| `mode`      | string | optional | `refuse` (default), `drain`, or `force`. |
+
+| Result key          | Type        | Presence | Notes                                                                               |
+| ------------------- | ----------- | -------- | ----------------------------------------------------------------------------------- |
+| `accepted`          | bool        | required | Always `true` on success.                                                           |
+| `mode`              | string      | required | The parsed mode.                                                                    |
+| `active_sessions`   | u64         | required | Active count observed before the stop.                                              |
+| `terminated`        | u64         | required | Sessions terminated by this stop. In `1.0` these are generation-0 pre-bind cancels. |
+| `drain_deadline_ms` | u64 or null | required | Set for `drain`; `null` for `refuse` and `force`.                                   |
+
+A repeated stop after the daemon entered `stopping` is
+`Denied/DaemonStopping`. A default `refuse` stop with active sessions is
+`Denied/ActiveSessions` with `counts.actual = active` and
+`counts.limit = max_sessions`.
+
+#### `daemon.host_grant`
+
+| Request key                 | Type   | Presence | Notes                                                                                    |
+| --------------------------- | ------ | -------- | ---------------------------------------------------------------------------------------- |
+| `action`                    | string | required | `mint` or `revoke`; any other value is `InvalidRequest`.                                 |
+| `ttl_ms`                    | u64    | optional | Mint only; `1..=effective host_grant_ttl_ms`; absent uses the default.                   |
+| `client_correlation_digest` | string | optional | Mint only; 32 lowercase hex, the derived digest from the handshake.                      |
+| `grant_id`                  | string | optional | Required for `revoke`; 32 lowercase hex. Ignored on `mint` under the unknown-field rule. |
+
+Mint result:
+
+| Result key      | Type   | Presence | Notes                                                |
+| --------------- | ------ | -------- | ---------------------------------------------------- |
+| `grant_id`      | string | required | 32 lowercase hex; non-secret.                        |
+| `grant`         | string | required | 64 lowercase hex; the 256-bit bearer, returned once. |
+| `expires_at_ms` | u64    | required | Server monotonic milliseconds.                       |
+
+Revoke result: `{"grant_id": string, "revoked": bool, "not_active": bool}`.
+`revoked` and `not_active` are complements; a second revoke is the
+`not_active` success, not a refusal. `observer_correlation_digest` is a
+`session.grant` field and is `InvalidRequest` here; `ttl_ms` and
+`client_correlation_digest` on `revoke` are `InvalidRequest`. Mint is unkeyed:
+the duplicate policy is the open point named in
+[Grant request fields](#grant-request-fields).
+
+#### `daemon.orphans.verify`
+
+Not served in `1.0`; see [Unserved catalog methods](#unserved-catalog-methods).
+
+#### `session.create`
+
+| Request key       | Type   | Presence | Notes                                                                                                                                                                                                                  |
+| ----------------- | ------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kind`            | string | optional | `terminal` (default) or `worker`. `worker` is `Denied/UnsupportedCapability` after the stage-6 create-scope check and before the stage-7 host-grant liveness re-check; any other value is `InvalidRequest`.            |
+| `terminal_id`     | string | optional | 1 to 128 bytes (the `terminal_id_bytes` system maximum) from `[A-Za-z0-9._:-]`; absent means the server assigns 32 lowercase hex. Duplicate among live sessions is `Denied/TerminalAlreadyHosted` for a different key. |
+| `idempotency_key` | string | required | 1 to 128 bytes.                                                                                                                                                                                                        |
+
+No spawn field is read: `argv`, `env`, `cwd`, `cols`, `rows`, and `term` are
+not `1.0` request fields. A present one is an unknown field and is ignored.
+**Served semantics:** the method registers a `created` session at
+`generation: 0` with `state_revision: 0`, no attach, and no worker. It starts
+no process or PTY, allocates no terminal, and opens no content plane. A created
+session never reaches `running` in this slice; it can be inspected, attached
+for metadata, granted, aborted, or killed. Do not describe create as spawning a
+terminal.
+
+Fingerprint parts: `create`, `kind`, and `terminal_id` (empty when absent).
+
+| Result key      | Type           | Presence | Notes                                                                                                                                         |
+| --------------- | -------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session`       | object         | required | A `session` snapshot; `state: created`, `generation: 0`.                                                                                      |
+| `control_token` | string or null | required | 64 lowercase hex on a fresh create while the initial token is live; `null` on a replay after a controller claim or once the token is retired. |
+| `replayed`      | bool           | required | `false` for the first execution, `true` for a stored-descriptor replay.                                                                       |
+
+The response is the only place the initial control token appears. A replay
+recomputes the snapshot and never re-issues a claimed token.
+
+#### `session.status`
+
+| Request key     | Type   | Presence | Notes                                       |
+| --------------- | ------ | -------- | ------------------------------------------- |
+| `session_id`    | string | required | 32 lowercase hex.                           |
+| `control_token` | string | optional | 64 lowercase hex; used only for visibility. |
+
+`generation` is not read; a present value is an unknown field and is ignored.
+The result is `{"session": <session object>}`. A missing token is `NotFound` or
+the visible-lease path, never `Denied/InvalidControlToken`; that mapping is
+control-method only. The method never refuses on a stale generation.
+
+#### `session.list`
+
+Request: no required parameter; only the common `daemon_instance_id` is read.
+Result: `{"sessions": [<session object>, ...]}`. An ordinary connection sees
+only sessions with a live lease on that connection; `daemon.inspect` adds the
+operator all-session view. Neither view carries owner peer identity or content.
+
+#### `session.attach`
+
+| Request key           | Type   | Presence                | Notes                                                                                         |
+| --------------------- | ------ | ----------------------- | --------------------------------------------------------------------------------------------- |
+| `session_id`          | string | required                | 32 lowercase hex.                                                                             |
+| `attach_role`         | string | required                | `controller` or `observer`; `role` is not a request field and is `InvalidRequest` at depth 1. |
+| `expected_generation` | u64    | required for controller | Must match the current generation; mismatch is `Denied/StaleGeneration`.                      |
+| `control_token`       | string | optional for controller | 64 lowercase hex; a missing token on a claim is `Denied/InvalidControlToken`.                 |
+| `observer_grant`      | string | required for observer   | 64 lowercase hex; single-use.                                                                 |
+| `idempotency_key`     | string | required for controller | 1 to 128 bytes. Observer attach does not read it.                                             |
+
+Controller success result:
+
+| Result key            | Type   | Presence | Notes                                               |
+| --------------------- | ------ | -------- | --------------------------------------------------- |
+| `session`             | object | required | Snapshot after the claim.                           |
+| `attach_id`           | string | required | 32 lowercase hex.                                   |
+| `role`                | string | required | `controller`.                                       |
+| `lease_expires_at_ms` | u64    | required | Server monotonic milliseconds.                      |
+| `control_token`       | string | required | 64 lowercase hex; the rotated token, returned once. |
+| `replayed`            | bool   | required | `false`.                                            |
+
+Controller replay result: `{"session": object, "attach_id": string or null,
+"role": "controller", "replayed": true, "not_attached": bool}`. It carries no
+`lease_expires_at_ms` and no `control_token`; `attach_id` is `null` when the
+lease no longer resolves, and `not_attached` is then `true`.
+
+Observer success result: `{"session": object, "attach_id": string,
+"role": "observer", "lease_expires_at_ms": u64, "replayed": false}`. It carries
+no `control_token`. Observer attach is not keyed and never replays: a consumed
+grant is `Denied/ObserverGrantRequired`. The response carries no backlog,
+`backlog_truncated`, `earliest_revision`, or effective lease scopes in `1.0`.
+
+#### `session.grant`
+
+| Request key                   | Type   | Presence | Notes                                                           |
+| ----------------------------- | ------ | -------- | --------------------------------------------------------------- |
+| `session_id`                  | string | required | 32 lowercase hex.                                               |
+| `idempotency_key`             | string | required | 1 to 128 bytes.                                                 |
+| `control_token`               | string | optional | 64 lowercase hex; required only when control is vacant.         |
+| `ttl_ms`                      | u64    | optional | `1..=effective observer_grant_ttl_ms`; absent uses the default. |
+| `observer_correlation_digest` | string | optional | 32 lowercase hex; absent keeps the uid-only binding.            |
+
+`kind` is **not** a served request field. A present `kind` is ignored under the
+unknown-field rule and never selects a grant kind; `1.0` mints observer grants
+only. The only conforming client value is `kind: observer`, and clients omit
+the field. `client_correlation_digest` is a `daemon.host_grant` field and is
+`InvalidRequest` here.
+
+Fingerprint parts: `grant`, `session_id`, `ttl_ms` (decimal or `default`), and
+`observer_correlation_digest` (hex or `none`).
+
+Mint result:
+
+| Result key      | Type   | Presence | Notes                                                         |
+| --------------- | ------ | -------- | ------------------------------------------------------------- |
+| `grant_id`      | string | required | 32 lowercase hex.                                             |
+| `grant`         | string | required | 64 lowercase hex; the 256-bit observer bearer, returned once. |
+| `expires_at_ms` | u64    | required | Server monotonic milliseconds.                                |
+| `session_id`    | string | required | 32 lowercase hex.                                             |
+| `replayed`      | bool   | required | `false`.                                                      |
+
+Replay result: `{"grant_id": string, "grant": string or null,
+"grant_active": bool, "session_id": string, "replayed": true}`. It carries no
+`expires_at_ms`; `grant` is `null` and `grant_active` is `false` once the grant
+is consumed, expired, or revoked. A terminal session is `Denied/NotRunning`
+before keyed admission.
+
+#### `session.grant.revoke`
+
+| Request key     | Type   | Presence | Notes                                                   |
+| --------------- | ------ | -------- | ------------------------------------------------------- |
+| `grant_id`      | string | required | 32 lowercase hex.                                       |
+| `control_token` | string | optional | 64 lowercase hex; required only when control is vacant. |
+
+`ttl_ms`, `observer_correlation_digest`, and `client_correlation_digest` are
+mint-only; a present one is `InvalidRequest`. Result:
+`{"grant_id": string, "revoked": bool, "not_active": bool}`. `revoked` and
+`not_active` are complements. The `not_active` descriptor is byte-identical for
+an unknown grant, a swept record, and a non-operator correlation mismatch.
+
+#### `session.detach`
+
+| Request key     | Type   | Presence | Notes                                                                             |
+| --------------- | ------ | -------- | --------------------------------------------------------------------------------- |
+| `attach_id`     | string | required | 32 lowercase hex. The `session_id`-plus-`attach_id` request form is not served.   |
+| `control_token` | string | optional | 64 lowercase hex; required only when detaching another lease with vacant control. |
+
+Result:
+
+| Result key     | Type   | Presence | Notes                                  |
+| -------------- | ------ | -------- | -------------------------------------- |
+| `session`      | object | required | Snapshot after the detach.             |
+| `attach_id`    | string | required | The target handle.                     |
+| `was_attached` | bool   | required | `false` on the idempotent repeat.      |
+| `not_attached` | bool   | required | Complement of `was_attached`.          |
+| `revoked`      | bool   | required | `true` when another lease was revoked. |
+
+A repeat detach of a handle this connection already detached or revoked changes
+nothing and does not bump the revision.
+
+#### `session.control.transfer`
+
+| Request key        | Type   | Presence | Notes                                                                  |
+| ------------------ | ------ | -------- | ---------------------------------------------------------------------- |
+| `session_id`       | string | required | 32 lowercase hex.                                                      |
+| `generation`       | u64    | required | Canonical; `expected_generation` is accepted as the one-release alias. |
+| `target_attach_id` | string | required | 32 lowercase hex; `attach_id` is accepted as the one-release alias.    |
+| `control_token`    | string | optional | 64 lowercase hex; required only when control is vacant.                |
+| `idempotency_key`  | string | required | 1 to 128 bytes.                                                        |
+
+Live result: `{"session": object, "controller": string, "previous_controller":
+string or null, "replayed": false}`. Replay result: `{"session": object,
+"controller": string or null, "replayed": true, "not_attached": bool}`; it
+carries no `previous_controller`. The rotated token is delivered to the target
+on the target's next `lease.heartbeat`, never in the requester's result.
+
+#### `session.abort`
+
+| Request key     | Type   | Presence | Notes                                                                    |
+| --------------- | ------ | -------- | ------------------------------------------------------------------------ |
+| `session_id`    | string | required | 32 lowercase hex.                                                        |
+| `generation`    | u64    | required | Canonical; `expected_generation` is accepted as the one-release alias.   |
+| `reason_class`  | string | required | `cancel`, `timeout`, or `operator`; any other value is `InvalidRequest`. |
+| `control_token` | string | optional | 64 lowercase hex; not accepted with `reason_class: operator`.            |
+
+The method is keyless; an `idempotency_key` is ignored. Results:
+
+| Branch            | Result keys                                                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Already terminal  | `session`, `accepted: false`, `not_running: true`. No `reason`, `stage`, `cleanup`, or `deadline_ms`.                                       |
+| Pre-bind accepted | `session`, `accepted: true`, `reason` (terminal reason), `stage: "not_started"`, `cleanup: "not_started"`.                                  |
+| Bound accepted    | `session`, `accepted: true`, `reason` (terminal reason), `stage: "graceful"` or `"kill_due"`, `deadline_ms` (u64). It carries no `cleanup`. |
+
+In `1.0` every session is at generation `0` and unbound, so the observed
+accepted branch is pre-bind: the session becomes `terminated` with the requested
+reason and `cleanup: not_started`. The bound branch is the schema for the
+worker slice (bitty#2790) and is unreachable here.
+
+#### `session.kill`
+
+| Request key  | Type   | Presence | Notes                                                                  |
+| ------------ | ------ | -------- | ---------------------------------------------------------------------- |
+| `session_id` | string | required | 32 lowercase hex.                                                      |
+| `generation` | u64    | required | Canonical; `expected_generation` is accepted as the one-release alias. |
+
+No `control_token` and no key. Operator-only (`daemon.control`). Result branches
+match `session.abort`: already terminal, pre-bind accepted with
+`reason: operator_abort` and `cleanup: not_started`, or bound accepted with
+`stage` and `deadline_ms`.
+
+#### `lease.heartbeat`
+
+| Request key | Type   | Presence | Notes                                                                             |
+| ----------- | ------ | -------- | --------------------------------------------------------------------------------- |
+| `attach_id` | string | required | 32 lowercase hex; **singular**. The accepted multi-id request form is not served. |
+
+Result:
+
+| Result key            | Type           | Presence | Notes                                                                                                                           |
+| --------------------- | -------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `session`             | object         | required | Snapshot at the heartbeat.                                                                                                      |
+| `attach_id`           | string         | required | Echo of the singular handle.                                                                                                    |
+| `lease_expires_at_ms` | u64            | required | Server monotonic milliseconds.                                                                                                  |
+| `control_token`       | string or null | required | The pending rotated token when this lease is the transfer target; `null` otherwise. It is always present and is delivered once. |
+
+The field is singular and the result has no `server_monotonic_ms`; both are
+recorded as dated narrowings against the accepted heartbeat prose.
+
+### Unserved catalog methods
+
+These methods are in the catalog and keep their frozen spelling, but the merged
+daemon refuses them before parsing a method payload. They have no success
+schema in `1.0`.
+
+| Method                  | Request in `1.0` | Result in `1.0`                                                           | Deferred owner |
+| ----------------------- | ---------------- | ------------------------------------------------------------------------- | -------------- |
+| `session.resize`        | Not parsed       | `Denied/ScopeViolation`, before target lookup and before payload parsing. | bitty#2790     |
+| `daemon.orphans.verify` | Not parsed       | `Denied/UnsupportedCapability`, after scope and before any orphan action. | bitty#2791     |
+
+`session.resize` intent: when served, the request is `session_id` (32 lowercase
+hex), `generation` (u64), and the dimensions `cols` and `rows` (positive
+integers within the terminal bounds); the connection must already hold the
+`terminal.manage` grant from `daemon.negotiate`, and the caller must hold the
+current controller lease. The result is not frozen here; the two candidates the
+worker slice may choose are a full `{"session": object}` snapshot or
+`{"accepted": bool}` with the revision, and the choice is part of the bitty#2790
+revision. An observer never resizes.
+
+`daemon.orphans.verify` intent: the accepted text allows `action: verify`
+(default) or `action: retire` with a bounded journal record id. Neither the
+`action` parameter nor `retire` is in the open PR #2801 head; PR #2801 serves a
+parameterless pass returning `{"reaped": u64, "unverified": u64, "stale": u64,
+"reserved": u64, "committed": u64}`. That candidate shape is recorded as
+evidence only. It is not frozen until bitty#2791 merges, and `retire` stays
+unserved until a merged handler accepts it.
+
+### Dated narrowings
+
+These are the places where the served wire is narrower than the accepted prose.
+Each is dated, scoped, and owned; none widens a control, and none may be read as
+a general override of the accepted contract.
+
+| Date       | Narrowing                                                                                                                                                                                                                                  | Served evidence at `ea0de791`                                                                                   | Effect on a consumer                                                                                                       | Owner      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 2026-10-29 | `session.attach` requests `attach_role`, not `role`. The accepted text says `role`, but `role` is a transport-reserved ambient name at depth 1 and is `InvalidRequest`; the response key is `role`.                                        | `dispatch.rs` reads `attach_role`; `validate_no_ambient_auth` rejects `role`; `wire.rs` test pins the split.    | Send `attach_role`; read `role`. Do not send `role`.                                                                       | bitty#2664 |
+| 2026-10-29 | An **absent** `operator_capability` is not a refusal at negotiate and adds no `daemon.*` scope. A later `daemon.*` method is `Denied/ScopeViolation`; only a present malformed or wrong bearer is one static `Unauthenticated` and closes. | `handshake.rs` verifies only a present bearer; `dispatch.rs` checks the scope, not the field.                   | Omit the field for a consumer connection; treat `ScopeViolation` as the missing-capability answer.                         | bitty#2607 |
+| 2026-10-29 | The `D-07` uniform `NotFound` is narrowed for a **live vacant-control** session: a control method with a missing, stale, or rotated token answers `Denied/InvalidControlToken`. No other pair is distinguishable.                          | `dispatch.rs` `live_vacant_control` and `control_authority`; [Denial order](#denial-order-for-control-methods). | Treat this one code as the vacant-control signal; do not infer existence from any other refusal.                           | bitty#2664 |
+| 2026-10-29 | `session.create` is registry-only. The accepted text requires a terminal spawn specification; `1.0` reads none, starts no process or PTY, and leaves the session at `generation: 0`, `state: created`.                                     | `dispatch.rs` `session_create` calls `host.create` with no spawn spec; the registry stores metadata only.       | Never treat create as a running terminal or send spawn fields expecting an effect; a create-only adapter is metadata-only. | bitty#2790 |
+| 2026-10-29 | `lease.heartbeat` takes a **singular** `attach_id` and returns no `server_monotonic_ms`. The accepted text allows one or more ids and a server clock in the response.                                                                      | `dispatch.rs` `lease_heartbeat` parses one `attach_id`; the result has `lease_expires_at_ms` only.              | Heartbeat one lease per request and use the handshake `server_monotonic_ms` for age.                                       | bitty#2806 |
+| 2026-10-29 | `session.grant` does not read `kind`. The accepted text names `kind: observer`; the served method mints observer grants only and ignores any present `kind`.                                                                               | `dispatch.rs` `session_grant` reads no `kind`; the unknown-field rule drops it.                                 | Omit `kind`; never use it to select host or observer authority.                                                            | bitty#2664 |
+| 2026-10-29 | `session.detach` requires `attach_id`; the accepted `session_id`-plus-`attach_id` form is not read.                                                                                                                                        | `dispatch.rs` `session_detach` parses `attach_id` only; `session_id` is an ignored unknown field.               | Always send the target `attach_id`.                                                                                        | bitty#2806 |
+
+The generation and target aliases are not narrowings: they are additive
+tolerances on top of the accepted canonical names, and they are removed only at
+`2.0` (see rule 8 in
+[Envelope and common conventions](#envelope-and-common-conventions)).
+
+### Accepted fields not served in 1.0
+
+This table separates an accepted field from a served one. `Not served` means no
+success key exists in `1.0`; a consumer must not read the key or infer it from
+the snapshot. Every row names its owner and is dated 2026-10-29.
+
+| Accepted field                                                                                  | Accepted source           | Served in `1.0`                                       | Status     | Owner                                         |
+| ----------------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------- | ---------- | --------------------------------------------- |
+| Controller presence and pending observer-grant count in `session.status`/`session.list`         | `D-09`; status section    | No key in the `session` snapshot.                     | Deferred   | bitty#2806                                    |
+| Owner peer identity in the `session.list` operator view                                         | `D-09`; list section      | No key; the snapshot is owner-free.                   | Deferred   | bitty#2806                                    |
+| Effective lease scopes in the `session.attach` result                                           | `D-09`; attach section    | No key.                                               | Deferred   | bitty#2806                                    |
+| Backlog, `backlog_truncated`, and `earliest_revision` in `session.attach`                       | `D-10`; attach section    | No key.                                               | Deferred   | bitty#2792 (delivery) and bitty#2605 (vector) |
+| `server_monotonic_ms` in the `lease.heartbeat` result                                           | `D-12`; heartbeat section | No key; the handshake value is the only server clock. | Deferred   | bitty#2806                                    |
+| `daemon_pid` and uptime in `daemon.status`                                                      | Status section            | No key.                                               | Deferred   | bitty#2806                                    |
+| Orphan counts by class and verification state in `daemon.status`                                | `D-06`; status section    | Only the unfrozen `orphans` placeholder; no counts.   | Deferred   | bitty#2791                                    |
+| Terminal spawn specification (`argv`, `env`, `cwd`, `cols`, `rows`, `term`) in `session.create` | Create section            | No key is read; the method is registry-only.          | Not served | bitty#2790                                    |
+| `action` (`verify` or `retire`) and the count result in `daemon.orphans.verify`                 | `D-06`; orphan section    | Neither is parsed; the method refuses.                | Not served | bitty#2791                                    |
+| `session.resize` success result and dimensions                                                  | `D-09`; resize section    | No success path; the method refuses before parsing.   | Not served | bitty#2790                                    |
+
+A deferred row is not permission to invent the key; the addition is an optional
+response field in a later `1.x` minor, and an old client ignores it. A
+`Not served` row is a behavior gap, not an additive field: it needs the owning
+implementation slice and a conformance vector before this schema may name a
+success result.
+
+### Event schema and capability
+
+`D-10` already froze the event envelope, per-lease routing, per-session
+revision ordering, the bounded backlog, and the terminal-event guarantee. This
+freeze restates those names and adds no event kind:
+
+| Field               | Type   | Meaning                                                                                              |
+| ------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| `v`                 | u64    | Wire version `1`.                                                                                    |
+| `id`                | string | Opaque server-chosen per-connection correlation value, at most 64 bytes. Not a UUID and not durable. |
+| `event.kind`        | string | `session_state`, `session_terminal`, `control_transfer`, `lease_revoked`, or `daemon_stopping`.      |
+| `event.instance_id` | string | The `daemon_instance_id` the event belongs to.                                                       |
+| `event.session_id`  | string | 32 lowercase hex.                                                                                    |
+| `event.attach_id`   | string | The target lease, 32 lowercase hex.                                                                  |
+| `event.revision`    | u64    | The session `state_revision` the event carries.                                                      |
+| `event.terminal`    | bool   | The terminal marker; a terminal event is never silently shed.                                        |
+
+The event body never carries PTY bytes, terminal text, prompts, tool output, or
+provider payloads. The only deferred part is delivery: no frame is pushed in
+`1.0`, `events` is frozen `false`, and bitty#2792 owns the wire plus bitty#2605
+the vectors. A client that receives a frame while the negotiated bit is `false`
+must ignore it and reconcile with `session.status`.
+
+### Request deadline
+
+The handshake advertises `request_timeout_ms` (default and system maximum
+`10000`), and the accepted `D-13` taxonomy keeps `Request` as a daemon-owned
+bound with a typed timeout. The merged daemon enforces only the negotiate
+deadline: `Refusal::timeout` has one call site, in `src/service/server.rs`, and
+no post-handshake request deadline is applied (`src/limits.rs` declares
+`RequestTimeoutMs`; `src/service/dispatch.rs` never consults it). This freeze
+does not redefine `Timeout` as audit-only. It records a dated enforcement gap:
+the class stays in the accepted taxonomy, the advertised limit stays in the
+`limits` array, and enforcement plus a request-deadline vector are deferred to
+bitty#2805. Until that lands, a `1.0` client must not assume a post-handshake
+request is bounded by the advertised value.
+
 ## Authorization order
 
 ### Stage order
@@ -703,19 +1319,19 @@ delivery remains deferred to bitty#2792.
 Every request walks the same stages in the same order. A request that fails a
 stage stops there; a later stage never observes it.
 
-| Stage | Check                                                                                                                                                                                                    | Refusal                                                                                                                                            |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Transport: accepted connection, single-instance lock, captured peer; per-frame peer credentials verified while the frame is assembled, before any payload is parsed or resolved; supported per-frame `v` | `VersionMismatch`, `Unauthenticated`, or transport failure; connection closes where the class says so                                              |
-| 2     | Pre-authentication: negotiate completed (service-version range fixed), one negotiate only, timeout and byte budget respected; a stopping daemon refuses mutations except a repeated stop                 | `Denied/AlreadyNegotiated`, `LimitExceeded`; `Denied/DaemonStopping`; `Timeout` is an audit record only; connection closes for the handshake cases |
-| 3     | Method resolves: a well-formed name in the registry, or a malformed name                                                                                                                                 | `NotFound` for a well-formed unknown method; `InvalidMethod` for a malformed name                                                                  |
-| 4     | Capability: the method's required capability is enabled                                                                                                                                                  | `Denied/UnsupportedCapability`                                                                                                                     |
-| 5     | Authentication: the captured peer is still the same live process before a privileged effect; the per-frame credential was already checked at stage 1                                                     | `Unauthenticated`; connection closes and nothing applies                                                                                           |
-| 6     | Scope: the method's required scope is in the connection's effective set                                                                                                                                  | `Denied/ScopeViolation`, decided before any target lookup                                                                                          |
-| 7     | Derived authority: consumed host consent, valid observer grant, control relation, or operator path                                                                                                       | `Denied/ConsentRequired`, `Denied/ObserverGrantRequired`, `Denied/ControllerRequired`, `Denied/InvalidControlToken`, `Denied/ControlHeld`          |
-| 8     | Target resolution: instance binding, visibility, and existence                                                                                                                                           | `Denied/StaleInstance` before lookup; uniform `NotFound` for unknown, collected, or invisible; the live-vacant-control carve-out below             |
-| 9     | Generation: the request's generation matches the session's current generation on effectful methods                                                                                                       | `Denied/StaleGeneration` with the current generation and revision, applying nothing                                                                |
-| 10    | Idempotency: keyed methods consult their store; duplicates replay, fingerprints conflict                                                                                                                 | `Denied/IdempotencyConflict`, `Denied/IdempotencyCapacity` (keyed only)                                                                            |
-| 11    | Effect, revision increment, attribution, and typed result                                                                                                                                                | `Denied/Internal`, `Internal`, or the method result                                                                                                |
+| Stage | Check                                                                                                                                                                                                                                                  | Refusal                                                                                                                                                                             |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Transport: accepted connection, single-instance lock, captured peer; per-frame peer credentials verified while the frame is assembled, before any payload is parsed or resolved; supported per-frame `v`                                               | `VersionMismatch`, `Unauthenticated`, or transport failure; connection closes where the class says so                                                                               |
+| 2     | Pre-authentication: negotiate completed (service-version range fixed), one negotiate only, timeout and byte budget respected; a stopping daemon refuses mutations except a repeated stop                                                               | `Denied/AlreadyNegotiated`, `LimitExceeded`; `Denied/DaemonStopping`; the negotiate deadline emits one aggregated `Timeout` audit record; connection closes for the handshake cases |
+| 3     | Method resolves: a well-formed name in the registry, or a malformed name                                                                                                                                                                               | `NotFound` for a well-formed unknown method; `InvalidMethod` for a malformed name                                                                                                   |
+| 4     | Capability: the method's required capability is enabled                                                                                                                                                                                                | `Denied/UnsupportedCapability`                                                                                                                                                      |
+| 5     | Authentication: the captured peer is still the same live process before a privileged effect; the per-frame credential was already checked at stage 1                                                                                                   | `Unauthenticated`; connection closes and nothing applies                                                                                                                            |
+| 6     | Scope: the method's required scope is in the connection's effective set                                                                                                                                                                                | `Denied/ScopeViolation`, decided before any target lookup                                                                                                                           |
+| 7     | Derived authority: consumed host consent, valid observer grant, control relation, or operator path                                                                                                                                                     | `Denied/ConsentRequired`, `Denied/ObserverGrantRequired`, `Denied/ControllerRequired`, `Denied/InvalidControlToken`, `Denied/ControlHeld`                                           |
+| 8     | Target resolution: instance binding, visibility, and existence                                                                                                                                                                                         | `Denied/StaleInstance` before lookup; uniform `NotFound` for unknown, collected, or invisible; the live-vacant-control carve-out below                                              |
+| 9     | Generation: the request's generation matches the session's current generation on effectful methods; `generation` is canonical, `expected_generation` is the attach name and the one-release alias elsewhere, and an ambiguous pair is `InvalidRequest` | `Denied/StaleGeneration` with the current generation and revision, applying nothing                                                                                                 |
+| 10    | Idempotency: keyed methods consult their store; duplicates replay, fingerprints conflict                                                                                                                                                               | `Denied/IdempotencyConflict`, `Denied/IdempotencyCapacity` (keyed only)                                                                                                             |
+| 11    | Effect, revision increment, attribution, and typed result                                                                                                                                                                                              | `Denied/Internal`, `Internal`, or the method result                                                                                                                                 |
 
 Rules:
 
@@ -872,28 +1488,35 @@ result classes are `VersionMismatch`, `Unauthenticated`, `LimitExceeded`,
 is the uniform target result and the well-formed unknown-method result,
 `InvalidMethod` is a grammar failure, `InvalidRequest` is a malformed payload or
 field, and `Internal` is the fail-closed invariant result with no partial
-mutation. `Timeout` is not a wire result: it is the single aggregated audit
-record for a missed negotiate deadline, closes the connection, and sends no
-frame. The inherited `FrameTooLarge`, `PayloadTooLarge`, `PendingLimitExceeded`,
-and `ChannelFull` enum labels have no wire emission in this slice; an
-over-bound frame is reported as `LimitExceeded`. A `Denied` code not in the
-table is not a `1.0` code.
+mutation. `Timeout` stays the accepted `D-13` request-deadline class. In `1.0`
+it is emitted only for a missed negotiate deadline, as one aggregated audit
+record with `request_id` and `timeout_ms`, and no response frame; a
+post-handshake request deadline is not enforced yet (bitty#2805), so no
+post-handshake `Timeout` is claimed. The class is not redefined as audit-only:
+when enforcement lands, it uses the same static refusal shape. The inherited
+`FrameTooLarge`, `PayloadTooLarge`, `PendingLimitExceeded`, and `ChannelFull`
+enum labels have no wire emission in this slice; an over-bound frame is
+reported as `LimitExceeded`. A `Denied` code not in the table is not a `1.0`
+code.
 
 ### Transport and validation classes
 
-| Condition                                        | Served result                                                                                                                                                       |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unsupported wire or service version              | `VersionMismatch`; connection closes                                                                                                                                |
-| Peer credential or endpoint tamper failure       | `Unauthenticated`; connection closes                                                                                                                                |
-| Declared frame above `max_frame_bytes`           | `LimitExceeded` (the inherited `FrameTooLarge` label maps to it); closes without a frame                                                                            |
-| Payload, id, or field over a bound               | `LimitExceeded` or `InvalidRequest`; an over-long `id` returns `InvalidRequest` with `id` omitted and then closes; other complete-frame validation bounds stay open |
-| Pending request or channel over bound            | No such surface is served in this slice; the inherited labels are declared only                                                                                     |
-| Unknown method with valid grammar                | `NotFound` (v1 registry policy; deny-by-default)                                                                                                                    |
-| Malformed method name                            | `InvalidMethod`                                                                                                                                                     |
-| Malformed request payload or field               | `InvalidRequest`                                                                                                                                                    |
-| Negotiate deadline                               | `Timeout` in the audit record; no response frame; connection closes                                                                                                 |
-| Unknown, collected, or invisible session         | `NotFound` (live-vacant-control carve-out aside)                                                                                                                    |
-| Invariant failure without a typed service result | `Internal`; fail closed                                                                                                                                             |
+| Condition                                                                                 | Served result                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unsupported wire or service version                                                       | `VersionMismatch`; connection closes                                                                                                                                |
+| Peer credential or endpoint tamper failure                                                | `Unauthenticated`; connection closes                                                                                                                                |
+| Declared frame above `max_frame_bytes`                                                    | `LimitExceeded` (the inherited `FrameTooLarge` label maps to it); closes without a frame                                                                            |
+| Payload, id, or field over a bound                                                        | `LimitExceeded` or `InvalidRequest`; an over-long `id` returns `InvalidRequest` with `id` omitted and then closes; other complete-frame validation bounds stay open |
+| Pending request or channel over bound                                                     | No such surface is served in this slice; the inherited labels are declared only                                                                                     |
+| Unknown method with valid grammar                                                         | `NotFound` (v1 registry policy; deny-by-default)                                                                                                                    |
+| Malformed method name                                                                     | `InvalidMethod`                                                                                                                                                     |
+| Malformed request payload or field                                                        | `InvalidRequest`                                                                                                                                                    |
+| Ambiguous alias pair (`generation`/`expected_generation`, `target_attach_id`/`attach_id`) | `InvalidRequest`; the two values differ, and nothing applies                                                                                                        |
+| Reserved ambient field `auth`, `scope`, or `role` at depth 1                              | `InvalidRequest`, never ignored as an authority field                                                                                                               |
+| Well-formed unknown method field                                                          | Ignored, except the method-scoped cross-fields and the reserved names above                                                                                         |
+| Negotiate deadline                                                                        | `Timeout` in the audit record; no response frame; connection closes                                                                                                 |
+| Unknown, collected, or invisible session                                                  | `NotFound` (live-vacant-control carve-out aside)                                                                                                                    |
+| Invariant failure without a typed service result                                          | `Internal`; fail closed                                                                                                                                             |
 
 `bitty-ipc` v1 resolves a well-formed method absent from its registry as
 `NotFound` before authorization and reserves `InvalidMethod` for names that
@@ -913,8 +1536,9 @@ session's details.
 `SessionStopping`, `TerminalAlreadyHosted`, `DaemonStopping`,
 `IdempotencyCapacity`, `RateLimited`, `Internal`, and `InvalidMethod` are
 implemented and unit- or integration-tested but have no corpus row; `Timeout`
-is audit-only. bitty#2605 owns the remaining coverage gap. A vector that
-expects a code outside this table is a contract defect, not a corpus choice.
+has one negotiate-deadline emission path and no post-handshake request-deadline
+vector (bitty#2805). bitty#2605 owns the remaining coverage gap. A vector that expects
+a code outside this table is a contract defect, not a corpus choice.
 
 ### Closing refusals
 
@@ -984,6 +1608,9 @@ A `1.x` revision must not:
 
 - remove, rename, or re-mean a method, scope, capability, field, event, or
   refusal code;
+- remove a deprecated alias (`expected_generation` on abort/kill/transfer, or
+  `attach_id` on transfer); removal is a `2.0` change because it would refuse
+  input `1.0` accepts;
 - add a required request field, or make an optional field required;
 - start refusing a request that `1.0` accepts;
 - lower a compiled `system_max` below a value a `1.0` client may have observed,
@@ -1016,7 +1643,11 @@ incompatible by itself.
 
 ### Consumer obligations
 
-- Serialize the frozen spelling; do not alias a method, scope, or capability.
+- Serialize the frozen spelling and the [Wire schema](#wire-schema); do not
+  alias a method, scope, capability, or field, and do not read a key the schema
+  marks not served.
+- Send `attach_role`, a singular `attach_id`, and no `session.create` spawn
+  field; treat create as registry-only until bitty#2790 lands.
 - Parameterize tests and adaptive behavior on the advertised `effective` limit,
   never on a hardcoded default.
 - Ignore unknown response fields and unknown capability names; treat a
@@ -1035,23 +1666,26 @@ The following items are deliberately not frozen here. Each names its owner and
 what this freeze does require of it. Resolved items are recorded in place, not
 deferred: the scope registry home (bitty#2607), the operator-capability failure
 code (`Unauthenticated`), the observer-attach replay rule (`V-22` closes it), the
-absent-vs-null encoding (an explicit `null` is refused), the `session.resize`
-spelling (frozen; the method remains unserved), and the grant-expiry revision
-(merged in PR #2786, pinned by `C-10`).
+field-presence rule (omit, never `null`), the per-method wire schema (added
+2026-10-29), the `attach_role`/`role` split, the `events: false` freeze, the
+`session.resize` spelling (frozen; the method remains unserved), and the
+grant-expiry revision (merged in PR #2786, pinned by `C-10`).
 
-| Item                                                                                         | Owner                                                    | Constraint this freeze keeps                                                                                                                                                   |
-| -------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `session.resize` success path and its controller-only revision effect                        | bitty#2790                                               | The spelling and scope requirement are frozen; every request today is `Denied/ScopeViolation`; no consumer may assume resize works                                             |
-| `daemon.orphans.verify` and cgroup/subreaper containment, signal delivery, production reaper | bitty#2791                                               | Every request today is `Denied/UnsupportedCapability`; no orphan is claimed verified; corpus `C-03` pins the refusal                                                           |
-| Worker spawn and bind                                                                        | bitty#2790                                               | `worker_sessions=false`; with create authority `kind: worker` is `Denied/UnsupportedCapability` before any spawn; enabling needs the ADR 0019 amendment and a dedicated review |
-| Event frame delivery on a live connection                                                    | bitty#2792 for wire delivery; bitty#2605 for the vectors | No event frame is sent today; `events: true` is not evidence; `session.status`/`session.list` stay the reconciliation reads                                                    |
-| Expiry event and its wire vector                                                             | bitty#2792; bitty#2605                                   | Expiry now bumps `state_revision` once per affected session (merged PR #2786); it still emits no event, so a consumer cannot observe expiry as an event                        |
-| Conformance coverage for the unserved refusals                                               | bitty#2605                                               | The merged corpus pins 17 wire codes over 41 vectors; a behavior outside the corpus is not proven                                                                              |
-| Independent security evidence for the served surface                                         | bitty#2608                                               | No P0 control is verified by this document or by the merged corpus; the security reviewer must record evidence or a tracked defect before sign-off                             |
-| Endpoint discovery and transport details beyond Linux x86_64                                 | Accepted contract `D-15`                                 | Native-runner evidence before advertisement; a non-served cell has no endpoint; `UnsupportedPlatform` is a startup refusal, not a wire code                                    |
-| Numeric limit values and the `{effective, default, system_max}` schema                       | Accepted contract `D-14`, bitty#2603                     | Keys are the `D-14` names; a client reads `effective`; a `system_max` only moves upward through contract revision and review                                                   |
-| Duplicate handling for unkeyed `daemon.host_grant` mint                                      | Security review, bitty#2608                              | Mint creates a new grant per call; revoke is idempotent by `grant_id`; no key or fingerprint is invented here; the corpus must encode one behavior                             |
-| Remote transport, restart persistence, and multi-instance service                            | ADR 0019, ADR 0008, accepted contract                    | No remote listener, no persistence, no second instance, no in-process fallback                                                                                                 |
+| Item                                                                                  | Owner                                                    | Constraint this freeze keeps                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `session.resize` success path, dimensions, and controller-only revision effect        | bitty#2790                                               | The spelling, `terminal.manage` scope, negotiate-time grant, and controller-lease mechanism are frozen; every request today is `Denied/ScopeViolation`; no consumer may assume resize works                                          |
+| `daemon.orphans.verify`, the `action`/`retire` form, and cgroup/subreaper containment | bitty#2791                                               | Every request today is `Denied/UnsupportedCapability`; no orphan is claimed verified; the open PR #2801 head serves a parameterless count result and no `retire`; corpus `C-03` pins the refusal                                     |
+| Worker spawn, bind, and the terminal content plane                                    | bitty#2790                                               | `session.create` is registry-only at `generation: 0`; `worker_sessions=false`; with create authority `kind: worker` is `Denied/UnsupportedCapability` before any spawn; enabling needs the ADR 0019 amendment and a dedicated review |
+| Event frame delivery on a live connection                                             | bitty#2792 for wire delivery; bitty#2605 for the vectors | `D-10` fixes the envelope, routing, ordering, backlog, and terminal guarantee; no event frame is sent today; `events` is frozen `false`; `session.status`/`session.list` stay the reconciliation reads                               |
+| Expiry event and its wire vector                                                      | bitty#2792; bitty#2605                                   | Expiry now bumps `state_revision` once per affected session (merged PR #2786); it still emits no event, so a consumer cannot observe expiry as an event                                                                              |
+| Post-handshake `request_timeout_ms` enforcement and its vector                        | bitty#2805 (filed 2026-10-29)                            | The limit stays advertised and `Timeout` stays the accepted `D-13` class; no post-handshake deadline is enforced today; the negotiate deadline is the only `Timeout` emission                                                        |
+| Accepted session and daemon metadata fields not served in `1.0`                       | bitty#2806 (filed 2026-10-29)                            | Controller presence, pending observer grants, owner peer, lease scopes, heartbeat `server_monotonic_ms`, `daemon_pid`, and uptime are optional response additions in a later `1.x`; none is invented here                            |
+| Conformance coverage for the unserved refusals                                        | bitty#2605                                               | The merged corpus pins 17 wire codes over 41 vectors; a behavior outside the corpus is not proven                                                                                                                                    |
+| Independent security evidence for the served surface                                  | bitty#2608                                               | No P0 control is verified by this document or by the merged corpus; the security reviewer must record evidence or a tracked defect before sign-off                                                                                   |
+| Endpoint discovery and transport details beyond Linux x86_64                          | Accepted contract `D-15`                                 | Native-runner evidence before advertisement; a non-served cell has no endpoint; `UnsupportedPlatform` is a startup refusal, not a wire code                                                                                          |
+| Numeric limit values and the `{effective, default, system_max}` schema                | Accepted contract `D-14`, bitty#2603                     | Keys are the `D-14` names; a client reads `effective`; a `system_max` only moves upward through contract revision and review                                                                                                         |
+| Duplicate handling for unkeyed `daemon.host_grant` mint                               | Security review, bitty#2608                              | Mint creates a new grant per call; revoke is idempotent by `grant_id`; no key or fingerprint is invented here; the corpus must encode one behavior                                                                                   |
+| Remote transport, restart persistence, and multi-instance service                     | ADR 0019, ADR 0008, accepted contract                    | No remote listener, no persistence, no second instance, no in-process fallback                                                                                                                                                       |
 
 ## Security review
 
@@ -1077,10 +1711,12 @@ deliberate oracle), the absent-versus-present operator capability split, the
 `daemon.host_grant` mint duplicate effect, the `NotRunning` versus
 `DaemonStopping` split, the two no-`id` refusal shapes (the pipelined tail and
 the over-long `id`), the grant TTL and correlation-digest binding including the
-uniform non-operator revoke answer, and the absence of an event wire. Each can
-silently change an authority boundary without changing the method list. The
-merged code and corpus are evidence to inspect, not a control that the reviewer
-may mark verified.
+uniform non-operator revoke answer, the absence of an event wire, the
+advertised-but-unenforced `request_timeout_ms`, and the registry-only
+`session.create` (a caller may believe a terminal exists when only metadata
+does). Each can silently change an authority boundary without changing the
+method list. The merged code and corpus are evidence to inspect, not a control
+that the reviewer may mark verified.
 
 ## Verification plan
 
@@ -1092,42 +1728,60 @@ Evidence in this delivery:
 2. The method table covers the 17 catalog names, and every method has one scope
    rule and one idempotency class. Two methods are declared unserved with a
    typed refusal; they are not counted as delivered.
-3. The refusal table contains every `Denied.code` in the accepted taxonomy and
+3. The [Wire schema](#wire-schema) covers all 15 served methods with exact
+   request and result keys, types, presence, and result branches, and gives the
+   two unserved methods a typed refusal instead of a success shape. Every row
+   is traceable to a handler in `dispatch.rs` and a helper in `wire.rs` at
+   `ea0de791`; the dated narrowings and the served-versus-accepted table name
+   every field the freeze does not serve and its owner.
+4. The refusal table contains every `Denied.code` in the accepted taxonomy and
    no new code. The `Served` column separates a declared code from a reachable
    one, and the corpus-coverage note records which codes the 41 merged vectors
    pin.
-4. `terminal.*` is unchanged, no `session.*` scope grants terminal content, and
+5. `terminal.*` is unchanged, no `session.*` scope grants terminal content, and
    the only transport scope the daemon grants is `process.spawn`.
-5. The corpus runs both drivers in `bitty` CI on Linux x86_64; a fake run never
+6. The corpus runs both drivers in `bitty` CI on Linux x86_64; a fake run never
    closes a real row, and the parity report names the shared ids.
-6. `just check` and `git diff --check` are green; the document is English-only
+7. `just check` and `git diff --check` are green; the document is English-only
    and self-contained.
 
 Not proven by this delivery, and therefore not frozen as working behavior:
 
 - no event frame is sent, so the five event kinds and the `events` capability
-  have no wire evidence;
+  have no wire evidence; the merged build's advertised `true` is a deviation
+  from the frozen `false`;
 - `session.resize` and `daemon.orphans.verify` have no success path;
+- `session.create` starts no process or PTY, so the accepted spawn
+  specification, generation 1, and the content plane are not proven;
+- `request_timeout_ms` is advertised but no post-handshake deadline is
+  enforced, and no request-deadline vector exists (bitty#2805);
 - grant expiry now bumps `state_revision` (`C-10`) but still emits no event
   (bitty#2792);
 - the corpus does not pin every implemented refusal code, the expiry event, or
   a second platform cell (bitty#2605, bitty#2792);
+- the daemon's independence from startup, safe mode, and the headless path
+  (the `Daemon absence` control) has no test in this delivery; it is a design
+  requirement, not verified behavior;
 - no P0 control has the evidence set bitty#2608 requires, and nothing here
   marks a control verified.
 
 Before this freeze is signed off:
 
 1. Wheel and `bitty-ai` consumer review record that the adapter and fake server
-   can target the frozen names with no local alias, that `attach_role`/`role` is
-   the pair they serialize, and that they do not rely on the `events` bit.
+   can target the frozen names and the [Wire schema](#wire-schema) with no local
+   alias, that `attach_role`/`role` is the pair they serialize, that
+   `session.create` is treated as registry-only, and that they do not rely on
+   the `events` bit or a not-served field.
 2. Independent security review records that the refusal set, the no-oracle
    rules and the live-vacant carve-out, the control relation, the token and
    bearer handling, and the deferred items weaken no P0 control (bitty#2608).
    Recorded 2026-10-29 on bitty#2664 comment 6483942309.
-3. Core architecture review confirms the registry home, the revision rule, the
-   unserved-method dispositions, and the `NotRunning`/`DaemonStopping` split.
+3. Core architecture review confirms the one-logical-registry wording, the
+   revision rule, the per-method wire schema, the unserved-method dispositions,
+   the dated narrowings, and the `NotRunning`/`DaemonStopping` split.
 4. bitty#2605 adds the missing refusal vectors and a parity check that fails on
-   a divergent fixture.
+   a divergent fixture; bitty#2805 adds the post-handshake request-deadline
+   vector if enforcement lands before sign-off.
 5. bitty#2608's security reviewer confirms the PR #2794 vectors `V-37` to
    `V-41` (TTL bounds, correlation binding and revoke uniformity,
    pipelined-tail refusal, over-long `id`, and spelling aliases), the merged
@@ -1137,21 +1791,24 @@ Definition of done for this freeze: the document is merged with an honest
 status, the sign-off table records the Security sign-off dated 2026-10-29 and
 the remaining unchecked boxes with the evidence each reviewer must inspect, and
 `just check` is green. Implementation stays with
-bitty#2790, #2791, #2792, #2608, #2605, and #2666; this document does not
-authorize a listener, a transport fallback, or a consumer-side alias.
+bitty#2790, #2791, #2792, #2805, #2806, #2608, #2605, and #2666; this document
+does not authorize a listener, a transport fallback, or a consumer-side alias.
 
 ## Alternatives considered
 
-| Alternative                                         | Trade-off                                                                                                           | Disposition                                                                 |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Let each consumer define its own scope spelling     | No cross-repository negotiation; the corpus cannot be shared and the fake server forks expectations.                | Rejected; one registry and one spelling were the point of bitty#2664.       |
-| Freeze the frame layout here too                    | One document for everything; duplicates `bitty-ipc` v1 and puts a second encoding contract beside the served one.   | Rejected; the served encoding is `bitty-ipc` v1, the names are frozen here. |
-| Put `session.*` in the existing `terminal.*` family | No new vocabulary; silently grants terminal authority to an Agent client and collapses consent domains.             | Rejected by the accepted contract; a separate family is frozen.             |
-| Make `session.host` baseline                        | Simpler create path; drops per-client spawn consent and `P0-AC-024`.                                                | Rejected; consent is an explicit grant consumed at negotiate.               |
-| One version number for wire and service             | Fewer fields; cannot refuse version change and encoding change independently.                                       | Rejected; two axes with separate owners.                                    |
-| Best-effort negotiation with capability probing     | Older clients keep working; makes an incompatible change indistinguishable from an additive one and hides refusals. | Rejected; strict range check and explicit capabilities.                     |
-| Expose a discovery or enumerate method              | Easier client bootstrap; becomes an existence and enumeration oracle.                                               | Rejected; live-lease visibility and `session.list` only.                    |
-| Keep refusals as free-text messages                 | Easier debugging; untestable, leaks caller bytes, and lets a client parse meaning into a code.                      | Rejected; static codes, counts, and limits only.                            |
+| Alternative                                               | Trade-off                                                                                                                              | Disposition                                                                             |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Let each consumer define its own scope spelling           | No cross-repository negotiation; the corpus cannot be shared and the fake server forks expectations.                                   | Rejected; one registry and one spelling were the point of bitty#2664.                   |
+| Freeze the frame layout here too                          | One document for everything; duplicates `bitty-ipc` v1 and puts a second encoding contract beside the served one.                      | Rejected; the served encoding is `bitty-ipc` v1, the names are frozen here.             |
+| Freeze names only and leave field shapes to `dispatch.rs` | Less prose; every consumer keeps reading code, two adapters can disagree on a key, and a field rename becomes an unversioned break.    | Rejected; the missing per-method schema was the review defect that reopened bitty#2664. |
+| Keep `events: true` with a caveat until delivery          | Matches the merged build today; makes the advertised capability disagree with the delivered surface and invites event-driven adapters. | Rejected; `1.0` freezes `false`, and `false` to `true` is additive after bitty#2792.    |
+| Treat the advertised `request_timeout_ms` as enforced     | One less deferred row; claims a bound the daemon does not apply and makes a hung request indistinguishable from a slow one.            | Rejected; `Timeout` stays the accepted class and enforcement is bitty#2805.             |
+| Put `session.*` in the existing `terminal.*` family       | No new vocabulary; silently grants terminal authority to an Agent client and collapses consent domains.                                | Rejected by the accepted contract; a separate family is frozen.                         |
+| Make `session.host` baseline                              | Simpler create path; drops per-client spawn consent and `P0-AC-024`.                                                                   | Rejected; consent is an explicit grant consumed at negotiate.                           |
+| One version number for wire and service                   | Fewer fields; cannot refuse version change and encoding change independently.                                                          | Rejected; two axes with separate owners.                                                |
+| Best-effort negotiation with capability probing           | Older clients keep working; makes an incompatible change indistinguishable from an additive one and hides refusals.                    | Rejected; strict range check and explicit capabilities.                                 |
+| Expose a discovery or enumerate method                    | Easier client bootstrap; becomes an existence and enumeration oracle.                                                                  | Rejected; live-lease visibility and `session.list` only.                                |
+| Keep refusals as free-text messages                       | Easier debugging; untestable, leaks caller bytes, and lets a client parse meaning into a code.                                         | Rejected; static codes, counts, and limits only.                                        |
 
 ## Affected contracts
 
@@ -1172,14 +1829,16 @@ authorize a listener, a transport fallback, or a consumer-side alias.
 
 These stay open until the named review or task closes them. None is a reason to
 serve a different spelling in the meantime. The observer-attach replay,
-`session.resize` spelling, registry home, operator-capability failure code, and
-absent-vs-null questions are **resolved** and recorded above, not open.
+`session.resize` spelling, registry home, operator-capability failure code,
+absent-vs-null question, `events: false` freeze, and per-method wire schema are
+**resolved** and recorded above, not open.
 
-- **Event capability honesty.** The merged build advertises `events: true` while
-  sending no event frame. The Consumer and Security reviews must decide whether
-  `1.0` may keep that bit while bitty#2792/#2605 close the wire, or require the
-  bit to be false until a vector passes. Until one is chosen, no consumer may
-  rely on event delivery.
+- **`session.grant` `kind` enforcement.** The accepted text names
+  `kind: observer`; the served method ignores the field under the unknown-field
+  rule. The freeze tells clients to omit it. Whether a later `1.x` build may
+  refuse a present `kind` other than `observer` is open, because that would
+  refuse input `1.0` accepts; until a decision, the field stays ignored and
+  never selects host authority.
 - **Revision delivery set.** Whether a revision must update this document, the
   `bittyd` registry, the conformance corpus, and the consumer requirements in
   one delivery is proposed here, not accepted. Core architecture review must
@@ -1217,22 +1876,30 @@ This freeze is complete when:
    accept/refuse order, the pre-authentication limits, the server-assigned
    identity, the peer facts, `client_correlation`, `host_grant`, and the
    `wire_version` ownership.
-4. A version mismatch is a typed refusal before any session operation, the
-   v0.2.0 capability profile is stated, a missing client-side capability
-   produces a typed client refusal or the typed worker refusal, and the
-   `events` bit is not described as delivered behavior.
-5. The authorization order is fixed, and every condition that must not be
-   distinguishable to a client is listed with its single result.
-6. The refusal set is closed, and no code is invented outside the accepted
-   taxonomy.
-7. The `1.x` additive rule and the `2.0` breaking rule are explicit, every
+4. Every served method has an exact request and result table with JSON types,
+   presence, result branches, and the shared `session`, `counts`, and `limits`
+   shapes; the two unserved methods have a typed refusal and no success shape;
+   every not-served accepted field names its owner.
+5. A version mismatch is a typed refusal before any session operation, the
+   v0.2.0 capability profile is stated and freezes `events: false`, a missing
+   client-side capability produces a typed client refusal or the typed worker
+   refusal, and no bit is described as delivered behavior.
+6. The authorization order is fixed, and every condition that must not be
+   distinguishable to a client is listed with its single result, except the
+   dated live-vacant-control narrowing.
+7. The refusal set is closed, and no code is invented outside the accepted
+   taxonomy; `Timeout` stays the accepted request-deadline class even while
+   post-handshake enforcement is deferred.
+8. The `1.x` additive rule and the `2.0` breaking rule are explicit, every
    deferred item names its owner, and every untraced proposal is recorded as an
    open point.
-8. `terminal.*` is unchanged and never stretched; `session.*` never grants
-   terminal content.
-9. The document is English-only, self-contained, and free of research
-   references; `just check` and `git diff --check` are green.
-10. The [Sign-off](#sign-off) section records the Security sign-off dated
+9. The dated narrowings are dated and owned, and the served-versus-accepted
+   table separates a deferred optional field from a not-served behavior.
+10. `terminal.*` is unchanged and never stretched; `session.*` never grants
+    terminal content.
+11. The document is English-only, self-contained, and free of research
+    references; `just check` and `git diff --check` are green.
+12. The [Sign-off](#sign-off) section records the Security sign-off dated
     2026-10-29 and three unchecked boxes with the evidence each reviewer must
     inspect; no control is marked verified.
 
@@ -1337,9 +2004,18 @@ a substitute for the four product reviews.
 - [bitty#2790](https://github.com/bitty-terminal/bitty/issues/2790) — worker
   spawn, bind, generation 1, and the `session.resize`/content plane.
 - [bitty#2791](https://github.com/bitty-terminal/bitty/issues/2791) — process
-  containment, signal delivery, reaping, and orphan verification.
+  containment, signal delivery, reaping, and orphan verification;
+  [bitty#2801](https://github.com/bitty-terminal/bitty/pull/2801) is the open
+  implementation PR whose head serves a parameterless count result and no
+  `retire`.
 - [bitty#2792](https://github.com/bitty-terminal/bitty/issues/2792) — session
   event frames pushed to subscribed connections.
+- [bitty#2805](https://github.com/bitty-terminal/bitty/issues/2805) — enforce
+  `request_timeout_ms` and add a request-deadline vector.
+- [bitty#2806](https://github.com/bitty-terminal/bitty/issues/2806) — serve the
+  accepted session and daemon metadata fields (`session.status`/`session.list`
+  controller presence and pending grants, owner peer, lease scopes, heartbeat
+  `server_monotonic_ms`, `daemon_pid`, uptime).
 - [bitty#2605](https://github.com/bitty-terminal/bitty/issues/2605) — the shared
   conformance harness and the remaining vector coverage.
 - [bitty#2608](https://github.com/bitty-terminal/bitty/issues/2608) — the
