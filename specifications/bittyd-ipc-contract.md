@@ -1905,9 +1905,9 @@ field, and `Internal` is the fail-closed invariant result with no partial
 mutation. `Timeout` stays the accepted `D-13` request-deadline class. A
 post-handshake request completed at or past `request_timeout_ms` is answered
 with the same static `Timeout` shape and the connection keeps serving
-(bitty#2805); the negotiate deadline is still one aggregated audit record with
-`request_id` and `timeout_ms` and no response frame. The class is not redefined
-as audit-only. The inherited
+(bitty#2805). The negotiate deadline is still one aggregated audit record, and it
+carries neither `request_id` nor `timeout_ms` on the wire or in the audit record
+(no response frame). The class is not redefined as audit-only. The inherited
 `FrameTooLarge`, `PayloadTooLarge`, `PendingLimitExceeded`, and `ChannelFull`
 enum labels have no wire emission in this slice; an over-bound frame is
 reported as `LimitExceeded`. A `Denied` code not in the table is not a `1.2`
