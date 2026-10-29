@@ -1382,16 +1382,19 @@ not authority: it never selects a signal target or grants a lease.
 
 Controller success result:
 
-| Result key            | Type            | Presence | Notes                                                                                                                              |
-| --------------------- | --------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `session`             | object          | required | Snapshot after the claim.                                                                                                          |
-| `attach_id`           | string          | required | 32 lowercase hex.                                                                                                                  |
-| `role`                | string          | required | `controller`.                                                                                                                      |
-| `lease_expires_at_ms` | u64             | required | Server monotonic milliseconds.                                                                                                     |
-| `control_token`       | string          | required | 64 lowercase hex; the rotated token, returned once.                                                                                |
-| `replayed`            | bool            | required | `false`.                                                                                                                           |
-| `scopes`              | array of string | required | Effective connection scopes at attach: service scopes in catalog order, then transport scopes. Not a per-role lease authority set. |
-| `server_monotonic_ms` | u64             | required | The request's server monotonic clock.                                                                                              |
+| Result key            | Type            | Presence | Notes                                                                                                                                                    |
+| --------------------- | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session`             | object          | required | Snapshot after the claim.                                                                                                                                |
+| `attach_id`           | string          | required | 32 lowercase hex.                                                                                                                                        |
+| `role`                | string          | required | `controller`.                                                                                                                                            |
+| `lease_expires_at_ms` | u64             | required | Server monotonic milliseconds.                                                                                                                           |
+| `control_token`       | string          | required | 64 lowercase hex; the rotated token, returned once.                                                                                                      |
+| `replayed`            | bool            | required | `false`.                                                                                                                                                 |
+| `scopes`              | array of string | required | Effective connection scopes at attach: service scopes in catalog order, then transport scopes. Not a per-role lease authority set.                       |
+| `server_monotonic_ms` | u64             | required | The request's server monotonic clock.                                                                                                                    |
+| `backlog`             | array           | optional | Present only when the connection negotiated `events: true`; the retained ring routed to the new lease, bounded by the effective `max_lease_queue_bytes`. |
+| `backlog_truncated`   | bool            | optional | Present with `backlog`; `true` when the ring or the byte-bound replay dropped older events.                                                              |
+| `earliest_revision`   | u64 or null     | optional | Present with `backlog`; the first revision the replay covers, or `null` for an empty replay.                                                             |
 
 Controller replay result: `{"session": object, "attach_id": string or null,
 "role": "controller", "replayed": true, "not_attached": bool,
@@ -1643,6 +1646,8 @@ a general override of the accepted contract.
 | 2026-10-29 | `session.grant` does not read `kind`. The accepted text names `kind: observer`; the served method mints observer grants only and ignores any present `kind`.                                                                                      | `dispatch.rs` `session_grant` reads no `kind`; the unknown-field rule drops it.                                               | Omit `kind`; never use it to select host or observer authority.                                                                                        | bitty#2664                   |
 | 2026-10-29 | `session.detach` requires `attach_id`; the accepted `session_id`-plus-`attach_id` form is not read.                                                                                                                                               | `dispatch.rs` `session_detach` parses `attach_id` only; `session_id` is an ignored unknown field.                             | Always send the target `attach_id`.                                                                                                                    | bitty#2806                   |
 
+| 2026-10-29 | `session_terminal` events carry `terminal_marker {state, reason, cleanup}` and optional `detail`; the accepted exit-information payload keys are not served. | `service/wire.rs` at `264d7f9b`; C-15 | Read the marker, not the accepted payload keys | bitty#2792 |
+
 The generation and target aliases are not narrowings: they are additive
 tolerances on top of the accepted canonical names, and they are removed only at
 `2.0` (see rule 8 in
@@ -1675,16 +1680,23 @@ dated row in [Dated narrowings](#dated-narrowings) carries the consumer rule.
 revision ordering, the bounded backlog, and the terminal-event guarantee. This
 freeze restates those names and adds no event kind:
 
-| Field               | Type   | Meaning                                                                                              |
-| ------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
-| `v`                 | u64    | Wire version `1`.                                                                                    |
-| `id`                | string | Opaque server-chosen per-connection correlation value, at most 64 bytes. Not a UUID and not durable. |
-| `event.kind`        | string | `session_state`, `session_terminal`, `control_transfer`, `lease_revoked`, or `daemon_stopping`.      |
-| `event.instance_id` | string | The `daemon_instance_id` the event belongs to.                                                       |
-| `event.session_id`  | string | 32 lowercase hex.                                                                                    |
-| `event.attach_id`   | string | The target lease, 32 lowercase hex.                                                                  |
-| `event.revision`    | u64    | The session `state_revision` the event carries.                                                      |
-| `event.terminal`    | bool   | The terminal marker; a terminal event is never silently shed.                                        |
+| Field                   | Type   | Meaning                                                                                                                       |
+| ----------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `v`                     | u64    | Wire version `1`.                                                                                                             |
+| `id`                    | string | Opaque server-chosen per-connection correlation value, at most 64 bytes. Not a UUID and not durable.                          |
+| `event.kind`            | string | `session_state`, `session_terminal`, `control_transfer`, `lease_revoked`, or `daemon_stopping`.                               |
+| `event.instance_id`     | string | The `daemon_instance_id` the event belongs to.                                                                                |
+| `event.session_id`      | string | 32 lowercase hex.                                                                                                             |
+| `event.attach_id`       | string | The target lease, 32 lowercase hex.                                                                                           |
+| `event.revision`        | u64    | The session `state_revision` the event carries.                                                                               |
+| `event.terminal`        | bool   | `true` only on the terminal frame: the marker that a terminal event is never silently shed.                                   |
+| `event.terminal_marker` | object | Present on `session_terminal`: `{state, reason, cleanup}` naming the terminal state, the typed reason, and the cleanup class. |
+| `event.detail`          | object | Optional per kind: `control_transfer {from, to}` and `daemon_stopping {deadline_ms}`.                                         |
+
+The accepted `session_terminal` exit information is narrowed to
+`terminal_marker {state, reason, cleanup}`; the legacy `session_terminal`
+payload keys are not served, and `event.detail` carries only the two shapes
+above.
 
 The event body never carries PTY bytes, terminal text, prompts, tool output, or
 provider payloads. Delivery is served on the Linux cell for an opted-in
