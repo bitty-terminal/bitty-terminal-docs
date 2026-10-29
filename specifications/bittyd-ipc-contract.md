@@ -1940,7 +1940,10 @@ families; it does not widen `InvalidMethod` to mean an unknown method.
 
 A refusal carries static codes, counts, and the limit that was hit. It never
 echoes caller bytes, a path, terminal text, a token, a bearer value, or another
-session's details.
+session's details, with one deliberate exception: the request-deadline `Timeout`
+echoes the caller-chosen envelope `id` as `error.request_id` so the client can
+match the answer to the request; that value is an opaque per-connection
+correlation id, never authority.
 
 **Corpus coverage.** The merged 51 vectors pin 17 wire codes:
 `VersionMismatch`, `Unauthenticated`, `LimitExceeded`, `NotFound`,
@@ -1963,9 +1966,11 @@ drained in these cases: `VersionMismatch`, `Unauthenticated`,
 that omits `v`, and the over-long-`id` `InvalidRequest` whose response omits
 `id`. Every other `Denied` code, `NotFound`, `InvalidMethod`, `InvalidRequest`
 on an already-negotiated non-handshake request, `LimitExceeded`, and a
-rate-limited non-negotiate request leaves the connection open. `Timeout` is the
-negotiate-deadline audit record: it closes the connection with no response
-frame. A transport EOF, a socket I/O error, or a response that cannot be
+rate-limited non-negotiate request leaves the connection open. The
+**negotiate-deadline** `Timeout` is an audit record: it closes the connection
+with no response frame. The **post-handshake request-deadline** `Timeout` is a
+typed refusal frame (with `request_id` and `timeout_ms`) and the connection keeps
+serving. A transport EOF, a socket I/O error, or a response that cannot be
 rendered closes without a typed refusal.
 
 Frame-level failures that prevent a complete frame carry no correlation id, so
