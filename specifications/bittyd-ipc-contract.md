@@ -21,9 +21,11 @@ sidebar_order: 83
 > and adds no new authority.
 >
 > It is not `accepted`. The Owner, Security, Architecture, and Consumer reviews
-> that bitty#2664 lists as acceptance criteria are **not recorded**; the four
-> boxes under [Sign-off](#sign-off) are unchecked. No control in this document
-> is verified, and a merged implementation or a green corpus is not a sign-off.
+> that bitty#2664 lists as acceptance criteria are **not all recorded**: the
+> Security sign-off is recorded on 2026-10-29, and the Owner, Architecture, and
+> Consumer boxes under [Sign-off](#sign-off) remain unchecked. No control in
+> this document is verified, and a merged implementation or a green corpus is
+> not a sign-off.
 >
 > The accepted session-host contract owns every decision; this document owns
 > only the spelling and ordering of the service-interface surface. A spelling
@@ -49,7 +51,7 @@ sidebar_order: 83
 
 | Control          | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status           | Candidate for sign-off; four required reviews unchecked; no control verified                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Status           | Candidate for sign-off; Security sign-off recorded 2026-10-29; Owner, Architecture, and Consumer reviews unchecked; no control verified                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Issue            | [bitty#2664](https://github.com/bitty-terminal/bitty/issues/2664) — freeze bittyd IPC scopes, handshake, and version contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Parent           | [bitty#2546](https://github.com/bitty-terminal/bitty/issues/2546) — define the bittyd session-host contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Upstream records | Accepted [bittyd Session-Host Contract](bittyd-session-host-contract.md), [promotion record](bittyd-session-host-promotion-record.md), ADR 0008, ADR 0019, `bitty-ipc` v1, security corpus                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -1121,6 +1123,7 @@ Before this freeze is signed off:
 2. Independent security review records that the refusal set, the no-oracle
    rules and the live-vacant carve-out, the control relation, the token and
    bearer handling, and the deferred items weaken no P0 control (bitty#2608).
+   Recorded 2026-10-29 on bitty#2664 comment 6483942309.
 3. Core architecture review confirms the registry home, the revision rule, the
    unserved-method dispositions, and the `NotRunning`/`DaemonStopping` split.
 4. bitty#2605 adds the missing refusal vectors and a parity check that fails on
@@ -1131,8 +1134,9 @@ Before this freeze is signed off:
    expiry vector `C-10`, and the no-`id` refusal shapes.
 
 Definition of done for this freeze: the document is merged with an honest
-status, the sign-off table records four unchecked boxes with the evidence each
-reviewer must inspect, and `just check` is green. Implementation stays with
+status, the sign-off table records the Security sign-off dated 2026-10-29 and
+the remaining unchecked boxes with the evidence each reviewer must inspect, and
+`just check` is green. Implementation stays with
 bitty#2790, #2791, #2792, #2608, #2605, and #2666; this document does not
 authorize a listener, a transport fallback, or a consumer-side alias.
 
@@ -1228,14 +1232,16 @@ This freeze is complete when:
    terminal content.
 9. The document is English-only, self-contained, and free of research
    references; `just check` and `git diff --check` are green.
-10. The [Sign-off](#sign-off) section records four unchecked boxes with the
-    evidence each reviewer must inspect; no control is marked verified.
+10. The [Sign-off](#sign-off) section records the Security sign-off dated
+    2026-10-29 and three unchecked boxes with the evidence each reviewer must
+    inspect; no control is marked verified.
 
 ## Sign-off
 
-This freeze is a **candidate for sign-off**, not accepted. No box below is
-checked, and no control is verified. A sign-off records that the named reviewer
-inspected the named evidence; it is not a restatement of a green test run.
+This freeze is a **candidate for sign-off**, not accepted. Only the Security
+box below is checked (2026-10-29); no control is verified. A sign-off records
+that the named reviewer inspected the named evidence; it is not a restatement of
+a green test run.
 
 - [ ] **Owner — Core terminal platform.** Review the frozen names and ordering
       in this document against `crates/bitty-daemon/src/service/scopes.rs`
@@ -1246,13 +1252,15 @@ inspected the named evidence; it is not a restatement of a green test run.
       constructors). Confirm the document freezes only what PRs #2761, #2770,
       and #2776 serve, and that the two unserved methods are labelled rather
       than promised.
-- [ ] **Security.** Review the closed refusal set in `src/codes.rs`, the close
+- [x] **Security.** Review the closed refusal set in `src/codes.rs`, the close
       predicate `Refusal::closes_connection`, the control relation and token
       handling in `src/service/dispatch.rs` and `src/lease/host.rs`, the grant
       store in `src/service/grants.rs`, the live-vacant-control carve-out, the
       audit and no-secret rules, and corpus vectors `V-02`, `V-09`, `V-13`,
       `V-22`, `V-33`, `C-02`, `C-07`, and `C-09`. Confirm no P0 control is
       marked verified and record the P0 evidence set required by bitty#2608.
+      Signed 2026-10-29 on bitty#2664 comment 6483942309 against code
+      `ea0de791` and docs `369bba18`; no P0 control is verified.
 - [ ] **Architecture.** Review the registry home and revision rule, the two
       version axes, the capability profile, the 17-method catalog against the
       15 served methods, the `NotRunning`/`DaemonStopping` split, the grant
@@ -1270,13 +1278,13 @@ inspected the named evidence; it is not a restatement of a green test run.
       `events` or `session.resize`, and returns its own typed unavailable result
       when a capability is absent.
 
-| Reviewer                                | Evidence inspected                                                                                                  | Status                                |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Owner — Core terminal platform (author) | This document; `scopes.rs`, `contract.rs`, `handshake.rs`, `dispatch.rs`; PRs #2761/#2770/#2776                     | Unchecked; required before acceptance |
-| Security reviewer                       | `codes.rs`, `dispatch.rs`, `lease/host.rs`, `grants.rs`; corpus V-02/V-09/V-13/V-22/V-33/C-02/C-07/C-09; bitty#2608 | Unchecked; required before acceptance |
-| Architecture reviewer                   | Registry and revision rule; version axes; method catalog; grant revision table; deferrals                           | Unchecked; required before acceptance |
-| Consumer reviewer                       | Handshake fields; scope array; role pair; capabilities; idempotency; refusals; no-alias rule                        | Unchecked; required before acceptance |
-| Docs curator (repository gate)          | Spine, metadata, index row, English-only, self-containment, and cross-document synchronization                      | Unchecked; required before merge      |
+| Reviewer                                | Evidence inspected                                                                                                  | Status                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Owner — Core terminal platform (author) | This document; `scopes.rs`, `contract.rs`, `handshake.rs`, `dispatch.rs`; PRs #2761/#2770/#2776                     | Unchecked; required before acceptance                                              |
+| Security reviewer                       | `codes.rs`, `dispatch.rs`, `lease/host.rs`, `grants.rs`; corpus V-02/V-09/V-13/V-22/V-33/C-02/C-07/C-09; bitty#2608 | Signed 2026-10-29; bitty#2664 comment 6483942309; code `ea0de791`; docs `369bba18` |
+| Architecture reviewer                   | Registry and revision rule; version axes; method catalog; grant revision table; deferrals                           | Unchecked; required before acceptance                                              |
+| Consumer reviewer                       | Handshake fields; scope array; role pair; capabilities; idempotency; refusals; no-alias rule                        | Unchecked; required before acceptance                                              |
+| Docs curator (repository gate)          | Spine, metadata, index row, English-only, self-containment, and cross-document synchronization                      | Unchecked; required before merge                                                   |
 
 A missing signature is an acceptance blocker, not a comment. The document must
 not be marked `accepted` while any box above is unchecked, and no implementation
