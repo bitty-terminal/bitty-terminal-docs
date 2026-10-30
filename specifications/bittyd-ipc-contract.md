@@ -4,14 +4,14 @@ description: Candidate-for-sign-off freeze of the served bittyd IPC surface - on
 category: specifications
 audience: contributor
 document_type: specification
-status: draft
+status: accepted
 website_publish: false
 sidebar_order: 83
 ---
 
 # bittyd IPC Contract (Candidate)
 
-> Status: **candidate for sign-off.** This document freezes the cross-repository
+> Status: **accepted 2026-10-30.** This document freezes the cross-repository
 > IPC surface that bitty#2664 asks for, limited to what the merged `bittyd`
 > service loop and conformance corpus actually serve: the service scope families
 > and their registry, the handshake fields, the per-method request and result
@@ -2754,14 +2754,14 @@ This freeze is complete when:
 
 ## Sign-off
 
-This freeze is a **candidate for sign-off**, not accepted. Three of the four
-review boxes are checked (Security 2026-10-29; Architecture and Consumer
-2026-10-30) and the docs-curator row remains unchecked; no control is verified,
-and none of the recorded signatures covers the service-1.3 content plane. A
+This freeze is **accepted** (2026-10-30). All four review boxes and the
+docs-curator row are signed (Security 2026-10-29; Architecture, Consumer, Owner,
+and docs-curator 2026-10-30); no control is verified, and the Security signature
+does not cover the service-1.3 content plane, which bitty#2608 tracks. A
 sign-off records that the named reviewer inspected the named evidence; it is not
 a restatement of a green test run.
 
-- [ ] **Owner — Core terminal platform.** Review the frozen names and ordering
+- [x] **Owner — Core terminal platform.** Review the frozen names and ordering
       in this document against `crates/bitty-daemon/src/service/scopes.rs`
       (six scopes, 20 methods, all served, baseline and operator sets),
       `src/contract.rs` (`1.3`, `1.0..=1.3`, six capabilities),
@@ -2807,15 +2807,15 @@ a restatement of a green test run.
 
 | Reviewer                                | Evidence inspected                                                                                                                                | Status                                                                             |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Owner — Core terminal platform (author) | This document; `scopes.rs`, `contract.rs`, `handshake.rs`, `dispatch.rs`, `content.rs`; PRs #2761/#2770/#2776/#2801/#2808/#2811/#2815/#2816/#2821 | Unchecked; required before acceptance                                              |
+| Owner — Core terminal platform (author) | This document; `scopes.rs`, `contract.rs`, `handshake.rs`, `dispatch.rs`, `content.rs`; PRs #2761/#2770/#2776/#2801/#2808/#2811/#2815/#2816/#2821 | Signed 2026-10-30; bitty#2664 comment 1729 (owner approval)                        |
 | Security reviewer                       | `codes.rs`, `dispatch.rs`, `lease/host.rs`, `grants.rs`; corpus V-02/V-09/V-13/V-22/V-33/C-02/C-07/C-09; bitty#2608                               | Signed 2026-10-29; bitty#2664 comment 6483942309; code `ea0de791`; docs `369bba18` |
 | Architecture reviewer                   | Registry and revision rule; version axes; method catalog; grant revision table; event wire; 1.2 metadata keys; 51-vector corpus; deferrals        | Signed 2026-10-30; bitty#2664 comment 6504467996; code `b235ec59`; docs `edc65ae1` |
 | Consumer reviewer                       | Handshake fields; scope array; role pair; capabilities; 1.2 metadata keys; event opt-in; idempotency; refusals; no-alias rule                     | Signed 2026-10-30; bitty#2664 comment 6504688128; docs `2c8f419b`                  |
-| Docs curator (repository gate)          | Signed 2026-10-30; index row refreshed to the 1.3 surface; `just check` green                                                                     | Unchecked; required before merge                                                   |
+| Docs curator (repository gate)          | Index row refreshed to the 1.3 surface; spine/metadata/English/self-containment; `just check` green                                               | Signed 2026-10-30                                                                  |
 
-A missing signature is an acceptance blocker, not a comment. The document must
-not be marked `accepted` while any box above is unchecked, and no implementation
-slice may cite it as an approval. The docs-curator row is a repository gate, not
+A missing signature was an acceptance blocker; every box above is now signed,
+so the document is `accepted`. No implementation slice may still cite it as a
+control verification: the P0 evidence stays with bitty#2608. The docs-curator row is a repository gate, not
 a substitute for the four product reviews.
 
 The Security signature above is unchanged by the 2026-10-29 orphan, worker,
