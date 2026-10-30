@@ -237,10 +237,9 @@ a verified source, not forced.
 
 ## 6. Preview an extension update before it re-pins
 
-Install the latest catalog release, or pin exactly one release:
+Pin exactly one release (a bare install is a usage error, exit `2`):
 
 ```sh
-bitty extension install graphics                 # latest for this host target
 bitty extension install graphics --version 0.0.24
 bitty extension install net --version 0.0.1
 bitty extension install <name> --version <X.Y.Z> --digest <hex>
@@ -248,17 +247,14 @@ bitty extension install <name> --version <X.Y.Z> --digest <hex>
 bitty extension install bitty-graphics --version 0.0.24
 ```
 
-A bare install resolves the highest strict `X.Y.Z` entry for the exact
-`(name, host target)` in `https://cdn.bitty.run/extensions/catalog.v1` and
-prints the resolved version before the release download. The catalog is
-published (schema 1, verified 2026-10-22) and lists `graphics 0.0.24` and
-`net 0.0.1`, so a bare install selects the highest strict version for the
-host target. When the catalog is unreachable, a bare install fails closed
-with a concrete `--version` example rather than guessing; a pinned install
-falls back to the release `SHA256SUMS` and reuses an already-installed
-verified version without a download. `latest` is convenience, not a trust
-guarantee: the catalog is mutable metadata, so pin `--version` for
-reproducible automation. Prereleases are never published and never selected.
+Core's seed is pinned-only: `--version X.Y.Z` is required, and Core never
+reads `https://cdn.bitty.run/extensions/catalog.v1` or resolves a `latest`
+release. Catalog resolution and latest selection belong to
+`bitty-plugin-manager` (W-72). A pinned install fetches exactly the release
+`SHA256SUMS` plus its tarball. When the manifest is unreachable, an
+already-installed exact version that verifies locally is reused with no
+download; `--digest` or `--force` keeps the full fetch path. Pin `--version`
+for reproducible automation.
 
 When the fetch would change the recorded TOFU pin, Bitty prints an
 advisory preview before anything changes:
@@ -329,8 +325,7 @@ external-process variables` — an explicit variable named a denied
 | Revoke all grants      | `bitty plugin revoke <id>`                                                            |
 | List extensions        | `bitty extension list [<name>] [--format table\|json\|jsonl]`                         |
 | Print pinned bytes     | `bitty extension show-source <name> [<version>]`                                      |
-| Install latest         | `bitty extension install <name> [--digest <hex>] [--force] [--yes]`                   |
-| Install a release      | `bitty extension install <name> --version <X.Y.Z> [--digest <hex>] [--force] [--yes]` |
+| Install an extension   | `bitty extension install <name> --version <X.Y.Z> [--digest <hex>] [--force] [--yes]` |
 | Remove an extension    | `bitty extension remove <name> [<version>]`                                           |
 | Safe startup           | `bitty --safe`                                                                        |
 | Revoke a runtime scope | `bitty ctl consent revoke --scope <scope>`                                            |
