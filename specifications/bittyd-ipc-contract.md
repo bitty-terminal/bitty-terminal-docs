@@ -2811,7 +2811,7 @@ a restatement of a green test run.
 | Security reviewer                       | `codes.rs`, `dispatch.rs`, `lease/host.rs`, `grants.rs`; corpus V-02/V-09/V-13/V-22/V-33/C-02/C-07/C-09; bitty#2608                               | Signed 2026-10-29; bitty#2664 comment 6483942309; code `ea0de791`; docs `369bba18` |
 | Architecture reviewer                   | Registry and revision rule; version axes; method catalog; grant revision table; event wire; 1.2 metadata keys; 51-vector corpus; deferrals        | Signed 2026-10-30; bitty#2664 comment 6504467996; code `b235ec59`; docs `edc65ae1` |
 | Consumer reviewer                       | Handshake fields; scope array; role pair; capabilities; 1.2 metadata keys; event opt-in; idempotency; refusals; no-alias rule                     | Signed 2026-10-30; bitty#2664 comment 6504688128; docs `2c8f419b`                  |
-| Docs curator (repository gate)          | Spine, metadata, index row, English-only, self-containment, and cross-document synchronization                                                    | Unchecked; required before merge                                                   |
+| Docs curator (repository gate)          | Signed 2026-10-30; index row refreshed to the 1.3 surface; `just check` green                                                                     | Unchecked; required before merge                                                   |
 
 A missing signature is an acceptance blocker, not a comment. The document must
 not be marked `accepted` while any box above is unchecked, and no implementation
