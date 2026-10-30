@@ -2363,8 +2363,8 @@ This freeze is complete when:
 
 ## Sign-off
 
-This freeze is a **candidate for sign-off**, not accepted. Only the Security
-box below is checked (2026-10-29); no control is verified. A sign-off records
+This freeze is a **candidate for sign-off**, not accepted. Three of the six boxes are checked
+(Security 2026-10-29; Architecture and Consumer 2026-10-30); no control is verified. A sign-off records
 that the named reviewer inspected the named evidence; it is not a restatement of
 a green test run.
 
@@ -2388,7 +2388,7 @@ a green test run.
       marked verified and record the P0 evidence set required by bitty#2608.
       Signed 2026-10-29 on bitty#2664 comment 6483942309 against code
       `ea0de791` and docs `369bba18`; no P0 control is verified.
-- [ ] **Architecture.** Review the registry home and revision rule, the two
+- [x] **Architecture.** Review the registry home and revision rule, the two
       version axes, the capability profile, the 17-method catalog with all
       17 served, the `NotRunning`/`DaemonStopping` split, the grant
       mint/consume/revoke/expiry revision rules (including the merged bitty#2780
@@ -2396,7 +2396,7 @@ a green test run.
       (bitty#2792), the 1.2 metadata keys (bitty#2806), and the remaining
       dispositions in bitty#2790, #2604, and #2605. Confirm a `1.x` addition
       cannot re-mean a name and a `2.0` change cannot be served side by side.
-- [ ] **Consumer — Wheel adapter and fake server, plus `bitty-ai`.** Review the
+- [x] **Consumer — Wheel adapter and fake server, plus `bitty-ai`.** Review the
       handshake request and response fields, the `scopes` array including
       `process.spawn` and `terminal.manage`, `attach_role`/`role`, the
       capability profile including the event opt-in and the plan-aware
@@ -2414,8 +2414,8 @@ a green test run.
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
 | Owner — Core terminal platform (author) | This document; `scopes.rs`, `contract.rs`, `handshake.rs`, `dispatch.rs`; PRs #2761/#2770/#2776/#2801/#2808/#2811/#2815/#2816              | Unchecked; required before acceptance                                              |
 | Security reviewer                       | `codes.rs`, `dispatch.rs`, `lease/host.rs`, `grants.rs`; corpus V-02/V-09/V-13/V-22/V-33/C-02/C-07/C-09; bitty#2608                        | Signed 2026-10-29; bitty#2664 comment 6483942309; code `ea0de791`; docs `369bba18` |
-| Architecture reviewer                   | Registry and revision rule; version axes; method catalog; grant revision table; event wire; 1.2 metadata keys; 51-vector corpus; deferrals | Unchecked; required before acceptance                                              |
-| Consumer reviewer                       | Handshake fields; scope array; role pair; capabilities; 1.2 metadata keys; event opt-in; idempotency; refusals; no-alias rule              | Unchecked; required before acceptance                                              |
+| Architecture reviewer                   | Registry and revision rule; version axes; method catalog; grant revision table; event wire; 1.2 metadata keys; 51-vector corpus; deferrals | Signed 2026-10-30; bitty#2664 comment 6504467996; code `b235ec59`; docs `edc65ae1` |
+| Consumer reviewer                       | Handshake fields; scope array; role pair; capabilities; 1.2 metadata keys; event opt-in; idempotency; refusals; no-alias rule              | Signed 2026-10-30; bitty#2664 comment 6504688128; docs `2c8f419b`                  |
 | Docs curator (repository gate)          | Spine, metadata, index row, English-only, self-containment, and cross-document synchronization                                             | Unchecked; required before merge                                                   |
 
 A missing signature is an acceptance blocker, not a comment. The document must
