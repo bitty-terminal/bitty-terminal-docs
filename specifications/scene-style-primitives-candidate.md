@@ -138,15 +138,19 @@ pipeline, no layout ownership, and no input authority.
 
 The set is closed at four primitives. Units follow the surface each primitive
 affects: padding is measured in cells because scene layout is cell-based;
-radius and border width are logical pixels because they are clip/stroke
-geometry, consistent with Core decoration's pixel units.
+radius and border width are physical pixels because the scene paint path
+forwards them unchanged into the accepted `RoundedFill` geometry, which is
+physical pixel space. Core decoration accepts logical pixels and scales them at
+the render boundary; the scene layer does not mirror that conversion. A
+logical-pixel unit with a DPI story is a separate future change, not a current
+claim.
 
-| Primitive     | Wire key       | Unit  | Default              | Inclusive cap | Accepted analogue                             |
-| ------------- | -------------- | ----- | -------------------- | ------------- | --------------------------------------------- |
-| Padding       | `padding`      | cells | `0`                  | `32`          | `decoration.content_inset` range (`0..32` px) |
-| Corner radius | `radius`       | px    | `0`                  | `16`          | `decoration.radius` range (`0..16` px)        |
-| Border width  | `border`       | px    | `0`                  | `16`          | outline `border_width` range (`0..16`)        |
-| Border colour | `border_token` | token | `content.foreground` | closed set    | theme token contract, content namespace only  |
+| Primitive     | Wire key       | Unit        | Default              | Inclusive cap | Accepted analogue                             |
+| ------------- | -------------- | ----------- | -------------------- | ------------- | --------------------------------------------- |
+| Padding       | `padding`      | cells       | `0`                  | `32`          | `decoration.content_inset` range (`0..32` px) |
+| Corner radius | `radius`       | physical px | `0`                  | `16`          | `decoration.radius` range (`0..16` px)        |
+| Border width  | `border`       | physical px | `0`                  | `16`          | outline `border_width` range (`0..16`)        |
+| Border colour | `border_token` | token       | `content.foreground` | closed set    | theme token contract, content namespace only  |
 
 Rules:
 
@@ -250,8 +254,8 @@ bitty.ui.mount("bottom", {
   kind = "Row",
   style = {
     padding = 2,          -- integer, cells, 0..32
-    radius = 6,           -- integer, logical px, 0..16
-    border = 1,           -- integer, logical px, 0..16
+    radius = 6,           -- integer, physical px, 0..16
+    border = 1,           -- integer, physical px, 0..16
     border_token = "content.accent", -- closed content token
   },
   children = { { kind = "Text", text = "ready" } },
@@ -291,8 +295,8 @@ use bitty_rich::scene::{ContentToken, SceneNode, SceneNodeStyle, StyledSpan};
 let card = SceneNode::Styled {
     style: SceneNodeStyle::new(
         2,                     // padding, cells, 0..=32
-        6,                     // radius, logical px, 0..=16
-        1,                     // border, logical px, 0..=16
+        6,                     // radius, physical px, 0..=16
+        1,                     // border, physical px, 0..=16
         ContentToken::Accent,  // closed content token
     ),
     child: Box::new(SceneNode::Column(vec![
@@ -315,7 +319,7 @@ measures and paints exactly like the unwrapped child.
 ## Rendering and budget impact
 
 The candidate consumer contract is a small typed paint-operation list:
-padding, radius clip, and border stroke, in that order. A flat style emits
+padding, ring radius, and border stroke, in that order. A flat style emits
 none. This keeps the present path independent of the extension's language
 runtime and keeps wgpu batching unchanged when no style is used.
 
@@ -323,9 +327,9 @@ runtime and keeps wgpu batching unchanged when no style is used.
   new pipeline state. This is the byte-identical path the tests pin.
 - **Padding only.** Layout inset inside the node's own rectangle; no new
   pipeline or texture.
-- **Radius.** A clip applied to the node's frame; it does not change hit
-  testing beyond the clipped bounds, mirroring the accepted Core decoration
-  rule.
+- **Radius.** A corner radius on the border ring only: radius without a
+  border is inert, it does not clip the node's content, and it does not change
+  hit testing beyond the node's existing bounds.
 - **Border.** A stroke inside the node rectangle; it does not add a batch
   when the renderer can reuse its existing rounded-rectangle/stroke path.
 - **Budget.** Resolution is O(fields) = O(1) per node on the cold path and
@@ -342,11 +346,15 @@ consumer (`bitty` `CTX-1659`, issue `#2112`). It is **candidate evidence**,
 not an acceptance claim:
 
 - `bitty-rich` carries the additive `SceneNode::Styled { style, child }` kind
-  with a data-only `SceneNodeStyle` (`padding` cells `0..=32`, `radius` px
-  `0..=16`, `border` px `0..=16`, `border_token` from the closed content set).
-  Construction is unchecked data; every admission entry point
-  (`RichBlock::new`, `Scene::insert`, `Scene::replace_content`) validates it
-  and rejects an over-cap block as a parent, exactly like an SCN overflow.
+  with a data-only `SceneNodeStyle` (`padding` cells `0..=32`, `radius`
+  physical px `0..=16`, `border` physical px `0..=16`, `border_token` from the
+  closed content set). Construction is unchecked data; every admission entry
+  point (`RichBlock::new`, `Scene::insert`, `Scene::replace_content`)
+  validates it and rejects an over-cap block as a parent, exactly like an SCN
+  overflow. `SceneNode` is not `#[non_exhaustive]`; adding the variant is a
+  breaking change for an exhaustive downstream match, accepted under the
+  `0.0.x` posture, and a `#[non_exhaustive]` migration is a separate
+  compatibility decision.
 - `bitty-render::scene` measures and paints it. Padding insets the child by
   whole cells and emits no operation. A border emits **one**
   `ScenePaintOp::Rounded` ring, converted to the accepted `RoundedFill`
@@ -354,14 +362,20 @@ not an acceptance claim:
   rounded pass and its SDF do the work: no new pipeline, no new draw call, no
   per-node allocation on the present hot path. Radius is the ring's corner
   radius; the ring is a stroke inside the node's own measured frame and never
-  expands it.
+  expands it. The ring rectangle is the measured frame intersected with the
+  parent allocation and the leaf, so a parent-clipped node still paints its
+  visible portion instead of dropping the ring.
 - A flat style measures and paints byte-identically to the unwrapped child,
   and a v1-only scene's paint list is frozen by a golden test. The scene
   version field stays the revision counter; `schema_version()` reports the
-  additive v2 revision when a styled node is present.
-- Style is paint only for accessibility: the text projection and the
-  `SceneKind` mapping unwrap a styled node, so roles, order, and text are
-  unchanged and a border or radius never hides content.
+  additive v2 revision (`2`) when a styled node is present, while a v1 block
+  reports `1`.
+- Style is paint only: a styled subtree's painted text lines are unchanged
+  (padding may shift their origin), and the present loop's panel
+  accessibility run stays one `SceneKind::Column` with the same clipped lines.
+  There is no production per-node `SceneNode -> SceneKind` projection; the
+  test-local projection mirror only pins the rule a future one must follow.
+  A border or radius never hides content.
 - Styling adds **one node and one depth level per wrapper** to the accepted
   SCN-1/SCN-2 accounting, and no text bytes under SCN-3.
 
@@ -381,9 +395,12 @@ not claim a batching result.
   resolution returns values only.
 - **No terminal authority.** Style cannot write grid, cursor, modes, or
   scrollback; presentation never becomes Terminal Truth.
-- **Accessibility.** Style changes paint only. Text, roles, reading order,
-  selection, and search indices are unchanged; a border or radius never
-  removes content from the accessibility tree.
+- **Accessibility.** Style changes paint only. Painted text lines, their
+  order, selection, and search indices are unchanged, and the present loop
+  still records one `SceneKind::Column` for the panel with the same clipped
+  lines; a border or radius never removes content from the accessibility
+  tree. There is no production per-node `SceneNode -> SceneKind` projection
+  today, and this record does not claim one.
 - **Contrast.** Border colour comes from theme-resolved content tokens; an
   extension cannot inject a literal. The token contract's AC-1..AC-3 floors
   govern the focused/idle outline pair, not arbitrary content tokens, so
@@ -420,43 +437,43 @@ the accepted `PluginCapabilities` model.
 The experimental implementation records these checks; they are evidence, not
 an acceptance claim:
 
-| Check                           | Expected result                                                              |
-| ------------------------------- | ---------------------------------------------------------------------------- |
-| Primitive resolution from theme | Declared values resolve to concrete values with theme attribution.           |
-| Undeclared border token         | Resolves `content.foreground` from the theme cascade.                        |
-| Per-field override precedence   | Node fields win individually; theme fields survive where the node is silent. |
-| Explicit zero override          | A declared `border = 0` disables a theme border without becoming "unset".    |
-| Caps inclusive and overflow     | Boundary values pass; one past the cap is a typed error naming both values.  |
-| Wire round-trip                 | Parse, encode, and re-parse preserve the declaration in canonical order.     |
-| Authoring authority rejection   | Input, command, colour-literal, CSS-like, and renderer keys fail closed.     |
-| Mutation/ignore-style posture   | `--safe` ignores every declaration; resolution is pure and repeatable.       |
-| Unused style byte identity      | Flat resolution emits zero operations and zero bytes.                        |
-| Styled golden encoding          | A styled node matches a frozen deterministic byte sequence.                  |
-| Scene-layer paint output        | Padding insets by cells, a border emits one ring op, flat emits none.        |
-| Scene-layer bounds              | One past any cap fails the parent block and scene admission, never a clamp.  |
-| Scene-layer v1 compatibility    | An unstyled paint list is frozen; a flat style equals the unwrapped child.   |
-| Scene-layer a11y projection     | Styled text lines and `SceneKind` are identical to the unwrapped subtree.    |
+| Check                           | Expected result                                                                                        |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Primitive resolution from theme | Declared values resolve to concrete values with theme attribution.                                     |
+| Undeclared border token         | Resolves `content.foreground` from the theme cascade.                                                  |
+| Per-field override precedence   | Node fields win individually; theme fields survive where the node is silent.                           |
+| Explicit zero override          | A declared `border = 0` disables a theme border without becoming "unset".                              |
+| Caps inclusive and overflow     | Boundary values pass; one past the cap is a typed error naming both values.                            |
+| Wire round-trip                 | Parse, encode, and re-parse preserve the declaration in canonical order.                               |
+| Authoring authority rejection   | Input, command, colour-literal, CSS-like, and renderer keys fail closed.                               |
+| Mutation/ignore-style posture   | `--safe` ignores every declaration; resolution is pure and repeatable.                                 |
+| Unused style byte identity      | Flat resolution emits zero operations and zero bytes.                                                  |
+| Styled golden encoding          | A styled node matches a frozen deterministic byte sequence.                                            |
+| Scene-layer paint output        | Padding insets by cells, a border emits one ring op clipped to the parent allocation, flat emits none. |
+| Scene-layer bounds              | One past any cap fails the parent block and scene admission, never a clamp.                            |
+| Scene-layer v1 compatibility    | An unstyled paint list is frozen; a flat style equals the unwrapped child.                             |
+| Scene-layer a11y parity         | Painted text lines and the panel `SceneKind::Column` run are unchanged by a style wrapper.             |
 
 ### Experimental implementation evidence
 
 `bitty` (`CTX-1414`, issue `#2112`) carries the candidate resolver at
 `crates/bitty-ui/src/scene_style.rs` and the verification suite at
-`crates/bitty-ui/tests/scene_style_primitives.rs`. The evidence is
-**`Implemented`-only**: headless, not `Verified` or `Compatible`, with no paint
-consumer and no plugin-facing API change. This record does not promote the
-implementation beyond candidate status.
+`crates/bitty-ui/tests/scene_style_primitives.rs`. The resolver evidence is
+**`Implemented`-only**: headless, not `Verified` or `Compatible`, with no
+plugin-facing API change. This record does not promote the implementation
+beyond candidate status.
 
 The scene-model and paint half (`CTX-1659`, issue `#2112`) is also
 **`Implemented`-only** headless evidence:
 
-| Piece                                   | Location                                                                                                      | Evidence                                                                                                                                                                        |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Additive v2 node and bounded style data | `crates/bitty-rich/src/scene.rs` (`SceneNode::Styled`, `SceneNodeStyle`, `ContentToken`, `SCENE_STYLE_MAX_*`) | unit tests: inclusive caps, per-primitive parent-block rejection, unchecked block rejected at `Scene::insert`, v1/v2 `schema_version`, unknown-kind fallback                    |
-| Admission and budget accounting         | the same module, `check_block_content_limits`                                                                 | style bounds checked at every entry point; wrapper = one node/one depth level, zero SCN-3 bytes                                                                                 |
-| Measurement and paint                   | `crates/bitty-render/src/scene.rs` (`ScenePaintOp::Rounded`, `ContentPalette`, `ScenePaint::append_into`)     | 18 tests in `crates/bitty-render/tests/scene_style_paint.rs`: paint output per primitive, leaf bounds, op budget, frozen v1 golden, flat-style identity, text-projection parity |
-| Present composition                     | `crates/bitty-runtime/src/runtime/scene_present.rs`, `present.rs`                                             | styled ring lands in the compositor's existing rounded pass; `crates/bitty-runtime/tests/scene_paint_path.rs` samples the frame pixel                                           |
-| One closed vocabulary                   | `crates/bitty-runtime/tests/scene_style_vocabulary.rs`                                                        | every cap and token spelling pinned equal between the resolver and the scene model                                                                                              |
-| Accessibility projection                | `crates/bitty-ui/tests/a11y_baseline.rs`, `ScenePaint::text_lines`                                            | a style wrapper projects the child's `SceneKind`; painted lines are unchanged by style                                                                                          |
+| Piece                                   | Location                                                                                                      | Evidence                                                                                                                                                                                                |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Additive v2 node and bounded style data | `crates/bitty-rich/src/scene.rs` (`SceneNode::Styled`, `SceneNodeStyle`, `ContentToken`, `SCENE_STYLE_MAX_*`) | unit tests: literal caps `32/16/16`, per-primitive parent-block rejection, unchecked block rejected at `Scene::insert` and `Scene::replace_content`, literal schema values `1/2`, unknown-kind fallback |
+| Admission and budget accounting         | the same module, `check_block_content_limits`                                                                 | style bounds checked at every entry point; wrapper = one node/one depth level, zero SCN-3 bytes                                                                                                         |
+| Measurement and paint                   | `crates/bitty-render/src/scene.rs` (`ScenePaintOp::Rounded`, `ContentPalette`, `ScenePaint::append_into`)     | 20 tests in `crates/bitty-render/tests/scene_style_paint.rs`: paint output per primitive, parent/leaf clipping, leaf bounds, op budget, frozen v1 golden, flat-style identity, text-projection parity   |
+| Present composition                     | `crates/bitty-runtime/src/runtime/scene_present.rs`, `present.rs`                                             | styled ring lands in the compositor's existing rounded pass; `crates/bitty-runtime/tests/scene_paint_path.rs` samples the frame pixel                                                                   |
+| One closed vocabulary                   | `crates/bitty-runtime/tests/scene_style_vocabulary.rs`                                                        | every cap and token spelling pinned equal between the resolver and the scene model                                                                                                                      |
+| Accessibility parity                    | `crates/bitty-render/tests/scene_style_paint.rs`, `crates/bitty-runtime/tests/scene_paint_path.rs`            | painted text lines are unchanged and the panel a11y run keeps one `SceneKind::Column` with the same clipped lines; no production per-node `SceneKind` projection exists                                 |
 
 Limits recorded by the evidence: the palette used by the paint path is the
 Bitty Dark reference resolution (`ContentPalette::from_theme_palette`), not yet
@@ -508,8 +525,11 @@ this record and are not claimed as done.
    wgpu batch-count evidence are still open; the
    [Panel Content Scene Path Decision](panel-content-scene-path-decision.md)
    owns that wiring and the batching evidence.
-4. **Unit choice.** Padding in cells and radius/border in logical pixels is a
-   candidate split. A successor may unify units or make padding DPI-scaled.
+4. **Unit choice.** Padding in cells and radius/border in physical pixels is
+   the current scene-layer split, because the paint path forwards the values
+   unchanged into physical `RoundedFill` geometry. A successor may unify
+   units, add a logical-pixel wire unit with DPI scaling, or make padding
+   DPI-scaled; none of that is implemented here.
 5. **Theme content-style source.** No accepted configuration key supplies a
    theme content style; today the theme layer is empty and resolution falls
    back to framework defaults. The key surface and reload semantics are
