@@ -148,6 +148,12 @@ Plugin B VM -> package B module tree
 modules. A plugin's private `require("internal")` resolves only inside that
 plugin. Plugin-to-plugin use goes through declared, versioned host services.
 
+The concrete module contract — name grammar, root derivation for `init.lua`,
+profiles, and an explicit `--config` path, containment rules, budgets, and
+failure behavior — is the
+[Config Lua require contract (candidate)](../specifications/config-lua-require-contract-candidate.md).
+It remains a draft: `require` is still denied in the shipped configuration VM.
+
 ### Restricted plugin settings Lua
 
 Status: **implemented-only** (Core2192 settings and Core PR #2198 diagnostics,
@@ -260,17 +266,20 @@ And a modular plan could look like:
 
 ```lua
 -- Candidate API only: lua/config/init.lua
-local bitty = require("bitty")
-
-return bitty.config({
+return {
     terminal = require("config.terminal"),
     appearance = require("config.appearance"),
     keymaps = require("config.keymaps"),
     plugins = require("config.plugins"),
-})
+}
 ```
 
-Exact module search rules and the built-in `bitty` module API remain open.
+Module naming, root derivation, containment, budgets, and failure behavior are
+specified by the
+[Config Lua require contract (candidate)](../specifications/config-lua-require-contract-candidate.md).
+That candidate refuses `require("bitty")` and every other `bitty.*` spec, so
+the reserved host table, if it ships, is a preloaded value rather than a
+module; the built-in `bitty` API surface itself remains open.
 
 ## Declarative configuration plan
 
