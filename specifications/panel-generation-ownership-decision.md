@@ -502,8 +502,9 @@ exist every claim in this section is a requirement, not a description.
 
 ### D.2 Two-phase bind
 
-A bind is two phases. Phase 1 invalidates, phase 2 commits, and the successor
-may not issue its first panel verb until phase 2 has returned.
+A bind is two phases. Phase 1 invalidates in five ordered steps, phase 2
+commits in one, and the successor may not issue its first panel verb until
+phase 2 has returned.
 
 Phase 1 — invalidate the predecessor, in this order, with no step skipped:
 
@@ -516,9 +517,9 @@ Phase 1 — invalidate the predecessor, in this order, with no step skipped:
 5. Cancel every in-flight panel verb of the predecessor with the refusal class
    `ControllerReleased`.
 
-Phase 2 — commit:
+Phase 2 — commit, one step:
 
-6. Write the binding `(owner, controller generation)` on the panel record and
+1. Write the binding `(owner, controller generation)` on the panel record and
    reset the panel's lease entry to `Idle`, then and only then permit
    successor verbs.
 
