@@ -14,12 +14,13 @@ sidebar_order: 10
 Index of the terminal-platform security audit records. Audit detail lives in
 the linked pages; this index carries no duplicate normative prose.
 
-| Document                                                                              | Status | Purpose                                                   |
-| ------------------------------------------------------------------------------------- | ------ | --------------------------------------------------------- |
-| [Clipboard Security Audit - 2026-09 (R-004)](audits/clipboard-2026-09.md)             | Draft  | Suspicious paste inspection and OSC 52 read/write gating. |
-| [Resource Loader Security Audit — 2026-09 (R-003)](audits/resource-loader-2026-09.md) | Draft  | Bitty-rich loader review per P0-AC-005/006 and T-03.      |
-| [Rich Image Security Audit — 2026-09 (R-002)](audits/rich-image-2026-09.md)           | Draft  | Bitty-rich ImageStore review per P0-AC-003/004 and T-02.  |
-| [VT Parser Security Audit — 2026-09 (R-001)](audits/vt-parser-2026-09.md)             | Draft  | Bounded VT parser review per P0-AC-001/002 and T-01.      |
+| Document                                                                                             | Status | Purpose                                                                                                 |
+| ---------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------- |
+| [Clipboard Security Audit - 2026-09 (R-004)](audits/clipboard-2026-09.md)                            | Draft  | Suspicious paste inspection and OSC 52 read/write gating.                                               |
+| [Resource Loader Security Audit — 2026-09 (R-003)](audits/resource-loader-2026-09.md)                | Draft  | Bitty-rich loader review per P0-AC-005/006 and T-03.                                                    |
+| [Rich Image Security Audit — 2026-09 (R-002)](audits/rich-image-2026-09.md)                          | Draft  | Bitty-rich ImageStore review per P0-AC-003/004 and T-02.                                                |
+| [VT Parser Security Audit — 2026-09 (R-001)](audits/vt-parser-2026-09.md)                            | Draft  | Bounded VT parser review per P0-AC-001/002 and T-01.                                                    |
+| [Presentation Overlay Security Audit — 2026-11 (bitty#2849)](audits/presentation-overlay-2026-11.md) | Draft  | `ui.present` presentation-only surface: no content read, no input capture, no outliving its generation. |
 
 ## Authority and status
 
