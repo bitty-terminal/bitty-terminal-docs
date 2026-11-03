@@ -35,7 +35,19 @@ sidebar_order: 87
 > panels allocate without a workspace, and the restore key has no persisted
 > encoding. It accepts nothing, promotes nothing to **Verified** or
 > **Compatible**, changes no accepted text, and does not describe shipped
-> behavior. Owner acceptance and a fresh security review are still required.
+> behavior.
+>
+> A second independent re-review
+> (`docs/security/panel-generation-ownership-rereview.md`) confirmed seven of
+> the eight and recorded three blocking findings in the new bind and derivation
+> text: the derivation read a predecessor set that the same section deleted
+> first and never installed its result (`B-1`), workspace membership resolved
+> from a source with no referent (`B-2`), and the release list for generation
+> disposal was carried out only at the next bind (`B-3`). This revision closes
+> `B-1` to `B-3` in place, without weakening a rule either review accepted. It
+> accepts nothing, promotes nothing to **Verified** or **Compatible**, changes
+> no accepted text, and does not describe shipped behavior. Owner acceptance
+> and a third security review are still required.
 
 ## Purpose and scope
 
@@ -187,7 +199,7 @@ durable citation.
 | Panel record contents        | `PanelRecord` carries `id`, `generation`, `state`, `panel_type`, `workspace: Option<WorkspaceId>`, `view`, and `title`. It carries **no** owner, plugin, provider, controller, or binding field, and `workspace` is written only by `create_panel`; no assignment path exists after creation.                                                                                                                                                                                                                                                                                                                                                                                    |
 | Panel allocation generation  | `create_panel` bumps the registry-wide counter and stamps the result on the record, so a panel's `Generation` is the allocation epoch of the whole registry, not a per-panel fencing counter. Disposal retires the record and bumps the counter again.                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Plugin-created panels        | `bitty.panel.create` reaches the host through `PanelCreateHandler = Rc<dyn Fn(&str) -> Result<(u64, u64), BridgeError>>` (`crates/bitty-runtime/src/plugin_runtime/services.rs`), which is handed only a type string. The production backend (`crates/bitty-terminal/src/plugin_runtime.rs`) calls `create_panel(parsed, None)`, so `PanelRecord.workspace` is `None`. The registry behind it is process-owned and shared by every generation.                                                                                                                                                                                                                                   |
-| Workspace membership         | Membership is assigned at creation and only when the caller passes `Some(WorkspaceId)`. `create_panel` then charges `max_panels_per_workspace`, inserts into `workspace_panels`, and seeds `focus_per_workspace`; with `None` it charges only the window-wide `max_panels_per_window` (which counts every record), never appears in a workspace list, and never enters the focus MRU.                                                                                                                                                                                                                                                                                            |
+| Workspace membership         | Membership is assigned at creation and only when the caller passes `Some(WorkspaceId)`. `create_panel` then charges `max_panels_per_workspace`, inserts into `workspace_panels`, and seeds `focus_per_workspace`; with `None` it charges only the window-wide `max_panels_per_window` (which counts every record), never appears in a workspace list, and never enters the focus MRU. The registry also declares `active_workspace: Option<WorkspaceId>`, assigned only inside `create_panel` when it is `None` and never read: write-only and registry-global, not a per-generation fact.                                                                                       |
 | Grant lifecycle              | Grants live in `capabilities: HashMap<(PanelId, Generation), BTreeSet<String>>`, written by `grant_panel_capability` and read by `is_panel_capability_granted` and `require_panel_capability`. `dispose_panel` removes the panel's commands, bus queues, and `capabilities.remove(&(panel_id, generation))`; the key's `Generation` is the allocation epoch, which a reload does not change, so a reload preserves every grant by accident.                                                                                                                                                                                                                                      |
 | Component-request teardown   | `drop_plugin(plugin_id)` in `crates/bitty-runtime/src/plugin_runtime/component_requests.rs` retains `submissions` on `plugin_id`, filters `in_flight` on `plugin_id`, and retains `tickets`/`completed` on `owner != plugin_id`. It is **plugin-scoped**: none of those structures carries a generation, so "one generation's tickets" was wrong. No panel equivalent exists, generation-scoped or otherwise.                                                                                                                                                                                                                                                                    |
 | Scene-panel binding          | `crates/bitty-runtime/src/scene_host.rs` keeps `HostPanel { handle, view, owner: String, epoch: u32 }`. `ensure_panel` refuses a different `owner` or `epoch` with `E_UI_UNAVAILABLE` ("held by another plugin generation"). `release_owner(owner, epoch)` drops that generation's scenes and calls `release_panel`, which calls `dispose_panel`; `detach` does the same when a generation's last scene goes. The panel is created with `create_panel(PanelType::Rich, None)`.                                                                                                                                                                                                   |
@@ -235,6 +247,25 @@ controller binding are generation-owned and ephemeral**.
    "disposal drops generation N's queued events and its subscriptions" and
    with the closed release-reason vocabulary the GUI content path already
    uses.
+
+   **The release runs at the generation edge itself and needs no successor.**
+   A generation that is disposed, crashes, or is disabled with no `N+1` runs no
+   bind, so a release that existed only inside a bind's phase 1 would never run
+   for it. On the terminal edge the container therefore releases, for that
+   controller generation: its grant rows for `(PanelId, N)`, the panel's queued
+   events, the panel commands `N` registered, and `N`'s overlay attribution —
+   and it completes that release **before** presenting the placeholder, so the
+   placeholder is never shown over a departed generation's rows. A failed
+   release leaves the panel unbound and refuses every verb, with one
+   FS-4-style record naming the family that failed: the same fail-closed shape
+   as a failed bind, and never a re-bind of `N`. The release is observable by
+   construction — one counter keyed `(PanelId, ended controller generation)`
+   advances once per family released, so "nothing to release" is
+   distinguishable from "the release never ran", and the queue side is also
+   readable through `queued_events_for_panel`. A bind repeats these releases in
+   phase 1 as defense in depth; the repetition is idempotent and is not the
+   mechanism that satisfies this rule.
+
 3. The controller binding is generation-fenced by the **controller
    generation**. A container holds at most one controller (the at-most-one rule
    the Panel Runtime RFC applies to `PanelId -> ViewId`), and a call that names
@@ -263,13 +294,45 @@ controller binding are generation-owned and ephemeral**.
    containers; the scene panel is out of their scope. What the scene path does
    contribute is the fence: `ensure_panel`'s owner/epoch refusal is the
    precedent this record generalizes, not a behaviour to delete.
-7. **Workspace membership is assigned at creation, by Core.** The creating
-   generation never names a workspace; Core resolves it from the generation's
-   active workspace at the create boundary and passes it to `create_panel`. A
-   create for which no workspace can be resolved fails closed, allocates no
-   record, and reports `E_UI_UNAVAILABLE`; a container with `workspace: None`
-   is not a state this record permits. Rebind preserves the recorded workspace
-   and never re-resolves it, and an unbound placeholder stays attributed to it.
+7. **Workspace membership is assigned at creation, by Core, from the focused
+   leaf of the presented workspace.** The creating generation never names a
+   workspace and cannot: the create seam hands it only a panel type string. At
+   the create boundary Core reads two facts it already owns — the active
+   workspace index and that workspace's focused view
+   (`Runtime::active_workspace_index`, `Layout::focused_view`) — and passes the
+   resulting `WorkspaceId` to `create_panel` as its `workspace` argument, the
+   same argument `create_panel_by_type_str` forwards. When the presented
+   workspace has no focused view, or the instance presents no workspace, no
+   workspace resolves: the create fails closed, allocates no record, charges no
+   slot, and reports `E_UI_UNAVAILABLE`. That branch is reachable by
+   construction, because `focused_view` is an `Option` and a workspace whose
+   leaves are all closed has none; an always-answerable global pointer is
+   exactly the fallback this rule forbids. A container with `workspace: None`
+   is not a state this record permits. Two cases the seam makes explicit:
+   `panel.create` carries no target, so a create with no target resolves by
+   this same rule and never by a guessed or defaulted workspace, and a
+   generation that presents nothing — no scene, no mount, no panel of its own —
+   resolves identically, because the input is Core's presented workspace and
+   never the calling generation's own surfaces. Such a generation does not fail
+   resolution for presenting nothing; it fails only when Core has no focused
+   view to read.
+
+   The recorded workspace is the lifetime and bind-time referent:
+   `create_panel` writes it into `PanelRecord.workspace`, no later assignment
+   path exists, and a bind reads it from the record rather than re-resolving
+   it, so a focus change, a mount, and a rebind cannot move a panel between
+   workspaces (`focus_panel` already refuses a workspace argument that
+   disagrees with the record). `PanelRegistry::active_workspace` is **not** the
+   source and has no role here: it is a registry-global field assigned once
+   inside `create_panel` when it is `None` and never read anywhere, so
+   consulting it would attribute every later plugin panel to whichever create
+   happened first. It is dead in code today and its removal is required work;
+   no resolution path may read it in the meantime. A resolved workspace may be
+   one in which the plugin holds no other grant: membership is attribution and
+   PR-1 accounting, never authority, and authority stays the panel-scoped grant
+   set plus the binding. Rebind preserves the recorded workspace and never
+   re-resolves it, and an unbound placeholder stays attributed to it.
+
 8. **PR-1 and PR-2 accounting.** A `Created` but unmounted container charges
    one workspace slot and one window slot from allocation, because it occupies
    a record and a workspace list entry; a `Declared` panel type charges
@@ -385,14 +448,17 @@ Transition rules that follow:
    because `Suspended` means "invisible without destroying the attachment",
    which is a workspace fact, not a plugin fact.
 2. **Controller `Disposed` never cascades to panel `Disposed`.** The panel
-   becomes unbound and presents the placeholder. Only an explicit user close,
-   workspace close, or an explicit recovery decision retires the container.
+   becomes unbound, releases that generation's panel-scoped families through the
+   unbind release in A.2, and then presents the placeholder. Only an explicit
+   user close, workspace close, or an explicit recovery decision retires the
+   container.
 3. **Crash.** A generation that faults enters the FS-2 ladder and ends
-   `Disabled`; the panel becomes unbound, presents the placeholder with reason
-   `crashed`, and keeps its attachment and focus history. No automatic
-   respawn, no retry loop: a crash-triggered reload would restart the same
-   fault, which the reload contract already refuses for watcher-triggered
-   failures.
+   `Disabled`; the panel becomes unbound, releases that generation's
+   panel-scoped families through the unbind release in A.2, presents the
+   placeholder with reason `crashed`, and keeps its attachment and focus
+   history. No automatic respawn, no retry loop: a crash-triggered reload would
+   restart the same fault, which the reload contract already refuses for
+   watcher-triggered failures.
 4. **Disable.** User or policy disable behaves as crash with reason
    `disabled`, except that the placeholder names the disable rather than a
    fault, and re-enabling the plugin permits a rebind. A disabled plugin's
@@ -495,20 +561,45 @@ inserts one capability at a time into `capabilities[(PanelId, Generation)]`;
 the only per-panel remover is `dispose_panel`, and the only other clear is the
 whole-registry `dispose()`. The derivation must run inside the
 bind commit — the `rebind_panel` boundary in [D.2](#d2-two-phase-bind) — and it
-reads three things: the successor's resolution, the predecessor's set for the
-same `PanelId`, and the consent record for this bind. That function, and a
-consent record to read, **do not exist yet and are required work**; until they
-exist every claim in this section is a requirement, not a description.
+reads three things: the successor's resolution, the **captured** predecessor set
+for the same `PanelId` (the immutable snapshot taken at bind entry, D.2 phase 0,
+never the live grant table), and the consent record for this bind. That
+function, and a consent record to read, **do not exist yet and are required
+work**; until they exist every claim in this section is a requirement, not a
+description.
+
+**A bind is a pure function of that captured snapshot.** Once phase 0 returns,
+nothing the bind mutates can change the derivation's result: the three inputs
+are immutable for the duration of the bind, the live grant table is not an
+input to the formula, and the output is written exactly once in phase 2 or not
+at all. An implementation that evaluates the formula against the live table is
+a defect even where it happens to compute the right set, because the ordering
+in D.2 then decides what the formula means.
 
 ### D.2 Two-phase bind
 
-A bind is two phases. Phase 1 invalidates in five ordered steps, phase 2
-commits in one, and the successor may not issue its first panel verb until
-phase 2 has returned.
+A bind is two mutating phases, preceded by a capture step, phase 0, which reads
+and mutates nothing. Phase 1 invalidates in five ordered steps, phase 2 commits
+in three, and the successor may not issue its first panel verb until phase 2 has
+returned.
+
+Phase 0 — capture, at bind entry and before any invalidation, with no step
+skipped:
+
+1. Read the predecessor's panel-scoped grant set for this `PanelId` into an
+   immutable snapshot stamped with the panel id, the predecessor's controller
+   generation, and this bind attempt, and hand that snapshot to the derivation
+   in D.1 as `P`. The live row is not touched here; phase 1 removes it after
+   the snapshot exists. If the snapshot cannot be taken, the bind is refused
+   before anything is invalidated: the predecessor stays bound, no phase 1 step
+   runs, no phase 2 step is written, and one FS-4-style record names the capture
+   and both generations.
 
 Phase 1 — invalidate the predecessor, in this order, with no step skipped:
 
 1. Remove every panel-scoped grant held by the predecessor for this `PanelId`.
+   This removes the live row only; the derivation reads the phase 0 snapshot
+   and never this table.
 2. Drop the panel's queued events (they are panel-scoped, and the successor
    has not bound, so a panel-wide drain cannot touch it).
 3. Release the predecessor's capture handles for this panel and revoke its
@@ -517,11 +608,16 @@ Phase 1 — invalidate the predecessor, in this order, with no step skipped:
 5. Cancel every in-flight panel verb of the predecessor with the refusal class
    `ControllerReleased`.
 
-Phase 2 — commit, one step:
+Phase 2 — commit, in this order:
 
-1. Write the binding `(owner, controller generation)` on the panel record and
-   reset the panel's lease entry to `Idle`, then and only then permit
-   successor verbs.
+1. Install the derived set `(R ∩ P) ∪ C` for `(PanelId, controller generation)`,
+   keyed by the controller generation rather than the allocation generation.
+2. Write the binding `(owner, controller generation)` on the panel record.
+3. Reset the panel's lease entry to `Idle`, then and only then permit successor
+   verbs.
+
+No verb is permitted between step 1 and step 3, so no caller observes the panel
+as bound with an empty or partial grant set.
 
 Rules that make the phases decidable:
 
@@ -537,6 +633,15 @@ Rules that make the phases decidable:
   no "invalidated most of it" state. One FS-4-style record names the old
   controller generation, the attempted new one, the step that failed, and the
   set successfully invalidated before the failure.
+- **A failed capture or a failed install refuses the bind, with the predecessor
+  left either bound or gone — never half of each.** A capture that cannot be
+  taken refuses the bind before any invalidation, so the predecessor stays the
+  controller and no placeholder is presented. A phase 2 step 1 install that
+  cannot complete leaves the binding unwritten, the panel unbound, the
+  placeholder presented, the invalidated set not re-installed, and one
+  FS-4-style record naming the failed install and both generations. No verb is
+  permitted in either case, so no caller observes a panel that is bound with an
+  empty or partial grant set.
 - **Two typed refusals, neither borrowed from `StaleHandle`.**
   `ControllerConflict` refuses a verb that names a generation which is not the
   bound one, carrying the panel id, the bound generation, and the presented
@@ -563,7 +668,7 @@ Rules that make the phases decidable:
 | Scrollback, grid, cursor, modes                                       | Yes, but not to the plugin | They belong to the terminal, not the panel or the generation; no PTY descriptor is handed over.        |
 | Panel-scoped queue budgets (PR-7, PR-8)                               | Yes, re-armed empty        | Attribution stays with the `PanelId`; occupancy does not survive.                                      |
 | Lease entry                                                           | Yes, reset to `Idle`       | The record survives, the tenure does not (D.2).                                                        |
-| Capability grants                                                     | No                         | Re-derived by D.1; the predecessor's set is a ceiling.                                                 |
+| Capability grants                                                     | No                         | Re-derived by D.1 from the phase 0 snapshot; a ceiling, installed in phase 2.                          |
 | Queued events                                                         | No                         | Dropped in phase 1; never replayed.                                                                    |
 | Overlay attribution, modal authority                                  | No                         | Released in phase 1; a queued modal from the predecessor is dropped, never presented by the successor. |
 | Capture handles, block handles, scene, bind                           | No                         | Generation-owned content; released before the successor may act.                                       |
@@ -572,19 +677,20 @@ Rules that make the phases decidable:
 
 ### D.4 The six families, and what can be revoked today
 
-| Family                  | Key in code today                                                                                                      | Generation-revocable today                                                             | Required action                                                               |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Capability grants       | `capabilities[(PanelId, allocation Generation)]`; written by `grant_panel_capability`, removed only by `dispose_panel` | No — the key's generation does not change on reload, so a reload preserves every grant | Re-key to `(PanelId, controller generation)` and remove in phase 1 (D.1, D.2) |
-| Content and capture     | Generation-scoped block registry, spec overlay handles, scene, bind, targeting lenses, overlay capture session         | Yes — `clear_ui_blocks` releases them at suspend, dispose, and rollback                | Nothing new; the bind must not replay any of it                               |
-| Overlay attribution     | `Overlay` has no owner; the registry stamps only its own `generation`; `dispose_panel` leaves overlays in place        | No — only `PanelRegistry::dispose()` clears the manager                                | Add `(PanelId, controller generation)` attribution and dismiss in phase 1     |
-| Scrollback and terminal | No panel-held PTY; access only through the scope-checked host path                                                     | Not applicable — there is no panel-owned handle to revoke                              | State the non-claim: no object is handed to the successor                     |
-| Bus queues              | `(PanelId, topic)`, cleared only by `event_bus.clear_panel` at disposal                                                | No — panel-scoped, but no generation boundary triggers the clear                       | Drain the panel's queues in phase 1                                           |
-| Focus                   | Workspace MRU, not panel state                                                                                         | Not applicable — a rebind grants nothing                                               | Nothing new; a rebind must not call focus                                     |
+| Family                  | Key in code today                                                                                                      | Generation-revocable today                                                             | Required action                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Capability grants       | `capabilities[(PanelId, allocation Generation)]`; written by `grant_panel_capability`, removed only by `dispose_panel` | No — the key's generation does not change on reload, so a reload preserves every grant | Re-key to `(PanelId, controller generation)`; capture, remove, install |
+| Content and capture     | Generation-scoped block registry, spec overlay handles, scene, bind, targeting lenses, overlay capture session         | Yes — `clear_ui_blocks` releases them at suspend, dispose, and rollback                | Nothing new; the bind must not replay any of it                        |
+| Overlay attribution     | `Overlay` has no owner; the registry stamps only its own `generation`; `dispose_panel` leaves overlays in place        | No — only `PanelRegistry::dispose()` clears the manager                                | Add the attribution; dismiss at unbind (A.2) and in phase 1            |
+| Scrollback and terminal | No panel-held PTY; access only through the scope-checked host path                                                     | Not applicable — there is no panel-owned handle to revoke                              | State the non-claim: no object is handed to the successor              |
+| Bus queues              | `(PanelId, topic)`, cleared only by `event_bus.clear_panel` at disposal                                                | No — panel-scoped, and only container disposal drains them today                       | Drain at unbind (A.2), not only in phase 1                             |
+| Focus                   | Workspace MRU, not panel state                                                                                         | Not applicable — a rebind grants nothing                                               | Nothing new; a rebind must not call focus                              |
 
-The families with no key today are why the enforcement point has to be a
-function rather than a sentence: two of the six cannot be revoked by any
-current call, and the four that can be are revoked by three different
-mechanisms with three different triggers.
+The families with no per-generation key are why the enforcement point has to be
+a function rather than a sentence: grants, overlay attribution, and bus queues
+have no per-generation revoker today, so the three mechanisms that exist —
+`dispose_panel`, `PanelRegistry::dispose`, and `clear_ui_blocks` — are keyed to
+other events.
 
 ### D.5 Family rules
 
@@ -679,11 +785,13 @@ Rules:
 
 **Decided in this record.** Each row is a headless test obligation; a feature
 PR that touches panel lifecycle, rebind, or generation teardown adds its row
-before merge. The matrix has **twenty-one rows**. The count is not the
-contract; the coverage is, and rows `PGO-15` to `PGO-21` exist because rows
+before merge. The matrix has **twenty-three rows**. The count is not the
+contract; the coverage is, and rows `PGO-15` to `PGO-23` exist because rows
 `PGO-1` to `PGO-14` test the happy direction of a rebind and not the
 adversarial one. Each added row names the wrong implementation it is expected
-to fail.
+to fail. `PGO-22` exists because the order of the bind's capture, invalidation,
+and install is a property no earlier row discriminated, and `PGO-23` because the
+unbind edge releases families that every earlier row reads only after a bind.
 
 | ID     | Case                                        | Assertion                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -693,7 +801,7 @@ to fail.
 | PGO-4  | Crash during a callback                     | FS-2 ladder output is unchanged; only the owning generation is affected; sibling panels and terminals stay responsive (FS-P2); the panel's placeholder reason is `crashed`.                                                                                                                                                                                                                                                                                                    |
 | PGO-5  | Disable, then re-enable                     | Placeholder appears with `disabled`, disappears on rebind after activation, and content is not restored from the disabled generation.                                                                                                                                                                                                                                                                                                                                          |
 | PGO-6  | Reload racing a mount                       | A mount against a disposing generation commits nothing; the view ends unbound; the panel keeps its pre-mount state; `N+1` can mount cleanly afterwards.                                                                                                                                                                                                                                                                                                                        |
-| PGO-7  | Rebind authority sweep at bind time         | At the instant the bind returns, and before `N+1` issues any verb, the panel's grant set equals `(own resolution ∩ predecessor set) ∪ consented widening`; capture handles, overlay attribution, and queued events are observably empty for `N+1`, read back through the accessors the verbs use rather than inferred from `N+1` not having asked.                                                                                                                             |
+| PGO-7  | Rebind authority sweep at bind time         | At the instant the bind returns, and before `N+1` issues any verb, the panel's grant set equals `(own resolution ∩ predecessor set) ∪ consented widening`, read back through the accessors the verbs use; capture handles, overlay attribution, and queued events are observably empty for `N+1` rather than inferred from `N+1` not having asked. A non-empty predecessor set never commits empty; `PGO-22` fixes the ordering.                                               |
 | PGO-8  | Two generations racing for one panel        | The second bind fails closed with the typed `ControllerConflict` and changes nothing; at most one controller is ever recorded; the refusal names both generations.                                                                                                                                                                                                                                                                                                             |
 | PGO-9  | Guessing a `PanelId`                        | An ungranted verb naming a live `PanelId` is denied before any state access; a granted verb naming another generation's panel is denied.                                                                                                                                                                                                                                                                                                                                       |
 | PGO-10 | Denied capability at rebind                 | Panel presents `unavailable` with the denial named; no content verb is reachable; safe mode produces the same outcome without loading a third-party VM.                                                                                                                                                                                                                                                                                                                        |
@@ -708,6 +816,8 @@ to fail.
 | PGO-19 | Bounded recovery under denial               | With a required capability denied at rebind, the panel presents `unavailable` with `denied`, accepts zero verbs, produces exactly one FS-4 record, and is unchanged after 100 ticks: no respawn, no second record, no counter growth past the cap. Fails for an implementation that retries the bind per tick or re-emits per attempt.                                                                                                                                         |
 | PGO-20 | Bounded recovery under crash and disable    | Crash: placeholder `crashed`, one FS-4 record, no respawn within the driver's reload window, container, title, and focus history intact, and no authority from the crashed generation survives the next bind. Disable: placeholder `disabled`, re-enable permits a rebind, and the disabled generation's grants are not restored by the rebind. Fails for an implementation that treats re-enable as resuming the old binding.                                                 |
 | PGO-21 | Workspace close with a focused panel        | Closing a workspace whose focused panel is `Focused` reaches `Disposed` through C.8 and C.9: focus moves to the next MRU entry or to none, the view attachment, MRU entry, lease entry, commands, queues, grants, and overlay attribution are released, both PR-1 and PR-2 counts return to baseline, and one FS-4 record per panel carries reason `quit`. Fails for an implementation that refuses the transition table's missing edge or that leaves the lease entry behind. |
+| PGO-22 | Snapshot captured before invalidation       | The predecessor holds `{panel.create, panel.focus}` and `N+1`'s resolution is the same set. The committed set equals that set exactly, its provenance names the predecessor generation and the bind attempt, and no verb is permitted between the grant install and the binding write. A failed snapshot refuses the bind with the predecessor still bound. Fails for remove-then-derive (empty set), bind-then-install, and a derivation from the live table.                 |
+| PGO-23 | Unbind release with no successor            | A generation crashes, is disabled, and is separately disposed, each with no successor. Before the placeholder is read, its grant rows, the panel's queued events (read through `queued_events_for_panel`), its commands, and its overlay attribution are observably empty, and the unbind-release counter advanced once per family. Fails for an implementation whose only drain is bind phase 1, and one that shows the placeholder before the release ends.                  |
 
 ## What is decided in this record and what stays open
 
@@ -716,16 +826,18 @@ Decided here (candidate direction, awaiting owner acceptance):
 - the ownership split at the content boundary, the rejection of
   generation-owned ephemeral panels, and the exclusion of the Core-owned
   `terminal`-slot scene panel from the container rules;
-- workspace membership assigned at creation by Core, and the PR-1/PR-2
-  accounting for a created-but-unmounted container;
+- workspace membership assigned at creation by Core from the presented
+  workspace's focused leaf, recorded once and never re-resolved, and the
+  PR-1/PR-2 accounting for a created-but-unmounted container;
 - `PanelId` survival across plugin reload, the separation of allocation
   generation from controller generation, and the restore key
   `(WorkspaceId, PersistentId)` as a tuple with a fresh `PanelId` on restore;
 - the panel-state to generation-state mapping, including crash, disable,
   reload-mid-mount, and the two disposal edges `Focused -> Disposed` and
   `Created -> Disposed`;
-- the single grant derivation, the two-phase bind, the two typed refusals, and
-  the binding-versus-lease relationship;
+- the single grant derivation over an immutable captured snapshot, the
+  two-phase bind, the unbind release at the generation edge, the two typed
+  refusals, and the binding-versus-lease relationship;
 - the three-outcome bounded recovery, its reason vocabulary with the close-side
   mapping, and its counter cap;
 - the required test matrix.
@@ -760,7 +872,10 @@ decides what authority survives a generation change.
    panel-scoped set is its own resolution filtered by the predecessor's set,
    widened only by a consent granted in that bind (D.1). The predecessor's set
    is a ceiling and cannot be a source, which is the property the earlier text
-   lost between "inherits nothing", "intersection", and "carry forward".
+   lost between "inherits nothing", "intersection", and "carry forward". The
+   ceiling is read from a snapshot captured before any invalidation (D.2 phase
+   0), so no ordering in the bind can turn it into an empty set or into a
+   source.
 2. The confused-deputy case is closed at the type and binding level: a panel
    handle is not authority, the controller generation is checked against the
    binding before and at use, no path accepts a `PanelId` where a `ViewId` or
@@ -772,8 +887,10 @@ decides what authority survives a generation change.
    the owning generation and leaves container structure intact, which is
    strictly less destructive than the cascade a generation-owned panel model
    would require. A failed invalidation refuses the bind rather than committing
-   a partial one (D.2), and bounded recovery keeps the panel visible and
-   non-interactive rather than respawning (E.1).
+   a partial one (D.2), bounded recovery keeps the panel visible and
+   non-interactive rather than respawning (E.1), and the unbind release of A.2
+   runs at the generation edge with no successor, so a departed generation's
+   families are empty before the placeholder is read.
 5. Nothing here weakens a normative control: invariants 2, 3, 4, and 7,
    FS-P1 through FS-P5, and threat-model row `T-25` hold unchanged, and no
    exclusion in the Panel Runtime RFC's explicit-exclusions table is relaxed.
@@ -782,17 +899,21 @@ decides what authority survives a generation change.
    binding boundary:** the derivation is D.1, the ordering and failure mode are
    D.2, the enforcement site does not exist yet and is named as required work,
    and `PGO-16`, `PGO-17`, and `PGO-18` discriminate a ceiling from a source
-   and a failed invalidation from a partial bind. **A displaced generation
-   cannot observe its successor:** `PGO-15` asserts the refusal class and the
-   absence of observation, `PGO-7` reads the emptied families back through the
-   accessors the verbs use, and `PGO-21` covers the focused-panel disposal that
-   was unreachable.
+   and a failed invalidation from a partial bind, while `PGO-22` discriminates
+   the snapshot that keeps the ceiling readable from a derivation that reads
+   the table after invalidation. **A displaced generation cannot observe its
+   successor:** `PGO-15` asserts the refusal class and the absence of
+   observation, `PGO-7` reads the emptied families back through the accessors
+   the verbs use, `PGO-21` covers the focused-panel disposal that was
+   unreachable, and `PGO-23` asserts that the ending generation's families are
+   released at the boundary itself when no successor follows.
 7. The record states where enforcement does not exist. `PanelError` has no
    `ControllerConflict` or `ControllerReleased` variant, the grant table is
    keyed by the allocation generation rather than the controller generation,
-   panel overlays carry no owner, no function performs invalidation, and
-   `PGO-12`, `PGO-16`, and `PGO-21` would fail against today's code. A reader
-   cannot mistake this section for a statement of current safety.
+   panel overlays carry no owner, no function performs invalidation, no unbind
+   release exists, and `PGO-12`, `PGO-16`, `PGO-21`, `PGO-22`, and `PGO-23`
+   would fail against today's code. A reader cannot mistake this section for a
+   statement of current safety.
 
 No `P0` acceptance criterion is modified; the affected evidence row is the one
 that would carry the rebind-authority tests.
@@ -808,17 +929,18 @@ Conformance requires, at minimum:
    same wave.
 2. Implementation of the controller binding on the panel record, keyed by the
    controller generation and distinct from the allocation generation; the
-   `rebind_panel` boundary with the two-phase order and the fail-closed branch;
-   the two typed refusal variants; grant re-keying to
+   `rebind_panel` boundary with the capture step, the two-phase order, and the
+   fail-closed branches; the unbind release at the generation edge with its
+   counter; the two typed refusal variants; grant re-keying to
    `(PanelId, controller generation)`; overlay attribution; workspace
-   resolution at the create boundary; and the bulk dispose-by-workspace path
-   that C.9 requires.
+   resolution at the create boundary from the presented workspace's focused
+   leaf; and the bulk dispose-by-workspace path that C.9 requires.
 3. The missing `Created -> Disposed` and `Focused -> Disposed` edges in
    `PanelLifecycle::can_transition`, so the seven-axis table stops contradicting
    the six-state table the registry actually uses.
 4. The full [test matrix](#decision-f-required-test-matrix) green headlessly,
-   with `PGO-7`, `PGO-8`, `PGO-9`, `PGO-15`, `PGO-16`, and `PGO-21` also
-   covered by the security evidence for the affected criterion.
+   with `PGO-7`, `PGO-8`, `PGO-9`, `PGO-15`, `PGO-16`, `PGO-21`, `PGO-22`, and
+   `PGO-23` also covered by the security evidence for the affected criterion.
 5. An update to the Panel Runtime RFC's implementation-status rows and to the
    [UI and Compositor Gap Analysis](ui-compositor-gap-analysis.md) so no page
    claims either the old cascade or a shipped rebind.
@@ -855,7 +977,7 @@ Conformance requires, at minimum:
 | [Panel GUI Content Presentation](panel-gui-content-presentation-candidate.md)                                                | Its generation-owned content handle and release-reason vocabulary are adopted as the content half of the split, with the mapping in E.2          |
 | [Chrome Surface Contract](chrome-surface-contract-candidate.md)                                                              | Its "release the scene, the bind, and the Core panel" row needs the container exception stated at acceptance                                     |
 | [Workspace Panel Invariants](workspace-panel-invariants.md)                                                                  | Unchanged statuses; a rebind invariant would be added by the acceptance wave, not here                                                           |
-| [Threat model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md)                         | Row `T-25` already names the abuse case; its required defense matches D.1, D.2, and `PGO-15` to `PGO-21`                                         |
+| [Threat model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md)                         | Row `T-25` already names the abuse case; its required defense matches D.1, D.2, and `PGO-15` to `PGO-23`                                         |
 
 ## Open points
 
@@ -909,15 +1031,17 @@ generation may exercise over a panel that predates it, and it names an
 enforcement point — grant invalidation at the binding boundary — that does not
 exist in code today. A security reviewer must confirm the grant derivation,
 the placeholder's plugin-free path, the fail-closed bind, and the containment
-claims for `PGO-4`, `PGO-7`, `PGO-15`, `PGO-16`, and `PGO-21` before status can
-move from draft.
+claims for `PGO-4`, `PGO-7`, `PGO-15`, `PGO-16`, `PGO-21`, `PGO-22`, and
+`PGO-23` before status can move from draft.
 
 The first independent security review returned `NEEDS-FIX` with eight blocking
-gaps and did not sign off. This revision closes each of them in place and
-records what the code actually does where the earlier text was wrong; it does
-not self-certify, and the reviewer's re-review of the diff is what would clear
-the verdict. No `P0` acceptance criterion is modified in the meantime, and no
-shipped behavior is claimed.
+gaps and did not sign off. The revision that answered it closed each of them in
+place and recorded what the code actually does where the earlier text was wrong;
+a second independent re-review confirmed seven of the eight and returned three
+blocking findings in the bind and derivation text, which the current revision
+closes in place. Neither revision self-certifies: a third reviewer's re-review
+of the diff is what would clear the verdict. No `P0` acceptance criterion is
+modified in the meantime, and no shipped behavior is claimed.
 
 ## References
 
