@@ -30,56 +30,53 @@ sidebar_order: 62
 > [DIR-030](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/index.md)
 > direction, not a crate.
 
-## Successor-owner pointers
+## Successor contract handoff
 
-This section records ownership, not content. It decides no limit, timeout,
-error code, or lifecycle state machine, and it repeats no value from the owner
-documents.
+This section is the canonical handoff pointer for the contracts this repository
+does not own. It records ownership, not content. No limit value, transfer
+budget, operation deadline, frame, message, or aggregate ceiling, no proxy or
+transport rule, no error taxonomy, and no suspend/resume transaction outcome may
+be introduced anywhere in this corpus while the rows below name another owner. A
+missing or draft owner document leaves the row open; it never authorizes a local
+default, an estimate, or a "typical terminal" value. When an owner accepts its
+contract, the row gains a pointer to the accepting document and closes here
+without copying the owner's numbers.
 
-- **Network safety limits (CC-02 through CC-06).** Destination
-  re-authorization for every redirect hop and the sensitive-header policy,
-  the HTTP transfer budget, WebSocket frame, message, and aggregate
-  ceilings, the single operation deadline that covers DNS, connect, TLS,
-  proxy, send, receive, and close, HTTPS proxy behavior (typed rejection
-  versus authenticated TLS, trust roots, hostname verification, and no
-  plaintext fallback), the CONNECT, DNS, and subprotocol profile, and
-  diagnostic-field safety under
-  [P0-AC-026](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md)
-  are owned by the successor network specification in the
-  [bitty-network repository](https://github.com/bitty-terminal/bitty-network)
-  and are not decided in `bitty-terminal-docs`. That specification does not
-  exist yet: this page stays a `draft` candidate, and its
-  built-versus-not-built record is a dated snapshot, not a limit contract.
-  This candidate therefore states no number, ceiling, deadline, or error
-  taxonomy for any of them.
-- **Plugin suspend/resume transaction semantics (CC-07).** Whether a failed
-  suspend or resume leaves the prior coherent state intact, which service
-  visibility and dispatch authority survive the transition, and whether
-  command dispatch from `Suspended` is denied are owned by the
-  [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/plugin-host-runtime-rfc.md)
-  in `bitty-plugins-docs`; that lifecycle question stays open there.
-- **Panel suspend/resume is already decided.** Panel suspend and resume are
-  Core-owned in the accepted [Panel Runtime RFC](panel-runtime-rfc.md):
-  `PanelRuntime` owns panel creation, mount, suspend, resume, and disposal,
-  and `FS-P1` makes a refused capability, budget, or scope transactional
-  with no partial state. Only the plugin lifecycle stays open; this page
-  neither restates nor reopens the panel rule.
+The status in the owner column is the owner's own. `Accepted` appears only where
+the owning document carries accepted frontmatter; `draft`, `candidate`,
+`proposed`, and design-stage decision records are reported as the owner wrote
+them and are never upgraded by this page. No row below is an implementation
+claim.
 
-### Cross-repository traceability
+### Deferred contract rows
 
-`decided` means an accepted owner document answers the row; `open` means no
-owner document answers it yet. Ownership is exclusive: this page carries the
-pointer and none of the value.
+| Row   | Deferred decision this corpus must not make                                                                                                                                                                                                                                                                                                           | Owning repository                                                                | Owning document, current status, and decision record                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | State   |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| CC-01 | Manifest environment and layout identifiers, the capability closed set, dependency and compatibility-range grammars, and canonical service schema representation                                                                                                                                                                                      | `bitty-plugins-docs`                                                             | [Plugin Manifest and Capability Grammar Authority](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/manifest-capability-authority.md) — `Accepted` (frontmatter `accepted`); the document is itself the decision record.                                                                                                                                                                                                                                                                                               | decided |
+| CC-02 | Redirect defaults and hop bounds, cross-origin sensitive-header policy, HTTP response default and hard maximum, WebSocket frame, message, and aggregate ceilings, one operation deadline covering DNS through close with read versus write bounds, and `https` proxy behavior including trust roots, hostname verification, and no plaintext fallback | `bitty-network`                                                                  | Successor network safety specification — **does not exist yet**; the repository has no specifications tree. Its `docs/decisions/` records decide design-stage facets only (unified TLS provider, proxy feature gate, PAC explicitly unsupported, authenticated proxy still proposed) and set no redirect, transfer, or deadline value. Decision record for this profile: none.                                                                                                                                                                      | open    |
+| CC-03 | CONNECT terminator, status, and leftover grammar; deadline-aware DNS cancellation; WebSocket subprotocol token, count, and byte rules with selected-protocol verification; diagnostic-field safety                                                                                                                                                    | `bitty-network` for the protocol profile; shared security corpus for diagnostics | Protocol profile: the same successor network safety specification — **does not exist yet**; the inspector-feed decision record covers audit vocabulary and redaction direction, not this grammar. Diagnostic fields: the shared security corpus [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md) and [P0-AC-026](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/p0-acceptance-criteria.md) are normative gates, not a field list. Decision record for the profile: none. | open    |
+| CC-04 | HTTP destination re-authorization and bounded response-body buffering implementation                                                                                                                                                                                                                                                                  | `bitty-network` crates                                                           | Implementation lane gated on the CC-02 contract. No owning document and no decision record; an implementation default is not a contract.                                                                                                                                                                                                                                                                                                                                                                                                            | open    |
+| CC-05 | WebSocket safety and lifecycle bound implementation                                                                                                                                                                                                                                                                                                   | `bitty-network` crates                                                           | Implementation lane gated on the CC-02 contract. No owning document and no decision record.                                                                                                                                                                                                                                                                                                                                                                                                                                                         | open    |
+| CC-06 | CONNECT, DNS, subprotocol, and diagnostic hardening implementation                                                                                                                                                                                                                                                                                    | `bitty-network` crates                                                           | Implementation lane gated on the CC-02 and CC-03 contracts. No owning document and no decision record.                                                                                                                                                                                                                                                                                                                                                                                                                                              | open    |
+| CC-07 | Failed suspend or resume transaction outcome: whether the prior coherent state survives, which service visibility and dispatch authority remain, and whether command dispatch from `Suspended` is denied                                                                                                                                              | `bitty-plugins-docs`                                                             | [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/plugin-host-runtime-rfc.md) — `Accepted` (frontmatter `accepted`). Its lifecycle section presents the runtime states as proposed and makes budget-timeout suspension fail-closed, but it does not decide the failed-transition outcome or the dispatch-authority question, so this row stays open there. Decision record: the acceptance record covers the host bridge, VM lifecycle, and staging boundaries, not this transaction row.            | open    |
 
-| Row   | Subject                                                                                                                | Owner document                                                                                                                                                                                        | State   |
-| ----- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| CC-01 | Plugin manifest, capability, and compatibility-range grammar authority                                                 | [Plugin Manifest and Capability Grammar Authority](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/manifest-capability-authority.md) (`Accepted`, `bitty-plugins-docs`) | decided |
-| CC-02 | Redirect authorization, HTTP transfer budget, WebSocket ceilings, operation-deadline scope, and `https` proxy behavior | Successor network safety specification in the [bitty-network repository](https://github.com/bitty-terminal/bitty-network) (`not written`); no limit is recorded here                                  | open    |
-| CC-03 | CONNECT, DNS, and subprotocol profile; diagnostic-field safety under P0-AC-026                                         | Successor network safety specification in the [bitty-network repository](https://github.com/bitty-terminal/bitty-network) (`not written`)                                                             | open    |
-| CC-04 | HTTP destination and response-body bound implementation                                                                | `bitty-network` crates, gated on the CC-02 specification                                                                                                                                              | open    |
-| CC-05 | WebSocket safety and lifecycle bound implementation                                                                    | `bitty-network` crates, gated on the CC-02 specification                                                                                                                                              | open    |
-| CC-06 | Network protocol and diagnostic hardening implementation                                                               | `bitty-network` crates, gated on the CC-02 and CC-03 specifications                                                                                                                                   | open    |
-| CC-07 | Plugin suspend/resume transaction semantics                                                                            | [Plugin Host Runtime RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/plugin-host-runtime-rfc.md) (`Accepted`; lifecycle question open)                                    | open    |
+### Panel suspend and resume are already decided
+
+Panel suspend and resume are Core-owned in the accepted
+[Panel Runtime RFC](panel-runtime-rfc.md): `PanelRuntime` owns panel creation,
+mount, suspend, resume, and disposal, and `FS-P1` makes a refused capability,
+budget, or scope transactional with no partial state. Only the plugin lifecycle
+row above stays open; this page neither restates nor reopens the panel rule.
+
+### How these rows close
+
+A row closes only when the owning repository accepts a document and this page
+links it. Network rows CC-02 through CC-06 split into contract text (CC-02,
+CC-03) and implementation evidence gated on it (CC-04 through CC-06); code that
+lands in `bitty-network` before its contract exists does not make a limit
+accepted, and this corpus must not cite it as though it did. The candidate
+design record below — the crate split, runtime and policy core, deployment
+shape, and consumer order — stays direction only and authorizes no number.
 
 ## Purpose and scope
 
