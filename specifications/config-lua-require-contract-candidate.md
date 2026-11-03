@@ -13,8 +13,8 @@ sidebar_order: 80
 
 ## Document status
 
-> Status: **draft, awaiting independent security review** (issue
-> [`bitty#2670`](https://github.com/bitty-terminal/bitty/issues/2670)).
+> Status: **draft, amended after independent review and awaiting re-review**
+> (issue [`bitty#2670`](https://github.com/bitty-terminal/bitty/issues/2670)).
 > Nothing in this document is implemented, and no statement here claims
 > shipped, stable, or supported behavior. The shipped configuration Lua
 > surface remains a single data-returning chunk with no `require`; that
@@ -63,7 +63,8 @@ from `init.lua`, a profile, and `--config PATH`; nested-module loading; cache,
 duplicate-load, cycle, recursive-load, and module-graph identity; startup
 fail-soft versus strict `bitty config check` / `bitty doctor` and refused
 reload; path containment including symlink, reparse-point, and junction
-handling, TOCTOU resistance, Windows path rules, and special-file rejection;
+handling, TOCTOU resistance, Windows path rules, and non-blocking
+special-file rejection;
 depth, count, per-file, aggregate, and evaluation budgets with their
 accounting; `--safe` preservation and the preserved plugin-Lua denial of
 `require`; diagnostics, source attribution, redaction, and the error taxonomy;
@@ -134,16 +135,17 @@ one row at a time.
 | Budgets                                    | Decided in shape, proposed in numbers: depth 16, 64 modules, 64 KiB per file, 256 KiB aggregate, unchanged RC-1/RC-2 and PB-1     | [Budgets and accounting](#budgets-and-accounting)                   |
 | `--safe` and plugin `require` denial       | Decided: safe mode never constructs the loader; plugin and settings VMs keep the default-deny list unchanged                      | [Safe mode and isolation](#safe-mode-and-plugin-isolation)          |
 | Diagnostics, attribution, error taxonomy   | Decided: typed `E_CONFIG_MODULE_*` codes, spec plus line attribution, redaction rules, per-path surfacing                         | [Diagnostics](#diagnostics-and-error-taxonomy)                      |
-| Threat model                               | Decided for this revision: fourteen rows with mitigations and residual risks; no row claims a closed residual                     | [Threat model](#threat-model)                                       |
+| Threat model                               | Decided for this revision: fifteen rows with mitigations and residual risks; no row claims a closed residual                      | [Threat model](#threat-model)                                       |
 
 ## Decision summary
 
 Configuration `require` resolves one spec grammar against exactly one root —
 `<config-dir>/lua/` — with host-side per-generation caching, cycle and depth
-failure, threefold path containment (lexical, canonical, and handle-bound),
-the shipped per-file limits plus aggregate graph caps, the same RC-1/RC-2
-evaluation budget as the configuration VM today, whole-layer fail-soft startup
-salvage versus strict check and doctor and a refused reload, redacted typed
+failure, threefold path containment (lexical, canonical, and handle-bound, with
+the canonical target opened and the object typed before any read), the shipped
+per-file limits plus aggregate graph caps, the same RC-1/RC-2 evaluation budget
+as the configuration VM today, whole-layer fail-soft startup salvage versus
+strict check and doctor and a refused reload, bounded and escaped typed
 diagnostics, no loader at all under `--safe`, and no `require` for plugin or
 settings VMs.
 
@@ -350,24 +352,53 @@ bound to an open handle rather than to a path string.
    directory resolving back under the real tree) workable. Any target outside
    the root, including a symlink into another tree, fails with
    `E_CONFIG_MODULE_ESCAPE`. Canonicalization failures — loop detection,
-   `ELOOP`, permission denied — reject.
-3. **Handle-bound identity.** The host opens the file and validates the
-   containment decision against the opened handle, not the path string, so a
-   path swapped between check and read never becomes the read target:
-   - Unix: open per component with no-follow semantics — `openat2` with
-     `RESOLVE_BENEATH`, `RESOLVE_NO_SYMLINKS`, and `RESOLVE_NO_MAGICLINKS`
-     where available, otherwise component-wise `O_NOFOLLOW` — then compare the
-     `dev`/`inode` identity from the canonical step against the post-open
-     `fstat` identity; a mismatch rejects the file.
-   - Windows: open with reparse points refused at every component, then
-     compare the post-open `FILE_ID_INFO` with the pre-open lookup identity.
-4. **Special files.** Only a regular file that passes the identity check is
-   read. FIFOs, character and block devices, sockets, directories reached by a
-   non-`init` resolution, and named pipes reject with
-   `E_CONFIG_MODULE_NOT_REGULAR`. The size cap is enforced on the opened
-   handle's length before any read, and the file is read once, in full, into
-   the generation's accounted bytes, so the read cannot be extended by a
-   concurrent writer and cannot block on an object that has no end.
+   `ELOOP`, permission denied — reject. The canonical target is the path the
+   loader opens: the allowed layout is honored by opening a path that contains
+   no symlink component, not by refusing the layout at the open.
+3. **Handle-bound identity.** The host opens the canonical path from step 2 and
+   validates the containment decision against the opened handle, not the path
+   string, so a path swapped between check and read never becomes the read
+   target. The resolve and no-follow flags are not a second refusal of the
+   layout step 2 admits — the canonical target is already symlink-free by
+   construction — they are how a link introduced after canonicalization is
+   detected:
+   - Unix: open the canonical path with `O_RDONLY | O_NONBLOCK | O_CLOEXEC`
+     plus `openat2` `RESOLVE_BENEATH`, `RESOLVE_NO_SYMLINKS`, and
+     `RESOLVE_NO_MAGICLINKS` where available, otherwise `O_NOFOLLOW` per
+     component; then compare the `dev`/`inode` identity recorded at the
+     canonical step against the post-open `fstat` identity. A mismatch rejects
+     with `E_CONFIG_MODULE_ESCAPE`.
+   - Windows: open the canonical path with reparse points refused at every
+     component below the root, then compare the post-open `FILE_ID_INFO` with
+     the pre-open lookup identity. A mismatch rejects with
+     `E_CONFIG_MODULE_ESCAPE`.
+
+   The pre/post-open identity comparison is what closes the race: a canonical
+   path that now names a different file has a different identity and is
+   refused, while the allowed in-root layout, whose canonical target is
+   symlink-free, is never refused by the flags.
+
+4. **Special files, opened non-blocking.** Only a regular file that passes the
+   identity check is read, and the object type is decided before any read can
+   wait. The open is `O_RDONLY | O_NONBLOCK | O_CLOEXEC` together with the
+   resolve or no-follow flags from step 3; the host then `fstat`s the handle and
+   rejects any object whose type is not a regular file — FIFO, character or
+   block device, socket, directory reached by a non-`init` resolution, named
+   pipe — with `E_CONFIG_MODULE_NOT_REGULAR`. Only after that rejection does
+   the host clear `O_NONBLOCK`, and only then does it perform the single read,
+   whose length is capped from the handle's metadata at 64 KiB before the read
+   starts. The order is the guarantee, not an implementation detail: a blocking
+   `O_RDONLY` open of a FIFO waits for a writer before any check runs, so it
+   would turn a required fail-closed refusal into an unbounded wait on startup,
+   `bitty config check`, and `bitty doctor`. No open, `fstat`, or check in this
+   path is allowed to block for that reason. The descriptor is close-on-exec,
+   matching the corpus rule for every descriptor a process can inherit, and the
+   read happens once, in full, into the generation's accounted bytes, so it
+   cannot be extended by a concurrent writer and cannot run past the cap.
+   Residual: an unusual, FUSE-backed, or network-backed filesystem can still
+   defer inside `open` or `fstat` in ways no flag controls; that delay is
+   outside what this contract guarantees and is recorded in the
+   [threat model](#threat-model) rather than claimed closed.
 
 ### Windows path rules
 
@@ -376,11 +407,21 @@ bound to an open handle rather than to a path string.
   backslash, `:`, drive-letter prefixes, `\\?\`, `\\.\`, and UNC forms cannot
   appear in a spec, so a spec can never name a stream, a device, or another
   volume.
-- Reparse refusal is unconditional on Windows. Every component — root
-  ancestors, any in-root directory, and the file itself — is walked with
-  reparse-point attributes refused, so the Unix "symlinked layout inside the
-  root" allowance does not carry over. A Windows layout that wants
-  indirection must present a real directory tree to the loader.
+- Reparse refusal applies from the canonical root downward. Every in-root
+  directory and the file itself is walked with reparse-point attributes
+  refused, so the Unix "symlinked layout inside the root" allowance does not
+  carry over below the root. A Windows layout that wants indirection must
+  present a real directory tree to the loader.
+- Root ancestors are resolved once, not refused. The configuration directory is
+  canonicalized during root derivation, before any module path exists, so a
+  redirected or junctioned `%APPDATA%` — a common enterprise folder-redirection
+  layout — produces a canonical root and a loader that works: no ancestor above
+  the canonical root takes part in containment, so refusing one would refuse
+  the whole loader for a layout the user did not choose. If that
+  canonicalization fails, the loader is not built and `require` reports a
+  diagnostic that names the layout as refused; it never reports
+  `E_CONFIG_MODULE_NOT_FOUND`, because a module-shaped error would send the
+  user looking for a missing file instead of a redirected profile.
 - Case handling: canonical comparisons and identity checks are
   case-insensitive where the volume is, so two differently cased paths cannot
   smuggle one file past a containment check that already passed, and the
@@ -390,6 +431,34 @@ bound to an open handle rather than to a path string.
   `AUX`, `NUL`, `COM1`..`COM9`, `LPT1`..`LPT9`, case-insensitive), and trailing
   dots or spaces are rejected at the canonical step. Canonicalization uses the
   long-path-resolved canonical form only.
+
+### Module-root medium assumptions
+
+The containment and identity rules above assume a local fixed volume, and this
+contract states that assumption instead of leaving it implied. An explicit
+`--config` / `BITTY_CONFIG` on a network share, a mapped drive, or removable
+media makes the module root remote or removable, where the identities the
+checks compare are weaker than on a local disk: some network filesystems
+synthesize `dev`/`inode` or `FILE_ID_INFO` values per client or per mount, some
+removable media recycle them across mounts, and `FILE_ID_INFO` support varies by
+filesystem and driver even on Windows.
+
+- Containment, the non-blocking object order, the size caps, and the budgets
+  hold on every medium, because none of them needs the identity to be globally
+  unique: an identity that cannot be compared still fails the comparison, and
+  the object still has to be a regular file under the root.
+- Alias collapse and duplicate-load suppression are exact only on a local fixed
+  volume. On a remote or removable root, two paths a local volume would report
+  as one identity can evaluate twice; that spends count and aggregate budget,
+  which the caps bound, and grants no new authority.
+- A root on such a medium is permitted in this revision as an accepted residual
+  recorded in the [threat model](#threat-model), not as a closed property, and
+  whether the loader should be restricted to local fixed volumes stays an open
+  point rather than a silent default.
+
+The loader never mounts, never enumerates a volume, and never falls back to a
+different root when the medium looks unusual. It reads what the canonical path
+names, or it refuses.
 
 ### Unix and macOS notes
 
@@ -445,9 +514,15 @@ Accounting rules, which are the part a reviewer should check hardest:
 - **Parse cost is bounded by bytes, not by a counter.** Module size and the
   aggregate cap bound host-side parsing before evaluation; a parse failure is
   a typed finding, and the parser never evaluates a partially parsed chunk.
-- **Budget failure is not a salvage tier.** Exceeding RC-1 or RC-2 inside a
-  module suspends the generation fail-closed under the Configuration Model
-  RFC failure rule; the loader does not retry with a smaller graph.
+- **Budget failure is not a salvage tier, and it behaves exactly like every
+  other loader failure.** Exceeding RC-1 or RC-2 inside a module ends the
+  generation under the Configuration Model RFC failure rule: startup drops the
+  whole external layer that started the evaluation and keeps the other layers
+  and the defaults, `bitty config check` and `bitty doctor` report the finding
+  and exit non-zero, and a reload refuses and keeps the previous plan. The
+  loader does not retry with a smaller graph, and `E_CONFIG_MODULE_BUDGET` is
+  the same fail-soft-at-startup, strict-at-verification behavior as every other
+  code in the taxonomy — one behavior per path, stated once.
 - **The budget record grows, the numbers do not.** The `config_eval_budget`
   structured record gains `modules` (distinct identities evaluated) and
   `module_bytes` (aggregate source bytes) so a budget dashboard can explain a
@@ -487,9 +562,9 @@ additive fields on the existing startup and check diagnostic records:
 
 ```text
 code         E_CONFIG_MODULE_* code from the taxonomy below
-module_spec  the raw require argument byte string, or the corrupted form
+module_spec  the require argument byte string, bounded and escaped for display
 phase        name | resolve | open | read | parse | evaluate | extract | budget
-source       entry, or the module spec with its source line and column
+source       entry, or the module spec with its source line and column, escaped
 aggregate    the counter that tripped (count | depth | bytes | budget), when applicable
 ```
 
@@ -507,7 +582,7 @@ aggregate    the counter that tripped (count | depth | bytes | budget), when app
 | `E_CONFIG_MODULE_NOT_REGULAR` | The opened object is not a regular file, or is a reparse point, ADS form, FIFO, device, socket, or directory                                                 | layer fail-soft / strict failure |
 | `E_CONFIG_MODULE_SYNTAX`      | The file is not valid Lua source, including a binary chunk header                                                                                            | layer fail-soft / strict failure |
 | `E_CONFIG_MODULE_EVAL`        | A module chunk raised a Lua error or violated the shape contract                                                                                             | layer fail-soft / strict failure |
-| `E_CONFIG_MODULE_BUDGET`      | A generation budget tripped: RC-1 instructions, RC-1 wall clock, or RC-2 heap                                                                                | fail-closed as today             |
+| `E_CONFIG_MODULE_BUDGET`      | A generation budget tripped: RC-1 instructions, RC-1 wall clock, or RC-2 heap                                                                                | layer fail-soft / strict failure |
 
 How a refused module surfaces, per path:
 
@@ -533,6 +608,25 @@ Source attribution and redaction:
   which absolute path failed to open.
 - Error text echoes at most the offending source line, never the whole file,
   never another module's contents, and never a surrounding region.
+- **Bounding is not encoding, so both are required.** Every rendered field —
+  the spec, the entry name, the in-flight module chain, and any echoed source
+  line — is escaped before it reaches a renderer. The echoed spec is capped at
+  the 256-byte grammar limit, the echoed line at the 4096-byte source-line cap
+  already in force, and no field is truncated in the middle of an escape
+  sequence. C0 controls except tab, every C1 control, DEL, ESC-initiated
+  sequences, and bidirectional formatting characters (U+202A..U+202E,
+  U+2066..U+2069) are replaced with a visible escape form. `E_CONFIG_MODULE_NAME`
+  reports input the grammar rejected by definition, so its `module_spec` field
+  is the one that most needs this rule; a raw spec could move the cursor, clear
+  the line, rewrite the terminal title, reverse text direction, or plant a
+  second record inside a log stream, and the same is true of a source line
+  echoed from a hostile file.
+- The escaping rule binds at the point of rendering, not at the point of
+  construction, and applies to every path that renders the record: the startup
+  stderr line, `bitty config check` findings, `bitty doctor` diagnosis, the
+  reload result, and any structured export. A new renderer inherits the rule
+  and cannot opt out, and no diagnostic record carries a second, unescaped copy
+  of the same field for internal display.
 - Plan values stay subject to the existing sensitive-value redaction;
   module loading adds no value channel and no secret-scanning obligation.
 - The loader adds no Lua-visible diagnostic surface; diagnostics stay
@@ -547,28 +641,30 @@ shared or synced configuration tree, or a concurrent process could turn a
 module name into a read the host did not intend, or turn the loader into a
 budget bypass.
 
-| Threat                                                      | Mitigation                                                                                                                                                       | Residual risk                                                                                                                                                            |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Traversal or absolute path in a spec                        | Total grammar (no separators, no `.`/`..`, no drive or volume form) plus a lexical re-check on the joined path                                                   | None identified; the grammar admits no traversal token, and the lexical check runs anyway                                                                                |
-| Symlink, junction, or reparse escape out of the root        | Canonical containment plus per-component no-follow open plus post-open identity comparison                                                                       | A Unix mount point inside the root can present a foreign tree; accepted while its canonical path is under the root and recorded here                                     |
-| TOCTOU swap between the containment check and the read      | Handle-bound open (`openat2` `RESOLVE_BENEATH`/`RESOLVE_NO_SYMLINKS`/`RESOLVE_NO_MAGICLINKS`, `O_NOFOLLOW` fallback) and identity match on the opened descriptor | The non-`openat2` fallback narrows the window rather than eliminating it; a swap that preserves identity is the same file and harmless                                   |
-| FIFO, device, socket, or directory read that hangs or leaks | Regular-file check on the opened handle, size cap from handle metadata before any read, one read into accounted bytes                                            | Exotic or FUSE-backed filesystems may report regular-file semantics for unusual objects; the size cap and single read still bound the damage                             |
-| Resource exhaustion through many or very large modules      | Depth 16, count 64, 64 KiB per file, 256 KiB aggregate, one shared RC-1/RC-2 account                                                                             | The cold-start cost of 256 KiB of parsing is real and measured against PB-1 rather than argued away                                                                      |
-| Cycle or unbounded recursion in the reference graph         | In-flight identity detection fails the cycle; depth cap fails deep chains before the 17th evaluation                                                             | None identified; both paths are constant-time refusals                                                                                                                   |
-| Cache poisoning or cross-generation leakage                 | Cache is host-side, not Lua-visible, per generation, and cleared on reload; identity-keyed so aliases cannot fork an instance                                    | A module can still mutate its own returned table before returning, which is the same power the single entry chunk has today                                              |
-| `--safe` bypass through a module path or loader             | Safe mode returns the built-in configuration before any external read and never constructs the loader; `require` does not exist in that VM                       | None identified; stated as a negative test rather than an inference                                                                                                      |
-| Escalation into plugin or settings authority                | Separate loader, separate root, deny lists unchanged; no shared code path with the plugin-host loader                                                            | The risk is a future refactor that merges the two loaders; the review gate is that they stay separate, with negative tests                                               |
-| Bytecode or precompiled chunk smuggling                     | `load`, `loadfile`, `dofile`, and `string.dump` stay denied; the host parses source only and refuses a binary chunk header as a syntax error                     | None identified in the VM; a future source parser change must keep the header refusal                                                                                    |
-| Windows reserved names, short-name aliases, ADS, UNC forms  | Grammar rejects `:` and separators; canonical step rejects reserved device names, trailing dots or spaces, and 8.3 aliases                                       | Volumes with 8.3 generation disabled can still present aliases to other tools; the identity check decides reuse, so an alias cannot double-load                          |
-| Diagnostic leak of host paths or file contents              | Spec-only attribution, line-level echo, no absolute paths, no content dumps                                                                                      | Spec names disclose the local module layout, which the user already knows and which the plan's own source records also name                                              |
-| Concurrent writer changing a module during evaluation       | Single read from an opened handle with a pre-read size cap; identity compared after open                                                                         | A file replaced between two different `require` calls in one generation is seen as two identities only if the earlier one was already cached; the graph does not re-read |
-| Owner-edited configuration as the attack path               | Out of scope by trust model: the user is the author of the code being run                                                                                        | Stated, not mitigated. The loader narrows what configuration code can read; it does not defend the owner from their own file                                             |
+| Threat                                                      | Mitigation                                                                                                                                                                                                    | Residual risk                                                                                                                                                                 |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Traversal or absolute path in a spec                        | Total grammar (no separators, no `.`/`..`, no drive or volume form) plus a lexical re-check on the joined path                                                                                                | None identified; the grammar admits no traversal token, and the lexical check runs anyway                                                                                     |
+| Symlink, junction, or reparse escape out of the root        | Canonical containment, then an open of the canonical symlink-free target with resolve/no-follow flags that detect a link introduced afterwards, then a pre/post-open identity match                           | A Unix mount point inside the root can present a foreign tree; accepted while its canonical path is under the root and recorded here                                          |
+| TOCTOU swap between the containment check and the read      | Handle-bound open of the canonical path (`openat2` `RESOLVE_BENEATH`/`RESOLVE_NO_SYMLINKS`/`RESOLVE_NO_MAGICLINKS`, `O_NOFOLLOW` fallback) and a mismatch between the pre-open and post-open identity rejects | The non-`openat2` fallback narrows the window rather than eliminating it; a swap that preserves identity is the same file and harmless                                        |
+| FIFO, device, socket, or directory read that hangs or leaks | `O_RDONLY \| O_NONBLOCK \| O_CLOEXEC` open, `fstat`, non-regular rejection, `O_NONBLOCK` cleared only after that rejection, then one capped read                                                              | An unusual, FUSE-backed, or remote filesystem can still defer inside `open` or `fstat`; the refusal is typed when it returns, and the size cap and single read bound the rest |
+| Module root on a network, mapped, or removable medium       | Containment, object typing, size caps, and budgets hold without needing identity uniqueness; the medium assumption is stated rather than implied                                                              | Identity and alias-collapse exactness are unproven there and `FILE_ID_INFO` support varies by driver; a remote or removable root is permitted as an accepted residual         |
+| Resource exhaustion through many or very large modules      | Depth 16, count 64, 64 KiB per file, 256 KiB aggregate, one shared RC-1/RC-2 account                                                                                                                          | The cold-start cost of 256 KiB of parsing is real and must be measured against PB-1 before the aggregate cap becomes contract, rather than argued away                        |
+| Cycle or unbounded recursion in the reference graph         | In-flight identity detection fails the cycle; depth cap fails deep chains before the 17th evaluation                                                                                                          | None identified; both paths are constant-time refusals                                                                                                                        |
+| Cache poisoning or cross-generation leakage                 | Cache is host-side, not Lua-visible, per generation, and cleared on reload; identity-keyed so aliases cannot fork an instance                                                                                 | A module can still mutate its own returned table before returning, which is the same power the single entry chunk has today                                                   |
+| `--safe` bypass through a module path or loader             | Safe mode returns the built-in configuration before any external read and never constructs the loader; `require` does not exist in that VM                                                                    | None identified; stated as a negative test rather than an inference                                                                                                           |
+| Escalation into plugin or settings authority                | Separate loader, separate root, deny lists unchanged; no shared code path with the plugin-host loader                                                                                                         | The risk is a future refactor that merges the two loaders; the review gate is that they stay separate, with negative tests                                                    |
+| Bytecode or precompiled chunk smuggling                     | `load`, `loadfile`, `dofile`, and `string.dump` stay denied; the host parses source only and refuses a binary chunk header as a syntax error                                                                  | None identified in the VM; a future source parser change must keep the header refusal                                                                                         |
+| Windows reserved names, short-name aliases, ADS, UNC forms  | Grammar rejects `:` and separators; canonical step rejects reserved device names, trailing dots or spaces, and 8.3 aliases                                                                                    | Volumes with 8.3 generation disabled can still present aliases to other tools; the identity check decides reuse, so an alias cannot double-load                               |
+| Diagnostic leak of host paths or file contents              | Spec-only attribution, bounded and escaped line-level echo, no absolute paths, no content dumps                                                                                                               | Spec names disclose the local module layout, which the user already knows and which the plan's own source records also name                                                   |
+| Concurrent writer changing a module during evaluation       | Single read from an opened handle with a pre-read size cap; identity compared after open                                                                                                                      | A file replaced between two different `require` calls in one generation is seen as two identities only if the earlier one was already cached; the graph does not re-read      |
+| Owner-edited configuration as the attack path               | Out of scope by trust model: the user is the author of the code being run                                                                                                                                     | Stated, not mitigated. The loader narrows what configuration code can read; it does not defend the owner from their own file                                                  |
 
 Reviewer notes that follow from the table: no row may be re-described as
 closed in a later revision without evidence, the two "none identified" rows
 are claims about the grammar and the deny list that a reviewer should attack
-first, and the mount-point and `openat2` residuals must appear in the
-implementation issue as accepted risk rather than as open defects.
+first, and the mount-point, non-`openat2`, and remote-or-removable-medium
+residuals must appear in the implementation issue as accepted risk rather than
+as open defects.
 
 ## Security review checklist
 
@@ -586,8 +682,9 @@ Independent security acceptance for this candidate must confirm at least:
   per generation, adds no per-module refresh, and does not change PB-1;
 - startup salvage, check and doctor strictness, and reload refusal hold for
   every taxonomy code, with no untyped failure path;
-- the diagnostics leak nothing beyond spec, line, and code, and the
-  taxonomy is exhaustive over the refusal surface; and
+- the diagnostics leak nothing beyond spec, line, and code, escape control and
+  bidirectional characters on every rendering path, and the taxonomy is
+  exhaustive over the refusal surface; and
 - the threat model's residual rows are carried into the implementation issue
   as accepted risk.
 
@@ -602,9 +699,19 @@ issue, not here. It must:
 
 - negative-test the taxonomy: malformed and traversal specs, reserved
   `bitty.*`, ambiguity, missing files, self-require and rings, depth over 16,
-  count over 64, per-file and aggregate overruns, a FIFO and a device on Unix,
-  ADS, junction, reparse, and reserved names on Windows, symlink-in-root and
-  symlink-escape layouts, and an identity-mismatch simulation;
+  count over 64, per-file and aggregate overruns, a FIFO, a Unix socket, and a
+  device node at a module path each refusing with a typed code within a bounded
+  time — a test that hangs is a defect, not a pass — ADS, junction, reparse, and
+  reserved names on Windows, and an identity-mismatch simulation;
+- prove the in-root symlink allowance and its race window together: one
+  symlinked in-root module loads through its canonical target, and the same
+  module is refused when the canonical identity is replaced between the check
+  and the open, so the allowance and the detection are both exercised rather
+  than asserted;
+- seed a spec and an echoed source line with C0 controls, C1 controls, DEL,
+  ESC-initiated sequences, and bidirectional formatting characters, and assert
+  that no raw control byte reaches the rendered record on startup, `config check`,
+  `doctor`, or reload;
 - prove containment on a case-insensitive volume and a case-sensitive volume
   with the same module set, including a symlinked dotfiles layout that stays
   under the canonical root and a hardlink alias that collapses to one
@@ -660,6 +767,10 @@ runs the owning repository's gates.
   depth (16) are proposals. They match existing numbers where one exists, but
   the aggregate cap in particular should be confirmed against a PB-1
   measurement of a maximal graph before acceptance.
+- Whether the module root must be a local fixed volume is not decided. Remote,
+  mapped, and removable roots are permitted in this revision as an accepted
+  residual; restricting the loader to local volumes, or surfacing a diagnostic
+  note when the root medium is remote, is a decision this contract defers.
 - The wider Lua VM and standard-library question stays open in
   [Lua and XDG configuration](../configuration/lua-and-xdg.md); this contract
   fixes the loader surface, not the stdlib admission.
