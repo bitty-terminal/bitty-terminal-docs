@@ -1,29 +1,48 @@
 ---
-title: Config Lua require contract (candidate)
+title: Config Lua Require Contract
 description: Design and security review for a bounded, single-root module loader inside configuration Lua
 category: specifications
 audience: security-reviewer
 document_type: specification
-status: draft
+status: accepted
 website_publish: false
 sidebar_order: 80
 ---
 
-# Config Lua require contract (candidate)
+# Config Lua Require Contract
 
 ## Document status
 
-> Status: **draft, amended after independent review and re-review, awaiting a
-> third independent review** (issue
-> [`bitty#2670`](https://github.com/bitty-terminal/bitty/issues/2670)).
-> Nothing in this document is implemented, and no statement here claims
-> shipped, stable, or supported behavior. The shipped configuration Lua
-> surface remains a single data-returning chunk with no `require`; that
-> surface stays the contract until this candidate is accepted and
-> implemented. Manual and generated-template synchronization happens only
-> after acceptance.
+> Status: **accepted on 2026-11-04** after the third independent security
+> review returned `ACCEPTED`
+> ([Restricted Config Require Contract Third Review](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/config-require-third-review.md),
+> merged as [bitty-docs#494](https://github.com/bitty-terminal/bitty-docs/pull/494)).
+> The three rounds read the same text: round one returned `NEEDS-FIX` on
+> `G-1`..`G-3`, round two returned `NEEDS-FIX` on `B-1`..`B-4`, and round three
+> closed every blocking finding, left five earlier and four new non-blocking
+> findings open, and authorized this promotion through the design gate
+> [bitty#2670](https://github.com/bitty-terminal/bitty/issues/2670). The
+> accepted revision is the one that review read (`bitty-terminal-docs`
+> `d327a1a`), so the promotion changed only its status, its title, the
+> sentences that described the review as still pending, and the open-items
+> record below; no reviewed mechanism, budget, or taxonomy row was edited.
+>
+> **Nothing is implemented.** The shipped configuration VM still denies
+> `require` (`crates/bitty-lua/src/config.rs`), the shipped configuration
+> surface remains one data-returning chunk, and no statement here claims
+> shipped, stable, or supported behavior. Acceptance records a reviewed design
+> and authorizes the dependent implementation issue; it is not evidence of
+> behavior, it closes no P0 control, and that implementation issue has not been
+> opened. Manual and generated-template synchronization stays blocked until
+> implementation, because those surfaces describe shipped behavior.
+>
+> The residuals the review admitted, and the non-blocking findings it left
+> open, are carried with an owner each in
+> [Open items after acceptance](#open-items-after-acceptance). Acceptance
+> closes none of them: no residual becomes a closed property, and the
+> still-open findings are owed work, not accepted risk.
 
-This draft depends on shipped behavior in the owning implementation
+This contract depends on shipped behavior in the owning implementation
 repository, read-only from `bitty` `origin/main`
 (`crates/bitty-lua/src/config.rs`, `crates/bitty-lua/src/lib.rs`,
 `crates/bitty-config/src/file.rs`, `crates/bitty-config/src/plain_config.rs`,
@@ -556,7 +575,7 @@ names, or it refuses.
 
 ## Budgets and accounting
 
-Every number below is a proposal owned by this candidate; the per-file values
+Every number below is a proposal owned by this contract; the per-file values
 and the evaluation budgets are not new, and each row names the document that
 owns the number it reuses.
 
@@ -789,7 +808,9 @@ as open defects.
 
 ## Security review checklist
 
-Independent security acceptance for this candidate must confirm at least:
+Independent security acceptance for this contract was recorded by the third
+review linked above, which judged these properties. Any amendment to this
+document must again confirm at least:
 
 - one grammar, one root, no Lua-mutable search path, and no reuse of the
   plugin-host rooted loader in either direction;
@@ -814,9 +835,9 @@ Independent security acceptance for this candidate must confirm at least:
 - the threat model's residual rows are carried into the implementation issue
   as accepted risk.
 
-Acceptance is a design decision, not a crash gate. The dependent
-implementation issue is created only after this document is accepted, per the
-sequencing in `bitty#2670`.
+Acceptance is a design decision, not a crash gate. This document is accepted;
+the dependent implementation issue is the next gate under the sequencing in
+`bitty#2670` and has not been created.
 
 ## Verification plan
 
@@ -914,7 +935,8 @@ runs the owning repository's gates.
   superseded because `bitty` stays a preloaded host table, never a module.
 - [Configuration options](../reference/configuration-options.md): the shipped
   per-file bounds and salvage-versus-strict contract are reused unchanged;
-  that document gains a pointer here once this candidate is accepted.
+  that document gains a pointer here with the implementation issue, not with
+  this acceptance, because those bounds describe shipped behavior.
 - [Performance Budget RFC](performance-budget-rfc.md): PB-1 is unchanged; the
   graph must fit the existing cold-start budget.
 - [Threat model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md):
@@ -949,21 +971,71 @@ runs the owning repository's gates.
   only per-finding records, is left to the implementation issue once the
   diagnostic schema is fixed.
 
+## Open items after acceptance
+
+Acceptance is not a clean sheet. This section is the record of what the third
+review admitted as residual and what it left open, carried with an owner each
+so that none of it can be re-described as closed by a later edit. Nothing here
+is accepted risk except the residuals in the first table; the findings in the
+second table are owed work.
+
+### Admitted residuals
+
+These are accepted risk, and each must appear in the implementation issue as
+accepted risk rather than as an open defect. None may be re-described as a
+closed property without evidence.
+
+| Residual                                                           | Why it cannot be closed here                                                                                                                                          | Owner                                                          |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| A Unix mount point inside the root can present a foreign tree      | The walk confines reads to the tree the anchor names; it cannot tell whether that tree is the one the user meant. Accepted while its canonical path is under the root | implementation issue (`bitty` config loader)                   |
+| A root ancestor swapped before the root is opened                  | The anchor is a directory, not a path; the walk then confines reads to the attacker's tree                                                                            | implementation issue (`bitty` config loader)                   |
+| A remote, mapped, or removable module root                         | Identity and alias-collapse exactness are unproven there, and `FILE_ID_INFO` support varies by driver; containment, typing, caps, and budgets still hold              | implementation issue (`bitty` config loader)                   |
+| Exotic, FUSE-backed, or network-backed filesystems                 | They can defer inside `open`, `fstat`, or the read in ways no flag controls; the delay is outside the guarantee and the refusal is typed when it returns              | implementation issue (`bitty` config loader)                   |
+| A file replaced between two `require` calls in one generation      | The first identity is cached, so the graph does not re-read                                                                                                           | implementation issue (`bitty` config loader)                   |
+| A module mutating its own returned table before returning          | The same power the single entry chunk has today; no new authority                                                                                                     | implementation issue (`bitty` config loader)                   |
+| Spec names disclose the local module layout to a diagnostic reader | The plan's own source records name the same layout                                                                                                                    | implementation issue (`bitty` config loader), redaction review |
+| Owner-edited configuration as the attack path                      | Out of scope by trust model: the user is the author of the code being run                                                                                             | project owner (trust-model decision, not a loader fix)         |
+
+### Non-blocking findings `N-1` to `N-12`
+
+`N-1`, `N-2`, and `N-4` were closed by the earlier amendments and stay closed.
+The nine rows below are open. `N-9` to `N-12` are text corrections inside this
+document, not residuals, and they may not be carried as accepted risk in place
+of being fixed; `N-3` and `N-5` are obligations that acceptance does not
+discharge.
+
+| ID     | Status | Open item                                                                                                                                                                                                                                                                                                                                         | Owner                                                                                   |
+| ------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `N-1`  | Closed | Record shape and field naming defects from round one                                                                                                                                                                                                                                                                                              | none (closed in round two)                                                              |
+| `N-2`  | Closed | Containment-rule wording defects from round one                                                                                                                                                                                                                                                                                                   | none (closed in round two)                                                              |
+| `N-3`  | Open   | The 256 KiB aggregate cap and the PB-1 claim are asserted, not measured. Measure a maximal graph (64 identities, 256 KiB) against PB-1 p50/p99 before the number becomes contract; acceptance does not make it contract-grade                                                                                                                     | loader implementation issue (`bitty`), with a `bitty-perf` PB-1 measurement             |
+| `N-4`  | Closed | Missing error code and `phase` for the root refusal                                                                                                                                                                                                                                                                                               | none (closed by the amendment the third review read)                                    |
+| `N-5`  | Open   | No [risk register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/risk-register.md) or evidence-matrix row exists for this loader; add one before any loader-shipped release, so the residual set is tracked and not only described                                                                                         | docs security maintainer (`bitty-docs` security register)                               |
+| `N-6`  | Open   | `bitty config check --json` graph emission is unbound. Bind it: graph emission, if any, carries specs, lines, and codes only, never absolute paths, resolved roots, or identity tuples                                                                                                                                                            | implementation issue (`bitty-config` diagnostic schema owner)                           |
+| `N-7`  | Open   | Resolution order and canonicalization order are not related: for `a.b.c` the loader must probe both forms, decide `NOT_FOUND` or `AMBIGUOUS`, and only then canonicalize the form that exists                                                                                                                                                     | specifications maintainer (this repository), next contract revision                     |
+| `N-8`  | Open   | `E_CONFIG_MODULE_NOT_REGULAR` still names "directory reached by a non-`init` resolution"; both resolutions end in a file name, so say "a directory at either resolution" and drop the qualifier in item 4 and the taxonomy row                                                                                                                    | specifications maintainer (this repository), next contract revision                     |
+| `N-9`  | Open   | Item 3's first sentence still calls a by-path open "the fallback" while three other clauses forbid it. Delete the fallback clause and say the anchored walk is the mechanism on every platform, or name the fallback with its flags, platforms, and containment                                                                                   | specifications maintainer (this repository); must land before the implementation starts |
+| `N-10` | Open   | The read boundary has two plausible codes for an oversized file and none for a failed `fstat`: pin the metadata-size refusal to `E_CONFIG_MODULE_SIZE` (pre-read), a `take(cap + 1)` result at or beyond the ceiling to `E_CONFIG_MODULE_READ`, and a failed `fstat` to `E_CONFIG_MODULE_READ`, and broaden `detail` to host-authored layout text | specifications maintainer (this repository), next contract revision                     |
+| `N-11` | Open   | The root record's `detail` "names the layout" while the redaction rule forbids printing the canonical root: say `detail` names the layout **kind** (redirected profile, unreadable ancestor, resolution loop, not a directory) and never its path                                                                                                 | specifications maintainer (this repository), next contract revision                     |
+| `N-12` | Open   | The `bitty-docs` threat model's `D-2` bullet still names handle-bound identity as containment's third leg; it must name the descriptor-anchored walk and describe the identity match as a cache key and redundant confirmation. Due now that this contract is promoted                                                                            | docs security maintainer (`bitty-docs` threat model)                                    |
+
 ## Acceptance criteria
 
-- Independent security review approves the containment, budget, safe-mode,
-  and isolation sections, and the threat model residuals are carried into the
-  implementation issue as accepted risk.
+- Independent security review approved the containment, budget, safe-mode,
+  and isolation sections in the third review, and the threat model residuals
+  are carried into the implementation issue as accepted risk.
 - The seven issue items are each answered by the decision register, with the
   numbers marked as proposals.
 - The error taxonomy is exhaustive over the refusal surface and every code
   names the path where it surfaces.
-- This document stays `draft` until that review lands; it does not promote
-  itself and it authorizes no implementation.
+- That review has landed: the third independent review returned `ACCEPTED` and
+  this document is `accepted`. Acceptance authorizes the dependent
+  implementation issue and nothing else; it promotes no P0 control, ships no
+  loader, and is not evidence of behavior.
 
 ## P0 review sign-off
 
-This draft records no P0 sign-off and closes no security risk. It defines
+This contract records no P0 sign-off and closes no security risk. It defines
 required behavior for a future implementation under P0 controls; the evidence
 comes from the implementation change under the verification plan above.
 
@@ -972,6 +1044,9 @@ comes from the implementation change under the verification plan above.
 - [Issue `bitty#2670`](https://github.com/bitty-terminal/bitty/issues/2670) —
   the design gate this document answers, and its follow-up from
   [`bitty#2581`](https://github.com/bitty-terminal/bitty/issues/2581).
+- [Restricted Config Require Contract Third Review](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/config-require-third-review.md)
+  — the `ACCEPTED` verdict that promoted this contract, merged as
+  [bitty-docs#494](https://github.com/bitty-terminal/bitty-docs/pull/494).
 - [Lua and XDG configuration](../configuration/lua-and-xdg.md) — module
   resolution direction, RC-1/RC-2 posture, and `--safe` precedence.
 - [Configuration Model RFC](configuration-model-rfc.md) — pipeline, layer

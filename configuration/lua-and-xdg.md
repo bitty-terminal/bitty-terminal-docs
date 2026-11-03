@@ -151,8 +151,9 @@ plugin. Plugin-to-plugin use goes through declared, versioned host services.
 The concrete module contract — name grammar, root derivation for `init.lua`,
 profiles, and an explicit `--config` path, containment rules, budgets, and
 failure behavior — is the
-[Config Lua require contract (candidate)](../specifications/config-lua-require-contract-candidate.md).
-It remains a draft: `require` is still denied in the shipped configuration VM.
+[Config Lua Require Contract](../specifications/config-lua-require-contract.md).
+It is accepted as a design: `require` is still denied in the shipped
+configuration VM, so nothing in it is implemented.
 
 ### Restricted plugin settings Lua
 
@@ -276,8 +277,8 @@ return {
 
 Module naming, root derivation, containment, budgets, and failure behavior are
 specified by the
-[Config Lua require contract (candidate)](../specifications/config-lua-require-contract-candidate.md).
-That candidate refuses `require("bitty")` and every other `bitty.*` spec, so
+[Config Lua Require Contract](../specifications/config-lua-require-contract.md).
+That contract refuses `require("bitty")` and every other `bitty.*` spec, so
 the reserved host table, if it ships, is a preloaded value rather than a
 module; the built-in `bitty` API surface itself remains open.
 
