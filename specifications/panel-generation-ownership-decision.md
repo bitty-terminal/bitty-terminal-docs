@@ -27,14 +27,14 @@ sidebar_order: 87
 >
 > An independent security review recorded in `bitty-docs`
 > (`docs/security/panel-generation-ownership-review.md`) withheld acceptance
-> with eight blocking gaps. This revision closes all eight against `bitty` at
-> `7ac871d4`, and where the record was wrong about the code it states the code
-> as it is rather than restating the earlier claim: the scene path already
-> carries a controller binding with a generation fence, the component-request
-> teardown is plugin-scoped rather than generation-scoped, plugin-created
-> panels allocate without a workspace, and the restore key has no persisted
-> encoding. It accepts nothing, promotes nothing to **Verified** or
-> **Compatible**, changes no accepted text, and does not describe shipped
+> with eight blocking gaps. The revision that answered it addressed all eight
+> against `bitty` at `7ac871d4` and, where the record was wrong about the code,
+> recorded the code as it is rather than restating the earlier claim: the
+> scene path already carries a controller binding with a generation fence, the
+> component-request teardown is plugin-scoped rather than generation-scoped,
+> plugin-created panels allocate without a workspace, and the restore key has
+> no persisted encoding. It accepts nothing, promotes nothing to **Verified**
+> or **Compatible**, changes no accepted text, and does not describe shipped
 > behavior.
 >
 > A second independent re-review
@@ -43,11 +43,23 @@ sidebar_order: 87
 > text: the derivation read a predecessor set that the same section deleted
 > first and never installed its result (`B-1`), workspace membership resolved
 > from a source with no referent (`B-2`), and the release list for generation
-> disposal was carried out only at the next bind (`B-3`). This revision closes
-> `B-1` to `B-3` in place, without weakening a rule either review accepted. It
-> accepts nothing, promotes nothing to **Verified** or **Compatible**, changes
-> no accepted text, and does not describe shipped behavior. Owner acceptance
-> and a third security review are still required.
+> disposal was carried out only at the next bind (`B-3`). That revision
+> answered `B-1` to `B-3` in place, without weakening a rule either review
+> accepted.
+>
+> A third independent re-review
+> (`docs/security/panel-generation-ownership-third-review.md`) closed `B-1`
+> and `B-3`, kept `B-2` open because the identity step named accessors and an
+> id the tree does not contain, and recorded one new blocking finding, `B-4`:
+> the unbind release deleted the grant ceiling that the bind's phase 0 must
+> read before a successor binds. This revision answers both in place. `A.7`
+> states the workspace identity step as a bounded, fail-closed prerequisite
+> with its own acceptance test instead of claiming the id already exists, and
+> the generation edge now writes a bounded retired-ceiling tombstone before it
+> deletes the live grant row, which phase 0 reads across a reload. It accepts
+> nothing, promotes nothing to **Verified** or **Compatible**, changes no
+> accepted text, and does not describe shipped behaviour. Owner acceptance and
+> a fourth security review are still required.
 
 ## Purpose and scope
 
@@ -140,6 +152,7 @@ restart persistence, whose contract stays open (`RFC-OQ-9`).
 | Rebind                      | Binding a new controller generation to an existing panel container without disposing the container or re-minting `PanelId`.                                                                                                                                             |
 | Placeholder                 | The explicit, non-interactive panel presentation that names a missing or unavailable controller. Never an empty surface and never a silent orphan.                                                                                                                      |
 | Restore key                 | The persisted identity pair a restart uses to re-attach a panel container: `(WorkspaceId, PersistentId)`, never a `PanelId`. The tuple is decided; the persisted record that would carry it does not exist yet.                                                         |
+| Retired-ceiling tombstone   | The bounded per-panel record the edge release writes before deleting a departed controller generation's grant row: `(PanelId, ended controller generation) -> captured grant set`. Bind phase 0 reads it across a reload; at most one entry exists per panel.           |
 
 ## The gap this record addresses
 
@@ -193,25 +206,26 @@ conformance claim against this record, and none promotes anything to
 **Verified** or **Compatible**. Line numbers drift; the file path is the
 durable citation.
 
-| Surface                      | Status at `7ac871d4`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Panel registry and lifecycle | `crates/bitty-runtime/src/registry/panel.rs` holds `PanelRegistry` with `create_panel`, `mount_panel`, `unmount_panel`, `focus_panel`, `suspend_panel`, `resume_panel`, `dispose_panel`, monotonic generation, `StaleHandle`, `GenerationExhausted`, and MRU-per-workspace focus.                                                                                                                                                                                                                                                                                                                                                                                                |
-| Panel record contents        | `PanelRecord` carries `id`, `generation`, `state`, `panel_type`, `workspace: Option<WorkspaceId>`, `view`, and `title`. It carries **no** owner, plugin, provider, controller, or binding field, and `workspace` is written only by `create_panel`; no assignment path exists after creation.                                                                                                                                                                                                                                                                                                                                                                                    |
-| Panel allocation generation  | `create_panel` bumps the registry-wide counter and stamps the result on the record, so a panel's `Generation` is the allocation epoch of the whole registry, not a per-panel fencing counter. Disposal retires the record and bumps the counter again.                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Plugin-created panels        | `bitty.panel.create` reaches the host through `PanelCreateHandler = Rc<dyn Fn(&str) -> Result<(u64, u64), BridgeError>>` (`crates/bitty-runtime/src/plugin_runtime/services.rs`), which is handed only a type string. The production backend (`crates/bitty-terminal/src/plugin_runtime.rs`) calls `create_panel(parsed, None)`, so `PanelRecord.workspace` is `None`. The registry behind it is process-owned and shared by every generation.                                                                                                                                                                                                                                   |
-| Workspace membership         | Membership is assigned at creation and only when the caller passes `Some(WorkspaceId)`. `create_panel` then charges `max_panels_per_workspace`, inserts into `workspace_panels`, and seeds `focus_per_workspace`; with `None` it charges only the window-wide `max_panels_per_window` (which counts every record), never appears in a workspace list, and never enters the focus MRU. The registry also declares `active_workspace: Option<WorkspaceId>`, assigned only inside `create_panel` when it is `None` and never read: write-only and registry-global, not a per-generation fact.                                                                                       |
-| Grant lifecycle              | Grants live in `capabilities: HashMap<(PanelId, Generation), BTreeSet<String>>`, written by `grant_panel_capability` and read by `is_panel_capability_granted` and `require_panel_capability`. `dispose_panel` removes the panel's commands, bus queues, and `capabilities.remove(&(panel_id, generation))`; the key's `Generation` is the allocation epoch, which a reload does not change, so a reload preserves every grant by accident.                                                                                                                                                                                                                                      |
-| Component-request teardown   | `drop_plugin(plugin_id)` in `crates/bitty-runtime/src/plugin_runtime/component_requests.rs` retains `submissions` on `plugin_id`, filters `in_flight` on `plugin_id`, and retains `tickets`/`completed` on `owner != plugin_id`. It is **plugin-scoped**: none of those structures carries a generation, so "one generation's tickets" was wrong. No panel equivalent exists, generation-scoped or otherwise.                                                                                                                                                                                                                                                                    |
-| Scene-panel binding          | `crates/bitty-runtime/src/scene_host.rs` keeps `HostPanel { handle, view, owner: String, epoch: u32 }`. `ensure_panel` refuses a different `owner` or `epoch` with `E_UI_UNAVAILABLE` ("held by another plugin generation"). `release_owner(owner, epoch)` drops that generation's scenes and calls `release_panel`, which calls `dispose_panel`; `detach` does the same when a generation's last scene goes. The panel is created with `create_panel(PanelType::Rich, None)`.                                                                                                                                                                                                   |
-| Generation boundary trigger  | `clear_ui_blocks` (`crates/bitty-runtime/src/plugin_runtime/services.rs`) calls `release_owner(&plugin_id, ui_epoch)`. It runs on suspend, on dispose, and on activation rollback from `crates/bitty-runtime/src/plugin_runtime/mod.rs`. The scene path therefore disposes its panel container at each of those boundaries.                                                                                                                                                                                                                                                                                                                                                      |
-| Controller generation value  | `ui_epoch: Cell<u32>` is set from the plugin entry's activation counter (`set_ui_epoch(entry.generation)`), which activation advances with `saturating_add(1)`. Handle minting masks it to 30 bits (`UI_HANDLE_EPOCH_BITS`); `HostPanel.epoch` stores the unmasked `u32`. This is a different counter and a different type from the registry's `Generation(u64)`, and nothing in code compares the two.                                                                                                                                                                                                                                                                          |
-| Panel state machine in code  | Two tables, not one. `bitty_ui::panel::PanelState` (six states) is what `PanelRecord.state` holds, and its `can_transition` permits `Created`, `Mounted`, `Focused`, and `Suspended` to `Disposed`. `crates/bitty-ui/src/panel_state.rs` adds a seventh `Closed` state in `PanelLifecycle`, whose `can_transition` permits `Mounted`, `Suspended`, and `Closed` to `Disposed` but **not** `Created -> Disposed` or `Focused -> Disposed`. `dispose_panel` consults neither table.                                                                                                                                                                                                |
-| Panel disposal call sites    | Outside the registry, `dispose_panel` is called only from `crates/bitty-runtime/src/scene_host.rs`. No workspace-close path, no `panel.close` backend, and no `panel.destroy` backend disposes a panel; `workspace_panels` has no accessor and no bulk dispose-by-workspace operation exists. `PanelRuntime::dispose_panel` also unbinds placement and removes the panel's lease and scene entries.                                                                                                                                                                                                                                                                              |
-| Panel lease table            | `PanelRuntime.leases: HashMap<PanelId, PanelLeaseEntry>` (`crates/bitty-runtime/src/registry/host.rs`) is inserted `idle()` at `create_panel` and removed at `dispose_panel`. `PanelLease::check_write` gates the panel write path in `crates/bitty-runtime/src/runtime/submit_host.rs`. The holder is an opaque `LeaseHolder` with no generation dimension, and the table is documented as a UX metaphor recording who may drive a panel.                                                                                                                                                                                                                                       |
-| Overlay attribution          | `Overlay` (`crates/bitty-ui/src/panel.rs`) carries `id`, `kind`, `bounds`, `text`, `tooltip`, `generation: u64`, and `truncated` — no panel, plugin, or controller owner. The registry stamps `generation` from the registry counter at `create_overlay`. `OverlayManager` offers `dismiss(id)` and a whole-manager `clear()`, and `clear()` runs only in `PanelRegistry::dispose()`. `dispose_panel` does not touch overlays. Plugin presentation surfaces are the exception: `crates/bitty-runtime/src/plugin_runtime/presentation_overlay.rs` keeps a `(plugin_id, handle)` session that Core tears down on suspend, unload, disable, crash, rollback, and generation change. |
-| Content and capture release  | `clear_ui_blocks` clears the generation's block registry and spec overlay handles and releases its scenes and bind; suspend and dispose additionally revoke the generation's targeting lenses and the plugin-wide overlay capture. Content, capture, and scene release are therefore already generation-scoped on this path.                                                                                                                                                                                                                                                                                                                                                     |
-| Restart persistence          | `crates/bitty-ui/src/panel_persist.rs` carries `PersistedPanel { id: PanelId, workspace: u32, title: String }` and the `v=<n>;id=<n>;ws=<n>;title=<text>` encoding at `PERSIST_MANIFEST_VERSION = 1`. `PersistencePolicy` has two variants, `Ephemeral` and `StableIdentity`, with **no `Default` impl** and no production selector: the "Ephemeral default" is a module-comment statement, `plan_restore` is exercised only by tests, and `StableIdentity` reuses the persisted `PanelId`. No field carries a stable panel key or an owner name, and `PersistentId` exists only in `crates/bitty-runtime/src/registry.rs` for terminals, not in this record.                    |
-| Plugin reload ordering       | `crates/bitty-plugin-host/src/lifecycle.rs` implements FS-2's ladder, FS-4 records, and `reload_generation`, which disposes generation `N` before `N+1` activates and restores `N` when activation fails.                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Surface                      | Status at `7ac871d4`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Panel registry and lifecycle | `crates/bitty-runtime/src/registry/panel.rs` holds `PanelRegistry` with `create_panel`, `mount_panel`, `unmount_panel`, `focus_panel`, `suspend_panel`, `resume_panel`, `dispose_panel`, monotonic generation, `StaleHandle`, `GenerationExhausted`, and MRU-per-workspace focus.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Panel record contents        | `PanelRecord` carries `id`, `generation`, `state`, `panel_type`, `workspace: Option<WorkspaceId>`, `view`, and `title`. It carries **no** owner, plugin, provider, controller, or binding field, and `workspace` is written only by `create_panel`; no assignment path exists after creation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Panel allocation generation  | `create_panel` bumps the registry-wide counter and stamps the result on the record, so a panel's `Generation` is the allocation epoch of the whole registry, not a per-panel fencing counter. Disposal retires the record and bumps the counter again.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Plugin-created panels        | `bitty.panel.create` reaches the host through `PanelCreateHandler = Rc<dyn Fn(&str) -> Result<(u64, u64), BridgeError>>` (`crates/bitty-runtime/src/plugin_runtime/services.rs`), which is handed only a type string. The production backend (`crates/bitty-terminal/src/plugin_runtime.rs`) calls `create_panel(parsed, None)`, so `PanelRecord.workspace` is `None`. The registry behind it is process-owned and shared by every generation.                                                                                                                                                                                                                                                                                                                     |
+| Workspace membership         | Membership is assigned at creation and only when the caller passes `Some(WorkspaceId)`. `create_panel` then charges `max_panels_per_workspace`, inserts into `workspace_panels`, and seeds `focus_per_workspace`; with `None` it charges only the window-wide `max_panels_per_window` (which counts every record), never appears in a workspace list, and never enters the focus MRU. The registry also declares `active_workspace: Option<WorkspaceId>`, assigned only inside `create_panel` when it is `None` and never read: write-only and registry-global, not a per-generation fact. `Runtime::focused_view()` (`crates/bitty-runtime/src/runtime/layout_focus.rs`) returns the focused `ViewId` or `None`; no accessor returns a workspace identity for it. |
+| Workspace identity           | No `WorkspaceId` is reachable from `Runtime`. `WorkspaceSlot` (`crates/bitty-runtime/src/runtime/workspaces.rs`) carries `seq`, `name`, `layout`, `focus`, and `floats`, and no `WorkspaceId`; `Runtime` carries the active workspace as a `usize` index; `WorkspaceId` is minted only by `TerminalRegistry::create_workspace` (`crates/bitty-runtime/src/registry/terminal.rs`), whose callers are tests, and `TerminalRegistry::active_workspace` / `set_active_workspace` have no production callers. `TerminalRegistry::focused_view(WorkspaceId)` exists, but nothing in `Runtime` can supply the id it takes.                                                                                                                                                |
+| Grant lifecycle              | Grants live in `capabilities: HashMap<(PanelId, Generation), BTreeSet<String>>`, written by `grant_panel_capability` and read by `is_panel_capability_granted` and `require_panel_capability`. `dispose_panel` removes the panel's commands, bus queues, and `capabilities.remove(&(panel_id, generation))`; the key's `Generation` is the allocation epoch, which a reload does not change, so a reload preserves every grant by accident.                                                                                                                                                                                                                                                                                                                        |
+| Component-request teardown   | `drop_plugin(plugin_id)` in `crates/bitty-runtime/src/plugin_runtime/component_requests.rs` retains `submissions` on `plugin_id`, filters `in_flight` on `plugin_id`, and retains `tickets`/`completed` on `owner != plugin_id`. It is **plugin-scoped**: none of those structures carries a generation, so "one generation's tickets" was wrong. No panel equivalent exists, generation-scoped or otherwise.                                                                                                                                                                                                                                                                                                                                                      |
+| Scene-panel binding          | `crates/bitty-runtime/src/scene_host.rs` keeps `HostPanel { handle, view, owner: String, epoch: u32 }`. `ensure_panel` refuses a different `owner` or `epoch` with `E_UI_UNAVAILABLE` ("held by another plugin generation"). `release_owner(owner, epoch)` drops that generation's scenes and calls `release_panel`, which calls `dispose_panel`; `detach` does the same when a generation's last scene goes. The panel is created with `create_panel(PanelType::Rich, None)`.                                                                                                                                                                                                                                                                                     |
+| Generation boundary trigger  | `clear_ui_blocks` (`crates/bitty-runtime/src/plugin_runtime/services.rs`) calls `release_owner(&plugin_id, ui_epoch)`. It runs on suspend, on dispose, and on activation rollback from `crates/bitty-runtime/src/plugin_runtime/mod.rs`. The scene path therefore disposes its panel container at each of those boundaries.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Controller generation value  | `ui_epoch: Cell<u32>` is set from the plugin entry's activation counter (`set_ui_epoch(entry.generation)`), which activation advances with `saturating_add(1)`. Handle minting masks it to 30 bits (`UI_HANDLE_EPOCH_BITS`); `HostPanel.epoch` stores the unmasked `u32`. This is a different counter and a different type from the registry's `Generation(u64)`, and nothing in code compares the two.                                                                                                                                                                                                                                                                                                                                                            |
+| Panel state machine in code  | Two tables, not one. `bitty_ui::panel::PanelState` (six states) is what `PanelRecord.state` holds, and its `can_transition` permits `Created`, `Mounted`, `Focused`, and `Suspended` to `Disposed`. `crates/bitty-ui/src/panel_state.rs` adds a seventh `Closed` state in `PanelLifecycle`, whose `can_transition` permits `Mounted`, `Suspended`, and `Closed` to `Disposed` but **not** `Created -> Disposed` or `Focused -> Disposed`. `dispose_panel` consults neither table.                                                                                                                                                                                                                                                                                  |
+| Panel disposal call sites    | Outside the registry, `dispose_panel` is called only from `crates/bitty-runtime/src/scene_host.rs`. No workspace-close path, no `panel.close` backend, and no `panel.destroy` backend disposes a panel; `workspace_panels` has no accessor and no bulk dispose-by-workspace operation exists. `PanelRuntime::dispose_panel` also unbinds placement and removes the panel's lease and scene entries.                                                                                                                                                                                                                                                                                                                                                                |
+| Panel lease table            | `PanelRuntime.leases: HashMap<PanelId, PanelLeaseEntry>` (`crates/bitty-runtime/src/registry/host.rs`) is inserted `idle()` at `create_panel` and removed at `dispose_panel`. `PanelLease::check_write` gates the panel write path in `crates/bitty-runtime/src/runtime/submit_host.rs`. The holder is an opaque `LeaseHolder` with no generation dimension, and the table is documented as a UX metaphor recording who may drive a panel.                                                                                                                                                                                                                                                                                                                         |
+| Overlay attribution          | `Overlay` (`crates/bitty-ui/src/panel.rs`) carries `id`, `kind`, `bounds`, `text`, `tooltip`, `generation: u64`, and `truncated` — no panel, plugin, or controller owner. The registry stamps `generation` from the registry counter at `create_overlay`. `OverlayManager` offers `dismiss(id)` and a whole-manager `clear()`, and `clear()` runs only in `PanelRegistry::dispose()`. `dispose_panel` does not touch overlays. Plugin presentation surfaces are the exception: `crates/bitty-runtime/src/plugin_runtime/presentation_overlay.rs` keeps a `(plugin_id, handle)` session that Core tears down on suspend, unload, disable, crash, rollback, and generation change.                                                                                   |
+| Content and capture release  | `clear_ui_blocks` clears the generation's block registry and spec overlay handles and releases its scenes and bind; suspend and dispose additionally revoke the generation's targeting lenses and the plugin-wide overlay capture. Content, capture, and scene release are therefore already generation-scoped on this path.                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Restart persistence          | `crates/bitty-ui/src/panel_persist.rs` carries `PersistedPanel { id: PanelId, workspace: u32, title: String }` and the `v=<n>;id=<n>;ws=<n>;title=<text>` encoding at `PERSIST_MANIFEST_VERSION = 1`. `PersistencePolicy` has two variants, `Ephemeral` and `StableIdentity`, with **no `Default` impl** and no production selector: the "Ephemeral default" is a module-comment statement, `plan_restore` is exercised only by tests, and `StableIdentity` reuses the persisted `PanelId`. No field carries a stable panel key or an owner name, and `PersistentId` exists only in `crates/bitty-runtime/src/registry.rs` for terminals, not in this record.                                                                                                      |
+| Plugin reload ordering       | `crates/bitty-plugin-host/src/lifecycle.rs` implements FS-2's ladder, FS-4 records, and `reload_generation`, which disposes generation `N` before `N+1` activates and restores `N` when activation fails.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ### Code grounding
 
@@ -259,12 +273,48 @@ controller binding are generation-owned and ephemeral**.
    release leaves the panel unbound and refuses every verb, with one
    FS-4-style record naming the family that failed: the same fail-closed shape
    as a failed bind, and never a re-bind of `N`. The release is observable by
-   construction — one counter keyed `(PanelId, ended controller generation)`
-   advances once per family released, so "nothing to release" is
-   distinguishable from "the release never ran", and the queue side is also
-   readable through `queued_events_for_panel`. A bind repeats these releases in
-   phase 1 as defense in depth; the repetition is idempotent and is not the
-   mechanism that satisfies this rule.
+   construction — one counter entry per panel in the panel registry names the
+   most recently ended controller generation and advances once per family
+   released; the entry is created even when a family releases nothing, so
+   "nothing to release" is distinguishable from "the release never ran". The
+   entry is replaced at the panel's next edge, dropped on workspace close or
+   panel disposal, and read through the required
+   `unbind_release_count(PanelId)` accessor; a per-generation entry that
+   accumulates one row per reload is the unbounded growth this record forbids.
+   The queue side is also readable through `queued_events_for_panel`.
+
+   **The grant ceiling survives the edge in a bounded retired-ceiling
+   tombstone.** Before the release deletes `(PanelId, N)`'s live grant row, it
+   captures the row's set and writes a tombstone keyed `(PanelId, N)`. When the
+   row does not exist — a generation that bound but held no grants — the
+   tombstone is still written, with an empty set, because "ended with nothing"
+   is a fact the successor must be able to distinguish from "the record was
+   lost". The tombstone table holds **at most one entry per panel** and is
+   capped at the registry's `max_panels_per_window`, so a long-lived panel
+   accumulates no entry per reload: a new tombstone for the same panel replaces
+   the previous one. An entry is dropped when a successor successfully binds
+   the same panel, when the panel's next controller generation ends and writes
+   its own tombstone, or on workspace close or panel disposal, whichever comes
+   first.
+   The tombstone write is part of the release, not an optimisation: if it
+   cannot be written, the release fails closed without deleting the live row,
+   the panel stays unbound, every verb is refused, and one FS-4-style record
+   names the tombstone step; a later bind also refuses rather than proceed
+   without a ceiling (D.2 phase 0).
+
+   **An empty tombstone is not a missing tombstone.** An empty tombstone means
+   the predecessor ended without holding panel-scoped grants, so `P` is a real
+   empty ceiling and nothing of the predecessor survives; a missing tombstone
+   for a panel whose record still names a previous controller means the ceiling
+   record was lost, and the bind refuses (D.2 phase 0). A reload never falls
+   back to "there is no predecessor row, so there is no ceiling".
+
+   A bind that displaces a still-bound predecessor repeats the release in
+   phase 1; that repetition is a second caller of the same release for the race
+   where a successor binds before the predecessor's edge, and it is not the
+   mechanism that satisfies this rule. On the reload path the edge release and
+   its tombstone complete before `N+1` activates (C.5), so phase 0 reads the
+   tombstone rather than a row the edge already deleted.
 
 3. The controller binding is generation-fenced by the **controller
    generation**. A container holds at most one controller (the at-most-one rule
@@ -296,26 +346,57 @@ controller binding are generation-owned and ephemeral**.
    precedent this record generalizes, not a behaviour to delete.
 7. **Workspace membership is assigned at creation, by Core, from the focused
    leaf of the presented workspace.** The creating generation never names a
-   workspace and cannot: the create seam hands it only a panel type string. At
-   the create boundary Core reads two facts it already owns — the active
-   workspace index and that workspace's focused view
-   (`Runtime::active_workspace_index`, `Layout::focused_view`) — and passes the
-   resulting `WorkspaceId` to `create_panel` as its `workspace` argument, the
-   same argument `create_panel_by_type_str` forwards. When the presented
-   workspace has no focused view, or the instance presents no workspace, no
-   workspace resolves: the create fails closed, allocates no record, charges no
-   slot, and reports `E_UI_UNAVAILABLE`. That branch is reachable by
-   construction, because `focused_view` is an `Option` and a workspace whose
-   leaves are all closed has none; an always-answerable global pointer is
-   exactly the fallback this rule forbids. A container with `workspace: None`
-   is not a state this record permits. Two cases the seam makes explicit:
-   `panel.create` carries no target, so a create with no target resolves by
-   this same rule and never by a guessed or defaulted workspace, and a
-   generation that presents nothing — no scene, no mount, no panel of its own —
-   resolves identically, because the input is Core's presented workspace and
-   never the calling generation's own surfaces. Such a generation does not fail
-   resolution for presenting nothing; it fails only when Core has no focused
-   view to read.
+   workspace and cannot: the create seam hands it only a panel type string. The
+   referent is fixed: the focused leaf of the workspace the instance presents,
+   read through `Runtime::focused_view()`
+   (`crates/bitty-runtime/src/runtime/layout_focus.rs`), which returns the
+   focused `ViewId` or `None`. When the presented workspace has no focused
+   view, or the instance presents no workspace, no workspace resolves: the
+   create fails closed, allocates no record, charges no slot, and reports
+   `E_UI_UNAVAILABLE`. That branch is reachable by construction, because
+   `focused_view` is an `Option` and a workspace whose leaves are all closed
+   has none; an always-answerable global pointer is exactly the fallback this
+   rule forbids. A container with `workspace: None` is not a state this record
+   permits. Two cases the seam makes explicit: `panel.create` carries no
+   target, so a create with no target resolves by this same rule and never by a
+   guessed or defaulted workspace, and a generation that presents nothing — no
+   scene, no mount, no panel of its own — resolves identically, because the
+   input is Core's presented workspace and never the calling generation's own
+   surfaces. Such a generation does not fail resolution for presenting nothing;
+   it fails only when Core has no focused view to read.
+
+   **The identity that names that workspace is a prerequisite, not a fact the
+   tree supplies today.** Core can read the focused view, and the terminal
+   registry holds one record per workspace, but no `WorkspaceId` is reachable
+   from `Runtime`: `WorkspaceSlot` carries `seq`, `name`, `layout`, `focus`,
+   and the float store and no `WorkspaceId`; `Runtime` holds the active
+   workspace as an index; and `WorkspaceId` is minted only by
+   `TerminalRegistry::create_workspace`, whose callers are tests, while
+   `TerminalRegistry::active_workspace` and `set_active_workspace` have no
+   production callers. The earlier claim that Core reads an active workspace
+   index and a `Layout` focus accessor and passes the resulting `WorkspaceId`
+   to `create_panel` is withdrawn: there is no `Layout` type and no such
+   accessor, and nothing joins the presented workspace to an id. Core must not
+   manufacture the id from an index, a `seq`, or another positional value, and
+   must not accept one from the plugin.
+
+   The prerequisite is exact: **a workspace identity is minted at workspace
+   creation and stored on the same record the layout presents, and `Runtime`
+   can read it for the focused view.** The id space is the terminal registry's,
+   so "attributed to a workspace" names one bucket rather than two; the
+   identity is stored on the `WorkspaceSlot` that holds the presented layout,
+   not on a second parallel record. Until the prerequisite exists,
+   `create_panel` fails closed with `E_UI_UNAVAILABLE`: it does not invent a
+   workspace, does not accept a plugin-supplied one, and does not allocate a
+   record. Acceptance for the prerequisite is one test: **the focused view of a
+   presented workspace resolves to the minted `WorkspaceId`, and no plugin
+   input can influence the result.** This decision is contingent on that test,
+   in the same sense that the restore key is contingent on `RFC-OQ-9`: the
+   direction is stated, and the create path is not conformant until the test
+   exists and passes. The restore path's index-to-`WorkspaceId` resolution
+   stays open (see [Decision B](#decision-b-identity-and-the-restore-key)), but
+   the create path and the restore path must share one resolution function so a
+   create-time identity and a restore-time index cannot diverge.
 
    The recorded workspace is the lifetime and bind-time referent:
    `create_panel` writes it into `PanelRecord.workspace`, no later assignment
@@ -397,7 +478,10 @@ Core-internal surface a workspace slot it never charged.
    name or a panel key, bounded as it is by `MAX_MANIFEST_LINE_LEN`. The
    required record — an owner name and a panel key at a new manifest version,
    plus an index-to-`WorkspaceId` resolution at restore — is tracked as open
-   work under `RFC-OQ-9`, not decided here.
+   work under `RFC-OQ-9`, not decided here. That resolution and the create
+   path's identity step (A.7) must be one resolution function, not two: restore
+   must not carry an index-to-id mapping that a create would not use, or the
+   two paths could attribute one panel to two workspaces.
 5. **Until `RFC-OQ-9` is decided, nothing is restored.** This record fixes the
    key, not the persistence contract, the encoding, the version policy, or
    whether restart restore ships at all. Within that: **no caller may select
@@ -449,9 +533,10 @@ Transition rules that follow:
    which is a workspace fact, not a plugin fact.
 2. **Controller `Disposed` never cascades to panel `Disposed`.** The panel
    becomes unbound, releases that generation's panel-scoped families through the
-   unbind release in A.2, and then presents the placeholder. Only an explicit
-   user close, workspace close, or an explicit recovery decision retires the
-   container.
+   unbind release in A.2 — which first writes the retired-ceiling tombstone
+   before it deletes the generation's grant row — and then presents the
+   placeholder. Only an explicit user close, workspace close, or an explicit
+   recovery decision retires the container.
 3. **Crash.** A generation that faults enters the FS-2 ladder and ends
    `Disabled`; the panel becomes unbound, releases that generation's
    panel-scoped families through the unbind release in A.2, presents the
@@ -465,7 +550,10 @@ Transition rules that follow:
    panels remain visible until the user closes them; hiding them silently
    would be the orphan this record forbids.
 5. **Reload mid-mount.** Because generation `N` is disposed before `N+1`
-   activates, a mount that started against `N` must fail closed. The mount is
+   activates, a mount that started against `N` must fail closed. The edge
+   release and its tombstone complete before `N+1` activates, so the
+   successor's phase 0 has the predecessor's ceiling to read rather than a row
+   the edge already deleted (A.2, D.2). The mount is
    transactional in the sense the compositor already requires: the binding
    either commits against a controller that is still `Activated`, or commits
    nothing and leaves the panel in its pre-mount state (`Created`, or
@@ -532,6 +620,16 @@ C = the subset of (R minus P) for which a permission-diff consent
 grant(n+1) = (R ∩ P) ∪ C
 ```
 
+`P` is read by phase 0 (D.2) from the live row when the bind displaces a
+still-bound predecessor, and from the retired-ceiling tombstone written at that
+predecessor's terminal edge (A.2) when the predecessor ended before this bind —
+the reload case. It is never read from the live table after an edge has drained
+it. A panel that has never been bound has no predecessor and therefore no
+ceiling: `P` is absent rather than empty, `C` is empty, and the first bind
+grants `R` with no permission-diff consent because `panel.create` is the
+authorization. An empty tombstone is a real empty ceiling, not an absent one:
+the predecessor bound and ended holding nothing, so nothing of it survives.
+
 Precedence, in order and with no fourth rule:
 
 1. **The successor's own resolution comes first.** No element of
@@ -546,7 +644,9 @@ Precedence, in order and with no fourth rule:
    `R \ P` is denied until a consent for that capability is granted during
    this bind, and is never granted by the predecessor's absence. Consenting
    admits it to `C` for this binding only; the next rebind recomputes, and a
-   narrower successor drops it again.
+   narrower successor drops it again. This applies to a bind that has a
+   predecessor; the first bind of a never-bound panel is the absent-`P` case
+   above and grants `R` whole.
 
 Three sentences are removed rather than reworded, because each was a competing
 algorithm: "the intersection is recomputed rather than inherited" (the
@@ -563,10 +663,11 @@ whole-registry `dispose()`. The derivation must run inside the
 bind commit — the `rebind_panel` boundary in [D.2](#d2-two-phase-bind) — and it
 reads three things: the successor's resolution, the **captured** predecessor set
 for the same `PanelId` (the immutable snapshot taken at bind entry, D.2 phase 0,
-never the live grant table), and the consent record for this bind. That
-function, and a consent record to read, **do not exist yet and are required
-work**; until they exist every claim in this section is a requirement, not a
-description.
+read from the live row or the retired-ceiling tombstone as phase 0 selects and
+never from the live grant table after it has been drained), and the consent
+record for this bind. That function, the retired-ceiling tombstone, and a
+consent record to read **do not exist yet and are required work**; until they
+exist every claim in this section is a requirement, not a description.
 
 **A bind is a pure function of that captured snapshot.** Once phase 0 returns,
 nothing the bind mutates can change the derivation's result: the three inputs
@@ -589,17 +690,34 @@ skipped:
 1. Read the predecessor's panel-scoped grant set for this `PanelId` into an
    immutable snapshot stamped with the panel id, the predecessor's controller
    generation, and this bind attempt, and hand that snapshot to the derivation
-   in D.1 as `P`. The live row is not touched here; phase 1 removes it after
-   the snapshot exists. If the snapshot cannot be taken, the bind is refused
-   before anything is invalidated: the predecessor stays bound, no phase 1 step
-   runs, no phase 2 step is written, and one FS-4-style record names the capture
-   and both generations.
+   in D.1 as `P`. The source is the live row when the bind displaces a
+   still-bound predecessor, and the retired-ceiling tombstone written at that
+   predecessor's terminal edge (A.2) when the predecessor ended before this
+   bind — the reload case. When both exist for the same generation the live row
+   wins. The live row is not touched here; phase 1 removes any remaining row
+   after the snapshot exists.
+
+   When neither source exists, the bind distinguishes two cases by the panel
+   record's last controller generation, which is retained across unbind
+   (required work; the record carries no such field today). No previous
+   controller — a panel that has never been bound — means no predecessor and no
+   ceiling: `P` is absent, and the first bind commits `R` with no
+   permission-diff consent, because `panel.create` is the authorization. A
+   previous controller with neither a live row nor a tombstone means the
+   ceiling record was lost: the bind is refused. A tombstone for any generation
+   other than the record's last controller generation is treated as a missing
+   record and refused the same way. A refused snapshot runs no
+   phase 1 step, writes no phase 2 step, and emits one FS-4-style record naming
+   the capture and both generations; a still-bound predecessor stays bound. An
+   empty tombstone is not a missing one: it yields `P = ∅` as a real ceiling.
 
 Phase 1 — invalidate the predecessor, in this order, with no step skipped:
 
-1. Remove every panel-scoped grant held by the predecessor for this `PanelId`.
-   This removes the live row only; the derivation reads the phase 0 snapshot
-   and never this table.
+1. When a predecessor exists, write its retired-ceiling tombstone (A.2) if
+   its edge has not already written one, then remove every panel-scoped grant
+   held by the predecessor for this `PanelId` if a row remains. On the reload
+   path the edge release has already done both, so this step is a no-op there.
+   The derivation reads the phase 0 snapshot and never this table.
 2. Drop the panel's queued events (they are panel-scoped, and the successor
    has not bound, so a panel-wide drain cannot touch it).
 3. Release the predecessor's capture handles for this panel and revoke its
@@ -613,8 +731,9 @@ Phase 2 — commit, in this order:
 1. Install the derived set `(R ∩ P) ∪ C` for `(PanelId, controller generation)`,
    keyed by the controller generation rather than the allocation generation.
 2. Write the binding `(owner, controller generation)` on the panel record.
-3. Reset the panel's lease entry to `Idle`, then and only then permit successor
-   verbs.
+3. Reset the panel's lease entry to `Idle`, drop the panel's retired-ceiling
+   tombstone for the predecessor generation, then and only then permit
+   successor verbs.
 
 No verb is permitted between step 1 and step 3, so no caller observes the panel
 as bound with an empty or partial grant set.
@@ -635,8 +754,10 @@ Rules that make the phases decidable:
   set successfully invalidated before the failure.
 - **A failed capture or a failed install refuses the bind, with the predecessor
   left either bound or gone — never half of each.** A capture that cannot be
-  taken refuses the bind before any invalidation, so the predecessor stays the
-  controller and no placeholder is presented. A phase 2 step 1 install that
+  taken refuses the bind before any invalidation: a still-bound predecessor
+  stays the controller, and a predecessor that already ended leaves the panel
+  unbound with the placeholder it already presents. No placeholder is
+  re-presented over a live controller. A phase 2 step 1 install that
   cannot complete leaves the binding unwritten, the panel unbound, the
   placeholder presented, the invalidated set not re-installed, and one
   FS-4-style record naming the failed install and both generations. No verb is
@@ -660,31 +781,31 @@ Rules that make the phases decidable:
 
 ### D.3 What survives a rebind and what does not
 
-| Item                                                                  | Survives a rebind          | Why                                                                                                    |
-| --------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `PanelId`, panel allocation `Generation`                              | Yes                        | Container identity; a rebind is not an allocation (B.1, B.2).                                          |
-| Workspace membership, attachment, title, geometry, `PresentationMode` | Yes                        | Presentation facts the container owns (A.4); rebind re-parents nothing.                                |
-| Focus state                                                           | Yes, unchanged             | Focus is workspace state; a rebind neither grants nor takes it (D.5 family 6).                         |
-| Scrollback, grid, cursor, modes                                       | Yes, but not to the plugin | They belong to the terminal, not the panel or the generation; no PTY descriptor is handed over.        |
-| Panel-scoped queue budgets (PR-7, PR-8)                               | Yes, re-armed empty        | Attribution stays with the `PanelId`; occupancy does not survive.                                      |
-| Lease entry                                                           | Yes, reset to `Idle`       | The record survives, the tenure does not (D.2).                                                        |
-| Capability grants                                                     | No                         | Re-derived by D.1 from the phase 0 snapshot; a ceiling, installed in phase 2.                          |
-| Queued events                                                         | No                         | Dropped in phase 1; never replayed.                                                                    |
-| Overlay attribution, modal authority                                  | No                         | Released in phase 1; a queued modal from the predecessor is dropped, never presented by the successor. |
-| Capture handles, block handles, scene, bind                           | No                         | Generation-owned content; released before the successor may act.                                       |
-| In-flight verbs                                                       | No                         | Cancelled with `ControllerReleased`.                                                                   |
-| Controller binding                                                    | Replaced                   | That is what a rebind is.                                                                              |
+| Item                                                                  | Survives a rebind          | Why                                                                                                                                    |
+| --------------------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `PanelId`, panel allocation `Generation`                              | Yes                        | Container identity; a rebind is not an allocation (B.1, B.2).                                                                          |
+| Workspace membership, attachment, title, geometry, `PresentationMode` | Yes                        | Presentation facts the container owns (A.4); rebind re-parents nothing.                                                                |
+| Focus state                                                           | Yes, unchanged             | Focus is workspace state; a rebind neither grants nor takes it (D.5 family 6).                                                         |
+| Scrollback, grid, cursor, modes                                       | Yes, but not to the plugin | They belong to the terminal, not the panel or the generation; no PTY descriptor is handed over.                                        |
+| Panel-scoped queue budgets (PR-7, PR-8)                               | Yes, re-armed empty        | Attribution stays with the `PanelId`; occupancy does not survive.                                                                      |
+| Lease entry                                                           | Yes, reset to `Idle`       | The record survives, the tenure does not (D.2).                                                                                        |
+| Capability grants                                                     | No                         | Re-derived by D.1 from the phase 0 snapshot, read from the live row or the retired-ceiling tombstone; a ceiling, installed in phase 2. |
+| Queued events                                                         | No                         | Dropped in phase 1; never replayed.                                                                                                    |
+| Overlay attribution, modal authority                                  | No                         | Released in phase 1; a queued modal from the predecessor is dropped, never presented by the successor.                                 |
+| Capture handles, block handles, scene, bind                           | No                         | Generation-owned content; released before the successor may act.                                                                       |
+| In-flight verbs                                                       | No                         | Cancelled with `ControllerReleased`.                                                                                                   |
+| Controller binding                                                    | Replaced                   | That is what a rebind is.                                                                                                              |
 
 ### D.4 The six families, and what can be revoked today
 
-| Family                  | Key in code today                                                                                                      | Generation-revocable today                                                             | Required action                                                        |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Capability grants       | `capabilities[(PanelId, allocation Generation)]`; written by `grant_panel_capability`, removed only by `dispose_panel` | No — the key's generation does not change on reload, so a reload preserves every grant | Re-key to `(PanelId, controller generation)`; capture, remove, install |
-| Content and capture     | Generation-scoped block registry, spec overlay handles, scene, bind, targeting lenses, overlay capture session         | Yes — `clear_ui_blocks` releases them at suspend, dispose, and rollback                | Nothing new; the bind must not replay any of it                        |
-| Overlay attribution     | `Overlay` has no owner; the registry stamps only its own `generation`; `dispose_panel` leaves overlays in place        | No — only `PanelRegistry::dispose()` clears the manager                                | Add the attribution; dismiss at unbind (A.2) and in phase 1            |
-| Scrollback and terminal | No panel-held PTY; access only through the scope-checked host path                                                     | Not applicable — there is no panel-owned handle to revoke                              | State the non-claim: no object is handed to the successor              |
-| Bus queues              | `(PanelId, topic)`, cleared only by `event_bus.clear_panel` at disposal                                                | No — panel-scoped, and only container disposal drains them today                       | Drain at unbind (A.2), not only in phase 1                             |
-| Focus                   | Workspace MRU, not panel state                                                                                         | Not applicable — a rebind grants nothing                                               | Nothing new; a rebind must not call focus                              |
+| Family                  | Key in code today                                                                                                      | Generation-revocable today                                                             | Required action                                                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Capability grants       | `capabilities[(PanelId, allocation Generation)]`; written by `grant_panel_capability`, removed only by `dispose_panel` | No — the key's generation does not change on reload, so a reload preserves every grant | Re-key to `(PanelId, controller generation)`; write the retired-ceiling tombstone at the edge; capture, remove, install |
+| Content and capture     | Generation-scoped block registry, spec overlay handles, scene, bind, targeting lenses, overlay capture session         | Yes — `clear_ui_blocks` releases them at suspend, dispose, and rollback                | Nothing new; the bind must not replay any of it                                                                         |
+| Overlay attribution     | `Overlay` has no owner; the registry stamps only its own `generation`; `dispose_panel` leaves overlays in place        | No — only `PanelRegistry::dispose()` clears the manager                                | Add the attribution; dismiss at unbind (A.2) and in phase 1                                                             |
+| Scrollback and terminal | No panel-held PTY; access only through the scope-checked host path                                                     | Not applicable — there is no panel-owned handle to revoke                              | State the non-claim: no object is handed to the successor                                                               |
+| Bus queues              | `(PanelId, topic)`, cleared only by `event_bus.clear_panel` at disposal                                                | No — panel-scoped, and only container disposal drains them today                       | Drain at unbind (A.2), not only in phase 1                                                                              |
+| Focus                   | Workspace MRU, not panel state                                                                                         | Not applicable — a rebind grants nothing                                               | Nothing new; a rebind must not call focus                                                                               |
 
 The families with no per-generation key are why the enforcement point has to be
 a function rather than a sentence: grants, overlay attribution, and bus queues
@@ -790,34 +911,35 @@ contract; the coverage is, and rows `PGO-15` to `PGO-23` exist because rows
 `PGO-1` to `PGO-14` test the happy direction of a rebind and not the
 adversarial one. Each added row names the wrong implementation it is expected
 to fail. `PGO-22` exists because the order of the bind's capture, invalidation,
-and install is a property no earlier row discriminated, and `PGO-23` because the
+and install across a generation edge is a property no earlier row
+discriminated, and `PGO-23` because the
 unbind edge releases families that every earlier row reads only after a bind.
 
-| ID     | Case                                        | Assertion                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| PGO-1  | Reload with a mounted plugin panel          | `PanelId`, attachment, `PresentationMode`, and title are unchanged across generation `N -> N+1`; content is replaced; no `StaleHandle` is produced for the panel itself.                                                                                                                                                                                                                                                                                                       |
-| PGO-2  | Reload with a suspended panel               | The panel stays `Suspended` with its attachment intact; `N+1` rebinds without a mount; no focus change occurs.                                                                                                                                                                                                                                                                                                                                                                 |
-| PGO-3  | Controller disposal with no successor       | Panel becomes unbound, presents the placeholder with the right reason, keeps its attachment, and receives no input.                                                                                                                                                                                                                                                                                                                                                            |
-| PGO-4  | Crash during a callback                     | FS-2 ladder output is unchanged; only the owning generation is affected; sibling panels and terminals stay responsive (FS-P2); the panel's placeholder reason is `crashed`.                                                                                                                                                                                                                                                                                                    |
-| PGO-5  | Disable, then re-enable                     | Placeholder appears with `disabled`, disappears on rebind after activation, and content is not restored from the disabled generation.                                                                                                                                                                                                                                                                                                                                          |
-| PGO-6  | Reload racing a mount                       | A mount against a disposing generation commits nothing; the view ends unbound; the panel keeps its pre-mount state; `N+1` can mount cleanly afterwards.                                                                                                                                                                                                                                                                                                                        |
-| PGO-7  | Rebind authority sweep at bind time         | At the instant the bind returns, and before `N+1` issues any verb, the panel's grant set equals `(own resolution ∩ predecessor set) ∪ consented widening`, read back through the accessors the verbs use; capture handles, overlay attribution, and queued events are observably empty for `N+1` rather than inferred from `N+1` not having asked. A non-empty predecessor set never commits empty; `PGO-22` fixes the ordering.                                               |
-| PGO-8  | Two generations racing for one panel        | The second bind fails closed with the typed `ControllerConflict` and changes nothing; at most one controller is ever recorded; the refusal names both generations.                                                                                                                                                                                                                                                                                                             |
-| PGO-9  | Guessing a `PanelId`                        | An ungranted verb naming a live `PanelId` is denied before any state access; a granted verb naming another generation's panel is denied.                                                                                                                                                                                                                                                                                                                                       |
-| PGO-10 | Denied capability at rebind                 | Panel presents `unavailable` with the denial named; no content verb is reachable; safe mode produces the same outcome without loading a third-party VM.                                                                                                                                                                                                                                                                                                                        |
-| PGO-11 | Older or newer provider version             | Newer-persisted content presents `incompatible` and applies nothing; newer-provider-over-older-record ignores unknown fields; no partial application in either direction.                                                                                                                                                                                                                                                                                                      |
-| PGO-12 | No policy selector resurrects an identity   | No `PersistencePolicy` value reachable by a production caller restores a persisted `PanelId`; `StableIdentity` is refused at the panel restore entry point; a session restored under the documented default produces fresh ids and never reuses a persisted numeric id.                                                                                                                                                                                                        |
-| PGO-13 | Panel disposal reclaim                      | After disposal, commands, queues, grants, MRU entries, lease entries, and overlay attribution are released and the panel counts return to the pre-creation baseline within the PB-3 reclaim tolerance (FS-P4).                                                                                                                                                                                                                                                                 |
-| PGO-14 | Placeholder bounds                          | A workspace full of unbound panels still produces one bounded placeholder each, no respawn, no unbounded counter growth (the counter stops at eight and emits one `saturated` note), and a single findable reason per panel.                                                                                                                                                                                                                                                   |
-| PGO-15 | Displaced generation still holding a handle | Generation `N` keeps a panel handle across the rebind. After `N+1` binds, every verb `N` issues is refused with `ControllerConflict` before any state access; `N` cannot read `N+1`'s scene, bind, capture session, queued events, or component results; no refusal mutates panel state. Fails for an implementation that empties `N+1`'s state at bind and never re-checks the caller.                                                                                        |
-| PGO-16 | Failed invalidation                         | Invalidation step 3 (capture release) is made to fail. The bind is refused, the panel is unbound, no grant and no binding is written, the successor's first verb is refused, one FS-4 record names the failed step and both generations, and the panel state is identical to its pre-bind snapshot apart from the placeholder. Fails for an implementation that binds after a partially completed invalidation.                                                                |
-| PGO-17 | Widening requires permission-diff consent   | The successor's resolution declares a capability the predecessor never held. Without consent the bind succeeds and that capability is denied; the denial is recorded against the successor, not as a narrowing. With consent it is granted, and only for that binding: the next rebind is asked again. Fails for an implementation that reads the predecessor's absence as permission.                                                                                         |
-| PGO-18 | Narrowing needs no consent                  | The successor's resolution drops two families the predecessor held. The bind succeeds without any consent prompt or prompt record; the two families are denied without a refusal record against the successor; the remaining intersection is granted. Fails for an implementation that carries the narrowed set forward or that prompts on narrowing.                                                                                                                          |
-| PGO-19 | Bounded recovery under denial               | With a required capability denied at rebind, the panel presents `unavailable` with `denied`, accepts zero verbs, produces exactly one FS-4 record, and is unchanged after 100 ticks: no respawn, no second record, no counter growth past the cap. Fails for an implementation that retries the bind per tick or re-emits per attempt.                                                                                                                                         |
-| PGO-20 | Bounded recovery under crash and disable    | Crash: placeholder `crashed`, one FS-4 record, no respawn within the driver's reload window, container, title, and focus history intact, and no authority from the crashed generation survives the next bind. Disable: placeholder `disabled`, re-enable permits a rebind, and the disabled generation's grants are not restored by the rebind. Fails for an implementation that treats re-enable as resuming the old binding.                                                 |
-| PGO-21 | Workspace close with a focused panel        | Closing a workspace whose focused panel is `Focused` reaches `Disposed` through C.8 and C.9: focus moves to the next MRU entry or to none, the view attachment, MRU entry, lease entry, commands, queues, grants, and overlay attribution are released, both PR-1 and PR-2 counts return to baseline, and one FS-4 record per panel carries reason `quit`. Fails for an implementation that refuses the transition table's missing edge or that leaves the lease entry behind. |
-| PGO-22 | Snapshot captured before invalidation       | The predecessor holds `{panel.create, panel.focus}` and `N+1`'s resolution is the same set. The committed set equals that set exactly, its provenance names the predecessor generation and the bind attempt, and no verb is permitted between the grant install and the binding write. A failed snapshot refuses the bind with the predecessor still bound. Fails for remove-then-derive (empty set), bind-then-install, and a derivation from the live table.                 |
-| PGO-23 | Unbind release with no successor            | A generation crashes, is disabled, and is separately disposed, each with no successor. Before the placeholder is read, its grant rows, the panel's queued events (read through `queued_events_for_panel`), its commands, and its overlay attribution are observably empty, and the unbind-release counter advanced once per family. Fails for an implementation whose only drain is bind phase 1, and one that shows the placeholder before the release ends.                  |
+| ID     | Case                                        | Assertion                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PGO-1  | Reload with a mounted plugin panel          | `PanelId`, attachment, `PresentationMode`, and title are unchanged across generation `N -> N+1`; content is replaced; no `StaleHandle` is produced for the panel itself.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| PGO-2  | Reload with a suspended panel               | The panel stays `Suspended` with its attachment intact; `N+1` rebinds without a mount; no focus change occurs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| PGO-3  | Controller disposal with no successor       | Panel becomes unbound, presents the placeholder with the right reason, keeps its attachment, and receives no input.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| PGO-4  | Crash during a callback                     | FS-2 ladder output is unchanged; only the owning generation is affected; sibling panels and terminals stay responsive (FS-P2); the panel's placeholder reason is `crashed`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| PGO-5  | Disable, then re-enable                     | Placeholder appears with `disabled`, disappears on rebind after activation, and content is not restored from the disabled generation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| PGO-6  | Reload racing a mount                       | A mount against a disposing generation commits nothing; the view ends unbound; the panel keeps its pre-mount state; `N+1` can mount cleanly afterwards.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| PGO-7  | Rebind authority sweep at bind time         | Run the bind twice: once with the predecessor still bound, and once after its edge release in the same reload. At the instant the bind returns, and before `N+1` issues any verb, the panel's grant set equals `(own resolution ∩ predecessor set) ∪ consented widening`, read back through the accessors the verbs use; the predecessor set is the live row in the first run and the tombstone in the second. Capture handles, overlay attribution, and queued events are observably empty for `N+1` rather than inferred from `N+1` not having asked. A non-empty predecessor set never commits empty; `PGO-22` fixes the ordering and the edge-crossing case.                                                                                                                                                                                                                          |
+| PGO-8  | Two generations racing for one panel        | The second bind fails closed with the typed `ControllerConflict` and changes nothing; at most one controller is ever recorded; the refusal names both generations.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| PGO-9  | Guessing a `PanelId`                        | An ungranted verb naming a live `PanelId` is denied before any state access; a granted verb naming another generation's panel is denied.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| PGO-10 | Denied capability at rebind                 | Panel presents `unavailable` with the denial named; no content verb is reachable; safe mode produces the same outcome without loading a third-party VM.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| PGO-11 | Older or newer provider version             | Newer-persisted content presents `incompatible` and applies nothing; newer-provider-over-older-record ignores unknown fields; no partial application in either direction.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| PGO-12 | No policy selector resurrects an identity   | No `PersistencePolicy` value reachable by a production caller restores a persisted `PanelId`; `StableIdentity` is refused at the panel restore entry point; a session restored under the documented default produces fresh ids and never reuses a persisted numeric id.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| PGO-13 | Panel disposal reclaim                      | After disposal, commands, queues, grants, MRU entries, lease entries, and overlay attribution are released and the panel counts return to the pre-creation baseline within the PB-3 reclaim tolerance (FS-P4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| PGO-14 | Placeholder bounds                          | A workspace full of unbound panels still produces one bounded placeholder each, no respawn, no unbounded counter growth (the counter stops at eight and emits one `saturated` note), and a single findable reason per panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| PGO-15 | Displaced generation still holding a handle | Generation `N` keeps a panel handle across the rebind. After `N+1` binds, every verb `N` issues is refused with `ControllerConflict` before any state access; `N` cannot read `N+1`'s scene, bind, capture session, queued events, or component results; no refusal mutates panel state. Fails for an implementation that empties `N+1`'s state at bind and never re-checks the caller.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| PGO-16 | Failed invalidation                         | Invalidation step 3 (capture release) is made to fail. The bind is refused, the panel is unbound, no grant and no binding is written, the successor's first verb is refused, one FS-4 record names the failed step and both generations, and the panel state is identical to its pre-bind snapshot apart from the placeholder. Fails for an implementation that binds after a partially completed invalidation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| PGO-17 | Widening requires permission-diff consent   | The successor's resolution declares a capability the predecessor never held. Without consent the bind succeeds and that capability is denied; the denial is recorded against the successor, not as a narrowing. With consent it is granted, and only for that binding: the next rebind is asked again. Fails for an implementation that reads the predecessor's absence as permission.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| PGO-18 | Narrowing needs no consent                  | Run the bind after the predecessor's edge release, so only the tombstone holds its set. The successor's resolution drops two families the predecessor held. The bind succeeds without any consent prompt or prompt record; the two families are denied without a refusal record against the successor; the remaining intersection is granted from the tombstone. Fails for an implementation that reads only a live row and treats the reload's missing row as no ceiling, that carries the narrowed set forward, or that prompts on narrowing.                                                                                                                                                                                                                                                                                                                                           |
+| PGO-19 | Bounded recovery under denial               | With a required capability denied at rebind, the panel presents `unavailable` with `denied`, accepts zero verbs, produces exactly one FS-4 record, and is unchanged after 100 ticks: no respawn, no second record, no counter growth past the cap. Fails for an implementation that retries the bind per tick or re-emits per attempt.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| PGO-20 | Bounded recovery under crash and disable    | Crash: placeholder `crashed`, one FS-4 record, no respawn within the driver's reload window, container, title, and focus history intact, and no authority from the crashed generation survives the next bind. Disable: placeholder `disabled`, re-enable permits a rebind, and the disabled generation's grants are not restored by the rebind. Fails for an implementation that treats re-enable as resuming the old binding.                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| PGO-21 | Workspace close with a focused panel        | Closing a workspace whose focused panel is `Focused` reaches `Disposed` through C.8 and C.9: focus moves to the next MRU entry or to none, the view attachment, MRU entry, lease entry, commands, queues, grants, and overlay attribution are released, both PR-1 and PR-2 counts return to baseline, and one FS-4 record per panel carries reason `quit`. Fails for an implementation that refuses the transition table's missing edge or that leaves the lease entry behind.                                                                                                                                                                                                                                                                                                                                                                                                            |
+| PGO-22 | Snapshot captured before invalidation       | The predecessor holds `{panel.create, panel.focus}` and `N+1`'s resolution is the same set. Run both orderings. (a) Still-bound displacement: phase 0 captures the live row, and the committed set equals that set exactly. (b) Reload: `N` is disposed, its edge release writes the tombstone, and `N+1` binds in the same reload; the committed set equals `(R ∩ P_N) ∪ C`, with `P_N` the tombstoned predecessor set, never `C` and never empty. In both, provenance names the predecessor generation and the bind attempt, no verb is permitted between the grant install and the binding write, and a bind with a predecessor expected but neither source present is refused. Fails for remove-then-derive, for phase 0 reading only the live table the edge has drained, for treating an empty or missing `P` as no ceiling, bind-then-install, and derivation from the live table. |
+| PGO-23 | Unbind release with no successor            | A generation crashes, is disabled, and is separately disposed, each with no successor. Before the placeholder is read, its grant rows, the panel's queued events (read through `queued_events_for_panel`), its commands, and its overlay attribution are observably empty, and `unbind_release_count(PanelId)` named the ended generation at each edge and advanced once per family released. The tombstone written for each edge is dropped on workspace close or panel disposal. Fails for an implementation whose only drain is bind phase 1, one that shows the placeholder before the release ends, and one that accumulates one release record or tombstone per reload.                                                                                                                                                                                                             |
 
 ## What is decided in this record and what stays open
 
@@ -827,7 +949,8 @@ Decided here (candidate direction, awaiting owner acceptance):
   generation-owned ephemeral panels, and the exclusion of the Core-owned
   `terminal`-slot scene panel from the container rules;
 - workspace membership assigned at creation by Core from the presented
-  workspace's focused leaf, recorded once and never re-resolved, and the
+  workspace's focused leaf, recorded once and never re-resolved, contingent on
+  the workspace-identity prerequisite in A.7, and the
   PR-1/PR-2 accounting for a created-but-unmounted container;
 - `PanelId` survival across plugin reload, the separation of allocation
   generation from controller generation, and the restore key
@@ -836,8 +959,9 @@ Decided here (candidate direction, awaiting owner acceptance):
   reload-mid-mount, and the two disposal edges `Focused -> Disposed` and
   `Created -> Disposed`;
 - the single grant derivation over an immutable captured snapshot, the
-  two-phase bind, the unbind release at the generation edge, the two typed
-  refusals, and the binding-versus-lease relationship;
+  retired-ceiling tombstone that carries the predecessor's set across a
+  generation edge, the two-phase bind, the unbind release at the generation
+  edge, the two typed refusals, and the binding-versus-lease relationship;
 - the three-outcome bounded recovery, its reason vocabulary with the close-side
   mapping, and its counter cap;
 - the required test matrix.
@@ -847,7 +971,8 @@ Open, and explicitly not settled here:
 - the persistence contract, encoding, version policy, and whether restart
   restore ships (`RFC-OQ-9`, and the persistence half of PW-5), including the
   record fields and manifest version that would carry
-  `(WorkspaceId, PersistentId)`;
+  `(WorkspaceId, PersistentId)`, and the index-to-`WorkspaceId` resolution at
+  restore, which must be the same function the create path uses (A.7, B.4);
 - which plugin-facing verbs a rebound generation regains, given that
   `bitty.panel.close` and `bitty.panel.destroy` remain unimplemented host
   seams and only `panel.create`, `panel.focus`, and the pinned-float backend
@@ -873,9 +998,13 @@ decides what authority survives a generation change.
    widened only by a consent granted in that bind (D.1). The predecessor's set
    is a ceiling and cannot be a source, which is the property the earlier text
    lost between "inherits nothing", "intersection", and "carry forward". The
-   ceiling is read from a snapshot captured before any invalidation (D.2 phase
-   0), so no ordering in the bind can turn it into an empty set or into a
-   source.
+   ceiling is captured before any invalidation (D.2 phase 0): from the live row
+   when a still-bound predecessor is displaced, and from the retired-ceiling
+   tombstone the edge release writes before deleting that row when the
+   predecessor ended at a reload (A.2). Neither the bind's ordering nor the
+   generation edge can turn the ceiling into a missing record: a missing record
+   with a predecessor expected refuses the bind, and an empty tombstone is a
+   real empty ceiling rather than an absent one.
 2. The confused-deputy case is closed at the type and binding level: a panel
    handle is not authority, the controller generation is checked against the
    binding before and at use, no path accepts a `PanelId` where a `ViewId` or
@@ -901,19 +1030,21 @@ decides what authority survives a generation change.
    and `PGO-16`, `PGO-17`, and `PGO-18` discriminate a ceiling from a source
    and a failed invalidation from a partial bind, while `PGO-22` discriminates
    the snapshot that keeps the ceiling readable from a derivation that reads
-   the table after invalidation. **A displaced generation cannot observe its
-   successor:** `PGO-15` asserts the refusal class and the absence of
-   observation, `PGO-7` reads the emptied families back through the accessors
-   the verbs use, `PGO-21` covers the focused-panel disposal that was
-   unreachable, and `PGO-23` asserts that the ending generation's families are
-   released at the boundary itself when no successor follows.
+   the table after invalidation and now crosses the generation edge that
+   deletes it. **A displaced generation cannot observe its successor:**
+   `PGO-15` asserts the refusal class and the absence of observation, `PGO-7`
+   reads the emptied families back through the accessors the verbs use on both
+   the live-row and tombstone paths, `PGO-21` covers the focused-panel disposal
+   that was unreachable, and `PGO-23` asserts that the ending generation's
+   families are released at the boundary itself when no successor follows.
 7. The record states where enforcement does not exist. `PanelError` has no
    `ControllerConflict` or `ControllerReleased` variant, the grant table is
    keyed by the allocation generation rather than the controller generation,
    panel overlays carry no owner, no function performs invalidation, no unbind
-   release exists, and `PGO-12`, `PGO-16`, `PGO-21`, `PGO-22`, and `PGO-23`
-   would fail against today's code. A reader cannot mistake this section for a
-   statement of current safety.
+   release or retired-ceiling tombstone exists, no path resolves a presented
+   workspace to a `WorkspaceId`, and `PGO-12`, `PGO-16`, `PGO-21`, `PGO-22`,
+   and `PGO-23` would fail against today's code. A reader cannot mistake this
+   section for a statement of current safety.
 
 No `P0` acceptance criterion is modified; the affected evidence row is the one
 that would carry the rebind-authority tests.
@@ -928,13 +1059,17 @@ Conformance requires, at minimum:
    section, and the scene host's dispose-on-release behaviour updated in the
    same wave.
 2. Implementation of the controller binding on the panel record, keyed by the
-   controller generation and distinct from the allocation generation; the
-   `rebind_panel` boundary with the capture step, the two-phase order, and the
-   fail-closed branches; the unbind release at the generation edge with its
-   counter; the two typed refusal variants; grant re-keying to
-   `(PanelId, controller generation)`; overlay attribution; workspace
-   resolution at the create boundary from the presented workspace's focused
-   leaf; and the bulk dispose-by-workspace path that C.9 requires.
+   controller generation and distinct from the allocation generation, and the
+   retained last-controller field that lets phase 0 distinguish "never bound"
+   from "record lost"; the `rebind_panel` boundary with the capture step, the
+   two-phase order, and the fail-closed branches; the unbind release at the
+   generation edge with its bounded counter and accessor; the retired-ceiling
+   tombstone with its cap and retention; the two typed refusal variants; grant
+   re-keying to `(PanelId, controller generation)`; overlay attribution; the
+   workspace-identity prerequisite (mint at workspace creation, store on the
+   presented workspace's record, read it from `Runtime`) and the create-boundary
+   resolution built on it, passing the A.7 acceptance test; and the bulk
+   dispose-by-workspace path that C.9 requires.
 3. The missing `Created -> Disposed` and `Focused -> Disposed` edges in
    `PanelLifecycle::can_transition`, so the seven-axis table stops contradicting
    the six-state table the registry actually uses.
@@ -1030,18 +1165,28 @@ Required, not waived: this record redefines which authority a plugin
 generation may exercise over a panel that predates it, and it names an
 enforcement point — grant invalidation at the binding boundary — that does not
 exist in code today. A security reviewer must confirm the grant derivation,
-the placeholder's plugin-free path, the fail-closed bind, and the containment
-claims for `PGO-4`, `PGO-7`, `PGO-15`, `PGO-16`, `PGO-21`, `PGO-22`, and
-`PGO-23` before status can move from draft.
+the placeholder's plugin-free path, the fail-closed bind, the workspace
+identity step's fail-closed prerequisite and acceptance test, and the
+containment claims for `PGO-4`, `PGO-7`, `PGO-15`, `PGO-16`, `PGO-21`,
+`PGO-22`, and `PGO-23` before status can move from draft.
 
 The first independent security review returned `NEEDS-FIX` with eight blocking
-gaps and did not sign off. The revision that answered it closed each of them in
-place and recorded what the code actually does where the earlier text was wrong;
-a second independent re-review confirmed seven of the eight and returned three
-blocking findings in the bind and derivation text, which the current revision
-closes in place. Neither revision self-certifies: a third reviewer's re-review
-of the diff is what would clear the verdict. No `P0` acceptance criterion is
-modified in the meantime, and no shipped behavior is claimed.
+gaps and did not sign off. The revision that answered it addressed each of them
+in place and recorded what the code actually does where the earlier text was
+wrong; a second independent re-review confirmed seven of the eight and
+returned three blocking findings in the bind and derivation text, which the
+following revision answered in place. A third independent re-review recorded
+in
+`bitty-docs` (`docs/security/panel-generation-ownership-third-review.md`)
+closed `B-1` and `B-3`, kept `B-2` open because the identity step named
+accessors and an id the tree does not contain, and added `B-4` because the edge
+release deleted the grant ceiling the bind's phase 0 must read. The current
+revision answers `B-2` by stating the identity step as a bounded, fail-closed
+prerequisite with its own acceptance test, and `B-4` by making the edge
+release write a bounded retired-ceiling tombstone before it deletes the live
+row. It does not self-certify: a fourth reviewer's re-review of the diff is
+what would clear the verdict. No `P0` acceptance criterion is modified in the
+meantime, and no shipped behavior is claimed.
 
 ## References
 
