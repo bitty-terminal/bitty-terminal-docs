@@ -25,20 +25,32 @@ sidebar_order: 76
 > The record accepts nothing, promotes nothing to **Verified** or
 > **Compatible**, and changes no accepted text. Capability identifiers, Lua
 > spellings, content-variant names, event kinds, and bounds below are candidate
-> spellings that a successor acceptance adopts or rejects. The mechanism does
-> not exist: the Scene-consumption path this design depends on is accepted in
-> direction but is not consumed by the app present path (see "Current state").
-> This document authorizes no implementation.
+> spellings that a successor acceptance adopts or rejects.
+>
+> The rendering substrate is no longer the blocker. Two slices are implemented
+> on `bitty` main: `bitty.ui.mount("terminal", …)` attaches an admitted scene
+> that the present loop paints above a leaf's grid (`bitty` #2785/#2799,
+> #2762/#2784), and `bitty.ui.present.show` draws a non-modal presentation-only
+> surface above the focused view
+> ([bitty#2849](https://github.com/bitty-terminal/bitty/issues/2849)). Those
+> slices make the **paint path** and a **draw-only overlay** buildable. They do
+> not implement this candidate's content-kind swap, displaced-terminal record,
+> panel input routing, or restore path, and no panel-content capability or
+> event exists (see "Current state"). The parts that are buildable today are
+> therefore the renderer consumption and a bounded above-view surface; the
+> panel-replacement contract and its lifecycle remain speculative. This
+> document authorizes no implementation.
 
 ## Purpose and scope
 
 A plugin that wants to show a dashboard, an inspector, or a structured
-management surface has no way to occupy a panel except by degrading into a
-character grid or by opening a transient overlay. Both are wrong for a
+management surface has no way to make that surface a panel's durable content:
+a scene mounted through `bitty.ui.mount("terminal", …)` paints above the grid,
+and an overlay is transient and cannot replace the panel. Both are wrong for a
 persistent application surface: the grid cannot express lists, tables, or
-hit-testable rows, and an overlay is global, modal, and transient by contract.
-At the same time, a panel's PTY must not be destroyed to show that surface,
-because the shell session is the user's work.
+hit-testable rows, and an overlay does not become the panel's content. At the
+same time, a panel's PTY must not be destroyed to show that surface, because
+the shell session is the user's work.
 
 This record answers one question: **how may a plugin present bounded
 declarative content inside a focused panel, replacing the terminal's
@@ -124,77 +136,128 @@ documents (follow-up tasks).
 
 ## Terminology
 
-| Term              | Meaning in this document                                                                                                                                                                                 |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Panel             | The workspace-managed container with a stable `PanelId`; it has a placement and a lifecycle, and it shows exactly one content kind at a time.                                                            |
-| Placement         | The panel's mode in the compositor: `tiled`, `floating`, `fullscreen`, or `scratchpad`. Owned by the panel and the user, never by the plugin.                                                            |
-| Content kind      | What the panel currently presents: `Terminal` (a PTY-backed grid) or `Gui` (a bounded declarative scene).                                                                                                |
-| PTY               | The transport to the child process. It has no placement and no presentation semantics; the terminal content owner (a pane session or the runtime-global primary PTY) owns its reader and terminal state. |
-| Terminal Truth    | Parser state, grid, cursor, modes, replies, and canonical scrollback; mutable only by Core.                                                                                                              |
-| GUI content       | Core-validated declarative content (`Text`, `Row`, `Column`, `List` in v1) presented inside the panel's content rectangle through the Scene path.                                                        |
-| GUI surface       | One generation-owned, opaque block handle backing a panel's GUI content.                                                                                                                                 |
-| Displaced content | The Core-owned record of the terminal content, attachment, frozen content rectangle, and scroll position that the GUI content replaced.                                                                  |
-| Owner             | The plugin identity plus execution generation that requested the GUI surface. The host records it; the caller cannot supply it.                                                                          |
-| Generic close     | The existing `close_view` chrome action (default `Mod+q`) that pops the topmost dismissible layer and otherwise closes the focused panel.                                                                |
-| Generic quit      | The existing window-close path (`quit` action, last-panel close, or window close request) that tears the application down.                                                                               |
-| Band              | An inset edge surface (`top`/`bottom`) that reserves space outside the panel content rectangle. The bar is the existing special case.                                                                    |
-| Fail-closed       | A failure leaves the previous valid content (or restores the displaced terminal) and never leaves a blank panel, an orphan PTY, or a keyboard trap.                                                      |
-| Scene path        | The accepted direction by which bounded declarative content reaches the renderer outside the character grid.                                                                                             |
+| Term              | Meaning in this document                                                                                                                                                                                                                                                                                 |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Panel             | The workspace-managed container with a stable `PanelId`; it has a placement and a lifecycle, and it shows exactly one content kind at a time.                                                                                                                                                            |
+| Placement         | The panel's mode in the compositor: `tiled`, `floating`, `fullscreen`, or `scratchpad`. Owned by the panel and the user, never by the plugin.                                                                                                                                                            |
+| Content kind      | What the panel currently presents: `Terminal` (a PTY-backed grid) or `Gui` (a bounded declarative scene).                                                                                                                                                                                                |
+| PTY               | The transport to the child process. It has no placement and no presentation semantics; the terminal content owner (a pane session or the runtime-global primary PTY) owns its reader and terminal state.                                                                                                 |
+| Terminal Truth    | Parser state, grid, cursor, modes, replies, and canonical scrollback; mutable only by Core.                                                                                                                                                                                                              |
+| GUI content       | Core-validated declarative content presented inside the panel's content rectangle through the Scene path. The accepted scene set is `Text`, `Row`, `Column`, `Block`, `Image`, `CodeBlock`, `Table`, `List`, and `Rule`; the subset this candidate admits is an acceptance decision (see the checklist). |
+| GUI surface       | One generation-owned, opaque block handle backing a panel's GUI content.                                                                                                                                                                                                                                 |
+| Displaced content | The Core-owned record of the terminal content, attachment, frozen content rectangle, and scroll position that the GUI content replaced.                                                                                                                                                                  |
+| Owner             | The plugin identity plus execution generation that requested the GUI surface. The host records it; the caller cannot supply it.                                                                                                                                                                          |
+| Generic close     | The existing `close_view` chrome action (default `Mod+q`) that pops the topmost dismissible layer and otherwise closes the focused panel.                                                                                                                                                                |
+| Generic quit      | The existing window-close path (`quit` action, last-panel close, or window close request) that tears the application down.                                                                                                                                                                               |
+| Band              | An inset edge surface (`top`/`bottom`) that reserves space outside the panel content rectangle. The bar is the existing special case.                                                                                                                                                                    |
+| Fail-closed       | A failure leaves the previous valid content (or restores the displaced terminal) and never leaves a blank panel, an orphan PTY, or a keyboard trap.                                                                                                                                                      |
+| Scene path        | The path by which bounded declarative content reaches the renderer outside the character grid. The paint half is implemented on `bitty` main; the panel content-kind half is this candidate.                                                                                                             |
 
 ## Current state (implementation facts only)
 
-These facts describe `bitty` `origin/main` at `aceb327e` (2026-10-21) and this
-documentation corpus at the same date. Nothing else in this record is
-implemented.
+These facts describe `bitty` `origin/main` at `3bcebf91` (2026-11-05) and this
+documentation corpus at `96e702e` (same date). "Implemented" here means
+`Implemented-only`: the code is on main, but nothing in this record is
+promoted, verified, or compatibility-guaranteed.
 
 - `ViewContent` has five variants: `Empty`, `Terminal(u64)`, `Rich(u64)`,
   `Browser(BrowserSurfaceId)`, and `Panel(PanelId)`
-  (`crates/bitty-ui/src/panel.rs`). Only terminal-backed content is composed
-  by the app today.
-- `PresentationMode` has four values (`Tiled`, `Floating`, `Fullscreen`,
-  `Scratchpad`). Every type-level transition is currently permitted, the layout
-  solver ignores the field, and the app wires only the tiled/floating toggle
-  (`toggle_floating`, default `Alt+a`) through the workspace-local float store.
-  `Fullscreen` and `Scratchpad` parse but the toggle paths reject them; the
-  `PRESENTATION_CMD_*` names exist in `bitty-ui` but are not dispatched by the
-  app.
-- `bitty.ui.mount` accepts the closed slot set `terminal`, `top`, `bottom`,
-  `left`, `right`, `tabline`, `overlay`. `left`, `right`, `terminal`, and
-  `tabline` fail closed with `E_UI_UNAVAILABLE`; `statusline` was removed;
-  `overlay` is the focusable transient surface behind `ui.overlay.focus`.
+  (`crates/bitty-ui/src/panel.rs`). The shipped present loop composes terminal
+  cell grids for terminal leaves and, since `bitty` #2785/#2799, scene paint
+  lists for leaves bound to a Core-owned scene panel
+  (`crates/bitty-runtime/src/runtime/scene_present.rs`,
+  `crates/bitty-runtime/src/runtime/present.rs`). `ViewContent::Rich` is not
+  constructed by the live app; `Browser` and non-scene `Panel` leaves have no
+  presenter. `PanelRuntime::nonterminal_for_leaf` is a present-plan projection
+  only (`crates/bitty-runtime/src/cw_present.rs`,
+  `crates/bitty-runtime/src/runtime/cw_live.rs`).
+- `bitty.ui.mount("terminal", tree)` and `bitty.ui.update(handle, tree)` paint
+  an admitted declarative scene today, but not by replacing a panel's content.
+  The Lua bridge routes the `terminal` slot through the v2 rich reader
+  (`read_rich_component`) and `ui_mount_scene`
+  (`crates/bitty-lua/src/host.rs`); `SceneHost` creates a Core-owned `Rich`
+  registry panel, binds it to the focused leaf Core publishes, admits the tree
+  through `mount_rich_node`, and attaches the `Scene`
+  (`crates/bitty-runtime/src/scene_host.rs`,
+  `crates/bitty-runtime/src/scene_bridge.rs`). The present loop paints that
+  scene after the leaf's grid primitives, clipped to the leaf content rect
+  (`crates/bitty-runtime/src/runtime/scene_present.rs`,
+  `crates/bitty-runtime/src/runtime/present.rs`). The leaf remains
+  terminal-backed: its grid, cursor, focus, and PTY input path are unchanged,
+  and the plugin receives no keys. The scene can visually cover the grid; it
+  does not displace or restore it. `ui.rich` is the gate. Image nodes are
+  admitted and counted as placement references but are not decoded or painted;
+  the image-paint gap is [bitty#2875](https://github.com/bitty-terminal/bitty/issues/2875)
+  (open; scene placement forwarding remains a separate OQ-051 slice).
+- The Lua-visible scene set now has nine kinds (`Text`, `Row`, `Column`,
+  `Block`, `Image`, `CodeBlock`, `Table`, `List`, `Rule`) and the core scene
+  layer has the additive `Styled` v2 kind (`bitty` #2112/#2827;
+  `crates/bitty-lua/src/ui_rich.rs`, `crates/bitty-rich/src/scene.rs`). The
+  Lua bridge does not emit `Styled` yet: `UiRichNode` has no style field, so a
+  plugin cannot use those primitives through `ui.rich`
+  (`crates/bitty-runtime/src/scene_bridge.rs`). The rich reader also rejects
+  `on_click`, `on_scroll`, and `on_hover`; those bindings exist only on the
+  band `UiNode` surface. The reader's depth cap is 16, stricter than accepted
+  SCN-2 (32); admission still enforces SCN-1..SCN-5
+  (`crates/bitty-lua/src/ui_rich.rs`, `crates/bitty-rich/src/scene.rs`).
+- `bitty.ui.present.show` / `hide` (and the legacy `ui.overlay.show` / `hide`
+  spelling) drive a presentation-only overlay session
+  (`crates/bitty-lua/src/host.rs`,
+  `crates/bitty-runtime/src/plugin_runtime/presentation_overlay.rs`). It draws
+  one non-modal `Popup` surface, from an `overlay`-slot block, centered above
+  the focused view; the required grant is `ui.present`, checked by
+  `require_presentation_overlay`
+  (`crates/bitty-runtime/src/plugin_runtime/services.rs`). It paints above
+  chrome bands and below the focusable capture surface
+  (`crates/bitty-runtime/src/runtime/present.rs`). It never captures input,
+  never changes focus, and is not hit-tested; `Esc` dismisses it without
+  consuming the key, a focus switch re-binds it, a closed view drops it with
+  one `view-closed` observation, and generation teardown drops it
+  (`crates/bitty-terminal/src/chrome_keys.rs`,
+  `crates/bitty-terminal/src/terminal_app.rs`). It is paint-only: there is no
+  key queue, no `poll`, and the only plugin-visible event is
+  `overlay.dismissed` with `{ owner, handle, reason }`. It is not panel content
+  and it does not displace a PTY.
+- The accepted `ui.mount` slot set is `terminal`, `top`, `bottom`, `left`,
+  `right`, `tabline`, and `overlay` (`crates/bitty-lua/src/ui.rs`). `terminal`
+  is served by the scene host above; `top`/`bottom` are chrome bands;
+  `left`/`right`/`tabline` fail closed with `E_UI_UNAVAILABLE`
+  (`crates/bitty-runtime/src/runtime/band_slots.rs`); `statusline` is not in
+  the set. The `overlay` slot holds the block used by the focusable capture
+  session (`bitty.ui.overlay.*`, `ui.overlay.focus`) and by `ui.present`.
 - The focusable overlay is a single global session with a 30-second lease, a
   256-event queue, 4096-byte events, drop-oldest overflow, and Core-owned
-  release on submit, cancel, focus switch, unload, crash, and timeout. It is
-  modal, transient, and counted in the `4+1` envelope; it is not panel content.
-- The Scene-consumption path is wired to the app paint path for the
-  `terminal` slot: the composition root installs the Core scene host, and
-  `bitty.ui.mount("terminal", tree)`/`ui.update` attach an admitted `Scene` to
-  the focused leaf, which the present loop paints inside the leaf content rect
-  (`bitty` #2799, CTX-1641). Scene images are admitted and counted but not yet
-  forwarded to the image plane. This candidate's panel content-kind swap
-  (replacing a panel's terminal presentation) is **not** implemented by that
-  slice: it remains the dependency recorded by
-  [OQ-051](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md)
-  and the [Panel Content Scene Path Decision](panel-content-scene-path-decision.md).
+  release on submit, cancel, focus switch, unload, crash, and timeout
+  (`crates/bitty-runtime/src/plugin_runtime/overlay.rs`). It is modal,
+  transient, and counted in the `4+1` envelope; it is not panel content.
 - The PTY pipeline already drains the primary session and every pane session on
   each `poll_pty`, under one shared budget: 32 chunks, 256 KiB, and 10 ms per
   call, with a 16-chunk (128 KiB) bounded reader channel per session, 8 KiB
-  reads, and kernel PTY backpressure. Parsing continues for panes that are not
+  reads, and kernel PTY backpressure (`crates/bitty-runtime/src/runtime/pty.rs`,
+  `crates/bitty-pty/src/reader.rs`). Parsing continues for panes that are not
   painted; no plugin-visible output buffer exists.
 - The live app keys pane terminal sessions by `ViewId`; `PanelId` is the
-  accepted panel identity and the registry/contract target, not yet the live
-  session key. This record speaks the accepted identity vocabulary and treats
-  the encoding transition as owned by the
-  [Panel Placement Decision](panel-placement-decision.md).
-- The configuration dashboard is **plugin-owned and not shipped**: the
-  Core-panel prototype was withdrawn before merge (`bitty` #2390, 2026-10-21;
-  `bitty` #2380 re-scoped to a `0.1.0` plugin). No dashboard code exists in
-  `bitty` `main`, and this record assumes no Core-owned dashboard precedent
-  (`interfaces/configuration-dashboard-candidate.md`).
+  accepted panel identity and the registry/contract target, not the live
+  session key (`crates/bitty-runtime/src/runtime.rs`). This record speaks the
+  accepted identity vocabulary and treats the encoding transition as owned by
+  the [Panel Placement Decision](panel-placement-decision.md).
+- The configuration dashboard is not a Core surface in `bitty`. It is the
+  official `bitty-terminal.dashboard` plugin
+  (`crates/bitty-plugin-host/src/official.rs`); its current manifest requests
+  `runtime.inspect` and `ui.overlay.focus` and presents through the focusable
+  overlay, not through this candidate. No dashboard code path is evidence for
+  panel content.
 - DevTools is notification-only: its manifest requests `debug.inspect`,
   `debug.trace`, and `platform.notify`, and no `ui.*` capability.
 - The bar is composed on the `bottom` band by a plugin mount; it is not panel
   content and reserves its own inset space.
+
+What does not exist: a live `Terminal -> Gui` content-kind transition, the
+displaced-content record, the restore path, a panel-content input queue and
+`poll`, a `panel.content.*` event, a panel-content capability id, bounded
+pointer bindings on the rich scene wire, a live accessibility tree for scene
+text, and any image-node paint path. Those are the blockers in the acceptance
+checklist below.
 
 ## The two-axis model
 
@@ -211,10 +274,10 @@ them is what the original request did and what the owner correction rejects.
    or resize anything.
 3. A plugin may declare one optional **placement hint**. Core records it for
    audit and for future user-facing chrome (tab/tabline/bar), and **does not
-   apply it** in v1. The user moves the panel with the existing commands
-   (`toggle_floating`, and the presentation commands when they are wired).
-   This is the narrowest reading of "hint, not authority" and it avoids a
-   plugin silently rearranging the user's layout.
+   apply it** in v1. The user moves the panel with the existing Core commands;
+   the plugin receives no placement verb. This is the narrowest reading of
+   "hint, not authority" and it avoids a plugin silently rearranging the user's
+   layout.
 4. Bands are not a placement. A band is an inset edge surface outside the panel
    content rectangle; the bar remains the existing special case. A GUI plugin
    that wants a band uses the accepted `top`/`bottom` mounts and never this
@@ -260,8 +323,10 @@ Rules:
 "Pty" names the transport, which is the wrong axis: the content kind is the
 _terminal surface_ fed by that PTY, and the same surface can exist without a
 PTY in a future headless case. This record therefore uses `Terminal` for the
-existing kind and `Gui` for the new one, matching `ViewContent`'s existing
-vocabulary while recording the owner's `Pty ↔ Gui(surface)` intent.
+existing kind (matching `ViewContent`'s existing spelling) and `Gui` for the
+new one, while recording the owner's `Pty ↔ Gui(surface)` intent. The existing
+unused `ViewContent::Rich(u64)` variant is an alternative encoding for the
+same kind; D1 decides between `Gui` and `Rich`.
 
 ## Bounded presentation descriptor
 
@@ -298,20 +363,29 @@ no PTY, signal, or file field:
 
 ### Capability gates
 
-| Authority                                      | Capability                   | Status                | Notes                                                                                        |
-| ---------------------------------------------- | ---------------------------- | --------------------- | -------------------------------------------------------------------------------------------- |
-| Declarative scene rendering                    | `ui.rich`                    | Accepted v1           | Same node set and budgets as `ui.mount`/`ui.update`.                                         |
-| Panel content presentation and input ownership | `ui.panel`                   | **New, candidate v2** | One grant couples the surface and the keys; no separate focus grant (see rationale below).   |
-| Placement, geometry, pointer, PTY, filesystem  | none                         | —                     | No identifier exists and none is implied. A plugin holding `ui.panel` gains no other family. |
-| Safe mode                                      | no third-party plugin loaded | Accepted invariant    | `bitty --safe` never reaches this surface. No Core-owned surface uses the same mechanism.    |
+| Authority                                      | Capability                                        | Status                                 | Notes                                                                                                                          |
+| ---------------------------------------------- | ------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Declarative scene rendering and attachment     | `ui.rich`                                         | Implemented gate (v1 id)               | Current `terminal`-slot attach and `ui.update`; it paints above a leaf's grid and does not replace panel content.              |
+| Non-modal draw-only surface above focused view | `ui.present`                                      | Implemented gate; identifier candidate | `bitty.ui.present.show`/`hide`; one `Popup` surface, no capture, no panel content. Its identifier remains an OQ-056 candidate. |
+| Panel content presentation and input ownership | `ui.panel` (alternative spelling `panel.content`) | **New, candidate v2**                  | One grant couples the surface and the keys; no separate focus grant (see rationale below).                                     |
+| Placement, geometry, pointer, PTY, filesystem  | none                                              | —                                      | No identifier exists and none is implied. A plugin holding the panel-content grant gains no other family.                      |
+| Safe mode                                      | no third-party plugin loaded                      | Accepted invariant                     | `bitty --safe` never reaches this surface. No Core-owned surface uses the same mechanism.                                      |
 
-`ui.panel` is deliberately **one** grant, not `ui.panel` plus `ui.panel.focus`.
-For a focusable overlay, presentation and capture can be separate because the
-overlay coexists with the terminal: a display-only overlay leaves keys with the
-shell. Panel content replaces the terminal, so separating the grants would
-create a focused panel whose keys go nowhere — a keyboard trap. Coupling the
-grant removes that state. `ui.rich` stays separate because "may render a
-scene" and "may occupy a panel and own its keys" are different authorities.
+The panel-content grant is deliberately **one** grant, not a presentation grant
+plus a separate focus grant. For a focusable overlay, presentation and capture
+can be separate because the overlay coexists with the terminal: a display-only
+overlay leaves keys with the shell. Panel content replaces the terminal, so
+separating the grants would create a focused panel whose keys go nowhere — a
+keyboard trap. Coupling the grant removes that state.
+
+`ui.rich` and `ui.present` stay separate, and neither is the panel-content
+authority. `ui.rich` already means "render and attach a scene"; `ui.present`
+already means "draw a non-modal surface above the focused view". Reusing either
+would grant panel replacement (and, with it, key ownership) to every plugin
+that only asked to render or draw. The final spelling of the new id is an
+acceptance decision: this record uses `ui.panel`; `panel.content` is the
+alternative that the checklist's first item must resolve. The Lua namespace
+must also stay distinct from the existing `bitty.ui.present` table.
 
 ## Recommended Lua surface
 
@@ -326,11 +400,13 @@ result, err = bitty.ui.panel.poll(handle, max)
 ok, err     = bitty.ui.panel.release(handle, reason)
 ```
 
-- `present(scene, spec)` validates `scene` against the v1 node set and budgets,
-  validates `spec` against the closed descriptor, checks `ui.rich` and
-  `ui.panel`, resolves the focused terminal-backed panel, writes the displaced
-  record, swaps the content kind, and returns an opaque handle. It fails with
-  `nil` plus a typed error and changes nothing.
+- `present(scene, spec)` validates `scene` against the accepted scene set and
+  SCN-1..SCN-5 plus the reader caps, validates `spec` against the closed
+  descriptor, checks the panel-content grant and `ui.rich`, resolves the
+  focused terminal-backed panel, writes the displaced record, swaps the
+  content kind, and returns an opaque handle. It fails with `nil` plus a typed
+  error and changes nothing. The existing `bitty.ui.present` table is the
+  draw-only overlay and is not this surface.
 - `update(handle, scene)` replaces the scene for a handle the caller owns. A
   non-owner, a released handle, or a stale generation fails with
   `E_UI_NOT_OWNER` and keeps the previous scene. An invalid scene keeps the
@@ -507,11 +583,12 @@ Platform -> Router -> focused Panel -> content kind?
    plugin drains it with `poll`, exactly like the accepted overlay capture and
    under the same no-hot-path rule. There is no plugin callback, no timer, and
    no per-frame Lua.
-3. **No pointer authority.** Clicks and wheel over declarative nodes continue
-   to dispatch the already-accepted `on_click`/`on_scroll` command bindings with
-   bounded arguments. The plugin receives no coordinates, no pointer capture,
-   no drag, no cursor shape, and no hover stream. Hit-testing stays inside the
-   panel content rectangle and uses the frame's own geometry.
+3. **No pointer authority.** Clicks and wheel over panel-content nodes dispatch
+   bounded `on_click`/`on_scroll` command bindings once the content wire carries
+   them (the current rich reader rejects those fields; see the checklist). The
+   plugin receives no coordinates, no pointer capture, no drag, no cursor
+   shape, and no hover stream. Hit-testing stays inside the panel content
+   rectangle and uses the frame's own geometry.
 4. **No global capture.** Panel content does not acquire the single overlay
    capture and does not count in the `4+1` envelope. Different plugins may hold
    GUI content in different panels; only the focused panel receives keys, and
@@ -537,8 +614,8 @@ decoration and insets.
 | ------------ | ---------------------- | --------------------------------------------------------------------------- | ---------------- | ----------------- |
 | `tiled`      | Yes                    | Fills the tiled content rectangle.                                          | Frozen, parsing. | Accepted, unused. |
 | `floating`   | Yes (detach/restore)   | Fills the floating rectangle; the panel leaves the tiling as it does today. | Frozen, parsing. | Accepted, unused. |
-| `fullscreen` | No (parse only)        | When it lands, fills the full-bleed rectangle; no new content rule.         | Frozen, parsing. | Accepted, unused. |
-| `scratchpad` | No (parse only)        | When it lands, the content persists while hidden and repaints when shown.   | Frozen, parsing. | Accepted, unused. |
+| `fullscreen` | No (mode parse-only)   | When the mode lands, fills the full-bleed rectangle; no new content rule.   | Frozen, parsing. | Accepted, unused. |
+| `scratchpad` | Yes (one hidden slot)  | The content persists while hidden and repaints when shown.                  | Frozen, parsing. | Accepted, unused. |
 | `band`       | Yes (separate surface) | **Not panel content.** Rejected by the descriptor; use `top`/`bottom`.      | N/A              | **Invalid.**      |
 
 Limits:
@@ -571,7 +648,7 @@ never the payload.
 
 | Condition                                                                         | Class        | Code                     | Effect                                   |
 | --------------------------------------------------------------------------------- | ------------ | ------------------------ | ---------------------------------------- |
-| Missing `ui.rich` or `ui.panel` grant                                             | `runtime`    | `E_CAPABILITY_DENIED`    | Nothing changes.                         |
+| Missing the panel-content grant, or `ui.rich` for scene validation                | `runtime`    | `E_CAPABILITY_DENIED`    | Nothing changes.                         |
 | No focused panel, or the focused panel is not a live terminal-backed panel        | `runtime`    | `E_UI_PANEL_UNAVAILABLE` | Nothing changes.                         |
 | Host has no panel content path (safe mode, headless, old host)                    | `runtime`    | `E_UI_UNAVAILABLE`       | Nothing appears.                         |
 | Target panel already has GUI content from another generation                      | `runtime`    | `E_UI_PANEL_BUSY`        | Existing surface unchanged.              |
@@ -588,34 +665,34 @@ error, because "band as panel content" is a category mistake, not a preference.
 
 ## Bounds
 
-| Dimension                          | Bound                                                                               | Over-limit behavior                                      |
-| ---------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| GUI scene per block                | Accepted v1 budgets: depth 16, 2048 nodes, 256 KiB text                             | Refused with `E_UI_COMPONENT_INVALID`; previous kept.    |
-| Retained blocks per plugin         | 64 (accepted v1)                                                                    | Mount refused; previous state kept.                      |
-| GUI surfaces per panel             | 1                                                                                   | `E_UI_PANEL_BUSY` / `E_UI_PANEL_NESTED`.                 |
-| GUI surfaces per plugin generation | 1                                                                                   | `E_UI_PANEL_NESTED`.                                     |
-| Input queue depth                  | 256 events                                                                          | Oldest dropped; `overflowed` sticky; stays active.       |
-| Input event payload                | 4096 bytes serialized                                                               | Oversize event rejected before enqueue.                  |
-| Present/update call                | 4096 bytes serialized descriptor; scene under the v1 block budgets                  | Validation error; previous state kept.                   |
-| Idle timeout                       | none                                                                                | Persistent by design; release only on an explicit cause. |
-| Owner call budgets                 | Per-plugin CPU, memory, task, and queue budgets per the accepted isolation contract | Core-enforced with owner attribution.                    |
+| Dimension                          | Bound                                                                                                  | Over-limit behavior                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| GUI scene per block                | Accepted SCN-1..SCN-3: 2048 nodes, depth 32, 256 KiB text; the Lua reader's depth cap is 16 (stricter) | Refused with `E_UI_COMPONENT_INVALID`; previous kept.    |
+| Retained blocks per terminal/scene | 64 (accepted SCN-5)                                                                                    | Mount refused; previous state kept.                      |
+| GUI surfaces per panel             | 1                                                                                                      | `E_UI_PANEL_BUSY` / `E_UI_PANEL_NESTED`.                 |
+| GUI surfaces per plugin generation | 1                                                                                                      | `E_UI_PANEL_NESTED`.                                     |
+| Input queue depth                  | 256 events                                                                                             | Oldest dropped; `overflowed` sticky; stays active.       |
+| Input event payload                | 4096 bytes serialized                                                                                  | Oversize event rejected before enqueue.                  |
+| Present/update call                | 4096 bytes serialized descriptor; scene under SCN-1..SCN-5 and the reader's kind-specific bounds       | Validation error; previous state kept.                   |
+| Idle timeout                       | none                                                                                                   | Persistent by design; release only on an explicit cause. |
+| Owner call budgets                 | Per-plugin CPU, memory, task, and queue budgets per the accepted isolation contract                    | Core-enforced with owner attribution.                    |
 
 ## Security review
 
-| Threat                               | Control                                                                                                                            |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| PTY or file surgery from Lua         | No descriptor field, host verb, or handle exposes a PTY, signal, path, command, URL, or environment value.                         |
-| Presentation mutating Terminal Truth | Content kind is presentation state; the swap never resizes, writes, parses, clears, or replays terminal state.                     |
-| Reading hidden terminal output       | No read surface, no scrollback API, no snapshot in the descriptor. The plugin is not given a second data path.                     |
-| Input interception or keyboard trap  | Keys route only for the focused panel; Core owns the queue; generic close always pops the surface; no plugin veto and no callback. |
-| Pointer or window authority          | No coordinates, capture, drag, cursor, hover, OS surface, or window creation. Clicks remain command bindings.                      |
-| Spoofing another owner or panel      | Owner comes from the host identity/generation; the target is the focused panel only; handles are generation-checked.               |
-| Renaming or re-badging the panel     | No title, icon, tab, or chrome field; panel chrome stays with the existing bar/tabline policy.                                     |
-| Crash or wedge pinning the panel     | Teardown-ordered release plus a per-tick orphan sweep; no idle lease is required, and no plugin code runs on the restore path.     |
-| Resource exhaustion                  | v1 scene budgets, one surface per panel and per generation, 256-event queue, 4096-byte events, per-plugin budgets.                 |
-| Silent capability growth             | New `ui.panel` id only, deny by default, manifest-hash-bound grant, no wildcard, no first-party bypass.                            |
-| Audit gaps                           | Two observation-only events and bounded doctor counters; no content payloads.                                                      |
-| Safe mode                            | Third-party plugins never load; no Core-owned surface uses the same mechanism.                                                     |
+| Threat                               | Control                                                                                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PTY or file surgery from Lua         | No descriptor field, host verb, or handle exposes a PTY, signal, path, command, URL, or environment value.                                                                     |
+| Presentation mutating Terminal Truth | Content kind is presentation state; the swap never resizes, writes, parses, clears, or replays terminal state.                                                                 |
+| Reading hidden terminal output       | No read surface, no scrollback API, no snapshot in the descriptor. The plugin is not given a second data path.                                                                 |
+| Input interception or keyboard trap  | Keys route only for the focused panel; Core owns the queue; generic close always pops the surface; no plugin veto and no callback.                                             |
+| Pointer or window authority          | No coordinates, capture, drag, cursor, hover, OS surface, or window creation. Clicks remain command bindings.                                                                  |
+| Spoofing another owner or panel      | Owner comes from the host identity/generation; the target is the focused panel only; handles are generation-checked.                                                           |
+| Renaming or re-badging the panel     | No title, icon, tab, or chrome field; panel chrome stays with the existing bar/tabline policy.                                                                                 |
+| Crash or wedge pinning the panel     | Teardown-ordered release plus a per-tick orphan sweep; no idle lease is required, and no plugin code runs on the restore path.                                                 |
+| Resource exhaustion                  | Accepted scene budgets, one surface per panel and per generation, 256-event queue, 4096-byte events, per-plugin budgets.                                                       |
+| Silent capability growth             | New panel-content id only (candidate spelling `ui.panel`; `panel.content` is the alternative), deny by default, manifest-hash-bound grant, no wildcard, no first-party bypass. |
+| Audit gaps                           | Two observation-only events and bounded doctor counters; no content payloads.                                                                                                  |
+| Safe mode                            | Third-party plugins never load; no Core-owned surface uses the same mechanism.                                                                                                 |
 
 Fail-closed properties:
 
@@ -690,36 +767,39 @@ headless acceptance evidence only.
 
 ## Affected contracts
 
-| Contract                                                                                                                             | Effect                                                                                                                |
-| ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| [Panel Runtime RFC](panel-runtime-rfc.md)                                                                                            | Gains the content-kind axis and the GUI lifecycle; identity, focus, and overlay envelope unchanged.                   |
-| [Workspace Compositor Specification](workspace-compositor.md)                                                                        | Leaf content selection gains the `Gui` presenter; placement and decoration rules unchanged.                           |
-| [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md)                                              | `ViewContent` gains a variant; `ViewId != TerminalId`, attachment, and move rules unchanged.                          |
-| [Terminal State RFC](terminal-state-rfc.md)                                                                                          | No truth mutation; the geometry freeze and single restore resize are presentation rules; reflow stays its open point. |
-| [Rich Presentation RFC](rich-presentation-rfc.md)                                                                                    | Reused node set and budgets; no new scene node or budget.                                                             |
-| [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md) | Adds a v2 `bitty.ui.panel.*` surface; the v1 slot set and node set stay frozen.                                       |
-| [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)          | Adds the `ui.panel` capability id under OQ-056's v2 admission.                                                        |
-| [Overlay Ownership Reconciliation](overlay-ownership-reconciliation.md)                                                              | Extends the close-layer precedence; adds no overlay owner, tier, or modal gate.                                       |
-| [Chrome Band Contract](chrome-band-contract-candidate.md)                                                                            | Unchanged; bands remain outside panel content and the bar keeps its model.                                            |
-| [Configuration Model RFC](configuration-model-rfc.md)                                                                                | Candidate consequence: `views.<selector>` matching must use the durable content kind, not the transient GUI kind.     |
-| [Panel Content Scene Path Decision](panel-content-scene-path-decision.md)                                                            | Hard dependency: the Scene path must be consumed by the present path before this contract can be implemented.         |
-| [Panel Placement Decision](panel-placement-decision.md)                                                                              | Unchanged direction; this record explicitly keeps placement out of plugin authority.                                  |
-| [Configuration dashboard (Plugin) (Candidate)](../interfaces/configuration-dashboard-candidate.md)                                   | Plugin-owned migration target; it uses this mechanism through `ui.rich`/`ui.panel`, not a Core-internal path.         |
-| [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)                                | New capability and input-routing branch require the `P0` security review.                                             |
+| Contract                                                                                                                             | Effect                                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Panel Runtime RFC](panel-runtime-rfc.md)                                                                                            | Gains the content-kind axis and the GUI lifecycle; identity, focus, and overlay envelope unchanged.                                                                                                      |
+| [Workspace Compositor Specification](workspace-compositor.md)                                                                        | Leaf content selection gains the chosen GUI presenter (`Gui` or `Rich`); placement and decoration rules unchanged.                                                                                       |
+| [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md)                                              | `ViewContent` gains the chosen GUI encoding (or reuses `Rich`); `ViewId != TerminalId`, attachment, and move rules unchanged.                                                                            |
+| [Terminal State RFC](terminal-state-rfc.md)                                                                                          | No truth mutation; the geometry freeze and single restore resize are presentation rules; reflow stays its open point.                                                                                    |
+| [Rich Presentation RFC](rich-presentation-rfc.md)                                                                                    | Reused node set and budgets; no new scene node or budget.                                                                                                                                                |
+| [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md) | Adds a v2 panel-content surface beside `mount`/`update` and the existing `bitty.ui.present` table; the v1 band/overlay node sets stay frozen.                                                            |
+| [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)          | Adds the panel-content capability id (candidate spelling `ui.panel`; `panel.content` alternative) under OQ-056's v2 admission.                                                                           |
+| [Overlay Ownership Reconciliation](overlay-ownership-reconciliation.md)                                                              | Extends the close-layer precedence; adds no overlay owner, tier, or modal gate.                                                                                                                          |
+| [Chrome Band Contract](chrome-band-contract-candidate.md)                                                                            | Unchanged; bands remain outside panel content and the bar keeps its model.                                                                                                                               |
+| [Configuration Model RFC](configuration-model-rfc.md)                                                                                | Candidate consequence: `views.<selector>` matching must use the durable content kind, not the transient GUI kind.                                                                                        |
+| [Panel Content Scene Path Decision](panel-content-scene-path-decision.md)                                                            | The Scene path is consumed by the present loop for `terminal`-slot scenes; this record adds the panel content-kind transition on top.                                                                    |
+| [Panel Generation Ownership Decision](panel-generation-ownership-decision.md)                                                        | Candidate: the panel container is workspace-owned while content is generation-owned; this record's release rows must use that split ([bitty#2476](https://github.com/bitty-terminal/bitty/issues/2476)). |
+| [Panel Placement Decision](panel-placement-decision.md)                                                                              | Unchanged direction; this record explicitly keeps placement out of plugin authority.                                                                                                                     |
+| [Configuration dashboard (Plugin) (Candidate)](../interfaces/configuration-dashboard-candidate.md)                                   | Currently a focusable-overlay plugin; panel content is a migration option under this candidate, not the shipped path.                                                                                    |
+| [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)                                | New capability and input-routing branch require the `P0` security review.                                                                                                                                |
 
 ## Migration
 
-1. **Dashboard (bitty#2380).** The configuration dashboard is a `0.1.0`
-   first-party plugin; the Core-panel prototype was withdrawn before merge
-   (`bitty` #2390). It uses this mechanism like any other plugin: `ui.rich`
-   plus `ui.panel`, the read-only projection (`bitty` #2396), and the
-   `config.manage` capability (`bitty` #2393) for writes. There is no
+1. **Dashboard (bitty#2380).** The configuration dashboard is a first-party
+   plugin; the Core-panel prototype was withdrawn before merge (`bitty` #2390).
+   It currently presents through the focusable overlay (`ui.overlay.focus`);
+   moving it to panel content would be a later migration under this candidate,
+   using the new panel-content grant, the read-only projection (`bitty` #2396),
+   and the `config.manage` capability (`bitty` #2393) for writes. There is no
    Core-internal GUI-content path and no capability-free Core surface to
    preserve; the section set, bounds, and confirmations in the dashboard
    candidate are plugin requirements.
-2. **DevTools.** DevTools stays notification-only in 0.0.25. When it gains a
-   UI, it uses `bitty.ui.panel.*` with `ui.rich` and `ui.panel`; no forced
-   change now, and its existing `debug.*` grants are unchanged.
+2. **DevTools.** DevTools stays notification-only in 0.0.25. If it later gains
+   a UI, panel content would use `bitty.ui.panel.*` with the new panel-content
+   grant; no forced change now, and its existing `debug.*` grants are
+   unchanged.
 3. **Bar and statusline.** Unchanged. The bar keeps the `bottom` band, its
    exclusive zone, and its absent-when-unmounted rule. No panel content, no
    displaced PTY, no placement hint.
@@ -734,22 +814,219 @@ headless acceptance evidence only.
 
 Each item is a concrete acceptance decision, not an open-ended question.
 
-| ID  | Decision                                                                                            | Recommended answer                                                                                                            |
-| --- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Content-kind encoding: add `ViewContent::Gui(GuiSurfaceId)` or reuse `Panel(PanelId)`?              | Add `Gui`; keep `Panel` for panel-provider content.                                                                           |
-| D2  | Capability set: one `ui.panel` or `ui.panel` + `ui.panel.focus`?                                    | One `ui.panel`, coupled with `ui.rich`; no separate focus grant (keyboard-trap rationale).                                    |
-| D3  | OQ-056 admission: is a new `ui.panel` id in v2 scope?                                               | Yes, via an OQ-056 amendment naming this contract; v1 stays frozen.                                                           |
-| D4  | Target selection: focused panel only, or an explicit bounded `PanelId` handle?                      | Focused panel only in v1; explicit targeting is a later decision with its own authority analysis.                             |
-| D5  | Placement hint application: record-only, or apply when the user has no rule?                        | Record-only in v1; expose it to chrome, never mutate placement.                                                               |
-| D6  | Close precedence: confirm `close_view` pops GUI content before closing the panel.                   | Yes; it mirrors the existing overlay-capture precedence and cannot be vetoed.                                                 |
-| D7  | Input ownership: panel-scoped queue with no global capture and no idle timeout?                     | Yes; release only on explicit causes, never on idle or focus loss.                                                            |
-| D8  | Event kinds: add `panel.content.released` and `panel.content.input-available` to the closed set?    | Yes, both observation-only, mirroring `overlay.released`/`overlay.input.available`.                                           |
-| D9  | Appearance selectors: evaluate against the durable content kind or the transient one?               | Durable kind; a content swap never changes decoration or background.                                                          |
-| D10 | Empty/browser/no-PTY targets: refuse `present` unless a live terminal content owner exists?         | Yes; a pane session or the runtime-global primary PTY both qualify; leaves without a PTY owner fail `E_UI_PANEL_UNAVAILABLE`. |
-| D11 | Dashboard migration: Core-internal mechanism or plugin over `ui.panel`?                             | Plugin over `ui.panel`; no Core-internal GUI-content path. The Core prototype was withdrawn (`bitty` #2390).                  |
-| D12 | Scene-path sequencing: is the present-path consumer a hard prerequisite?                            | Yes; the contract cannot ship before the Scene path paints panel content (OQ-051 direction).                                  |
-| D13 | Accessibility: what is the focus announcement and screen-reader description for GUI content?        | Follow-up required before acceptance; no accessibility claim in this record.                                                  |
-| D14 | Restore reflow: confirm "state preserved, visible reflow per the existing algorithm" is sufficient. | Yes; the exact algorithm remains the Terminal State RFC's open point.                                                         |
+| ID  | Decision                                                                                                                             | Recommended answer                                                                                                                                                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Content-kind encoding: add `ViewContent::Gui(GuiSurfaceId)`, promote the unused `ViewContent::Rich(u64)`, or reuse `Panel(PanelId)`? | Add `Gui` (or use `Rich` if one wire handle type is preferred); keep `Panel` for panel-provider content. The existing `Rich` variant has no live presenter.                        |
+| D2  | Capability set: one new panel-content grant, or a panel-content grant plus a separate focus grant?                                   | One new grant, separate from `ui.rich` and `ui.present`; no separate focus grant (keyboard-trap rationale). The spelling is `ui.panel` or `panel.content`.                         |
+| D3  | OQ-056 admission: is a new panel-content id in v2 scope?                                                                             | Yes, via an OQ-056 amendment naming this contract; v1 stays frozen.                                                                                                                |
+| D4  | Target selection: focused panel only, or an explicit bounded `PanelId` handle?                                                       | Focused panel only in v1; explicit targeting is a later decision with its own authority analysis.                                                                                  |
+| D5  | Placement hint application: record-only, or apply when the user has no rule?                                                         | Record-only in v1; expose it to chrome, never mutate placement.                                                                                                                    |
+| D6  | Close precedence: confirm `close_view` pops GUI content before closing the panel.                                                    | Yes; it mirrors the existing overlay-capture precedence and cannot be vetoed.                                                                                                      |
+| D7  | Input ownership: panel-scoped queue with no global capture and no idle timeout?                                                      | Yes; release only on explicit causes, never on idle or focus loss.                                                                                                                 |
+| D8  | Event kinds: add `panel.content.released` and `panel.content.input-available` to the closed set?                                     | Yes, both observation-only; `released` carries the closed reason vocabulary and `input-available` mirrors the capture pump nudge. Do not reuse `overlay.dismissed`.                |
+| D9  | Appearance selectors: evaluate against the durable content kind or the transient one?                                                | Durable kind; a content swap never changes decoration or background.                                                                                                               |
+| D10 | Empty/browser/no-PTY targets: refuse `present` unless a live terminal content owner exists?                                          | Yes; a pane session or the runtime-global primary PTY both qualify; leaves without a PTY owner fail `E_UI_PANEL_UNAVAILABLE`.                                                      |
+| D11 | Dashboard migration: keep the focusable overlay or move to panel content?                                                            | Keep the current focusable overlay; moving to panel content is a later migration under this candidate. No Core-internal GUI-content path.                                          |
+| D12 | Scene-path sequencing: what remains before this contract can ship?                                                                   | The scene paint consumer and a draw-only above-view surface exist; the remaining prerequisites are the content-kind transition, displaced record, input routing, and restore path. |
+| D13 | Accessibility: what is the focus announcement and screen-reader description for GUI content?                                         | Follow-up required before acceptance; no accessibility claim in this record.                                                                                                       |
+| D14 | Restore reflow: confirm "state preserved, visible reflow per the existing algorithm" is sufficient.                                  | Yes; the exact algorithm remains the Terminal State RFC's open point.                                                                                                              |
+
+## Acceptance checklist for the remaining gap
+
+The renderer and the draw-only overlay are no longer blockers. The following
+items are the remaining contract and state work, ordered by dependency. Each
+item names the exact text that must change, the code mechanism it needs, and
+the test that would prove it. None of these is implemented today, and this
+checklist promotes nothing.
+
+1. **Capability spelling and grant boundary.**
+   - **Contract text:** `### Capability gates` and the first row of
+     `## Typed failure modes` must name one panel-content capability id and
+     state that `ui.rich` (scene rendering) and `ui.present` (draw-only
+     overlay) do **not** authorize replacing panel content or owning its keys.
+     D2/D3 must record the final spelling. This record uses `ui.panel`;
+     `panel.content` is the alternative. The `## Recommended Lua surface` must
+     also use a namespace distinct from the existing `bitty.ui.present` table.
+   - **Code mechanism:** add the head to the activation grant and `UiAccess`
+     (`crates/bitty-runtime/src/plugin_runtime/mod.rs`,
+     `crates/bitty-runtime/src/plugin_runtime/services.rs`), gate
+     `present`/`update`/`poll`/`release` on it at the host boundary, and keep
+     the manifest-hash-bound grant rule. No implication from `ui.rich` or
+     `ui.present`; no wildcard; no first-party bypass.
+   - **Proof test:** a manifest with `ui.rich` and `ui.present` but without the
+     panel-content grant gets `E_CAPABILITY_DENIED` and changes no state; the
+     same manifest with the grant presents; `ui.present` alone cannot replace
+     content; a grant change requires a new manifest hash.
+
+2. **Content variants and bounds.**
+   - **Contract text:** the `GUI content` row in `## Terminology`, the
+     `## Bounds` rows, and `## Bounded presentation descriptor` must fix which
+     scene kinds a panel may present and their limits. The accepted scene set
+     is nine Lua-visible kinds; the additive `Styled` kind is not on the
+     `ui.rich` wire yet. If panel content uses the Lua reader, its depth cap is
+     16 (stricter than SCN-2's 32), and the kind-specific caps apply (256 table
+     rows, 4096 cells, border 8, language hint 32 bytes). The rich reader also
+     rejects `on_click`, `on_scroll`, and `on_hover`, while the band `UiNode`
+     vocabulary carries those bindings; the contract must decide how
+     hit-testable rows are expressed before claiming them.
+   - **Code mechanism:** reuse `read_rich_component`, `scene_bridge`, and
+     `Scene::insert` for the scene shape, or extend the rich wire with bounded
+     pointer bindings; add no third node vocabulary and no new renderer handle.
+     `Styled` stays a core-scene capability until a wire form is decided.
+   - **Proof test:** boundary tests at 2048/2049 nodes, depth 16/17, 256 KiB
+     text, 2 MiB aggregate, and 64 blocks; each over-limit case returns
+     `E_UI_COMPONENT_INVALID` and keeps the last-good scene; an unknown kind is
+     refused; `Styled` is not accepted from Lua in this wave; a clickable
+     panel-content row is either refused by the chosen wire or dispatches only
+     its bounded command binding.
+
+3. **Replace edge: content kind and displaced record.**
+   - **Contract text:** `### Content is a Core-owned kind transition` and the
+     `idle -> active` row of `## Lifecycle and restore paths` must specify
+     `Terminal(tid) -> Gui(surface)` with a Core-owned displaced record
+     (terminal content id, attachment `ViewId`, frozen content rectangle,
+     scroll offset, owner generation), one kind per panel, one surface per
+     panel and generation, and no state change on refusal. D1 must choose
+     `Gui`, the existing unused `Rich(u64)`, or `Panel(PanelId)`.
+   - **Code mechanism:** live content-kind state and a Core-owned transition in
+     the panel registry/host (`crates/bitty-runtime/src/registry/panel.rs`,
+     `crates/bitty-runtime/src/registry/host.rs`), reusing the terminal
+     content-owner lookup and `ViewId` attachment. The existing `SceneHost` is
+     **not** this mechanism: it mounts a separate Core-owned `Rich` panel and
+     paints over the grid; it must not be presented as the content swap.
+   - **Proof test:** present a live pane and assert the panel's content kind is
+     `Gui`, the terminal fd/pid and state hash are unchanged, focus is
+     unchanged, no new `PanelId`/`ViewId` is allocated, and exactly one surface
+     exists. A refused present leaves `Terminal` content and an empty displaced
+     record. A second generation gets `E_UI_PANEL_BUSY`; a nested request gets
+     `E_UI_PANEL_NESTED`.
+
+4. **Restore edge: PTY alive, focus, resize, scrollback.**
+   - **Contract text:** `## PTY preservation semantics` and the release rows of
+     `## Lifecycle and restore paths` must state that release never detaches,
+     suspends, resizes, signals, writes, or kills the terminal owner; the
+     displaced rectangle stays frozen while presented; release issues exactly
+     one resize when the rectangle changed; scrollback, cursor, selection, and
+     scroll offset survive. D6/D14 record the close precedence and reflow
+     answer.
+   - **Code mechanism:** the release path in the registry/host, the existing
+     `LogicalRect -> PTY` resize path and reflow in
+     `crates/bitty-runtime/src/runtime/layout_focus.rs` and
+     `crates/bitty-runtime/src/runtime/pty.rs`, plus full-content invalidation
+     on restore. No second terminal-state path and no replay.
+   - **Proof test:** write output while content is presented, then release;
+     compare state hash, cursor, scrollback length, and scroll offset with a
+     control pane that was never swapped. Instrument the resize path and assert
+     zero resize calls while presented and exactly one on a changed restore
+     rectangle; assert no `SIGWINCH` while presented. `close_view` releases the
+     content and leaves the panel open; a second `close_view` follows the
+     normal close path.
+
+5. **Input routing while content is presented.**
+   - **Contract text:** `## Focus and input ownership` must say the focused
+     panel's content kind decides routing: `Terminal` keeps the byte-identical
+     encoder path, `Gui` sends no key to the PTY and drains a Core-owned
+     256-event queue with 4096-byte events and drop-oldest overflow through an
+     owner-initiated `poll`. Pointer input stays on bounded
+     `on_click`/`on_scroll` command bindings once the content wire from item 2
+     carries them; there is no global capture, no idle timeout, and generic
+     close always pops the content layer first.
+   - **Code mechanism:** one branch in the input path
+     (`crates/bitty-terminal/src/chrome_keys.rs`,
+     `crates/bitty-runtime/src/runtime/input.rs`), a Core-owned queue and
+     `poll` verb, and `close_view` layer precedence. No plugin callback and no
+     per-frame Lua.
+   - **Proof test:** keys pressed while `Gui` is focused never reach the PTY
+     encoder; queue overflow drops oldest and sets the sticky flag; keys reach
+     the PTY again after release; a focusable overlay still owns `Esc` above
+     panel content; a click on a scene node runs only its bounded command
+     binding.
+
+6. **Event kinds and payloads.**
+   - **Contract text:** the `Evidence` column of
+     `## Lifecycle and restore paths` and D8 must add
+     `panel.content.released` and `panel.content.input-available` to the closed
+     event set (or record the final names), define their payloads, and fix the
+     release-reason vocabulary: only `dismissed` is owner-suppliable;
+     `closed`, `quit`, `suspended`, `reloaded`, `disabled`, `crashed`, and
+     `unloaded` are Core-reported. `overlay.dismissed` stays specific to
+     `ui.present` and is not reused.
+   - **Code mechanism:** cold-tick delivery following the existing
+     `deliver_overlay_released`/`deliver_overlay_dismissed` pattern
+     (`crates/bitty-terminal/src/terminal_app.rs`,
+     `crates/bitty-runtime/src/plugin_runtime/presentation_overlay.rs`), with a
+     bounded pending buffer and `PluginRuntime::deliver_event`.
+   - **Proof test:** one event per cause with exactly the documented fields;
+     the pending buffer drops oldest at its bound and reports the drop count;
+     the payload contains no key bytes, text, coordinates, or terminal
+     content; no VM runs on the input path.
+
+7. **Teardown on generation end.**
+   - **Contract text:** the reload/disable/crash/suspend rows of
+     `## Lifecycle and restore paths` and the fail-closed properties in
+     `## Security review` must state that generation end releases the content
+     and restores the terminal before the generation's resources are dropped;
+     the panel **container** survives, matching the candidate
+     [Panel Generation Ownership Decision](panel-generation-ownership-decision.md)
+     and [bitty#2476](https://github.com/bitty-terminal/bitty/issues/2476). No
+     plugin code runs on the restore path; a per-tick orphan sweep is defense
+     in depth.
+   - **Code mechanism:** the generation teardown funnel
+     (`clear_ui_blocks`/`revoke_plugin` in
+     `crates/bitty-runtime/src/plugin_runtime/mod.rs`,
+     `crates/bitty-runtime/src/plugin_runtime/services.rs`) must release the
+     content before dropping services, without disposing the workspace-owned
+     container. The current `SceneHost::release_owner` disposes its own panel;
+     that is the wrong lifetime for a persistent panel container.
+   - **Proof test:** kill, suspend, disable, and unload a presented generation;
+     assert the terminal is restored within one tick with the correct reason,
+     no scene/queue/handle remains, the panel container still exists, and no
+     stale handle can address the old surface.
+
+8. **Reload semantics.**
+   - **Contract text:** the `Plugin reload` row of
+     `## Lifecycle and restore paths` and rule 4 must state that reload never
+     re-presents automatically: the old generation's content is released, the
+     terminal is restored, the new generation starts `idle`, and only an
+     explicit `present` creates a new surface.
+   - **Code mechanism:** the activation-epoch/generation fence already used by
+     the scene and overlay stores, plus teardown-before-activation ordering;
+     no activation hook may call `present`, `show`, or `mount` on the plugin's
+     behalf.
+   - **Proof test:** reload while presented; assert the terminal is restored,
+     the old handle fails `E_UI_NOT_OWNER`, no surface is created by the new
+     generation until it calls `present`, and a config reload that does not
+     remove the plugin leaves an active content surface unchanged.
+
+9. **Accessibility and text fallback.**
+   - **Contract text:** D13 must become an acceptance criterion that names the
+     focus announcement, the screen-reader description, and the text fallback
+     for refused or unsupported content. The per-frame scene projection is
+     parity evidence, not a live accessibility tree; the contract must say
+     which one it requires.
+   - **Code mechanism:** extend the `UiSnapshotHost` scene projection
+     (`crates/bitty-runtime/src/runtime/scene_present.rs`,
+     `crates/bitty-ui/src/a11y_host.rs`) or add a bounded text fallback node;
+     do not treat `SceneFrameReport::a11y` as a published tree.
+   - **Proof test:** assert the focus announcement and text description on
+     present and on focus return; assert a refused scene still exposes a
+     bounded text fallback; assert the recorded parity evidence is not
+     published as the live tree; assert accessible text stays within the
+     existing host bounds.
+
+10. **Image nodes and the image-paint gap.**
+    - **Contract text:** if `Image` is admitted for panel content, the
+      terminology/bounds text must say it is a bounded placement reference and
+      that it is not decoded or painted until the image plane forwards it.
+      Otherwise the descriptor must exclude `Image` from this wave. Link
+      [bitty#2875](https://github.com/bitty-terminal/bitty/issues/2875) for the
+      image-paint gap.
+    - **Code mechanism:** `SceneNode::Image` admission and counting in
+      `crates/bitty-runtime/src/runtime/scene_present.rs`; forwarding remains
+      the separate image-plane slice, with no plugin-visible data path.
+    - **Proof test:** an `Image` node is admitted and counted but produces no
+      decode or blit while bitty#2875 is open; once forwarding lands, a
+      placement test proves the expected pixels and no plugin read access.
 
 ## Open points
 
@@ -760,6 +1037,9 @@ Each item is a concrete acceptance decision, not an open-ended question.
   persist GUI content.
 - Whether `views.<selector>` should eventually gain a `gui` member, and how
   that interacts with the durable-kind rule in D9.
+- Whether panel content adopts the full rich scene set (including `Styled` and
+  bounded pointer bindings) or a narrower subset, and how that relates to the
+  band `UiNode` vocabulary.
 - Whether the dashboard's internal padding should be preserved exactly or
   normalized to the panel content rectangle.
 - Whether a display-only (non-focusable) GUI content is worth a second
@@ -774,19 +1054,24 @@ This record is complete when:
    accepted through an RFC amendment or retained as a candidate with the
    blocking decisions named.
 2. D1-D14 are decided or explicitly deferred with owners.
-3. The Scene-path dependency is sequenced before any implementation task.
+3. The scene paint path is implemented; the content-kind transition, displaced
+   record, input routing, and restore path in the acceptance checklist are
+   specified and sequenced before any implementation task.
 4. A security reviewer signs the `P0` section for the new capability and the
    input-routing branch.
 5. The affected-contracts table matches the edits made in the same wave,
    including the capability and event-kind amendments in the plugin corpus.
-6. The dashboard migration note matches the plugin-owned placement and the
-   dashboard candidate's re-scope, not a withdrawn Core surface.
+6. The dashboard migration note matches the dashboard candidate's current
+   focusable-overlay path and does not describe panel content as shipped.
+7. The acceptance checklist above is decided or explicitly deferred with
+   owners; no item is silently assumed.
 
 ## P0 Review Sign-off
 
 - Documentation review: pending.
-- Security review: **required**, because this record adds a capability
-  (`ui.panel`) and a new input-routing branch for plugin content. The review
+- Security review: **required**, because this record adds a panel-content
+  capability (candidate spelling `ui.panel`; `panel.content` is the
+  alternative) and a new input-routing branch for plugin content. The review
   must confirm no PTY, file, pointer, placement, or terminal-read authority is
   reachable, and that the fail-closed close/crash paths cannot be vetoed by
   plugin code.
@@ -799,7 +1084,11 @@ This record is complete when:
 - [Panel Placement Decision](panel-placement-decision.md) — placement identity
   and the `View`/`Panel` split.
 - [Panel Content Scene Path Decision](panel-content-scene-path-decision.md) —
-  the non-terminal content path this contract depends on.
+  the non-terminal content path; its paint half is now consumed for
+  `terminal`-slot scenes.
+- [Panel Generation Ownership Decision](panel-generation-ownership-decision.md)
+  — the candidate split between a workspace-owned panel container and
+  generation-owned content.
 - [Panel/Surface/Process Trichotomy (Candidate)](panel-surface-process-trichotomy-candidate.md)
   — the vocabulary that separates panel, surface, PTY, and process.
 - [Workspace Compositor Specification](workspace-compositor.md) — the
@@ -828,6 +1117,14 @@ This record is complete when:
   design request.
 - [bitty#2380](https://github.com/bitty-terminal/bitty/issues/2380) — the
   configuration dashboard request.
+- [bitty#2476](https://github.com/bitty-terminal/bitty/issues/2476) — panel
+  lifecycle versus plugin generation ownership; open.
+- [bitty#2849](https://github.com/bitty-terminal/bitty/issues/2849) — the
+  presentation-only overlay; closed and implemented, identifier still a
+  candidate.
+- [bitty#2875](https://github.com/bitty-terminal/bitty/issues/2875) — kitty
+  graphics parsed but not painted; open, and the terminal-graphics reference
+  for the image gap.
 - [Drawer Presentation Mode Decision](drawer-presentation-mode-decision.md) —
   the 0.1.0 disposition that keeps the drawer question a placement-only
   concern.
