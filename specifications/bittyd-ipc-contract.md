@@ -1286,6 +1286,16 @@ token.
 | `last_seen_ms`            | u64            | required    | Server monotonic milliseconds of the last session activity.                                                                                                                                              |
 | `terminal_reason`         | string or null | conditional | Present only when `state` is terminal; `worker_exit`, `worker_signal`, `spawn_failed`, `supervision_failed`, `consumer_cancel`, `consumer_timeout`, `operator_abort`, `daemon_stop`, or `host_shutdown`. |
 | `cleanup`                 | string or null | conditional | Present only when `state` is terminal; `swept`, `unverified`, or `not_started`.                                                                                                                          |
+| `spawn_failure`           | string         | conditional | Present only on a `spawn_failed` terminal record; the refusal class, absent on a session that bound and on every other reason.                                                                           |
+
+The `spawn_failure` class is one of `pty_allocation`, `exec_permission_denied`,
+`exec_not_executable`, `exec_not_found`, `spawn_error`, `bind_deadline`,
+`not_bindable`, `bind_timeout`, or `post_spawn_refusal`: a static class, never a
+message and never an errno number. `cleanup` keeps what the plan could prove, so
+the pair separates an `exec` refusal from a PTY allocation failure. The
+`session_terminal` frame keeps its frozen envelope
+([event schema](#event-schema-and-capability)) and does not carry the class, so a
+client that needs it reads this key.
 
 `counts` is the `daemon.status` `sessions` object:
 
@@ -1496,8 +1506,13 @@ allocates no terminal, and opens no content plane, so it can be inspected,
 attached for metadata, granted, resized only to `Denied/NotRunning`, aborted, or
 killed, but it never reaches `running`. A spawn failure terminalizes the session
 as `failed`/`spawn_failed` at `generation: 0` with the cleanup class the plan
-could prove (`not_started`, `swept`, or `unverified`) and a `null` token; it
-still returns the normal create shape.
+could prove (`not_started` before a child existed, `swept` or `unverified` after
+one did), the typed `spawn_failure` refusal class, and a `null` token. The
+create answers the accepted result shape rather than a typed refusal for every
+spawn failure it can classify, because the frozen `session_terminal` frame
+carries no class: the session object is where a caller reads why the spawn
+failed. Only a cell that cannot spawn at all refuses the create itself, with
+`Denied/UnsupportedCapability` after the stage-6 scope check.
 
 | Result key      | Type           | Presence | Notes                                                                                                                                                                                                                                |
 | --------------- | -------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
