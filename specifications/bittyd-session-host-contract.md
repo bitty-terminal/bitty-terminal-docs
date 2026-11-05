@@ -311,6 +311,25 @@ the abort takes effect is `worker_exit`, and the superseded request is recorded
 in audit as requested-but-not-effective. This keeps cancel, timeout, and natural
 completion distinguishable, which cancellation policy and audit both require.
 
+A `spawn_failed` record also carries the refusal class in the session object's
+`spawn_failure` key (bitty#2790). The closed value set and its wire spelling are
+owned by the [IPC contract](bittyd-ipc-contract.md) `session` object row and are
+not repeated here. Presence is exact: a `spawn_failed` record carries the key, a
+session that bound does not, and no other reason does. The `session_terminal`
+frame is frozen and does not carry the class, so a client that needs it reads the
+session object.
+
+One class is narrower than its name suggests. `exec_not_executable` is reachable
+only through the errno mapping on this platform: the seam spawns through `fork`
+plus `execvp`, and the C library retries an `ENOEXEC` image through `/bin/sh`, so
+an executable file whose header the kernel recognises no format for starts a
+child instead of being refused. `crates/bitty-daemon/tests/service_loop.rs` pins
+that substitution in
+`an_unrecognised_executable_format_is_run_by_the_shell_and_never_refused`: the
+session binds at generation `1`, carries no class, and terminates as
+`worker_exit` with the substituted shell's exit status. The class therefore names
+an errno the kernel can report, not a refusal a client can provoke or depend on.
+
 Every terminal transition carries `cleanup`, and the exit information is
 specific to the reason: `exit_code` for `exited`, `signal` for
 `failed/worker_signal`, and no exit status for a session that never bound.
