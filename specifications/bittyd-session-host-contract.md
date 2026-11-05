@@ -1320,10 +1320,10 @@ scan, guess, or fall back to another transport.
 `session.create`:
 
 Request: `kind` (`terminal` only in v0.2.0), optional `terminal_id` (the
-server assigns an opaque id when absent), spawn specification (required for
-`terminal`), idempotency key.
+server assigns an opaque id when absent), optional spawn specification (a
+`terminal` create without one is registry-only), idempotency key.
 
-The terminal spawn specification is bounded and explicit:
+When the spawn specification is present it is bounded and explicit:
 
 | Field         | Rule                                                                                                                                       |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -1332,6 +1332,15 @@ The terminal spawn specification is bounded and explicit:
 | `cwd`         | One bounded absolute path, at most `max_spawn_field_bytes`.                                                                                |
 | `cols`/`rows` | Positive, within the existing terminal bounds.                                                                                             |
 | `term`        | Optional; the daemon supplies a default only when absent.                                                                                  |
+
+A `terminal` create that omits the spawn specification is valid: the daemon
+keeps the 1.2 registry-only record and creates a generation-0 session with no
+process, PTY, or content plane. The spawn intent is derived from `kind` and the
+presence of `argv`, and the specification is parsed only when the create will
+spawn (`crates/bitty-daemon/src/service/dispatch.rs`). Conformance vector `V-48`
+in `crates/bitty-daemon/tests/harness/corpus.json`, driven by
+`crates/bitty-daemon/tests/conformance.rs`, pins the generation-0 shape on both
+drivers.
 
 - `session.create` requires `session.host` **and** `process.spawn`. The first is
   an explicit per-client consent grant, never part of the baseline; the second
