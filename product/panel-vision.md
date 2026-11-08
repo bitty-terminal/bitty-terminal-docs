@@ -11,21 +11,27 @@ sidebar_order: 15
 
 # Panel Extensibility Vision
 
-> Status: **draft** as of 2026-08-30. This document is a vision draft for Panel
-> as a first-class container enabling a programmable terminal workspace. It
-> does not describe implemented, shipped, stable, or compatibility-guaranteed
-> behavior and does not authorize implementation. Experimental implementation
-> may exist as review evidence but carries no compatibility promise. The
-> lifecycle is `Draft -> experimental review evidence -> Accepted -> normative`;
-> only `Accepted` or `normative` documents authorize shipped behavior.
-> This vision remains Draft, and the Workspace Compositor is separate Draft
-> predecessor material; neither is Accepted by this document.
+> Status: **draft** as of 2026-08-30 (delivery-gap audit markers added
+> 2026-11-08 for `bitty#2478`). **[NOT IMPLEMENTED — candidate vision only.]**
+> This document is a vision draft for Panel as a first-class container enabling
+> a programmable terminal workspace. It does not describe implemented, shipped,
+> stable, or compatibility-guaranteed behavior and does not authorize
+> implementation. Experimental implementation may exist as review evidence but
+> carries no compatibility promise. The lifecycle is
+> `Draft -> experimental review evidence -> Accepted -> normative`; only
+> `Accepted` or `normative` documents authorize shipped behavior. This vision
+> remains Draft, and the Workspace Compositor is separate Draft predecessor
+> material; neither is Accepted by this document.
 
 ## Document status
 
 - Phase: vision draft before any Panel contract is accepted.
-- Implementation status: no Panel runtime, Event Bus, or distribution is
-  implemented; this document does not claim any capability is available.
+- Implementation status: **[NOT IMPLEMENTED]** — no unified `Panel` trait,
+  `PanelSurface` runtime polymorphism, seven-mode switcher, inter-panel Event
+  Bus, vertical chrome band host (`left`/`right`), user-facing tab strip over
+  `LayoutNode::Stack`, WebView embedder, or curated distribution is shipped. See
+  [Shipped vs candidate delivery status](#shipped-vs-candidate-delivery-status-bitty2478)
+  below for the exact item-by-item audit.
 - Provenance: workspace-local, temporary, untracked, untrusted design inputs
   (non-canonical, non-normative), plus the prior eight rounds of product
   discussion summarized in the [Product Vision](vision.md). These inputs
@@ -37,7 +43,8 @@ sidebar_order: 15
   project decision; candidate approaches must not be cited as implementation
   commitments.
 
-This document uses three status labels:
+This document uses three design-authority labels and three delivery-status
+labels:
 
 - **Accepted direction**: explicitly selected in the
   [Product Vision](vision.md) or a referenced accepted RFC or ADR; current
@@ -45,10 +52,33 @@ This document uses three status labels:
 - **Candidate approach**: recommended in research or draft discussion that
   still requires an RFC, ADR, prototype, or review.
 - **Open question**: area without a concrete design or acceptance criteria.
+- **Delivery status (`Implemented` | `Candidate (not implemented)` | `Deferred`)**:
+  whether the capability exists in the shipped `bitty` binary today (`bitty#2478`).
 
 `Accepted` labels in this document refer only to the authoritative source named
 for that statement. They do not promote this vision or the draft Workspace
 Compositor into an accepted contract.
+
+## Shipped vs candidate delivery status (bitty#2478)
+
+To prevent readers or reviewers from reading candidate architecture in this
+document as shipped behavior, the table below audits every major surface named
+in this vision against the current `bitty` codebase (`bitty#2478`):
+
+| Vision surface or claim                                                                                                  | Delivery status                                                                    | What is actually shipped in `bitty` today                                                                                                                                                                                                                                                                                                                                         | Tracking / authority                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Panel lifecycle state machine & registry (`PanelState`, `PanelRegistry`)                                                 | **Implemented (foundation only)**                                                  | `PanelState` (`Declared -> Created -> Mounted -> Focused -> Suspended -> Disposed`), `PanelRecord`, and generation-ceiling plumbing exist in `crates/bitty-ui/src/panel.rs` and `crates/bitty-runtime/src/registry/panel.rs`.                                                                                                                                                     | [Panel Runtime RFC](../specifications/panel-runtime-rfc.md), [Panel Generation Ownership Decision](../specifications/panel-generation-ownership-decision.md) (`bitty#2476`)                                                  |
+| Distinct identity newtypes (`PanelId`, `ViewId`, `TerminalId`, `WorkspaceId`)                                            | **Implemented**                                                                    | Typed opaque identifiers exist in `crates/bitty-ui` and `crates/bitty-runtime`; `WorkspaceSlot` mints a stable `WorkspaceId` (`b0d86eee`).                                                                                                                                                                                                                                        | [Workspace Compositor](../specifications/workspace-compositor.md), `bitty#2889`                                                                                                                                              |
+| `ViewContent` variants & resource budgets (`SCN-1..5`, `RC-1`, `RC-2`)                                                   | **Implemented (bounded subset)**                                                   | `ViewContent::{Terminal, Panel, Rich, Browser}` data variants and `SCN-1..5` (`64` blocks/terminal, `2048` nodes/block, depth `32`, `2 MiB`/terminal) + `RC-1`/`RC-2` budgets are enforced. Only `Terminal` grids and the focused-leaf `terminal` scene host (`ViewContent::Rich`) are wired to live presentation.                                                                | [UI and Compositor Gap Analysis](../specifications/ui-compositor-gap-analysis.md), [Panel Content Scene Path Decision](../specifications/panel-content-scene-path-decision.md)                                               |
+| Chrome band mounts (`top`, `bottom`, `overlay`) vs vertical bands (`left`, `right`)                                      | **Partial (`top`/`bottom`/`overlay` implemented; `left`/`right` not implemented)** | Only `top` and `bottom` horizontal bands plus `overlay` and the `terminal` scene slot are hosted (`crates/bitty-runtime/src/runtime/band_slots.rs`). Mounting `"left"` or `"right"` fails closed at `bitty.ui.mount` with `E_UI_UNAVAILABLE` (`bitty#2234`, `CTX-1341`). IDE-style `left tree + right terminal + bottom status` layouts via chrome bands are **not implemented**. | [Chrome Surface API (Candidate)](../specifications/chrome-surface-api-candidate.md), `bitty#2234`, `bitty#2478`                                                                                                              |
+| Declarative v1 UI vocabulary (`Text`, `Row`, `Column`, `List`) vs rich/custom panel content                              | **Implemented for v1 bands/overlays; compound/drawing tiers candidate**            | `Text`/`Row`/`Column`/`List` ship for chrome bands and simple overlays but cannot express file trees, diffs, charts, rich text, or self-drawn controls. Extension is split between Scene v2 (`bitty-rich`) and the candidate bounded drawing instruction tier (`bitty#2477`).                                                                                                     | [Panel GUI Content Presentation Candidate](../specifications/panel-gui-content-presentation-candidate.md), [Plugin Drawing Capability RFC (Candidate)](../specifications/plugin-drawing-rfc.md) (`bitty#2477`, `bitty#2478`) |
+| `LayoutNode::Stack` vs user-facing tabs                                                                                  | **Primitive only; user-facing tabs not implemented**                               | `LayoutNode::Stack` in `crates/bitty-ui/src/layout.rs` is an internal full-bounds z-stack primitive ("last child is top-most"). No user-facing tab bar, tab create, tab switch, tab close, or tab reorder UX exists; `"tabline"` mount fails closed with `E_UI_UNAVAILABLE`, and `bitty-terminal.tabs` is only a deprecated alias for `bitty-terminal.workspace`.                 | `bitty#2478`                                                                                                                                                                                                                 |
+| Unified `Panel` trait & `PanelSurface` enum (`Terminal`, `Plugin`, `HelperProcessBacked`, `WebView`)                     | **Candidate (not implemented)**                                                    | Conceptual host/compositor sketch only. `Panel::render(&mut Frame)` is explicitly rejected because handing a `Frame`/GPU handle across a panel boundary violates Security Overview Invariant 4.                                                                                                                                                                                   | This vision, [Plugin Drawing Capability RFC (Candidate)](../specifications/plugin-drawing-rfc.md) (`bitty#2477`, `bitty#2478`)                                                                                               |
+| Seven presentation modes (`tiled`, `floating`, `overlay`, `fullscreen`, `scratchpad`, `pinned`, `popover`) & Panel Rules | **Candidate (not implemented as unified Panel modes)**                             | Binary `H`/`V` splits and floating panes exist at the `View`/`LayoutNode` level and `overlay` exists as a chrome slot; `fullscreen` zoom, `scratchpad`, `pinned`, `popover`, runtime mode switching across arbitrary panels, and declarative Panel Rules are not wired end-to-end.                                                                                                | [Workspace Compositor](../specifications/workspace-compositor.md), `bitty#2478`                                                                                                                                              |
+| Inter-panel Event Bus (`bitty.events.emit` / cross-panel pub-sub)                                                        | **Candidate (not implemented)**                                                    | `PanelEventBus` exists only as a bounded internal/test structure in `crates/bitty-runtime`; no cross-plugin inter-panel Event Bus is exposed on the Lua runtime surface.                                                                                                                                                                                                          | [Panel Runtime and Event Bus Pre-Study](../specifications/panel-runtime-pre-study.md), `bitty#2478`                                                                                                                          |
+| Three app-composition paths (WebView, helper-process-backed service, CLI adapter)                                        | **Candidate (not implemented)**                                                    | Plugins can spawn capability-gated child processes (`process.spawn`) and mount declarative/scene UI, but no unified `HelperProcessPanel` or `WebViewPanel` host exists.                                                                                                                                                                                                           | This vision, `bitty#2478`                                                                                                                                                                                                    |
+| Optional `bitty-webview` backend & `browser.embed` capability                                                            | **Deferred (post-v1.0)**                                                           | No WebView engine is embedded or optional-loaded; `browser.embed` is not part of the closed v1 capability grammar.                                                                                                                                                                                                                                                                | This vision                                                                                                                                                                                                                  |
+| Curated distributions (`bitty-minimal`, `bitty-dev`, `bitty-cloud`, `bitty-social`, `LazyBitty`)                         | **Deferred (post-v1.0)**                                                           | No named distribution bundles exist; first-party plugins live in `bitty-plugins` and `bitty-ai` under the bundled-disabled contract.                                                                                                                                                                                                                                              | [Default Distribution RFC](../specifications/default-distribution-rfc.md)                                                                                                                                                    |
 
 ## Positioning
 
@@ -111,6 +141,10 @@ Everything composable. Extensions own the experience.`) with the workspace
 
 ## Panel is not Terminal
 
+> **[NOT IMPLEMENTED — candidate vision only.]** Only `Terminal` panes and the
+> focused-leaf `terminal` scene host (`ViewContent::Rich`) are wired into live
+> presentation today (`bitty#2478`).
+
 ### A first-class container
 
 - **Candidate direction**: Panel is a first-class UI container managed by the
@@ -160,6 +194,10 @@ Everything composable. Extensions own the experience.`) with the workspace
   accepted here.
 
 ## Hyprland mapping
+
+> **[NOT IMPLEMENTED — candidate vision only.]** The `[panel.rule.*]` config
+> syntax, `bitty.panel.toggle(...)` API, zoom/scratchpad panel modes, and
+> scrolling-layout provider below are unimplemented candidate shapes (`bitty#2478`).
 
 Hyprland is a read-only philosophy reference, not a vendored dependency.
 Every Hyprland-inspired behavior must be re-expressed as a typed, validated
@@ -452,20 +490,27 @@ Emacs (Buffer + Window + Lisp)
 
 ## Unified Panel lifecycle
 
+> **[NOT IMPLEMENTED — candidate vision only.]** Shipped code implements only
+> the `PanelState` state machine (`Declared -> Created -> Mounted -> Focused ->
+Suspended -> Disposed`) and `PanelRegistry` bookkeeping (`crates/bitty-ui/src/panel.rs`,
+> `crates/bitty-runtime/src/registry/panel.rs`); no `trait Panel` or
+> `PanelSurface` runtime dispatch exists (`bitty#2478`).
+
 - **Hypothetical candidate**: every panel, regardless of its content, could
   share one future internal Core/host-mediated lifecycle abstraction so the
-  compositor can manage focus, input, rendering, and suspension uniformly.
-  This is not a direct plugin render or input API: plugins remain declarative,
-  host-mediated, and off performance hot paths. Any future compositor could
-  avoid branching on whether a panel hosts a terminal, a browser surface, or
-  plugin-rendered declarative UI.
+  compositor can manage focus, input, projection sampling, and suspension
+  uniformly. This is not a direct plugin render or input API: plugins remain
+  declarative, host-mediated, and off performance hot paths. Any future
+  compositor could avoid branching on whether a panel hosts a terminal, a
+  browser surface, or plugin-submitted declarative/scene/drawing projections.
 
 ```rust
-// Hypothetical future internal Core/host abstraction; not a plugin API.
-// Plugins contribute declarative UI and do not implement render/input hot paths.
+// Hypothetical future internal Core/host abstraction; NOT implemented and NOT a plugin API.
+// Panels never receive a Frame/GPU/renderer handle; they expose an immutable,
+// host-validated projection sampled by the Core renderer outside plugin execution.
 trait Panel {
     fn mount(&mut self, ctx: &PanelContext);
-    fn render(&mut self, frame: &mut Frame);
+    fn project(&self) -> PanelProjection;
     fn handle_event(&mut self, event: Event);
     fn resize(&mut self, size: Size);
     fn focus(&mut self);
@@ -484,6 +529,27 @@ The accepted analogue is the generation-based lifecycle in the
 The Core-owned layout validation described by the
 [Workspace Compositor](../specifications/workspace-compositor.md) remains draft
 predecessor material and is not accepted by this vision.
+
+### Why `Panel::render(&mut Frame)` is rejected (bitty#2477, bitty#2478)
+
+Earlier revisions of the illustrative `trait Panel` sketch above included a
+`fn render(&mut self, frame: &mut Frame);` method alongside a comment stating
+"not a plugin API". That shape was removed under `bitty#2478` because it is a
+structural contradiction:
+
+- Placing `fn render(&mut self, frame: &mut Frame)` on a trait implemented by
+  `PluginPanel` implies that panel implementations are invoked during the paint
+  pass and handed a mutable `Frame`, GPU, or renderer handle.
+- [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)
+  Invariant 4 normatively forbids plugins from executing in the render hot path
+  and from holding renderer, GPU, or window objects.
+- As codified in the
+  [Plugin Drawing Capability RFC (Candidate)](../specifications/plugin-drawing-rfc.md)
+  (`bitty#2477`), non-terminal panels never render into a `Frame`. Instead,
+  plugins submit bounded, declarative trees (`Text`/`Row`/`Column`/`List`),
+  retained `Scene` blocks (`crates/bitty-rich`), or host-validated drawing
+  instruction buffers off the render hot path, and the Core renderer reads an
+  immutable `PanelProjection` snapshot during present.
 
 ### Panel != Pty principle
 
@@ -517,6 +583,11 @@ predecessor material and is not accepted by this vision.
   PTY ownership.
 
 ## Panel Runtime
+
+> **[NOT IMPLEMENTED — candidate vision only.]** No unified Panel Runtime
+> sits between the compositor and plugins today; shipped code provides chrome
+> band slots (`top`, `bottom`, `overlay`), the focused-leaf `terminal` scene
+> host, and `PanelRegistry` state bookkeeping (`bitty#2478`).
 
 - **Hypothetical candidate architecture**: a Panel Runtime could sit between the core compositor
   and plugins and owns layout composition, focus, input routing, rendering
@@ -553,7 +624,44 @@ predecessor material and is not accepted by this vision.
     [ADR 0008 - Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)
     until a future daemon ADR revisits it.
 
+### Declarative v1 expressiveness and the two-tier extension strategy (bitty#2477, bitty#2478)
+
+The shipped declarative v1 UI vocabulary (`Text`, `Row`, `Column`, `List`, with
+resource caps `RC-1` node count and `RC-2` text bytes) is intentionally scoped
+to horizontal chrome bands (`top`, `bottom`) and simple modal overlays
+(`overlay`). By itself, `Text`/`Row`/`Column`/`List` cannot express collapsible
+file trees, side-by-side or inline diffs, charts/sparklines, rich multi-span
+documents, or custom self-drawn controls (`bitty#2478`).
+
+To bridge that gap without breaking the sandbox or turning plugins into an
+unbounded immediate-mode GUI platform, Bitty defines a two-tier extension
+strategy:
+
+1. **Tier 1 — Compound declarative Scene primitives (`bitty-rich` / `terminal` scene host):**
+   rich structured blocks (styled spans, tables, borders, rule lines, progress
+   indicators, key-value rows, and closed `scene_style` padding/radius/border
+   tokens) mounted on the panel/leaf scene surface under `SCN-1..5` budgets
+   (`64` blocks per terminal, `2048` nodes per block, depth `32`, `2 MiB` per
+   terminal), as specified in the
+   [Panel GUI Content Presentation Candidate](../specifications/panel-gui-content-presentation-candidate.md)
+   and the
+   [Panel Content Scene Path Decision](../specifications/panel-content-scene-path-decision.md).
+2. **Tier 2 — Bounded declarative drawing instruction surface (`bitty#2477`, candidate):**
+   for visual panels (charts, canvas tools, custom controls) that compound
+   text/table primitives cannot express, the candidate
+   [Plugin Drawing Capability RFC (Candidate)](../specifications/plugin-drawing-rfc.md)
+   defines a retained, host-validated drawing instruction buffer (cell and
+   subcell raster entries, clipped to the panel content rect, generation-leased
+   with `StaleHandle` rejection, and host-derived damage). Plugins submit data
+   off the render hot path and never hold frame, GPU, or window handles.
+
 ## Candidate panel presentation modes
+
+> **[NOT IMPLEMENTED — candidate vision only.]** Binary `H`/`V` splits and
+> floating panes exist at the `View`/`LayoutNode` level and `overlay` exists as
+> a chrome slot, but unified `Panel` mode switching (`fullscreen` zoom,
+> `scratchpad`, `pinned`, `popover`) and declarative Panel Rules are not
+> implemented (`bitty#2478`).
 
 - **Candidate principle**: a Panel is content plus behavior; its presentation
   **Mode** is a runtime property deciding how it appears in the workspace.
@@ -563,15 +671,15 @@ predecessor material and is not accepted by this vision.
   `togglefloating`) without being recreated.
 - **Candidate mode taxonomy**:
 
-  | Mode         | Candidate use                                                        |
-  | ------------ | -------------------------------------------------------------------- |
-  | `tiled`      | Long-lived working surfaces: terminal, AI, Git, file panels          |
-  | `floating`   | Help, settings, quick AI, pets, small tools; focusable and movable   |
-  | `overlay`    | Transient interaction: command palette, flash jump, which-key, hints |
-  | `fullscreen` | Temporarily maximized terminal, AI, or document surface              |
-  | `scratchpad` | Hidden tool recalled and dismissed by one binding (AI, notes, music) |
-  | `pinned`     | Fixed to a workspace edge across layout changes                      |
-  | `popover`    | Small panel attached to one UI element                               |
+  | Mode         | Candidate use                                                        | Delivery status (`bitty#2478`)                                                  |
+  | ------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+  | `tiled`      | Long-lived working surfaces: terminal, AI, Git, file panels          | Partial (`H`/`V` split leaves for `Terminal` views; general `Panel` candidate)  |
+  | `floating`   | Help, settings, quick AI, pets, small tools; focusable and movable   | Partial (floating `View` panes; general `Panel` mode switching not implemented) |
+  | `overlay`    | Transient interaction: command palette, flash jump, which-key, hints | Implemented for single focusable `overlay` chrome slot                          |
+  | `fullscreen` | Temporarily maximized terminal, AI, or document surface              | Candidate (not implemented)                                                     |
+  | `scratchpad` | Hidden tool recalled and dismissed by one binding (AI, notes, music) | Candidate (not implemented)                                                     |
+  | `pinned`     | Fixed to a workspace edge across layout changes                      | Candidate (not implemented; vertical bands `left`/`right` fail closed)          |
+  | `popover`    | Small panel attached to one UI element                               | Candidate (not implemented)                                                     |
 
 - **Candidate semantics**: floating and overlay must not be conflated.
   Floating panels are real panels with lifecycle, focus, move, and resize;
@@ -589,7 +697,53 @@ predecessor material and is not accepted by this vision.
   to set mode, size, anchor, focusability). Rule precedence and schema
   belong to a future Panel RFC.
 
+### Vertical chrome bands and IDE-style layouts (bitty#2234, bitty#2478)
+
+In the shipped runtime (`crates/bitty-runtime/src/runtime/band_slots.rs`), only
+horizontal chrome bands (`"top"` and `"bottom"`), the modal `"overlay"` slot,
+and the focused-leaf `"terminal"` scene slot are hosted:
+
+- Calling `bitty.ui.mount` on `"left"` or `"right"` fails closed with the typed
+  runtime error `E_UI_UNAVAILABLE` (`bitty#2234`, `CTX-1341`, verified by
+  `vertical_band_slots_fail_closed_at_mount` in
+  `crates/bitty-runtime/tests/plugin_ui.rs`). No vertical band geometry is
+  reserved so a vertical slot can never be admitted and silently left unpainted.
+- Because vertical chrome bands are not implemented, an IDE-style multi-band
+  chrome layout (`left` file tree + `right` terminal + `bottom` status bar)
+  cannot be constructed out of chrome bands today (`bitty#2478`). Supporting
+  edge-pinned vertical bands requires a future vertical band host contract and
+  layout acceptance tests covering combined `left`/`right` + `top`/`bottom`
+  geometry reservation (tracked under `bitty#2234` and `bitty#2478`).
+
+### `LayoutNode::Stack` versus user-facing tabs (bitty#2478)
+
+`LayoutNode::Stack(Vec<LayoutNode>)` in `crates/bitty-ui/src/layout.rs` is an
+internal full-bounds z-stacking layout primitive: every child receives the full
+container rectangle and the last child is top-most in z-order. Readers and
+reviewers must not interpret `LayoutNode::Stack` as a shipped user-facing tab
+system (`bitty#2478`):
+
+- **No user-facing tab UX exists over `LayoutNode::Stack`:** Core does not ship
+  a tab-strip renderer (the experimental `tab_strip` projection was retired
+  under `W-104`/`CTX-0930`), and there are no user-facing commands, keybindings,
+  or pointer interactions to create, switch, close, or reorder tabs inside a
+  `LayoutNode::Stack` node.
+- **`"tabline"` fails closed:** mounting the `"tabline"` chrome slot via
+  `bitty.ui.mount` fails closed with `E_UI_UNAVAILABLE`
+  (`crates/bitty-runtime/src/runtime/band_slots.rs`).
+- **`bitty-terminal.tabs` is a workspace alias, not leaf tabs:** as noted under
+  [Distributions and distribution culture](#distributions-and-distribution-culture),
+  `bitty-terminal.tabs` (and the `tabline` claim) is only a deprecated
+  compatibility shim for `bitty-terminal.workspace` (`workspaceline`), which
+  switches whole workspace layout trees within a window rather than tabs inside
+  a `LayoutNode::Stack` leaf group.
+
 ## Inter-panel Event Bus
+
+> **[NOT IMPLEMENTED — candidate vision only.]** `PanelEventBus` exists only as
+> a bounded internal/test primitive in `crates/bitty-runtime`; no cross-plugin
+> inter-panel Event Bus (`bitty.events.emit` across panels) is exposed in the
+> shipped runtime (`bitty#2478`).
 
 - **Hypothetical candidate direction**: panels and plugins could compose workflows through an
   inter-panel Event Bus rather than direct references. A panel emits a typed
@@ -640,6 +794,11 @@ predecessor material and is not accepted by this vision.
 
 ## Three app-composition paths
 
+> **[NOT IMPLEMENTED — candidate vision only.]** No `WebViewPanel` or
+> `HelperProcessPanel` host exists; plugins today compose capability-gated
+> `process.spawn` calls with declarative v1 bands/overlays or the `terminal`
+> scene host (`bitty#2478`).
+
 Candidate: panels need not reimplement every application from scratch.
 Three composition paths cover the trade-off between cost and native control,
 with the choice made per panel type rather than per platform.
@@ -661,6 +820,10 @@ resource checks; no path grants ambient filesystem, network, or process
 authority.
 
 ## Four-layer hierarchy
+
+> **[NOT IMPLEMENTED — candidate vision only.]** Conceptual layering only;
+> authoritative crate boundaries live in the
+> [Architecture Overview](../architecture/overview.md) (`bitty#2478`).
 
 Candidate layering that positions Panel among core, extension, and application
 concerns. The precise crate boundaries remain owned by accepted architecture
@@ -711,6 +874,9 @@ as a scheduling commitment.
   between platform primitives and application policy.
 
 ## Browser is optional
+
+> **[NOT IMPLEMENTED — deferred post-v1.0.]** No `bitty-webview` backend or
+> `browser.embed` capability is implemented (`bitty#2478`).
 
 - **Candidate direction**: browser and WebView capability belongs to an
   optional backend, not to the core dependency set. Embedding Chromium or
@@ -776,6 +942,10 @@ Frame + Command + Hook -> Lisp`, while the candidate Bitty analogue is
   mode.
 
 ## Distributions and distribution culture
+
+> **[NOT IMPLEMENTED — deferred post-v1.0.]** Named curated distributions
+> (`bitty-minimal`, `bitty-dev`, `bitty-cloud`, `bitty-social`, `LazyBitty`,
+> `AstroBitty`) do not ship today (`bitty#2478`).
 
 Candidate: curated distributions compose the same panel primitives into
 different workspaces, mirroring Neovim distributions such as LazyVim.
@@ -884,31 +1054,34 @@ are the closest accepted anchors for this priority.
 
 ## Status separation and related documents
 
-| Statement in this vision                                                                                                       | Status    | Authoritative source                                                                                                                                                                                                                                                                                     |
-| ------------------------------------------------------------------------------------------------------------------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Small core, stable API, everything composable, extensions own the experience                                                   | Accepted  | [Product Vision](vision.md)                                                                                                                                                                                                                                                                              |
-| Rust core with Lua plugins, Tier 1/2/3 platform scope, agent-friendly not agent-centric                                        | Candidate | Authoritative elsewhere: [Product Vision](vision.md), [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md), and [Technology Strategy](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/technology-strategy.md) |
-| `Instance -> Window -> Workspace -> LayoutTree -> View` with distinct `ViewId`/`TerminalId`                                    | Draft     | [Workspace Compositor](../specifications/workspace-compositor.md)                                                                                                                                                                                                                                        |
-| `H` and `V` as the only Core layout primitives, Core-owned decoration, `LayoutProvider` as plugin                              | Draft     | [Workspace Compositor](../specifications/workspace-compositor.md)                                                                                                                                                                                                                                        |
-| Manifest grammar, capability families, generation lifecycle, observation vs interception, bounded queues                       | Accepted  | [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)                                                                                                                                                                              |
-| Local IPC as Unix socket or named pipe with peer credentials, scoped per request, bounded framing                              | Accepted  | [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)                                                                                                                                                                                           |
-| No daemon, no remote multi-client commitment at documentation phase; headless deferred to post-v1.0                            | Accepted  | [ADR 0008 - Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)                                                                                                                              |
-| Zero-cost bundled-disabled by default, five disable surfaces, `bitty --safe` precedence                                        | Accepted  | [Default Distribution RFC](../specifications/default-distribution-rfc.md)                                                                                                                                                                                                                                |
-| Panel as first-class container generalizing View                                                                               | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Unified Panel trait, Panel Runtime, inter-panel Event Bus                                                                      | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Panel != Pty; `PanelSurface { Terminal, Plugin, HelperProcessBacked, WebView }` as candidate surface model                     | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Prior art: Zellij/kitty/WezTerm/tmux/Emacs/Warp comparison and lineages                                                        | Candidate | This vision                                                                                                                                                                                                                                                                                              |
-| Three composition paths (WebView, helper-process-backed/native service, CLI adapter)                                           | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Four-layer hierarchy and browser-optional `bitty-webview`                                                                      | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Small by default, limitless by design; pay only for what you use; two-sided experience                                         | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Distribution culture (`LazyBitty`, `AstroBitty`), sharing, and plugin-extends-plugin hierarchy                                 | Candidate | This vision + [Default Distribution RFC](../specifications/default-distribution-rfc.md)                                                                                                                                                                                                                  |
-| Distributions (`minimal`, `dev`, `cloud`, `social`) and `awesome-bitty`                                                        | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Primitive stability order                                                                                                      | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Composable-terminal-workspace identity, five-layer plus capability-bus framing, AI-never-special-citizen                       | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Declarative tiling properties, deterministic save/restore, scrolling-layout option, floating kept                              | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Focus-follows-mouse toggle, focus-adjacent dwindle placement, Mod+drag reposition, scroll-as-plugin plus Lua panel/layout APIs | Candidate | This vision (CTX-0009, issue #29); requires RFC, ADR, or OQ decision (OQ-052, OQ-056, `RFC-OQ-9`; focus-follows-mouse OQ follow-up)                                                                                                                                                                      |
-| Seven presentation modes with Mode as runtime property, preferred mode plus Panel Rules                                        | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
-| Service Registry as plugin-on-plugin mechanism with graceful service disappearance                                             | Candidate | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                         |
+| Statement in this vision                                                                                                       | Status    | Delivery status (`bitty#2478`)                                                  | Authoritative source                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------ | --------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Small core, stable API, everything composable, extensions own the experience                                                   | Accepted  | Implemented (guiding architecture)                                              | [Product Vision](vision.md)                                                                                                                                                                                                                                                                                 |
+| Rust core with Lua plugins, Tier 1/2/3 platform scope, agent-friendly not agent-centric                                        | Candidate | Implemented                                                                     | Authoritative elsewhere: [Product Vision](vision.md), [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md), and [Technology Strategy](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/technology-strategy.md)    |
+| `Instance -> Window -> Workspace -> LayoutTree -> View` with distinct `ViewId`/`TerminalId`/`PanelId`/`WorkspaceId`            | Draft     | Implemented (state machine, identity newtypes, `ViewContent`, budgets)          | [Workspace Compositor](../specifications/workspace-compositor.md)                                                                                                                                                                                                                                           |
+| `H` and `V` as the only Core layout primitives, Core-owned decoration, `LayoutProvider` as plugin                              | Draft     | Partial (`H`/`V` splits and Core decoration implemented; plugin provider draft) | [Workspace Compositor](../specifications/workspace-compositor.md)                                                                                                                                                                                                                                           |
+| Manifest grammar, capability families, generation lifecycle, observation vs interception, bounded queues                       | Accepted  | Implemented                                                                     | [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)                                                                                                                                                                                 |
+| Local IPC as Unix socket or named pipe with peer credentials, scoped per request, bounded framing                              | Accepted  | Implemented                                                                     | [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/specifications/ipc-agent-rfc.md)                                                                                                                                                                                              |
+| No daemon, no remote multi-client commitment at documentation phase; headless deferred to post-v1.0                            | Accepted  | Implemented (local `bittyd` session plane under its own contract)               | [ADR 0008 - Headless Daemon, Detach/Reattach and Remote UI Trust Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0008-headless.md)                                                                                                                                 |
+| Zero-cost bundled-disabled by default, five disable surfaces, `bitty --safe` precedence                                        | Accepted  | Implemented                                                                     | [Default Distribution RFC](../specifications/default-distribution-rfc.md)                                                                                                                                                                                                                                   |
+| Chrome bands (`top`/`bottom` + `overlay` implemented; vertical `left`/`right` fail closed with `E_UI_UNAVAILABLE`)             | Draft     | Partial (`top`/`bottom`/`overlay` implemented; `left`/`right` not implemented)  | [Chrome Surface API (Candidate)](../specifications/chrome-surface-api-candidate.md) (`bitty#2234`, `bitty#2478`)                                                                                                                                                                                            |
+| Declarative v1 (`Text`/`Row`/`Column`/`List`) + two-tier extension (Scene v2 + bounded drawing RFC)                            | Draft     | Partial (v1 + `terminal` scene host implemented; drawing RFC not implemented)   | [Panel GUI Content Presentation Candidate](../specifications/panel-gui-content-presentation-candidate.md), [Panel Content Scene Path Decision](../specifications/panel-content-scene-path-decision.md), [Plugin Drawing Capability RFC (Candidate)](../specifications/plugin-drawing-rfc.md) (`bitty#2477`) |
+| `LayoutNode::Stack` as internal z-stack primitive (no user-facing tab create/switch/close/reorder UX)                          | Draft     | Primitive only; user-facing tabs not implemented                                | [Workspace Compositor](../specifications/workspace-compositor.md), this vision (`bitty#2478`)                                                                                                                                                                                                               |
+| Panel as first-class container generalizing View                                                                               | Candidate | Candidate (not implemented beyond `PanelState`/`PanelRegistry` foundation)      | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
+| Unified `Panel` projection trait (`Panel::render(&mut Frame)` rejected), Panel Runtime, inter-panel Event Bus                  | Candidate | Candidate (not implemented)                                                     | This vision + [Plugin Drawing Capability RFC (Candidate)](../specifications/plugin-drawing-rfc.md) (`bitty#2477`, `bitty#2478`)                                                                                                                                                                             |
+| Panel != Pty; `PanelSurface { Terminal, Plugin, HelperProcessBacked, WebView }` as candidate surface model                     | Candidate | Candidate (not implemented)                                                     | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
+| Prior art: Zellij/kitty/WezTerm/tmux/Emacs/Warp comparison and lineages                                                        | Candidate | Candidate (design context only)                                                 | This vision                                                                                                                                                                                                                                                                                                 |
+| Three composition paths (WebView, helper-process-backed/native service, CLI adapter)                                           | Candidate | Candidate (not implemented)                                                     | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
+| Four-layer hierarchy and browser-optional `bitty-webview`                                                                      | Candidate | Deferred (`bitty-webview` post-v1.0)                                            | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
+| Small by default, limitless by design; pay only for what you use; two-sided experience                                         | Candidate | Candidate (design philosophy)                                                   | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
+| Distribution culture (`LazyBitty`, `AstroBitty`), sharing, and plugin-extends-plugin hierarchy                                 | Candidate | Deferred (post-v1.0)                                                            | This vision + [Default Distribution RFC](../specifications/default-distribution-rfc.md)                                                                                                                                                                                                                     |
+| Distributions (`minimal`, `dev`, `cloud`, `social`) and `awesome-bitty`                                                        | Candidate | Deferred (post-v1.0)                                                            | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
+| Primitive stability order                                                                                                      | Candidate | Candidate (review guideline)                                                    | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
+| Composable-terminal-workspace identity, five-layer plus capability-bus framing, AI-never-special-citizen                       | Candidate | Candidate (not implemented)                                                     | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
+| Declarative tiling properties, deterministic save/restore, scrolling-layout option, floating kept                              | Candidate | Candidate (scrolling layout and save/restore not implemented)                   | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
+| Focus-follows-mouse toggle, focus-adjacent dwindle placement, Mod+drag reposition, scroll-as-plugin plus Lua panel/layout APIs | Candidate | Partial (focus-follows-mouse and dwindle/Mod+drag on `View`; Panel Lua open)    | This vision (CTX-0009, issue #29); requires RFC, ADR, or OQ decision (OQ-052, OQ-056, `RFC-OQ-9`; focus-follows-mouse OQ follow-up)                                                                                                                                                                         |
+| Seven presentation modes with Mode as runtime property, preferred mode plus Panel Rules                                        | Candidate | Candidate (not implemented as unified Panel modes)                              | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
+| Service Registry as plugin-on-plugin mechanism with graceful service disappearance                                             | Candidate | Candidate (not implemented)                                                     | This vision; requires RFC or ADR                                                                                                                                                                                                                                                                            |
 
 Provenance: workspace-local, temporary, untracked, untrusted design inputs
 (non-canonical, non-normative). They are not canonical repository evidence,
@@ -969,6 +1142,11 @@ a standalone product document per the
 - [Proposed Delivery Sequence](proposed-delivery-sequence.md)
 - [Input and Pointer Contract](../specifications/input-pointer-rfc.md)
 - [Panel Runtime RFC](../specifications/panel-runtime-rfc.md)
+- [Panel Generation Ownership Decision](../specifications/panel-generation-ownership-decision.md)
+- [Panel GUI Content Presentation Candidate](../specifications/panel-gui-content-presentation-candidate.md)
+- [Panel Content Scene Path Decision](../specifications/panel-content-scene-path-decision.md)
+- [Plugin Drawing Capability RFC (Candidate)](../specifications/plugin-drawing-rfc.md)
+- [Chrome Surface API (Candidate)](../specifications/chrome-surface-api-candidate.md)
 - [UI and Compositor Gap Analysis](../specifications/ui-compositor-gap-analysis.md)
 - [Panel Runtime and Event Bus Pre-Study](../specifications/panel-runtime-pre-study.md)
 - [AI Architecture](https://github.com/bitty-terminal/bitty-ai-docs/blob/main/architecture/ai-architecture.md)
