@@ -34,13 +34,15 @@ governs. Decision records:
 and
 [ADR 0016](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md).
 
-The focused contracts that define this platform's trust surface, and that must
-not weaken a P0 control, are (the `W-71` observability contract is still a
-draft; the rest are accepted):
+The accepted focused contracts that define this platform's trust surface, and
+that must not weaken a P0 control, are:
 
 - [Observability Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md)
-  (`W-71`, draft): read-only observation, default-deny authorization, redaction,
-  and bounded buffers stay in Core.
+  (`W-71`): read-only observation, default-deny authorization, redaction,
+  and bounded buffers stay in Core (`bitty-observability-api` is the
+  zero-dependency product contract; `bitty-observability-core` and the
+  `bitty-observability` facade remain non-product reference implementations
+  until `W-100`/`W-110` gates pass).
 - [Package Manager and Runtime Loader Boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/package-manager-boundary.md)
   (`W-72`): `P0-AC-027` through `P0-AC-030` and Core's read-only startup
   validation are preserved; Core stays network-free.
