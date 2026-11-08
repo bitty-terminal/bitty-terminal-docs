@@ -147,6 +147,81 @@ sidebar_order: 83
 - It is not a consumer specification. Wheel and `bitty-ai` consume this surface;
   they do not get a second spelling.
 
+### 1.5 revision: 2026-11-08 (bitty#3021 untrusted-observation label; service 1.5)
+
+PR #3034 (closes bitty#3021) labels every daemon response that carries terminal
+bytes as untrusted observation data, as `P0-AC-024`, threat `T-10`, and risk
+`R-013` require. It is an additive minor: `min_client_minor` stays `0`, so a
+`1.0` through `1.4` client remains in the accepted range and keeps working when
+it ignores the new key.
+
+- **Service version.** `src/contract.rs` fixes `1.5`, the accepted client range
+  `1.0..=1.5`, and `min_client_minor: 0`. The handshake response is
+  `{major: 1, minor: 5, min_client_minor: 0}`; a `1.6` client is
+  `VersionMismatch`.
+- **Label.** The label is the boolean key `is_untrusted_surface`, always
+  `true`. The key name and type are the `bitty-ipc` result vocabulary
+  (`ExecutionResult` and `RichFragment`), not a second label type, and terminal
+  bytes have no trusted variant.
+- **Labeled surfaces.** Every `session.read` success carries the key, including
+  a zero-byte read and a read clipped by `max_bytes`, and every
+  `session_content` frame carries it as `event.is_untrusted_surface`. These are
+  the only two surfaces that carry terminal bytes. `session.attach` returns
+  event metadata, `session.subscribe` returns subscription state, and
+  `session.write`, `session.resize`, and `session.control.transfer` return
+  counts, geometry, and lease metadata; none of them carries the key. The
+  catalog has no `debug.*` method.
+- **Server-attached.** `Service::dispatch` attaches the label after the handler
+  returns, from the frozen classification
+  `ServiceMethod::carries_terminal_content` (`session.read` only). A handler
+  cannot omit it, and a content result that is not a JSON object becomes an
+  internal refusal instead of being served unlabeled. No request field can
+  suppress or forge the label: trust-shaped request keys such as
+  `is_untrusted_surface`, `untrusted`, `label`, or `observation` are unknown
+  parameters, ignored by the handler, and never echoed. Truncation, redaction,
+  or any other rewrite of the result happens before attachment and cannot
+  remove the label.
+- **Frame bound.** The label fits inside the `1 024`-byte envelope allowance of
+  `CONTENT_FRAME_ENCODED_MAX`; a maximum-size `session_content` frame still
+  renders within the reserved `132 096` bytes.
+- **Corpus.** The conformance corpus and the reference fake advance their
+  version expectations to `1.5` and refuse a `1.6` client.
+
+The revision changes no accepted decision and adds no scope, method,
+capability, or refusal code. It records the labeling half of `P0-AC-024`; the
+hostile-output confused-deputy suite and auditor review that the criterion's
+pass threshold also names stay open under `F-9`. No recorded sign-off covers
+this revision.
+
+### 1.4 revision: 2026-11-07 (bitty#2918 served session record; service 1.4)
+
+PR #2955 (`5e5bebdc`, part of bitty#2918) serves the accepted session record's
+origin, worker, timestamp, and exit fields. It is an additive minor:
+`min_client_minor` stays `0`, so a `1.0` through `1.3` client remains in the
+accepted range.
+
+- **Service version.** `src/contract.rs` fixes `1.4`, the accepted client range
+  `1.0..=1.4`, and `min_client_minor: 0`.
+- **Every session view.** `created_by_kind` (`consumer`, `operator`, or
+  `daemon`; always present), `state_changed_at_ms` (server monotonic time of
+  the last `state_revision` bump), `last_worker_seen_at_ms` (present only after
+  a worker bound and a supervision pass observed it alive), `worker_handle` (an
+  opaque 32-hex registry handle present only after generation `1`; not a pid
+  and not a signal target), `exit_code` (present exactly on a `worker_exit`
+  record), and `signal` (present exactly on a `worker_signal` record).
+- **Operator view only.** `owner_client_id`, `requested_by`
+  (`{kind, client_id?}`, present only once a terminal transition was
+  requested), and `attached_leases` (live leases in attach-id order). An
+  ordinary `session.status` and `session.list` view omits all three, exactly
+  like the owner peer.
+- **Absence.** A key that does not apply is omitted, never `null`. The existing
+  `attached` boolean is unchanged.
+
+The per-method tables in [Wire schema](#wire-schema) still list the `1.3` result
+keys for the session object; the `1.4` keys are recorded in this note, and the
+crate `README.md` section "Served session record" is the implementation
+evidence.
+
 ### 1.3 revision: 2026-10-30 (bitty#2790 terminal content plane; service 1.3)
 
 PR #2821 (`f19d7875`, part of bitty#2790; open when this revision merged,
@@ -492,8 +567,8 @@ satisfies a P0 control.
   `session.host` is added only by a consumed host grant. The connection's
   transport set is `terminal.inspect`, `terminal.input`, `terminal.manage`, and
   `process.spawn`.
-- **Handshake:** `src/contract.rs` fixes service `1.3`, accepted client range
-  `1.0..=1.3`, and the six capabilities; `src/handshake.rs` holds the request,
+- **Handshake:** `src/contract.rs` fixes service `1.5`, accepted client range
+  `1.0..=1.5`, and the six capabilities; `src/handshake.rs` holds the request,
   response, correlation hashing, bearer parsing, and the pure version check;
   `src/service/wire.rs` parses and renders the JSON fields.
 - **Dispatch:** `src/service/dispatch.rs` implements the eleven-stage request
@@ -638,9 +713,9 @@ Rules that follow:
    immutable afterward. A client that needs a different major, minor range,
    scope set, or capability set reconnects.
 3. The server accepts the same major and a client minor in
-   `[min_client_minor, server_minor]`. The merged server fixes `1.3`, `0`, and
-   `1.0..=1.3`, so a `1.0`, `1.1`, `1.2`, and `1.3` client are all accepted
-   while a `1.4`, `2.0`, or `0.x` client is refused. A different major, or a
+   `[min_client_minor, server_minor]`. The merged server fixes `1.5`, `0`, and
+   `1.0..=1.5`, so a `1.0` through `1.5` client is accepted while a `1.6`,
+   `2.0`, or `0.x` client is refused. A different major, or a
    client minor outside the range, is `VersionMismatch` and the connection
    closes before any session operation. Every minor is additive: no capped
    field is required, no existing field changes meaning, and an older client
@@ -849,7 +924,7 @@ transport refuses an unsupported value before the service sees the request.
 | Field                 | Meaning                                                                                                                                                                                                                                                                                                                  |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `wire_version`        | The accepted wire version (`1`). An echo for the client's records, not a second negotiation.                                                                                                                                                                                                                             |
-| `service_api_version` | The object `{major: 1, minor: 3, min_client_minor: 0}`; the accepted client range is `1.0..=1.3`.                                                                                                                                                                                                                        |
+| `service_api_version` | The object `{major: 1, minor: 5, min_client_minor: 0}`; the accepted client range is `1.0..=1.5`.                                                                                                                                                                                                                        |
 | `daemon_instance_id`  | The fresh 128-bit random instance id, 32 lowercase hex, minted at daemon start.                                                                                                                                                                                                                                          |
 | `daemon_pid`          | The daemon pid, unsigned 32-bit. Observational only; never a signal target, handle, or authority input.                                                                                                                                                                                                                  |
 | `server_identity`     | `{uid, endpoint_kind, endpoint_owner, endpoint_mode}`. `endpoint_kind` is `unix_socket` on the served cell; mode is `0600`. Observational, not proof of server authenticity.                                                                                                                                             |
@@ -1175,7 +1250,11 @@ and reconciles with `session.status` when it needs the current grant set.
 
 ## Wire schema
 
-This section is the normative request and result schema for service `1.3`. It
+This section is the normative request and result schema for service `1.3`,
+extended by the `1.5` `is_untrusted_surface` rows below; the `1.4` session
+record keys are listed in the
+[1.4 revision](#14-revision-2026-11-07-bitty2918-served-session-record-service-14)
+note. It
 closes the gap that let a consumer learn a field name only by reading
 `crates/bitty-daemon/src/service/dispatch.rs`: every served method has an exact
 request table and an exact result table, and no catalog method is unserved. The
@@ -1750,13 +1829,14 @@ must hold the current controller lease for the target generation.
 | `generation` | u64    | required | Must equal the current generation; a mismatch is `Denied/StaleGeneration`.                                                                                      |
 | `max_bytes`  | u64    | optional | `1..=65536` (the `CONTENT_FRAME_BYTES` cap); absent is `65536`. `0` is `Validation/InvalidRequest`; an over-bound value is `Framing/LimitExceeded` with counts. |
 
-| Result key       | Type   | Presence | Notes                                                                            |
-| ---------------- | ------ | -------- | -------------------------------------------------------------------------------- |
-| `session_id`     | string | required | 32 lowercase hex echo.                                                           |
-| `generation`     | u64    | required | The current generation.                                                          |
-| `data`           | string | required | Lowercase hex, one raw byte per two characters; `""` when no bytes are buffered. |
-| `bytes`          | u64    | required | Decoded length of `data`.                                                        |
-| `buffered_bytes` | u64    | required | Bytes still buffered after this read.                                            |
+| Result key             | Type   | Presence | Notes                                                                                                           |
+| ---------------------- | ------ | -------- | --------------------------------------------------------------------------------------------------------------- |
+| `session_id`           | string | required | 32 lowercase hex echo.                                                                                          |
+| `generation`           | u64    | required | The current generation.                                                                                         |
+| `data`                 | string | required | Lowercase hex, one raw byte per two characters; `""` when no bytes are buffered.                                |
+| `bytes`                | u64    | required | Decoded length of `data`.                                                                                       |
+| `buffered_bytes`       | u64    | required | Bytes still buffered after this read.                                                                           |
+| `is_untrusted_surface` | bool   | required | Always `true` (since `1.5`): server-attached untrusted-observation label; no request field clears or forges it. |
 
 Order of checks: request parse (`session_id`, `generation`, `max_bytes`), the
 `terminal.inspect` transport scope at stage 6, instance binding, visibility,
@@ -1982,22 +2062,23 @@ revision ordering, the bounded backlog, and the terminal-event guarantee. This
 freeze restates those names and adds the one content frame kind the 1.3 surface
 serves:
 
-| Field                   | Type   | Meaning                                                                                                                                                   |
-| ----------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `v`                     | u64    | Wire version `1`.                                                                                                                                         |
-| `id`                    | string | Opaque server-chosen per-connection correlation value, at most 64 bytes. Not a UUID and not durable.                                                      |
-| `event.kind`            | string | `session_state`, `session_terminal`, `control_transfer`, `lease_revoked`, `daemon_stopping`, or `session_content`.                                        |
-| `event.instance_id`     | string | The `daemon_instance_id` the event belongs to.                                                                                                            |
-| `event.session_id`      | string | 32 lowercase hex.                                                                                                                                         |
-| `event.attach_id`       | string | The target lease, 32 lowercase hex.                                                                                                                       |
-| `event.revision`        | u64    | The session `state_revision` the event carries. For `session_content`, the current revision at emission; taking bytes never advances it.                  |
-| `event.terminal`        | bool   | `true` only on the terminal frame and `false` on every other frame, including `session_content`: the marker that a terminal event is never silently shed. |
-| `event.terminal_marker` | object | Present on `session_terminal`: `{state, reason, cleanup}` naming the terminal state, the typed reason, and the cleanup class.                             |
-| `event.detail`          | object | Optional per metadata kind: `control_transfer {from, to}` and `daemon_stopping {deadline_ms}`. `session_content` carries no `detail`.                     |
-| `event.generation`      | u64    | Present on `session_content`: the fenced generation the content belongs to.                                                                               |
-| `event.sequence`        | u64    | Present on `session_content`: the per-subscription content sequence, starting at zero and advancing only for a frame actually handed to the transport.    |
-| `event.data`            | string | Present on `session_content`: the raw terminal bytes as lowercase hex, one byte per two characters. Never interpreted by the daemon.                      |
-| `event.buffered_bytes`  | u64    | Present on `session_content`: bytes still buffered after this frame was taken.                                                                            |
+| Field                        | Type   | Meaning                                                                                                                                                   |
+| ---------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v`                          | u64    | Wire version `1`.                                                                                                                                         |
+| `id`                         | string | Opaque server-chosen per-connection correlation value, at most 64 bytes. Not a UUID and not durable.                                                      |
+| `event.kind`                 | string | `session_state`, `session_terminal`, `control_transfer`, `lease_revoked`, `daemon_stopping`, or `session_content`.                                        |
+| `event.instance_id`          | string | The `daemon_instance_id` the event belongs to.                                                                                                            |
+| `event.session_id`           | string | 32 lowercase hex.                                                                                                                                         |
+| `event.attach_id`            | string | The target lease, 32 lowercase hex.                                                                                                                       |
+| `event.revision`             | u64    | The session `state_revision` the event carries. For `session_content`, the current revision at emission; taking bytes never advances it.                  |
+| `event.terminal`             | bool   | `true` only on the terminal frame and `false` on every other frame, including `session_content`: the marker that a terminal event is never silently shed. |
+| `event.terminal_marker`      | object | Present on `session_terminal`: `{state, reason, cleanup}` naming the terminal state, the typed reason, and the cleanup class.                             |
+| `event.detail`               | object | Optional per metadata kind: `control_transfer {from, to}` and `daemon_stopping {deadline_ms}`. `session_content` carries no `detail`.                     |
+| `event.generation`           | u64    | Present on `session_content`: the fenced generation the content belongs to.                                                                               |
+| `event.sequence`             | u64    | Present on `session_content`: the per-subscription content sequence, starting at zero and advancing only for a frame actually handed to the transport.    |
+| `event.data`                 | string | Present on `session_content`: the raw terminal bytes as lowercase hex, one byte per two characters. Never interpreted by the daemon.                      |
+| `event.buffered_bytes`       | u64    | Present on `session_content`: bytes still buffered after this frame was taken.                                                                            |
+| `event.is_untrusted_surface` | bool   | Present on `session_content` (since `1.5`): always `true`, the server-attached untrusted-observation label.                                               |
 
 `session_content` is not a `session_state` mutation: it never advances
 `state_revision`, and several content frames may share one revision. A client
