@@ -642,14 +642,30 @@ state change. User entries replace the shipped chord by
 `context + chord` identity.
 
 `bitty.workspace:scratchpad-toggle` (spelled
-`command:bitty.workspace:scratchpad-toggle` on the chrome key path) toggles
+`command:bitty.workspace:scratchpad-toggle`, `toggle_scratchpad`, or
+`scratchpad_toggle` on the chrome key path) toggles
 the window scratchpad slot for the core-owned keymap command (bitty issue
-2091, CTX-1241; `crates/bitty-terminal/src/chrome_keys.rs`). The command
+2091, CTX-1241, and `bitty#3078` / `bitty#3074` at `d79f455b`;
+`crates/bitty-terminal/src/chrome_keys.rs`). The command
 routes past the plugin runtime straight to the core runtime
 (`Runtime::scratchpad_toggle`), validated on the live tree before any state
 change: a refused toggle parks nothing and leaves zoom and occupancy
-untouched. It carries no shipped default chord; bind it through a user
-`keymaps` entry by `context + chord` identity like any other action.
+untouched. Showing a parked scratchpad leaf succeeds even over an emptied
+tiled base layout, restores zoom before showing the parked leaf (including
+single-leaf zoom backups), and accepts leaves stamped with
+`presentation = "scratchpad"` by spawn rules; session snapshot restore resets
+the scratchpad slot and closes any pre-restore parked pane session so stale
+`ViewId`s cannot leak (`bitty#3078` / `bitty#3074`). Detached floating panels
+can also be pinned directly into the window-global pinned store via
+`toggle_pinned` or `bitty.panel.set_pinned` while preserving their
+`PaneSession` and plugin pin associations, retain focus when background tiled
+panes close or exit, clamp drag coordinates to `0..=u16::MAX`, receive panel
+rule fixed-size/dimension updates, and resolve through `find_view` across
+overlay/background-image validation, `search_host`, unbound `search_refresh`,
+`cw_latest_command_id` / command-zone hints, `copy_mode`, and `bitty ctl`
+(`bitty#3078` / `bitty#3074`, `bitty#3085`). It carries no shipped default
+chord; bind it through a user `keymaps` entry by `context + chord` identity
+like any other action.
 
 Shipped defaults (97 bindings, Alt spelling; `mod_key = "super"`
 rebinds every `alt`-bearing chord, `alt`-free chords pass through):
@@ -662,7 +678,14 @@ rebinds every `alt`-bearing chord, `alt`-free chords pass through):
   (clockwise right, down, left, up around the focused slot, continuing while
   the fresh pane stays focused, with a largest-feasible `Balanced` fallback
   when the focused slot is too small); it is refused at the gap-aware 10x4
-  minimum. `alt+q` closes the focused panel.
+  minimum. New panels, splits (`shift+alt+h/j/k/l`), floating/pinned panels,
+  and new workspaces (`alt+t`) inherit the focused pane's working directory —
+  consulting the pinned PTY-child kernel working directory first and falling
+  back to the `OSC 7` / session-restore chain when available (`bitty#3028` at
+  `ca5a96fe`). When a detached float or pinned panel is focused, split planning
+  falls back to the largest splittable tiled leaf (or creates a panel on an
+  empty tiled base) (`bitty#3078` / `bitty#3074`). `alt+q` closes the focused
+  panel.
 - Workspaces: `alt+t` new, `alt+w` close (kill-confirm),
   `alt+-` / `alt+=` previous/next, `alt+tab` last-used, `alt+[` / `alt+]`
   cycle occupied workspaces (next/previous, wrapping), `alt+1..9` jump,

@@ -10,6 +10,25 @@ and this project adheres to
 
 ### Added
 
+- 0.0.37 behavior synchronization: `config.manage` plugin profile lifecycle
+  surface (`bitty.profiles` / `bitty.config.profiles`: `list`,
+  `preview_use`/`use`, `preview_create`/`create`, `preview_clone`/`clone`,
+  `preview_rename`/`rename`, `preview_delete`/`delete`) with two-step SHA-256
+  digest approval, `--force` / `force = true` `<name>.lua.bak-<epoch>`
+  backups, and verbatim `extends` inheritance on `clone` and `create --from`
+  (`bitty#3047` / `bitty#3035`, `bitty#2884`, `bitty#3019`); focused-pane
+  working-directory (`cwd`) inheritance across new panels, splits, and
+  workspaces (`bitty#3028`); scratchpad toggle (`toggle_scratchpad` /
+  `scratchpad_toggle` / `bitty.workspace:scratchpad-toggle`) over emptied base
+  layouts with snapshot-restore cleanup, direct detached-float pinning
+  preserving `PaneSession`, and detached-float / pinned-view resolution across
+  overlay coordinate/rule handling, `search_host`, unbound `search_refresh`,
+  `cw_latest_command_id`, `copy_mode`, and `bitty ctl` (`bitty#3078` /
+  `bitty#3074`, `bitty#3085`); and Windows interactive `bitty init` default
+  shell seeding (`pwsh.exe` / `powershell.exe` / `cmd.exe`) when `$SHELL` is
+  unset (`bitty#3049`). These entries record implementation evidence only, not
+  a `Verified` or `Compatible` claim.
+
 - 0.0.28 crash and exit diagnostics documentation: a troubleshooting guide for
   `BITTY_CRASH_REPORT` (default-on for interactive runs, opt-out values,
   `--headless` exclusion), the `crash-report.log`, `exit-report.log`, and

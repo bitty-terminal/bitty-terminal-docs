@@ -637,9 +637,36 @@ inheritance; the CLI never re-inherits a pinned table on its own.
 
 Every verb accepts `--json` (an alias for `--format json`); the envelope shape
 and exit codes are defined in
-[Profile management](../interfaces/cli.md#profile-management). There is no
-interactive or TUI profile editor in this surface: that half remains open
-(bitty#2449, gated on bitty#2393).
+[Profile management](../interfaces/cli.md#profile-management).
+
+**Plugin `config.manage` profile lifecycle (`bitty#3047` / `bitty#3035`, `7d513caf`, CTX-1749).**
+Plugins holding the recorded `config.manage` capability access the matching
+eight profile operations through `bitty.profiles` (also mounted as
+`bitty.config.profiles`) alongside `bitty.config`:
+
+- **Read & inspect (`profile.list`, `profile.get`)**: `bitty.profiles.list()`
+  returns bounded `rows` / `profiles` (`{ name, active }`), `active`, `count`,
+  and `truncated`; scalar key reads go through `bitty.config.get(key)`.
+- **Create, clone, rename, delete, and switch (`profile.create`, `profile.clone`, `profile.rename`, `profile.delete`, `profile.switch`, `profile.update`)**:
+  every profile lifecycle mutation is a two-step preview-then-apply flow
+  (`preview_create` / `create`, `preview_clone` / `clone`,
+  `preview_rename` / `rename`, `preview_delete` / `delete`, and
+  `preview_use` / `use`, while scalar updates use `bitty.config.preview_set` /
+  `bitty.config.set`). `preview_<verb>` renders the bounded diff and issues a
+  one-shot lowercase SHA-256 `digest` bound to the plugin ID, verb, target
+  name(s), options, and candidate preimage/postimage; `<verb>` requires that
+  `digest` (trailing argument or `opts.digest`) and fails closed with
+  `E_CONFIG_APPROVAL_REQUIRED` / `E_CONFIG_APPROVAL_MISMATCH` / `E_CONFIG_STALE`
+  otherwise.
+- **`force` and `extends` parity with the CLI**: without `force = true`, an
+  existing target on `create`, `clone`, or `rename`, or deleting the active
+  profile or `default`, fails closed with `E_PROFILE_CONFLICT`. With
+  `force = true`, the replaced or deleted file is backed up to a collision-free
+  `<name>.lua.bak-<epoch>` sibling before atomic commit. Both `clone(src, dst)`
+  and `create(name, { from = src })` copy `src`'s Lua bytes verbatim so the new
+  profile retains `src`'s own `extends` parent rather than chaining onto `src`
+  (`bitty#3019`). A profile that another profile extends cannot be deleted or
+  renamed (`E_PROFILE_CONFLICT`), and `default` cannot be renamed.
 
 ## Profile-backed initialization
 
@@ -757,17 +784,23 @@ above.
   attribution (`cli/file/profile/default`), and opens the file in
   `$VISUAL`/`$EDITOR` (`vi` fallback).
 - Setup wizard (CTX-0149, issue #243; profile-backed by #2187/CTX-1404;
-  preset seeds by #2371): `bitty init [--yes] [--force] [--profile NAME]
+  preset seeds by #2371; Windows default-shell seed by #3049/CTX-1755): `bitty init [--yes] [--force] [--profile NAME]
 [--migrate]` is the opt-in first-run writer. A bare run writes
   `profiles/default.lua` plus the thin `init.lua` selector; `--profile NAME`
   writes only that profile and never activates it; `--profile
-minimal|dark|light` seeds a deterministic preset without prompting. Without
-  `--force`, an existing target is an error, never a silent overwrite;
-  `--force` copies the previous bytes to a collision-free `<file>.bak[.N]`
-  sibling before atomically replacing the file. A legacy `init.lua` is never
-  replaced implicitly; `--migrate` is the explicit conversion. A program
-  literally named `init` must be invoked as `bitty -- init ...`.
-  `--yes`/`--force` are init-only and ignored by normal startup.
+minimal|dark|light` seeds a deterministic preset without prompting. On
+  Windows, when `$SHELL` is unset, interactive `bitty init` probes and seeds
+  the resolved Windows default shell (`pwsh.exe` -> `powershell.exe` ->
+  `cmd.exe`) instead of `/bin/sh` (if none resolves, it warns naming the tried
+  candidates and leaves `terminal.shell` unset unless the user enters an
+  explicit path; the post-init shell-completion hint is suppressed for
+  `cmd.exe`). Without `--force`, an existing target is an error, never a silent
+  overwrite; `--force` copies the previous bytes to a collision-free
+  `<file>.bak[.N]` sibling before atomically replacing the file. A legacy
+  `init.lua` is never replaced implicitly; `--migrate` is the explicit
+  conversion. A program literally named `init` must be invoked as
+  `bitty -- init ...`. `--yes`/`--force` are init-only and ignored by normal
+  startup.
 - Quiet logging (CTX-0190): the default stderr level is `Warn` — warnings,
   errors, plus unconditional key user-facing lines (paste confirm/cancel,
   startup summary); per-frame `bitty tick` stats sit at `Debug`/`Trace` and
