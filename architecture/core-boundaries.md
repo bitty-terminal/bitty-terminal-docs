@@ -138,14 +138,14 @@ establish acceptance of every extraction or migration gate. The accepted boundar
 [ADR 0016 - Execution, Graphics, Accessibility, Storage, and Platform-Service Boundaries](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0016-execution-graphics-accessibility-storage-platform-boundaries.md)
 (`W-130`).
 
-| Boundary                           | Retained Core mechanism                                                                                                                                                                     | Focused contract and decision                                                                                                                                              |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Observability                      | Minimal, read-only observation seam plus the default-deny authorization gate, redaction, and bounded buffers                                                                                | [`W-71` observability boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md) (draft); aligned by `W-110`             |
-| Package manager and runtime loader | Startup validation of installed-plugin integrity, compatibility, and capability grants; no network path in Core                                                                             | [`W-72` package-manager boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/package-manager-boundary.md) (accepted); executed by `W-101`     |
-| Beacon                             | `TargetEngine` and `AnnotationEngine` targeting and annotation, plus target safety; policy moves to the `beacon` plugin                                                                     | [ADR 0018](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0018-beacon-mechanism-policy-split.md) / `W-03`; host API `W-29`, SDK `W-120`    |
-| Composer                           | Terminal Truth, the input pipeline, paste inspection, and process/temp-file permission control                                                                                              | [`W-73` composer boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/composer-boundary.md) (accepted); gated on `W-01`, `W-82`, `W-103`      |
-| Legacy chrome                      | Workspace lifecycle and state, panel and layout primitives, the generic chrome mechanism, and the scratchpad slot                                                                           | [`W-74` legacy-chrome retirement](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/legacy-chrome-retirement.md) (accepted); `W-104`, ADR 0017       |
-| Validation suites                  | None for the two relocated suites; the runtime-owned M1 suites (`m1_mode_input`, `m1_color_title`, `m1_shell_coverage`) and the `bitty-test-support`/`bitty-test-vm` members remain in Core | [`W-75` validation-suite ownership](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/validation-suite-ownership.md) (accepted); executed by `W-105` |
+| Boundary                           | Retained Core mechanism                                                                                                                                                                     | Focused contract and decision                                                                                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Observability                      | Minimal, read-only observation seam plus the default-deny authorization gate, redaction, and bounded buffers                                                                                | [`W-71` observability boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md) (accepted); staged by `W-100`, aligned by `W-110` |
+| Package manager and runtime loader | Startup validation of installed-plugin integrity, compatibility, and capability grants; no network path in Core                                                                             | [`W-72` package-manager boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/package-manager-boundary.md) (accepted); executed by `W-101`               |
+| Beacon                             | `TargetEngine` and `AnnotationEngine` targeting and annotation, plus target safety; policy moves to the `beacon` plugin                                                                     | [ADR 0018](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0018-beacon-mechanism-policy-split.md) / `W-03`; host API `W-29`, SDK `W-120`              |
+| Composer                           | Terminal Truth, the input pipeline, paste inspection, and process/temp-file permission control                                                                                              | [`W-73` composer boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/composer-boundary.md) (accepted); gated on `W-01`, `W-82`, `W-103`                |
+| Legacy chrome                      | Workspace lifecycle and state, panel and layout primitives, the generic chrome mechanism, and the scratchpad slot                                                                           | [`W-74` legacy-chrome retirement](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/legacy-chrome-retirement.md) (accepted); `W-104`, ADR 0017                 |
+| Validation suites                  | None for the two relocated suites; the runtime-owned M1 suites (`m1_mode_input`, `m1_color_title`, `m1_shell_coverage`) and the `bitty-test-support`/`bitty-test-vm` members remain in Core | [`W-75` validation-suite ownership](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/validation-suite-ownership.md) (accepted); executed by `W-105`           |
 
 The `W-130`/ADR 0016 set (execution supervisor, graphics decode, platform
 accessibility, restricted storage, and platform services) follows the same
@@ -200,8 +200,12 @@ external `bitty-plugin-manager`, and Core keeps no network path. IPC,
 networking, and agent protocols are partitioned into dedicated L1 Rust Core
 Extensions (`bitty-ipc`, `bitty-network`, `bitty-agent`), decoupling them from
 Core terminal platform dependencies; `bitty-observability` is an independent
-extension repository, and Core's adoption of an observation seam is a decided
-direction (`W-71`) that is not yet accepted or implemented. Current revision and
+extension repository (`bitty-observability-api` is the active zero-dependency
+product contract linked by `bitty-terminal`, while `bitty-observability-core`
+and the `bitty-observability` facade remain non-product reference
+implementations parked until the `W-100`/`W-110` host-adoption and removal
+gates pass under the accepted
+[`W-71` observability boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md)). Current revision and
 milestone evidence lives in
 [project-state.json](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json).
 
@@ -326,11 +330,15 @@ provides two distinct extension tiers:
    - `bitty-agent`: AI agent protocol layer (`bitty-agent-api`, `bitty-agent`),
      default-off.
    - `bitty-observability`: Zero-dependency tracing and metrics definitions
-     (`bitty-observability-api`). It is an independent extension repository:
-     Core has not adopted an observation seam yet, and the decided direction
-     (`W-71`) retains only a minimal read-only observation mechanism plus the
-     authorization, redaction, and bound rules in Core; the `W-71` contract is
-     still a draft.
+     (`bitty-observability-api`). Under the accepted
+     [`W-71` observability boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md),
+     Core retains only a minimal read-only observation mechanism plus the
+     authorization, redaction, and bound rules (`bitty-observability-api` is
+     the active zero-dependency product contract linked by the
+     `bitty-terminal` composition root, while `bitty-observability-core` and
+     the `bitty-observability` facade remain non-product reference
+     implementations parked until the `W-100`/`W-110` host-adoption and
+     removal gates pass).
    - `bitty-plugin-manager`: The external package manager that owns install-time
      package management under the accepted `W-72` boundary; Core keeps only
      read-only startup validation and no network path.

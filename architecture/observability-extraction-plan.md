@@ -22,17 +22,20 @@ path and does not authorize, schedule, or claim any extraction: every
 implemented claim, line count, and size figure below is a candidate estimate,
 not evidence.
 
-The observability boundary is now decided in direction by
+The observability boundary is decided by
 [ADR 0015](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0015-small-core-extraction-boundaries.md)
-(Boundary 1), with a focused contract in
-[`W-71` observability boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md)
-(draft) and alignment carried by `W-110`. Under that direction Core retains a
-minimal, read-only observation seam plus a default-deny authorization gate,
-redaction at emission, and bounded buffers; the optional debug and trace
-implementation and all observation policy move to `bitty-observability`. Nothing
-in that boundary is accepted or implemented, and the extraction this plan
-sketches must not start before the `W-71` contract is accepted and its removal
-gates are met. The accepted ownership summary lives in
+(Boundary 1) and the accepted focused contract
+[`W-71` observability boundary](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/development/observability-boundary.md),
+with Core staging tracked under `W-100` and alignment under `W-110`. Under that
+contract Core retains a minimal, read-only observation seam plus a default-deny
+authorization gate, redaction at emission, and bounded buffers; the optional
+debug and trace implementation and all observation policy move to
+`bitty-observability` (`bitty-observability-api` is the zero-dependency product
+contract linked by `bitty-terminal`, while `bitty-observability-core` and the
+`bitty-observability` facade remain non-product reference implementations until
+the `W-100`/`W-110` host-adoption and removal gates pass). The extraction this
+plan sketches must not retire Core debug or trace code before the `W-71`
+removal gates are met. The accepted ownership summary lives in
 [Core and Plugin Boundaries](core-boundaries.md#decided-extraction-boundaries),
 and the dependency order is recorded in the
 [small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
