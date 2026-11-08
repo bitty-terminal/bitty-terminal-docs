@@ -514,7 +514,8 @@ and only multi-parent `extends` stays open.
 Status: **implemented-only** (read-only from `bitty` `origin/main`,
 `crates/bitty-terminal/src/profile.rs`, bitty #2708 at `11582102`, CTX-1589;
 re-verified against the profile hardening merges bitty #2719/#2722/#2725,
-CTX-1597/CTX-1602/CTX-1608).
+CTX-1597/CTX-1602/CTX-1608, and completed by bitty #2884 at `cec83552`,
+CTX-1693, and bitty #3019 at `85de3c11`).
 The profile model above remains the shipped contract; this subsection records
 the management surface and promises no stability.
 
@@ -522,28 +523,35 @@ the management surface and promises no stability.
 the same config target startup uses (`--config` > `BITTY_CONFIG` > XDG probe),
 then its sibling `profiles/` directory:
 
-| Verb                  | Effect                                                                                    |
-| --------------------- | ----------------------------------------------------------------------------------------- |
-| `create NAME`         | Write a minimal valid profile; an existing file is a conflict.                            |
-| `clone SRC DST`       | Copy SRC's Lua bytes verbatim to DST; an existing destination is a conflict.              |
-| `rename OLD NEW`      | Rename one file in place; an existing NEW or `OLD = NEW` is a conflict.                   |
-| `delete NAME`         | Remove one file.                                                                          |
-| `list`                | List validated names from bounded directory metadata; evaluates no Lua.                   |
-| `show NAME`           | Load and validate the `extends` chain; print profile-only values with source attribution. |
-| `use NAME`            | Activate NAME by rewriting the persisted selector.                                        |
-| `get NAME PATH`       | Print the effective value at one documented dotted scalar path.                           |
-| `set NAME PATH VALUE` | Validate and write one documented dotted scalar path into NAME.                           |
-| `path NAME`           | Print the resolved path without creating it or evaluating Lua.                            |
+| Verb                  | Effect                                                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create NAME`         | Write a minimal valid profile (`--from EXISTING` or `--preset minimal\|dark\|light`); an existing file is a conflict unless `--force`.        |
+| `clone SRC DST`       | Copy SRC's Lua bytes verbatim to DST (keeps SRC's `extends` parent, never names SRC); an existing destination is a conflict unless `--force`. |
+| `rename OLD NEW`      | Rename one file in place and update the persisted selector; an existing NEW is a conflict unless `--force` (`OLD = NEW` is always refused).   |
+| `delete NAME`         | Back up NAME to `<name>.lua.bak-<epoch>` and remove the file (`--force` required when active or `default`).                                   |
+| `list`                | List validated names from bounded directory metadata; evaluates no Lua.                                                                       |
+| `show NAME`           | Load and validate the `extends` chain; print profile-only values with source attribution.                                                     |
+| `use NAME`            | Activate NAME by rewriting the persisted selector.                                                                                            |
+| `get NAME PATH`       | Print the effective value at one documented dotted scalar path.                                                                               |
+| `set NAME PATH VALUE` | Validate and write one documented dotted scalar path into NAME.                                                                               |
+| `edit NAME`           | Edit a sibling draft in `$VISUAL` / `$EDITOR`, validate through the strict merged loader, and replace NAME atomically.                        |
+| `path NAME`           | Print the resolved path without creating it or evaluating Lua.                                                                                |
 
 Fail-closed rules:
 
-- `default` is reserved for `bitty init`: `create`, `delete`, and `rename`
-  refuse it, and `clone` refuses it as a destination (cloning `default` to a
-  new name is the intended path).
-- `create`, `clone`, and `rename` never overwrite an existing destination.
-- `delete` and `rename` refuse the profile the next launch would activate
-  (from `--profile`, `BITTY_PROFILE`, or the persisted selector) and a profile
-  another profile names in `extends`; the diagnostic names the dependents.
+- `default` is reserved for `bitty init`: `create`, `clone` (as destination),
+  and `rename` always refuse it, and `delete` refuses it without `--force`
+  (cloning `default` to a new name is the intended path).
+- Without `--force`, `create`, `clone`, and `rename` never overwrite an
+  existing destination. With `--force`, they back the replaced destination up
+  to a collision-free `<name>.lua.bak-<epoch>` sibling (exclusive creation,
+  never following a symlink) before the atomic commit and restore it if the
+  commit fails.
+- `delete` always writes that `<name>.lua.bak-<epoch>` backup before removing
+  the file. `delete` and `rename` always refuse a profile another profile names
+  in `extends` (the diagnostic names the dependents); `rename` also refuses the
+  active profile, while `delete` requires `--force` for the active profile or
+  `default`. Every write verb accepts `--dry-run`.
 - `use NAME` validates the name, the whole chain, and the prospective selector
   first. It rewrites exactly one live top-level short-quoted
   `profile = "…"` assignment, preserves comments and user overrides, keeps a

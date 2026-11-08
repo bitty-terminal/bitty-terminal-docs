@@ -640,43 +640,56 @@ Path and configuration architecture are documented in
 Status: **implemented-only, source-qualified** at `bitty` `origin/main`
 (bitty #2708, commit `11582102`, CTX-1589; the read-only verbs first shipped
 with CTX-1404, issue #2187; re-verified against the profile hardening merges
-bitty #2719/#2722/#2725, CTX-1597/CTX-1602/CTX-1608). This records implemented
-behaviour; it is not a stability promise and does not accept the candidate CLI
-grammar above.
+bitty #2719/#2722/#2725, CTX-1597/CTX-1602/CTX-1608, and completed by
+bitty #2884 at `cec83552`, CTX-1693, and bitty #3019 at `85de3c11`). This
+records implemented behaviour; it is not a stability promise and does not
+accept the candidate CLI grammar above.
 
 ```sh
-bitty config profile create NAME
-bitty config profile clone SRC DST
-bitty config profile rename OLD NEW
-bitty config profile delete NAME
+bitty config profile create NAME [--from EXISTING|--preset NAME] [--force]
+bitty config profile clone SRC DST [--force]
+bitty config profile rename OLD NEW [--force]
+bitty config profile delete NAME [--force]
 bitty config profile list
 bitty config profile show NAME
 bitty config profile use NAME
 bitty config profile get NAME PATH
 bitty config profile set NAME PATH VALUE
+bitty config profile edit NAME
 bitty config profile path NAME
 ```
 
-All ten verbs are local, pre-runtime operations on
+All eleven verbs are local, pre-runtime operations on
 `$XDG_CONFIG_HOME/bitty/profiles/<name>.lua`, or on the sibling `profiles/`
 directory of an explicit `--config` / `BITTY_CONFIG` file. They never install,
 enable, or grant a plugin, never touch component state, and never edit shell
 rc files; `BITTY_PROFILE` is a launch input and never an output target.
 
-- `create NAME` writes a minimal valid profile; `clone SRC DST` copies SRC's
-  Lua bytes verbatim. Both refuse an existing destination as a conflict.
-  `clone` reads and validates the exact bytes it copies in one read: a source
-  that changes between read and copy, or that is not a regular file, is
-  refused, and the strict `bitty config check` gates run on the merged
-  configuration before DST is created. `default` is reserved for
+- `create NAME [--from EXISTING|--preset NAME] [--force]` writes a minimal
+  valid profile (or seeds from `--from EXISTING` or `--preset minimal|dark|light`);
+  `clone SRC DST [--force]` copies SRC's Lua bytes verbatim as a standalone
+  copy that keeps SRC's own `extends` parent and never names SRC in `extends`.
+  Without `--force`, both refuse an existing destination as a conflict; with
+  `--force`, the replaced destination is backed up to a collision-free
+  `<name>.lua.bak-<epoch>` sibling before the atomic commit and restored if the
+  commit fails. `clone` reads and validates the exact bytes it copies in one
+  read: a source that changes between read and copy, or that is not a regular
+  file, is refused, and the strict `bitty config check` gates run on the merged
+  configuration before DST is committed. `default` is reserved for
   `bitty init`: `create` refuses it, and `clone` refuses it as a destination
   (cloning `default` to another name is the intended path).
-- `rename OLD NEW` renames the file in place and refuses an existing new name,
-  renaming onto itself, and the reserved `default`.
-- `delete NAME` removes the file. `delete` and `rename` refuse the profile the
-  next launch would activate — from `--profile`, `BITTY_PROFILE`, or the
-  persisted `init.lua` selector — and a profile another profile names in
-  `extends`.
+- `rename OLD NEW [--force]` renames the file in place and rewrites the
+  persisted `init.lua` selector when it named `OLD` (rolling the rename back if
+  the selector update fails). It always refuses renaming onto itself and the
+  reserved `default`; an existing `NEW` is refused unless `--force` (which
+  backs `NEW` up to `<name>.lua.bak-<epoch>` and restores on commit failure).
+- `delete NAME [--force]` always backs `NAME` up to a collision-free
+  `<name>.lua.bak-<epoch>` sibling (exclusive creation, never following a
+  symlinked final component) before removing the file. `delete` and `rename`
+  always refuse a profile another profile names in `extends`; deleting the
+  profile the next launch would activate — from `--profile`, `BITTY_PROFILE`,
+  or the persisted `init.lua` selector — or deleting `default` requires
+  `--force` (`rename` always refuses the active profile and `default`).
 - `list` reads bounded directory metadata and evaluates no Lua. `show NAME`
   loads and validates the single-parent `extends` chain and prints
   profile-only values with source attribution. `path NAME` validates the name
@@ -702,8 +715,15 @@ rc files; `BITTY_PROFILE` is a launch input and never an output target.
   [Profile management commands](../configuration/lua-and-xdg.md#profile-management-commands);
   keymaps, plugins, panel rules, views, theme colour maps, and background-image
   paths are not settable.
+- `edit NAME` opens a sibling draft in `$VISUAL` / `$EDITOR`, validates the
+  edited file through the same strict merged loader, and only then replaces
+  `NAME` atomically; an invalid or failed edit leaves the original bytes
+  byte-identical.
 
-Writes are fail-closed and atomic. The candidate bytes are parsed and merged
+Writes are fail-closed and atomic. Every write verb (`create`, `clone`,
+`rename`, `delete`, `use`, `set`, `edit`) accepts `--dry-run`, which runs the
+same reads, validation, and merge gates and reports the prospective change
+without touching the filesystem. The candidate bytes are parsed and merged
 before any change, then published through a unique same-directory temporary
 file, `sync_all`, and a rename over the target. A rejected value, a refused
 edit, or a failed write leaves the previous profile bytes byte-identical; a
