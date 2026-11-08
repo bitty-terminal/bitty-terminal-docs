@@ -145,6 +145,16 @@ A persisted write surface requires a new capability; it is **not** implemented
 and must not be added without this section's review. The plugin's Settings
 write UI must not ship before it.
 
+> **Implementation status (`bitty#3047` / `bitty#3035`, `7d513caf`, CTX-1749):**
+> The `config.manage` capability and its two-step digest-approved profile
+> lifecycle surface (`bitty.profiles` / `bitty.config.profiles`: `list`,
+> `preview_use`/`use`, `preview_create`/`create`, `preview_clone`/`clone`,
+> `preview_rename`/`rename`, `preview_delete`/`delete`, alongside scalar
+> `bitty.config.get` / `preview_set` / `set`) are implemented in Core, with
+> `force = true` `<name>.lua.bak-<epoch>` backups and verbatim `extends`
+> preservation on `clone` and `create { from = ... }` (see
+> [Profile management commands](../configuration/lua-and-xdg.md#profile-management-commands)).
+
 ### Capability
 
 | Field     | Value                                                                    |

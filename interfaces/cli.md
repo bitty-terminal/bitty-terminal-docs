@@ -557,6 +557,13 @@ First-class preset seeds from Core issue #2371 are implemented (0.0.25):
 - Generated files validate before mutation. New files use exclusive creation;
   replacements write and sync a sibling temporary file then rename over the
   target; backups use `<file>.bak[.N]` exclusive creation.
+- On Windows, when `$SHELL` is unset, interactive `bitty init` probes and seeds
+  the resolved Windows default shell (`pwsh.exe` -> `powershell.exe` ->
+  `cmd.exe`) instead of `/bin/sh` (`bitty#3049`, `5518b978`, CTX-1755). When no
+  default shell candidate resolves on Windows, `bitty init` prints a warning
+  naming the tried candidates and leaves `terminal.shell` unset unless the user
+  explicitly types a path; the post-init shell-completion hint is suppressed
+  for shells without a `CompletionShell` (`cmd.exe`).
 - The wizard still writes only the documented configuration surface and keeps
   its bounded-attempt and fail-closed behavior. These are implementation
   observations, not an acceptance of the candidate CLI grammar.
@@ -742,6 +749,14 @@ with the human diagnostic on stderr for a failure. Shell completion offers
 `--json` after every profile verb. Exit codes are `0` success,
 `1` filesystem/I/O failure, and `2` usage, conflict, not-found, and
 invalid-input failures.
+
+Plugins holding the `config.manage` capability access the matching profile
+lifecycle verbs through `bitty.profiles` (`bitty.config.profiles`: `list`,
+`preview_use`/`use`, `preview_create`/`create`, `preview_clone`/`clone`,
+`preview_rename`/`rename`, `preview_delete`/`delete`) with two-step SHA-256
+digest approval and the same `force` backup-then-replace and `extends`
+inheritance rules (`bitty#3047` at `7d513caf`, CTX-1749; see
+[Profile management commands](../configuration/lua-and-xdg.md#profile-management-commands)).
 
 ## Safe mode configuration precedence
 
