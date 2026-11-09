@@ -346,17 +346,19 @@ controller binding are generation-owned and ephemeral**.
    **The table is capped by live panels, not by an absolute constant.** The cap
    is the registry instance's configured `max_panels_per_window`, and an
    insertion never evicts a live panel's tombstone. [bitty#2890](https://github.com/bitty-terminal/bitty/pull/2890)
-   (`6bc0c5fa`) replaced the former `MAX_RETAINED_GRANT_CEILINGS = 64` constant
-   in `crates/bitty-runtime/src/registry/panel.rs` with
-   `self.limits.max_panels_per_window`: an insertion that would still exceed the
-   configured cap fails the release closed with `PanelError::MaxPanelsExceeded`
-   — live row retained, panel unbound, one FS-4-style record naming the
-   tombstone step — rather than evict any entry (`N-14`). Because a disposed
-   panel drops its entry, the table cannot hold more entries than live panels,
-   so the configured cap is sufficient. An entry is dropped when a successor
-   successfully binds the same panel, when the panel's next controller
-   generation ends and writes its own tombstone, or on workspace close or panel
-   disposal, whichever comes first.
+   (`6bc0c5fa`) removed the eviction path: `PanelRegistry::retain_grant_ceiling`
+   in `crates/bitty-runtime/src/registry/panel.rs` takes its capacity from
+   `self.config.max_panels_per_window`, clamped by the structural
+   `MAX_RETAINED_GRANT_CEILINGS = MAX_PANELS_PER_WINDOW` bound, which remains in
+   the code as an absolute upper bound rather than the effective cap; an
+   insertion that would still exceed it fails the release closed with
+   `PanelError::ResourceExhausted` — live row retained, panel unbound, one
+   FS-4-style record naming the tombstone step — rather than evict any entry
+   (`N-14`). Because a disposed panel drops its entry, the table cannot hold
+   more entries than live panels, so the configured cap is sufficient. An entry
+   is dropped when a successor successfully binds the same panel, when the
+   panel's next controller generation ends and writes its own tombstone, or on
+   workspace close or panel disposal, whichever comes first.
 
    The tombstone write is part of the release, not an optimisation: if it
    cannot be written, the release fails closed without deleting the live row,
@@ -1185,9 +1187,9 @@ Conformance requires, at minimum:
    boundary with the capture step, the two-phase order, and the fail-closed
    branches; the unbind release at the generation edge with its bounded
    counter and accessor (the seam and accessors merged at `6bc0c5fa`); the
-   retired-ceiling tombstone with its configured cap (replacing
-   `MAX_RETAINED_GRANT_CEILINGS` with the registry's `max_panels_per_window`)
-   and retention (merged at `6bc0c5fa`); the two typed
+   retired-ceiling tombstone with its configured cap (the registry's
+   `max_panels_per_window`, clamped by the retained `MAX_RETAINED_GRANT_CEILINGS`
+   bound) and retention (merged at `6bc0c5fa`); the two typed
    refusal variants; grant re-keying to `(PanelId, controller generation)`;
    overlay attribution; the workspace-identity surface that now exists in
    `Runtime` (mint at slot creation, store on `WorkspaceSlot`, read through
