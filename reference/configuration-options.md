@@ -524,8 +524,7 @@ their owning open question accepts them; unknown fields fail closed.
 
 `mouse.right` and `mouse.middle` bind the two chrome buttons to the same
 action vocabulary as `keymaps[].action` — `paste_from_clipboard`,
-`paste_from_primary`, `copy_to_clipboard`, `toggle_help`,
-`command:<owner:cmd>`, and the rest of the catalog — plus an explicit `none`
+`paste_from_primary`, `copy_to_clipboard`, `command:<owner:cmd>`, and the rest of the catalog — plus an explicit `none`
 no-op. The shipped matrix is `right = "none"` and
 `middle = "paste_from_primary"`: a default right-click reads no clipboard,
 opens no suspicious-paste dialog, and writes no PTY bytes, so an accidental
@@ -582,7 +581,7 @@ candidate contract under OQ-047
 | `leader_timeout_ms` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms                                                                                                                                                                                                                                                                                            | ignore element / reject reload | live    |
 | `input.leader`      | string                                | unset (same platform default as `leader_key`)            | shared chord grammar; wins over `leader_key` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                                | ignore element / reject reload | live    |
 | `input.timeout_len` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms; wins over `leader_timeout_ms` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                            | ignore element / reject reload | live    |
-| `keymaps[]`         | array of `{ chord, action, context }` | 97 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                 | ignore element / reject reload | live    |
+| `keymaps[]`         | array of `{ chord, action, context }` | 93 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                 | ignore element / reject reload | live    |
 | `plugins[]`         | array of `{ id, enabled }`            | empty                                                    | Top-level `plugins` is a normal Lua declaration path. `id` is trimmed, non-empty, at most 128 bytes; `enabled` is a boolean; at most 1024 entries; entries merge by `id`. An invalid table is ignored at startup and denied for the launch (see [Startup salvage](#startup-salvage-and-strict-diagnostics)). | ignore element / reject reload | restart |
 
 `schema_version` current is `1` (absent assumes `0` and migrates; newer
@@ -608,7 +607,7 @@ Bindable actions: `goto_split:<left|right|up|down>`,
 `focus:<1..=256>`, `copy_to_clipboard`, `paste_from_clipboard`,
 `paste_from_primary` (no shipped chord; the `mouse.middle` default),
 `scroll_page_up`, `scroll_page_down`, `increase_font_size`,
-`decrease_font_size`, `reset_font_size`, `toggle_help`,
+`decrease_font_size`, `reset_font_size`,
 `open_composer` (manual bind only), `fold_toggle` / `fold_expand` /
 `fold_collapse` (manual bind only), `toggle_pinned` (alias `pinned_toggle`;
 manual bind only), `workspace_new`, `workspace_close`, `workspace_prev`,
@@ -622,13 +621,15 @@ policy and fail closed as unknown actions, so a user binding must target the
 owning plugin command instead; the retired `ctrl+shift+space` and
 `ctrl+shift+f` chords are ordinary shell input again.
 
-`toggle_help` (alias `show_help`) is still a Core action in the current source.
-The decided direction moves the help/which-key panel to a first-party plugin
-with a plugin command and plugin-suggested chords; once that migration ships,
-the two spellings and the four default help chords leave the Core catalog, and
-a user binding must target the plugin command. The migration is not shipped
-yet, so the current catalog above remains accurate. The ownership design and
-removal plan are the
+`toggle_help` and its `show_help` alias are no longer Core actions. The help
+overlay is the `bitty-terminal.help` plugin's surface: it registers
+`bitty-terminal.help:toggle_help`, reads the live table through
+`bitty.keymaps.list`, and suggests the four historical chords. Core keeps the
+keymap and command registry, overlay geometry and stacking, and the read API. A
+config that still binds either retired spelling does not lose its other
+bindings: Core drops that one binding and reports a diagnostic naming the
+plugin and the `command:bitty-terminal.help:toggle_help` rebind. The ownership
+design and removal record are the
 [Help and Which-Key Overlay Ownership Design](../specifications/help-overlay-ownership-design.md).
 
 `toggle_floating` flips the focused panel between tiled and floating
@@ -667,7 +668,7 @@ overlay/background-image validation, `search_host`, unbound `search_refresh`,
 chord; bind it through a user `keymaps` entry by `context + chord` identity
 like any other action.
 
-Shipped defaults (97 bindings, Alt spelling; `mod_key = "super"`
+Shipped defaults (93 bindings, Alt spelling; `mod_key = "super"`
 rebinds every `alt`-bearing chord, `alt`-free chords pass through):
 
 - Navigate: `alt+h/j/k/l` and `alt+arrows`, `ctrl+alt+arrows`;
@@ -704,10 +705,14 @@ rebinds every `alt`-bearing chord, `alt`-free chords pass through):
   `ctrl+shift+c` / `ctrl+shift+v` copy/paste.
 - Font zoom: `ctrl+equal` / `ctrl+plus` (+shifted spellings) larger,
   `ctrl+minus` (+shifted) smaller, `ctrl+0` reset.
-- Help: ``alt+` ``, `alt+?`, `alt+shift+?`, `alt+shift+/`.
+- Help: no Core chord. `toggle_help` retired with the Core paint path
+  (`bitty` `3101ab26`, PR #3105); the `bitty-terminal.help` plugin registers
+  `bitty-terminal.help:toggle_help` and suggests ``alt+` ``, `alt+?`,
+  `alt+shift+?`, and `alt+shift+/` as mod-aware suggestions, so a user
+  binding still wins and `mod_key = "super"` yields the `super+` spellings.
 
 `toggle_palette`, `toggle_pinned`, and `paste_from_primary` ship without a
-chord (manual bind only), so they add no entry to the 97;
+chord (manual bind only), so they add no entry to the 93;
 `paste_from_primary` is still the shipped `mouse.middle` default.
 
 `alt+n` is not a workspace verb; the new-workspace chord is `alt+t`. The

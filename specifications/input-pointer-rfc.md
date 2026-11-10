@@ -304,10 +304,12 @@ registry-driven plugin discovery remain unimplemented candidates.
 2. **Explicit dispatch priority** (`bitty` #451 `49bfe9f`, CTX-0275):
    `Emergency` (reserved `Esc` cancel, overrides user remaps while a modal
    pends) > `Modal` (active modal captures non-confirm chrome chords) >
-   `User` (the resolved keymap table) > `Plugin` (slot reserved, inert and
-   deny-by-default) > `Terminal` (encoding fall-through, unchanged). This
-   instantiates the candidate precedence for the emergency, overlay/modal,
-   and terminal-fallthrough layers; the plugin-suggested layer is not live.
+   `User` (the resolved keymap table) > `Plugin` (plugin-suggested bindings,
+   live since `bitty` #2407; a generation with no suggestion is deny-by-default)
+   > `Terminal` (encoding fall-through, unchanged). This
+   > instantiates the candidate precedence for the emergency, overlay/modal,
+   > and terminal-fallthrough layers; the plugin-suggested layer dispatches the
+   > help plugin's four suggested chords.
 3. **Workspace chords and close discipline** (`bitty` #433 `227ca3a`,
    CTX-0257, DEC-0034; move in `bitty` #457 `8b987a0`, CTX-0259):
    `alt+t`/`alt+1..9`/`alt+-`/`alt+=`/`alt+tab`/`alt+w` plus
@@ -317,44 +319,53 @@ registry-driven plugin discovery remain unimplemented candidates.
    workspaces close immediately. Workspace semantics are owned by the
    [Workspace Compositor Specification](workspace-compositor.md) evidence
    section; this document only records the input-side consumption.
-4. **Registry-generated help overlay** (`bitty` #461 `c8faa52`, CTX-0265):
-   `toggle_help` (backtick chord plus the `alt+?` shifted-symbol spellings)
-   paints a floating overlay listing every bound shortcut, regenerated from
-   the live keymap registry on every show. `Esc` dismisses the overlay without
-   consuming the press: a visible help popup alone no longer swallows the key,
-   so the encode path still delivers the `Esc` to the focused PTY (`bitty`
-   #784, CTX-0475, superseding the original #461 "dismisses and consumes"
-   behavior). The overlay is informational, not modal — other bound chords
-   still dispatch and unbound keys still reach the shell. This is the shipped
-   which-key-style help surface; it is **not** the candidate Leader-prefix
-   namespace.
+4. **Registry-generated help overlay** (`bitty` #461 `c8faa52`, CTX-0265;
+   retired from Core at `3101ab26`, CTX-1784, PR #3105): the Core panel listed
+   every bound shortcut, regenerated from the live keymap registry on every
+   show, on `toggle_help` (backtick chord plus the `alt+?` shifted-symbol
+   spellings). `Esc` dismissed the overlay without consuming the press: a
+   visible help popup alone no longer swallowed the key, so the encode path
+   still delivered the `Esc` to the focused PTY (`bitty` #784, CTX-0475,
+   superseding the original #461 "dismisses and consumes" behavior). The
+   overlay was informational, not modal — other bound chords still dispatched
+   and unbound keys still reached the shell. The surface is now the
+   `bitty-terminal.help` plugin's: title, registry-derived rows in resolved
+   order, footer, `+N more` tail, empty state, the four chords as mod-aware
+   plugin suggestions, and `Esc` dismissal through the presentation overlay's
+   `overlay.dismissed` observation. It is still **not** the candidate
+   Leader-prefix namespace.
 
    `Esc` consumption is scoped to real confirmation gates only: the
    suspicious-paste gate (CTX-0186), the workspace kill-confirm (CTX-0257),
    and the view/window close-confirm (CTX-0370) still consume the press and
    never leak bytes to the PTY (P0-AC-008 paste safety); when a gate and the
-   help popup coincide, both drop together and the gate keeps the consume.
+   help overlay coincide, both drop together and the gate keeps the consume.
 
-Evidence: `crates/bitty-config/src/keymap.rs`, `crates/bitty-app/src/chrome_keys.rs`,
-and `crates/bitty-runtime/src/runtime/help.rs` on `bitty` `origin/main`
-read-only at `1f31435`, plus `crates/bitty-runtime/tests/esc_routing.rs` for
+Evidence: `crates/bitty-config/src/keymap.rs` (registry, `RETIRED_ACTIONS`,
+`strip_retired_bindings`), `crates/bitty-app/src/chrome_keys.rs`, and the
+retired `crates/bitty-runtime/src/runtime/help.rs` on `bitty` `origin/main`
+read-only at `3101ab26` (deleted in PR #3105), plus the `bitty-plugins`
+`bitty-terminal.help` package (`lua/help/init.lua`, `tests/spec/help_spec.lua`)
+for the parity surface, and `crates/bitty-runtime/tests/esc_routing.rs` for
 the #784 Esc-routing matrix; the shipped defaults are also recorded in the
 [Configuration Model RFC](configuration-model-rfc.md) snapshot and the
 [Lua and XDG configuration](../configuration/lua-and-xdg.md) reference. All
 status remains `Implemented` (experimental), not `Verified`/`Compatible`.
 
-### Help overlay ownership transition (decided direction, not implemented)
+### Help overlay ownership transition (shipped)
 
-The shipped `help.rs` panel is `Implemented`-only evidence of a surface Core is
-retiring, not an accepted Core feature. The decided ownership is plugin
-presentation over Core mechanisms: Core keeps the keymap and action registry,
-the bounded read API, overlay geometry and stacking, and `Esc` and
-confirmation-gate routing; a first-party plugin supplies the panel, show/hide
-policy, and the toggle command. The plugin-side default chords depend on the
-reserved plugin-binding dispatch layer becoming live. Until the removal stages
-merge, `help.rs` remains the shipped surface and this evidence section stays
-current. The read-API contract, parity constraints, and removal inventory are
-the [Help and Which-Key Overlay Ownership Design](help-overlay-ownership-design.md).
+The help/which-key panel is plugin presentation over Core mechanisms. Core
+keeps the keymap and action registry, the bounded read API
+(`bitty.keymaps.list`), overlay geometry and stacking, and `Esc` and
+confirmation-gate routing; the first-party `bitty-terminal.help` plugin
+supplies the panel, show/hide policy, and the `toggle_help` command, and its
+four historical chords ride the live plugin-suggestion layer. The Core paint
+path is deleted (`bitty` `3101ab26`, PR #3105), so no Core help state, paint
+call, `Esc` help-dismiss branch, or `toggle_help` action remains; a
+configuration that still binds `toggle_help` or `show_help` loses only that
+binding and receives a diagnostic naming the plugin. The read-API contract,
+parity constraints, and removal record are the
+[Help and Which-Key Overlay Ownership Design](help-overlay-ownership-design.md).
 
 1. **Floating toggle default** (`bitty` #1704 `0c473b05`, CTX-0962, closes
    `bitty` #1695): `toggle_floating` (alias `floating_toggle`) ships on

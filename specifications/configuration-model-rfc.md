@@ -240,8 +240,10 @@ cycles focus; `ctrl+shift+c` copies (`copy_to_clipboard`, best-effort primary
 sync on Linux) and `ctrl+shift+v` pastes through the suspicious-paste
 inspection gate; `ctrl+=`/`ctrl+plus` (plus shifted spellings), `ctrl+-`, and
 `ctrl+0` grow, shrink, and reset the per-window font size (CTX-0263); the help
-popup toggles on the backtick chord (canonical `alt+backtick`) plus the
-`alt+?` shifted-symbol spellings (CTX-0265). Plain `Tab`, arrows, letters, and
+overlay is the `bitty-terminal.help` plugin's surface, and its four historical
+chords (backtick, canonical `alt+backtick`, plus the `alt+?` shifted-symbol
+spellings, CTX-0265) are plugin suggestions since the Core `toggle_help` action
+retired (CTX-1784, `bitty` `3101ab26`, PR #3105). Plain `Tab`, arrows, letters, and
 digits are deliberately unbound so they reach the shell; a bound chord is
 consumed by its action and never reaches the PTY. The only supported context
 is `global`; single-character keys require a modifier; every named key from
@@ -249,7 +251,7 @@ is `global`; single-character keys require a modifier; every named key from
 `ins`/`del`/`hm`/`end`/`pu`/`pd`, is bindable. The full vocabulary adds
 `workspace_new`, `workspace_close`, `workspace_prev`, `workspace_next`,
 `workspace_last`, `workspace_focus:<1..=16>`, `workspace_move:<1..=16>`,
-`toggle_help`, `increase_font_size`, `decrease_font_size`, and
+`increase_font_size`, `decrease_font_size`, and
 `reset_font_size` to `goto_split`, `new_split`, `resize_split` (each
 `<left|right|up|down>`), `close_view` (aliases `close_surface`, `close_panel`,
 `exit_panel`, `close_focused_panel`), `toggle_zoom` (aliases `toggle_split_zoom`,

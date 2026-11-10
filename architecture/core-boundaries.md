@@ -249,7 +249,7 @@ decode/placement evidence and its recorded deviations.
 | -------------------- | ------------------------------------------------------------------------------------------------------- |
 | Tabs                 | Tab strip and tab line presentation over Core panel and workspace commands                              |
 | Notifications        | Which events notify, message text, silence rules, and whether to use the OS path; Core keeps the banner |
-| Help / which-key     | Help panel content, show/hide policy, and the toggle command over the bounded keymap read API           |
+| Help / which-key     | Help panel content, show/hide policy, and the `toggle_help` command over the bounded keymap read API    |
 | Splits               | When to split, default direction, layout policy, and key bindings; the split primitive remains in Core  |
 | Search               | Search UI, navigation, and history policy using a controlled Terminal snapshot                          |
 | Status line          | Presentation of cwd, modes, Git, tasks, and similar state                                               |
@@ -291,12 +291,13 @@ chrome, including tab and status surfaces, remains plugin presentation.
 Generic Core chrome-band mechanisms remain available to mounted presentation
 plugins and do not themselves imply Core-drawn chrome.
 
-The help/which-key panel follows the same baseline. Once the first-party help
-plugin covers it, no plugin means no help panel and no Core `toggle_help`
-action; the help chords are supplied by the plugin and are absent in
-`bitty --safe`. Until that migration is merged and released, the current
-`help.rs` panel is transitional `Implemented`-only evidence, not an accepted
-Core feature. The ownership design and removal plan are the
+The help/which-key panel follows the same baseline. The Core paint path is
+retired (`bitty` `3101ab26`, PR #3105), so no plugin means no help panel and no
+Core `toggle_help` action; the chords are plugin suggestions and are absent in
+`bitty --safe`. A configuration that still binds `toggle_help` or `show_help`
+keeps every other binding: Core drops that one binding and reports a
+diagnostic naming `bitty-terminal.help`. The ownership design and removal
+record are the
 [Help and Which-Key Overlay Ownership Design](../specifications/help-overlay-ownership-design.md).
 
 Retired state (`W-104`, `bitty#1677` `c246e52`, `bitty#1680` `34b6d83`):
@@ -349,15 +350,15 @@ provides two distinct extension tiers:
 
 ## Mechanism and policy examples
 
-| Scenario          | Core mechanism                                                                                     | Plugin policy                                                                 |
-| ----------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Split             | Create, close, resize, and focus `LayoutNode` values                                               | Key bindings, direction, balancing policy, and tab/split UX                   |
-| Notifications     | Platform notification primitive, security gate, bounds, and the in-grid banner display floor       | Which events notify, message text, silence rules, and OS-versus-banner policy |
-| Help / which-key  | Keymap and action registry, the bounded read API, overlay geometry and stacking, and `Esc` routing | Panel content, show/hide policy, formatting, and the `toggle_help` command    |
-| Clipboard         | Platform read/write primitives and OSC 52 policy                                                   | History, formatting, and interaction UI                                       |
-| Shell integration | OSC 7/133 parser and semantic zones                                                                | Prompt navigation, status line, and command-history UX                        |
-| Images            | Protocol parsing, placement, and quotas                                                            | Image browser, previews, and operation UI                                     |
-| Commands          | Registry, dispatch, permissions, and results                                                       | Concrete workflows and composed commands                                      |
+| Scenario          | Core mechanism                                                                                     | Plugin policy                                                                       |
+| ----------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Split             | Create, close, resize, and focus `LayoutNode` values                                               | Key bindings, direction, balancing policy, and tab/split UX                         |
+| Notifications     | Platform notification primitive, security gate, bounds, and the in-grid banner display floor       | Which events notify, message text, silence rules, and OS-versus-banner policy       |
+| Help / which-key  | Keymap and action registry, the bounded read API, overlay geometry and stacking, and `Esc` routing | Panel content, show/hide policy, formatting, and the plugin's `toggle_help` command |
+| Clipboard         | Platform read/write primitives and OSC 52 policy                                                   | History, formatting, and interaction UI                                             |
+| Shell integration | OSC 7/133 parser and semantic zones                                                                | Prompt navigation, status line, and command-history UX                              |
+| Images            | Protocol parsing, placement, and quotas                                                            | Image browser, previews, and operation UI                                           |
+| Commands          | Registry, dispatch, permissions, and results                                                       | Concrete workflows and composed commands                                            |
 
 ### Notification display floor
 
@@ -374,13 +375,15 @@ The full disposition, including the rejected plugin-owned alternative, is the
 ### Help and which-key presentation
 
 The help/which-key panel is plugin presentation over Core mechanisms. Core
-keeps the keymap and action registry, the bounded read API, overlay geometry
-and stacking, and `Esc` and confirmation-gate routing; a plugin supplies the
-panel content, show/hide policy, and the toggle command. The transition is
-staged: the current `help.rs` panel is `Implemented`-only evidence of the
-retiring surface, not an accepted Core feature, and the zero-plugin baseline
-draws no help panel once the plugin covers it. The design, read-API contract,
-and removal plan are the
+keeps the keymap and action registry, the bounded read API
+(`bitty.keymaps.list`), overlay geometry and stacking, and `Esc` and
+confirmation-gate routing; the `bitty-terminal.help` plugin supplies the panel
+content, show/hide policy, and the `toggle_help` command, and suggests the four
+historical chords. Core draws no help panel, and the zero-plugin baseline is
+unchanged. `toggle_help` and its `show_help` alias are no longer Core actions:
+a configuration that carries one keeps its other bindings, loses that binding,
+and receives a diagnostic naming the plugin. The ownership design, read API
+contract, and removal record are the
 [Help and Which-Key Overlay Ownership Design](../specifications/help-overlay-ownership-design.md).
 
 ## Extension API composition
@@ -573,9 +576,10 @@ page settles no new API or enforcement threshold.
 - The notification banner stays the Core notification primitive's display
   floor and exposes no plugin slot, hit region, or per-surface appearance
   policy.
-- Once the help migration is shipped, the zero-plugin and `bitty --safe`
-  baseline also draws no help panel and keeps `toggle_help` out of the Core
-  action catalog.
+- The zero-plugin and `bitty --safe` baseline draws no help panel and keeps
+  `toggle_help` out of the Core action catalog; a retired `toggle_help` or
+  `show_help` binding is dropped per binding with a diagnostic naming the
+  `bitty-terminal.help` plugin.
 - Dependency and source inventories name their revision and do not promote
   draft APIs or Implemented-only mechanisms to `Verified`.
 - All verification and P0 gates above remain required; documentation gates
