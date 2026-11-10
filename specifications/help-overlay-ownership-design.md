@@ -16,28 +16,33 @@ sidebar_order: 77
 This document records the accepted ownership design for the help and which-key
 overlay tracked by
 [bitty#2397](https://github.com/bitty-terminal/bitty/issues/2397). The
-ownership split is accepted; the Lua spellings, capability identifier, and
-error-code placement below are candidates under the open `OQ-056` API-spelling
-process and do not authorize implementation by themselves. The document
-describes current source as `Implemented`-only evidence at `bitty`
-`origin/main` `2e0077a1`, never as `Verified`, stable, or
-compatibility-guaranteed behavior. It authorizes no code, changes no accepted
-security control, and closes no open question.
+ownership split is accepted and now implemented: the Core paint path was
+deleted in `bitty` `3101ab26` (PR #3105, CTX-1784), and the first-party
+`bitty-terminal.help` plugin shipped in `bitty-plugins` (#122) as the surface.
+The Lua spellings, capability identifier, and error-code placement below were
+candidates under the open `OQ-056` API-spelling process; the spellings that
+landed are named in [Shipped spellings](#shipped-spellings). Implementation
+evidence stays `Implemented`-only at `bitty` `3101ab26`, never `Verified`,
+stable, or compatibility-guaranteed. This document authorizes no further code,
+changes no accepted security control, and closes no open question.
 
 ## Purpose and scope
 
-The help/which-key panel is the largest remaining Core-drawn product surface
-after the workspace bar, tab strip, and status-line retirements. Core currently
-paints a titled floating panel listing every bound shortcut, with its own
-palette tokens and a `toggle_help` chrome action. That is presentation. Core's
+The help/which-key panel is the last Core-drawn product surface retired after
+the workspace bar, tab strip, and status-line retirements. Core used to paint
+a titled floating panel listing every bound shortcut, with its own palette
+tokens and a `toggle_help` chrome action; that is presentation. Core's
 accepted role is the mechanism: the keymap and command registries, overlay
 geometry and stacking, paint order, and key and pointer routing. The decision
 about what a help surface shows, when it opens, and how its rows are formatted
 belongs to a plugin.
 
-The immediate blocker is data access: no plugin can read the resolved keymap
-registry, so moving the panel without a new read surface would either keep a
-private first-party channel or ship a help plugin with no data.
+The blocker at design time was data access: no plugin could read the resolved
+keymap registry, so moving the panel without a new read surface would either
+keep a private first-party channel or ship a help plugin with no data. That
+read surface landed as `bitty.keymaps.list` (`bitty` #2405), together with the
+presentation overlay session (#2406) and live plugin-suggested bindings
+(#2407).
 
 In scope: the ownership split, a bounded read-only keymap/action registry read
 API, the first-party plugin surface over that API and the generic overlay
@@ -76,51 +81,48 @@ this surface); the general Plugin API v2 surface; and theme-token design.
 
 ## Terminology
 
-| Term                         | Meaning in this document                                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Keymap registry              | The resolved table of chord-to-action bindings after defaults, user overrides, and the configured Mod slot are applied.                           |
-| Action catalog               | The closed `ChromeAction` vocabulary plus `command:<owner:command>` invocations; it is data, not authority.                                       |
-| Binding row                  | One `{ chord, action, source, context, title?, command? }` record returned by the read API.                                                       |
-| Help overlay                 | The informational floating panel listing bound shortcuts; a plugin composition, never Core chrome.                                                |
-| Presentation overlay session | A non-focusable, paint-only presentation of a plugin-mounted `overlay` block, shown and hidden by the owner, with no keyboard or pointer capture. |
-| Capture session              | The separate, capability-gated focusable overlay that owns transient keyboard input; not used by this design.                                     |
-| Plugin suggestion            | A chord a plugin proposes for its own registered command through `bitty.keymaps.suggest`; inert until the dispatch layer publishes it.            |
+| Term                         | Meaning in this document                                                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Keymap registry              | The resolved table of chord-to-action bindings after defaults, user overrides, and the configured Mod slot are applied.                                                              |
+| Action catalog               | The closed `ChromeAction` vocabulary plus `command:<owner:command>` invocations; it is data, not authority.                                                                          |
+| Binding row                  | One `{ chord, action, source, context, title?, command? }` record returned by the read API.                                                                                          |
+| Help overlay                 | The informational floating panel listing bound shortcuts; a plugin composition, never Core chrome.                                                                                   |
+| Presentation overlay session | A non-focusable, paint-only presentation of a plugin-mounted `overlay` block, shown and hidden by the owner, with no keyboard or pointer capture.                                    |
+| Capture session              | The separate, capability-gated focusable overlay that owns transient keyboard input; not used by this design.                                                                        |
+| Plugin suggestion            | A chord a plugin proposes for its own registered command through `bitty.keymaps.suggest`; it dispatches at `DispatchPriority::Plugin` and always yields to an explicit user binding. |
 
 ## Current state (implementation evidence)
 
-At `bitty` `origin/main` `2e0077a1`, the help panel is fully Core-owned:
+Before the retirement, at `bitty` `origin/main` `2e0077a1`, the help panel was
+fully Core-owned. Every row below is deleted as of `bitty` `3101ab26`
+(PR #3105, CTX-1784), and the plugin reproduces the painted result:
 
-| Surface                                                                              | Location                                        | Role today                                                                                                  |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `ChromeAction::ToggleHelp` (`toggle_help`, alias `show_help`)                        | `crates/bitty-config/src/keymap.rs`             | Core action; default chords ``alt+` ``, `alt+?`, `alt+shift+?`, `alt+shift+/` (four bindings, one action).  |
-| `help_rows_from_keymaps`                                                             | `crates/bitty-config/src/keymap.rs`             | Formats one `"<chord>  <action>"` string per resolved binding.                                              |
-| `Runtime::help_visible`, `help_rows`, `set_help_rows`, `toggle_help`, `dismiss_help` | `crates/bitty-runtime/src/runtime/help.rs`      | Core state: visibility, rows, and toggle/dismiss operations.                                                |
-| `paint_help_panel`, `help_panel_layout`, `HelpPanelLayout`                           | `crates/bitty-runtime/src/runtime/help.rs`      | Core geometry and paint: centered panel, border, title, rows, `+N more`, footer, clipping, glyph occlusion. |
-| `HELP_PANEL_TITLE`, `HELP_PANEL_FOOTER`, `HELP_MAX_ROWS`                             | `crates/bitty-runtime/src/runtime/help.rs`      | Core content strings and the 256-row retention bound.                                                       |
-| `help_panel_border_in`, `help_panel_bg_in`, `help_panel_fg_in`                       | `crates/bitty-render/src/grid.rs`               | Core palette helpers used only by the help panel.                                                           |
-| `A::ToggleHelp` arm                                                                  | `crates/bitty-terminal/src/chrome_keys.rs`      | Regenerates rows from the live table, stores them, then toggles visibility on every show.                   |
-| Help dismissal branch                                                                | `crates/bitty-runtime/src/runtime/selection.rs` | `Esc` dismisses the popup without consuming the press; confirmation gates keep the consume.                 |
-| `help_popup.rs`, `esc_routing.rs`                                                    | `crates/bitty-runtime/tests/`                   | Geometry, clipping, row regeneration, and `Esc` routing coverage.                                           |
+| Surface                                                                              | Location                                        | Disposition                                                                                                  |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `ChromeAction::ToggleHelp` (`toggle_help`, alias `show_help`)                        | `crates/bitty-config/src/keymap.rs`             | Deleted; both spellings are `RETIRED_ACTIONS` entries with a diagnostic naming `bitty-terminal.help`.        |
+| `help_rows_from_keymaps`                                                             | `crates/bitty-config/src/keymap.rs`             | Deleted; the plugin formats rows from `bitty.keymaps.list`.                                                  |
+| `Runtime::help_visible`, `help_rows`, `set_help_rows`, `toggle_help`, `dismiss_help` | `crates/bitty-runtime/src/runtime/help.rs`      | Deleted with the module; the plugin holds its own visibility state.                                          |
+| `paint_help_panel`, `help_panel_layout`, `HelpPanelLayout`                           | `crates/bitty-runtime/src/runtime/help.rs`      | Deleted; the plugin mounts a declarative scene in the `overlay` slot and presents it through `ui.present`.   |
+| `HELP_PANEL_TITLE`, `HELP_PANEL_FOOTER`, `HELP_MAX_ROWS`                             | `crates/bitty-runtime/src/runtime/help.rs`      | Deleted; title, footer, and the row bound are plugin content and host scene budgets.                         |
+| `help_panel_border_in`, `help_panel_bg_in`, `help_panel_fg_in`                       | `crates/bitty-render/src/grid.rs`               | Deleted; the plugin uses the standard theme-derived chrome tokens.                                           |
+| `A::ToggleHelp` arm                                                                  | `crates/bitty-terminal/src/chrome_keys.rs`      | Deleted; the plugin command dispatches through the host-mediated command path.                               |
+| Help dismissal branch                                                                | `crates/bitty-runtime/src/runtime/selection.rs` | Deleted; `Esc` dismissal is the presentation overlay's `overlay.dismissed` observation, gates unchanged.     |
+| `help_popup.rs`, help cases in `esc_routing.rs`                                      | `crates/bitty-runtime/tests/`                   | Deleted; parity moved to `bitty-plugins` `tests/spec/help_spec.lua` and the Core `Esc`/confirm matrix stays. |
 
-Two gaps block the migration:
+Two gaps blocked the migration at design time, and both are closed:
 
-1. **No keymap read API.** No `bitty.keymaps.*` read verb exists in
-   `crates/bitty-lua/src/host.rs` or
-   `crates/bitty-runtime/src/plugin_runtime/services.rs`; `bitty.keymaps.suggest`
-   only writes suggestions.
-2. **Plugin-suggested bindings are inert.** `bitty.keymaps.suggest` captures up
-   to `REGISTRATION_MAX_KEYMAP_SUGGESTIONS` (128) suggestions at activation and
-   the commit gate validates them, but the capture is not published to the
-   application. `match_plugin_binding` in
-   `crates/bitty-terminal/src/chrome_keys.rs` always returns `None`, and
-   `DispatchPriority::Plugin` never dispatches. A plugin therefore cannot bring
-   a default chord today; a user can only bind
-   `command:<owner:command>` explicitly.
+1. **No keymap read API.** `bitty.keymaps.list` now serves bounded, read-only
+   pages of the resolved table (`bitty` #2405, capability
+   `runtime.keymaps.read`).
+2. **Plugin-suggested bindings were inert.** `match_plugin_binding` in
+   `crates/bitty-terminal/src/chrome_keys.rs` now dispatches at
+   `DispatchPriority::Plugin` (`bitty` #2407), so a plugin's suggested chord
+   runs its own registered command and an explicit user binding still wins.
 
-The v1 `overlay` slot is accepted and mountable, but the current host surfaces
-an overlay block only while that plugin owns the focusable capture session
-(`update_plugin_overlay` in `crates/bitty-terminal/src/terminal_app.rs`). A
-presentation-only show/hide path does not exist yet; the design depends on it.
+The v1 `overlay` slot is accepted and mountable, and the presentation-only
+show/hide path now exists as `bitty.ui.mount("overlay", scene)` plus
+`bitty.ui.present.show`/`hide` (`bitty` #2406). It presents the block without
+capturing input and reports dismissal through `overlay.dismissed`.
 
 ## Ownership decision
 
@@ -147,8 +149,8 @@ presentation-only show/hide path does not exist yet; the design depends on it.
 - Row formatting and optional ordering; the canonical data comes from the read
   API.
 - Show and hide policy, including regeneration on every show.
-- The `toggle` command and the suggested chords that preserve the old
-  `toggle_help` binding and aliases.
+- The `toggle_help` command and the suggested chords that preserve the old
+  `toggle_help` binding and its `show_help` alias.
 - Bounded error presentation when the read API denies or is unavailable; it
   never fabricates rows or reads another source.
 
@@ -252,7 +254,7 @@ calls and never invokes plugin code while holding the registry borrow. The call
 is a cold-path host call from the plugin's command or timer, never a callback
 from the input, parser, or render path. A configuration reload that lands
 before the call is visible on the next call; the open panel is not live-updated,
-matching the current behavior where rows regenerate only on each show.
+matching the plugin's behavior where rows regenerate only on each show.
 
 ### Capability and denial
 
@@ -293,24 +295,33 @@ new family, and it is distinct from `runtime.inspect`, `runtime.configure`,
 ## Presentation overlay mechanism
 
 The help panel needs a paint-only overlay that is visible without capturing
-input. The accepted v1 `overlay` slot is presentation-only, but the current host
-only paints a mounted overlay block while the plugin owns the focusable capture
-session. The design requires one generic addition, not a help-specific one.
+input. The accepted v1 `overlay` slot is presentation-only, and the host now
+paints a mounted overlay block through the presentation session without the
+plugin owning focusable capture. The design required one generic addition, not
+a help-specific one.
 
 ### Surface
 
 ```lua
-local handle, err = bitty.ui.mount({ slot = "overlay", root = scene })
-local ok, err = bitty.ui.overlay.show(handle)
-local ok, err = bitty.ui.overlay.hide(handle)
+local handle, err = bitty.ui.mount("overlay", scene)
+local ok, err = bitty.ui.present.show(handle)
+local ok, err = bitty.ui.present.hide(handle)
 ```
 
-The final namespace placement and verb spellings are candidate under `OQ-056`.
+#### Shipped spellings
+
+The spellings that landed are `bitty.ui.mount("overlay", scene)` under the
+`ui.rich` and `ui.overlay` grants, `bitty.ui.present.show`/`hide` under the
+`ui.present` grant, and the `overlay.dismissed` event; the plugin manifest
+(`bitty-plugins` `plugins/help/bitty-plugin.toml`) declares exactly those four
+capabilities and no capture grant. The earlier candidate spellings
+(`bitty.ui.overlay.show`/`hide`) were not used.
+
 The semantics below are the contract:
 
-- `bitty.ui.overlay.show` presents the block without acquiring keyboard or pointer
+- `bitty.ui.present.show` presents the block without acquiring keyboard or pointer
   capture and without requiring `ui.overlay.focus`.
-- `bitty.ui.overlay.hide` removes the presentation; it is idempotent.
+- `bitty.ui.present.hide` removes the presentation; it is idempotent.
 - The block is mounted through the accepted `overlay` slot and therefore needs
   `ui.rich` and `ui.overlay`, exactly like any overlay mount. It needs no
   capture grant.
@@ -324,10 +335,10 @@ The semantics below are the contract:
   frame, with the accepted v1 scene budgets. The plugin cannot set global
   coordinates or window handles.
 - The overlay is paint-only: no hit-testing, no pointer capture, and no click
-  routing. Clicks pass through to the grid beneath, matching the current
+  routing. Clicks pass through to the grid beneath, matching the retired
   paint-only help panel. This is not a focusable surface.
 - The overlay follows the focused view; a focus switch re-centers it and does
-  not dismiss it, matching the current panel. If a focusable capture session is
+  not dismiss it, matching the retired Core panel. If a focusable capture session is
   active, the modal paints above it; `Esc` belongs to the capture session until
   it ends.
 - On `Esc`, Core hides the presentation, routes the press onward (no consume),
@@ -349,16 +360,17 @@ vocabulary, and it adds no parallel modal gate.
 ## First-party plugin surface
 
 The first-party help plugin is an independent plugin repository and package
-(candidate identity `bitty-terminal.help`, command `bitty-terminal.help:toggle_help`).
-It uses the same public API as a third party and receives no private channel.
+(`bitty-terminal.help`, command `bitty-terminal.help:toggle_help`). It uses the
+same public API as a third party and receives no private channel.
 
 ### Grants
 
-| Capability             | Why                                  |
-| ---------------------- | ------------------------------------ |
-| `runtime.keymaps.read` | Read the bounded keymap/action rows. |
-| `ui.rich`              | Mount a declarative scene.           |
-| `ui.overlay`           | Use the accepted `overlay` slot.     |
+| Capability             | Why                                      |
+| ---------------------- | ---------------------------------------- |
+| `runtime.keymaps.read` | Read the bounded keymap/action rows.     |
+| `ui.rich`              | Mount a declarative scene.               |
+| `ui.overlay`           | Use the accepted `overlay` slot.         |
+| `ui.present`           | Show and hide the mounted overlay block. |
 
 No `ui.overlay.focus`, `terminal.*`, `clipboard.*`, `fs.*`, `process.*`,
 `network.*`, `env.*`, `platform.*`, or `debug.*` grant is requested or needed.
@@ -369,18 +381,19 @@ content, or another plugin's state.
 
 - Registers one command, `toggle_help`, which opens the panel when hidden and
   hides it when shown.
-- The old `show_help` Core action alias retires with the Core action. A
-  configuration that used `show_help` migrates to
-  `command:bitty-terminal.help:toggle_help`; the plugin does not register a
-  second command for the retired alias.
+- The old `show_help` Core action alias retired with the Core action. A
+  configuration that kept it loses only that binding and receives a diagnostic
+  naming `bitty-terminal.help`; the plugin does not register a second command
+  for the retired alias.
 - Suggests the four historical chords for its own command:
   ``alt+` ``, `alt+?`, `alt+shift+?`, and `alt+shift+/`. The suggestion layer
   applies the configured Mod slot exactly like the shipped defaults, so a
   `mod_key = "super"` configuration produces the corresponding `super+`
   spellings without a second suggestion set.
-- A user binding always wins over a plugin suggestion; an explicit
-  `command:bitty-terminal.help:toggle_help` binding remains the manual fallback
-  while the suggestion dispatch layer is not live.
+- A user binding always wins over a plugin suggestion. The suggestion layer is
+  live (`bitty` #2407), so the four chords dispatch without an explicit user
+  entry; an explicit `command:bitty-terminal.help:toggle_help` binding
+  overrides the suggestion.
 
 ### Show flow
 
@@ -389,7 +402,7 @@ content, or another plugin's state.
 2. Format bounded rows, clip to the panel, and render a `+N more` tail when the
    available height cannot show every row.
 3. Mount or update the scene in the `overlay` slot, then call
-   `bitty.ui.overlay.show(handle)`.
+   `bitty.ui.present.show(handle)`.
 4. On `Esc` or the toggle chord, hide the panel. On the `overlay.dismissed`
    observation, clear local visibility state; do not re-show.
 
@@ -403,7 +416,7 @@ back to a hardcoded list.
 | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Regeneration from the live registry on every show | The plugin calls `bitty.keymaps.list` on every open; the host resolves the live table at call time; no cache across calls.                                 |
 | `Esc` dismissal that does not consume the press   | Core hides the presentation overlay, routes the `Esc`, and emits `overlay.dismissed`; a coincident confirmation gate keeps the consume.                    |
-| The `toggle_help` binding and aliases             | The plugin registers `toggle` and suggests the four historical chords; the Mod slot is applied by the suggestion layer; a user binding always wins.        |
+| The `toggle_help` binding and aliases             | The plugin registers `toggle_help` and suggests the four historical chords; the Mod slot is applied by the suggestion layer; a user binding always wins.   |
 | Bounded rows and clipping                         | 256 rows per call, 64 KiB per response, a 256-row panel retention bound, frame clipping, and a bounded `+N more` tail.                                     |
 | Informational, not modal                          | No capture grant; the overlay is `NonModal` on `Popup`; other bound chords still dispatch and unbound keys still reach the shell.                          |
 | Follows the focused view                          | Core re-centers the presentation on the focused view; a focus switch does not dismiss it.                                                                  |
@@ -412,10 +425,10 @@ back to a hardcoded list.
 
 ## Dependency: live plugin-suggested bindings
 
-The historical chords cannot come from the plugin until the reserved
-`DispatchPriority::Plugin` layer is live. The current capture path validates
-suggestions but does not publish them to the application, and
-`match_plugin_binding` is a deny-by-default stub. The required layer is:
+This dependency is closed: `DispatchPriority::Plugin` dispatches
+plugin-suggested chords (`bitty` #2407), so the historical chords come from the
+plugin rather than from Core defaults. The layer as shipped keeps the rules
+this design required:
 
 - Active generations' suggestions, ordered deterministically, consulted after
   the user table and before terminal encoding, exactly at the existing reserved
@@ -429,44 +442,58 @@ suggestions but does not publish them to the application, and
 - No plugin callback runs on the input path; dispatch invokes the registered
   command through the normal host-mediated path.
 
-This is a separate Core task from the read API. Without it, the plugin remains
-usable only with a manual `command:` binding, and the "binding and aliases"
-parity requirement is not met, so #2397 cannot close.
+This was a separate Core task from the read API; it is merged, so the
+"binding and aliases" parity requirement is met by plugin suggestions rather
+than by Core defaults.
 
 ## Removal plan
 
-Each stage is a tracked task; none is authorized by this document alone.
+Each stage was a tracked task; none was authorized by this document alone.
+Stages 1-7 are merged and stage 8 lands with this revision.
 
-| Stage | Scope                                                                                                                                                                                                                                                                                                                   | Exit condition                                                                                                             |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Add the `runtime.keymaps.read` identifier, the host keymap source, `bitty.keymaps.list`, bounds, redaction, and typed denials.                                                                                                                                                                                          | Headless tests cover caps, ordering, truncation, denial, no-source, and no hot path.                                       |
-| 2     | Add the presentation overlay session: show/hide, `NonModal`/`Popup` admission, Core geometry, paint-only behavior, `Esc` dismissal observation without consumption, and teardown.                                                                                                                                       | Headless tests cover `Esc` delivery to the PTY, confirmation-gate precedence, clipping, one-surface admission, and unload. |
-| 3     | Make plugin-suggested bindings live at the reserved priority slot, including Mod application and unload cleanup.                                                                                                                                                                                                        | Tests cover user-wins, Mod flip, owner-only targets, stale generation, and terminal fall-through.                          |
-| 4     | Publish the first-party help plugin: command, suggestions, scene, paging, clipping, empty/error states, and plugin tests.                                                                                                                                                                                               | Plugin parity matrix passes against the Core behavior; no private API.                                                     |
-| 5     | Remove the Core paint path and state: `help.rs`, `help_visible`/`help_rows`/`set_help_rows`/`toggle_help`/`dismiss_help`, `paint_help_panel`/`help_panel_layout`/`HelpPanelLayout`, `HELP_*`, and the `present.rs` call.                                                                                                | Zero-plugin and `bitty --safe` draw no panel; no dead code; no coverage deleted.                                           |
-| 6     | Remove `ChromeAction::ToggleHelp`, the `toggle_help`/`show_help` parse arms, catalog/description/hint entries, the four default chords, and the `chrome_keys` arm; decide and document the unknown-action migration.                                                                                                    | Config validation fails closed for the retired spellings with a migration note; tests updated.                             |
-| 7     | Remove `help_panel_border_in`/`help_panel_bg_in`/`help_panel_fg_in` and their tests; update any theme-token list.                                                                                                                                                                                                       | No renderer or theme reference remains.                                                                                    |
-| 8     | Update canonical docs: this document, [Input and Pointer Contract](input-pointer-rfc.md) implementation evidence, the [Configuration Model RFC](configuration-model-rfc.md) action list, the [configuration options](../reference/configuration-options.md) catalog, the shipped-defaults reference, and release notes. | Docs describe the plugin as the surface and the retired Core action honestly; migration is documented.                     |
-| 9     | Close [bitty#2397](https://github.com/bitty-terminal/bitty/issues/2397) only after stages 1-8 are merged and shipped and the zero-plugin and safe-mode criteria are verified.                                                                                                                                           | Acceptance criteria met by shipped code, not by this design.                                                               |
+### Stage status
 
-### Removal inventory
+- Stages 1-3 (read API, presentation overlay session, live suggestions):
+  merged as `bitty` #2405, #2406, and #2407.
+- Stage 4 (first-party plugin): shipped in `bitty-plugins` (#122) and pinned in
+  the Core official catalog (12 entries).
+- Stages 5-7 (Core paint path, `ChromeAction::ToggleHelp` and its chords,
+  `help_panel_*` tokens): merged in `bitty` `3101ab26` (PR #3105, CTX-1784).
+- Stage 8 (canonical docs): this revision.
+- Stage 9 (close #2397): the issue closes with this revision; release-train
+  shipping stays tracked by the release process, not by this record.
 
-| Surface                                                                    | Disposition                                                                                                                 |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `crates/bitty-runtime/src/runtime/help.rs`                                 | Delete the module after stage 4 parity.                                                                                     |
-| `Runtime` help fields and methods                                          | Delete with the module; no Core fallback state remains.                                                                     |
-| `ChromeAction::ToggleHelp` and `toggle_help`/`show_help`                   | Retire; config files using them fail closed with a migration message pointing at `command:bitty-terminal.help:toggle_help`. |
-| Four default help chords                                                   | Move to the plugin's suggestions; not Core defaults.                                                                        |
-| `help_rows_from_keymaps`                                                   | Retire from the public helper surface; the read bridge returns structured rows, not formatted strings.                      |
-| `HELP_PANEL_TITLE`, `HELP_PANEL_FOOTER`, `HELP_MAX_ROWS`, `HELP_MIN_INNER` | Delete; title/footer become plugin content and the row bound becomes the API/panel bound.                                   |
-| `help_panel_border_in`, `help_panel_bg_in`, `help_panel_fg_in`             | Delete; the plugin uses standard theme tokens.                                                                              |
-| `help_popup.rs` and help cases in `esc_routing.rs`                         | Move coverage to the plugin and the presentation overlay mechanism; keep the Core `Esc`/confirm matrix.                     |
-| `present.rs` help paint call                                               | Delete with the module.                                                                                                     |
-| `selection.rs` help dismissal branch                                       | Delete; gate precedence stays untouched.                                                                                    |
+| Stage | Scope                                                                                                                                                                                                                                                                                                                   | Exit condition                                                                                                                             |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1     | Add the `runtime.keymaps.read` identifier, the host keymap source, `bitty.keymaps.list`, bounds, redaction, and typed denials.                                                                                                                                                                                          | Headless tests cover caps, ordering, truncation, denial, no-source, and no hot path.                                                       |
+| 2     | Add the presentation overlay session: show/hide, `NonModal`/`Popup` admission, Core geometry, paint-only behavior, `Esc` dismissal observation without consumption, and teardown.                                                                                                                                       | Headless tests cover `Esc` delivery to the PTY, confirmation-gate precedence, clipping, one-surface admission, and unload.                 |
+| 3     | Make plugin-suggested bindings live at the reserved priority slot, including Mod application and unload cleanup.                                                                                                                                                                                                        | Tests cover user-wins, Mod flip, owner-only targets, stale generation, and terminal fall-through.                                          |
+| 4     | Publish the first-party help plugin: command, suggestions, scene, paging, clipping, empty/error states, and plugin tests.                                                                                                                                                                                               | Plugin parity matrix passes against the Core behavior; no private API.                                                                     |
+| 5     | Remove the Core paint path and state: `help.rs`, `help_visible`/`help_rows`/`set_help_rows`/`toggle_help`/`dismiss_help`, `paint_help_panel`/`help_panel_layout`/`HelpPanelLayout`, `HELP_*`, and the `present.rs` call.                                                                                                | Zero-plugin and `bitty --safe` draw no panel; no dead code; paint coverage moved to the plugin.                                            |
+| 6     | Remove `ChromeAction::ToggleHelp`, the `toggle_help`/`show_help` parse arms, catalog/description/hint entries, the four default chords, and the `chrome_keys` arm; decide and document the unknown-action migration.                                                                                                    | A retired spelling is dropped per binding with a diagnostic naming the plugin; the rest of the `keymaps` table still loads; tests updated. |
+| 7     | Remove `help_panel_border_in`/`help_panel_bg_in`/`help_panel_fg_in` and their tests; update any theme-token list.                                                                                                                                                                                                       | No renderer or theme reference remains.                                                                                                    |
+| 8     | Update canonical docs: this document, [Input and Pointer Contract](input-pointer-rfc.md) implementation evidence, the [Configuration Model RFC](configuration-model-rfc.md) action list, the [configuration options](../reference/configuration-options.md) catalog, the shipped-defaults reference, and release notes. | Docs describe the plugin as the surface and the retired Core action honestly; migration is documented.                                     |
+| 9     | Close [bitty#2397](https://github.com/bitty-terminal/bitty/issues/2397) only after stages 1-8 are merged and shipped and the zero-plugin and safe-mode criteria are verified.                                                                                                                                           | Acceptance criteria met by shipped code, not by this design.                                                                               |
 
-The removal must not delete coverage. Every behavior the current help tests pin
-either moves to a plugin test, becomes a presentation overlay mechanism test,
-or stays as a Core `Esc`/confirmation test with the help-specific setup removed.
+### Removal inventory (as executed)
+
+| Surface                                                                    | Disposition                                                                                                                                                         |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `crates/bitty-runtime/src/runtime/help.rs`                                 | Deleted in `bitty` `3101ab26` after stage 4 parity.                                                                                                                 |
+| `Runtime` help fields and methods                                          | Deleted with the module; no Core fallback state remains.                                                                                                            |
+| `ChromeAction::ToggleHelp` and `toggle_help`/`show_help`                   | Retired; both spellings are `RETIRED_ACTIONS` entries, so a config keeps its other bindings and gets a diagnostic naming `command:bitty-terminal.help:toggle_help`. |
+| Four default help chords                                                   | Moved to the plugin's suggestions; not Core defaults.                                                                                                               |
+| `help_rows_from_keymaps`                                                   | Retired from the public helper surface; the read bridge returns structured rows, not formatted strings.                                                             |
+| `HELP_PANEL_TITLE`, `HELP_PANEL_FOOTER`, `HELP_MAX_ROWS`, `HELP_MIN_INNER` | Deleted; title/footer are plugin content and the row bound is the API/panel bound.                                                                                  |
+| `help_panel_border_in`, `help_panel_bg_in`, `help_panel_fg_in`             | Deleted; the plugin uses standard theme tokens.                                                                                                                     |
+| `help_popup.rs` and help cases in `esc_routing.rs`                         | Coverage moved to the plugin and the presentation overlay mechanism; the Core `Esc`/confirm matrix stays.                                                           |
+| `present.rs` help paint call                                               | Deleted with the module.                                                                                                                                            |
+| `selection.rs` help dismissal branch                                       | Deleted; gate precedence is untouched.                                                                                                                              |
+
+The removal did not delete coverage. Every behavior the retired help tests
+pinned either moved to a plugin test, became a presentation overlay mechanism
+test, or stays as a Core `Esc`/confirmation test with the help-specific setup
+removed.
 
 ## Security review
 
@@ -534,10 +561,10 @@ adds key capture, free-text action arguments, or pointer routing to the surface.
 | Contract                                                                                                                                          | Effect                                                                                                                       |
 | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | [Core and Plugin Boundaries](../architecture/core-boundaries.md)                                                                                  | Gains the help/which-key ownership row and the keymap read surface in the extension composition.                             |
-| [Input and Pointer Contract](input-pointer-rfc.md)                                                                                                | Its implementation-evidence help section gains the decided migration and stops being the final ownership statement.          |
+| [Input and Pointer Contract](input-pointer-rfc.md)                                                                                                | Its implementation-evidence help section records the retirement and the plugin surface.                                      |
 | [Overlay Ownership Reconciliation](overlay-ownership-reconciliation.md)                                                                           | Gains the presentation-only help surface as a `NonModal`/`Popup` consumer; the three-owner boundary is unchanged.            |
 | [Chrome Surface API (Candidate)](chrome-surface-api-candidate.md) and [Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md) | The help panel is not a chrome slot; no band or chrome-surface claim is added.                                               |
-| [Configuration Model RFC](configuration-model-rfc.md) and [configuration options](../reference/configuration-options.md)                          | The action catalog changes when `toggle_help` retires; the migration is part of stage 8.                                     |
+| [Configuration Model RFC](configuration-model-rfc.md) and [configuration options](../reference/configuration-options.md)                          | The action catalog no longer lists `toggle_help`; both documents record the retired spellings and the diagnostic.            |
 | [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)              | The read verb and presentation overlay are additive host-mediated surfaces; exact spellings remain candidate under `OQ-056`. |
 | [Platform Services Contract](platform-services-contract.md)                                                                                       | Unchanged; the notification banner is not a help surface.                                                                    |
 
@@ -549,10 +576,9 @@ adds key capture, free-text action arguments, or pointer routing to the surface.
   versus a new typed code) is candidate and follows the existing UI error
   family.
 - Whether the overlay follows a focus switch or hides on it is fixed here as
-  "follows", matching the current panel; a later UX decision may change it.
-- The plugin's exact repository name, package identity, and whether it enters
-  the enabled-by-default set belong to the distribution decision, not this
-  design.
+  "follows", matching the retired Core panel; a later UX decision may change it.
+- The plugin's package identity is `bitty-terminal.help`; whether it enters the
+  enabled-by-default set stays a distribution decision, not this design.
 - The Leader namespace and its which-key candidate remain unimplemented
   (`OQ-088`); this API deliberately exposes only immediate chords.
 
@@ -568,9 +594,11 @@ adds key capture, free-text action arguments, or pointer routing to the surface.
 4. The removal plan names every Core symbol and test to retire and a stage that
    keeps or moves its coverage.
 5. Zero plugins and `bitty --safe` draw no help panel; `toggle_help` is a
-   plugin command, not a Core action.
-6. Docs no longer describe `help.rs` as the shipped surface once the removal
-   merge lands; before then, the implementation evidence is labeled honestly.
+   plugin command, not a Core action, and a retired `toggle_help` or
+   `show_help` binding is dropped per binding with a diagnostic naming the
+   plugin.
+6. Docs describe the plugin as the shipped surface and `help.rs` only as the
+   retired Core path.
 7. `just check` passes with zero issues.
 
 ## P0 Review Sign-off

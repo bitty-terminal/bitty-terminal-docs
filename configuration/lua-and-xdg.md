@@ -1264,9 +1264,19 @@ return {
   keep their exact spelling and overlay by `context + chord` identity.
 - `keymaps` is set-by-identifier: a user entry with the same `context + chord`
   replaces the shipped entry, anything else appends. The shipped set is
-  97 entries, all context `global` (Core `DEFAULT_KEYMAPS` at `7d98f53`);
+  93 entries, all context `global` (Core `DEFAULT_KEYMAPS`; CTX-1784 removed
+  the four retired help chords at `bitty` `3101ab26`, see the help bullet
+  below);
   unknown chords, actions, or contexts fail closed, and single-character keys
   require at least one modifier.
+- Help overlay (CTX-1784, `bitty` `3101ab26`, PR #3105): the Core-drawn
+  help/which-key panel is retired, so `toggle_help` and its `show_help` alias
+  are not Core actions and ship no Core chords. The `bitty-terminal.help`
+  plugin registers `bitty-terminal.help:toggle_help`, reads the live table
+  through `bitty.keymaps.list`, and suggests ``alt+` ``, `alt+?`,
+  `alt+shift+?`, and `alt+shift+/` with the configured Mod slot applied. A
+  config that still binds a retired spelling keeps its other bindings: Core
+  drops that binding and reports a diagnostic naming the plugin.
 - `mouse.right` and `mouse.middle` are current shipped fields using the same
   action vocabulary as `keymaps[].action`. Their defaults are respectively
   `"none"` (inert right-click) and `"paste_from_primary"` (middle-click
@@ -1379,8 +1389,8 @@ return {
 
 - Both buttons accept `"none"` or any chrome-action spelling from the
   `keymaps[].action` vocabulary (`paste_from_clipboard`, `paste_from_primary`,
-  `copy_to_clipboard`, `toggle_help`, `command:<owner:cmd>`, and the rest of
-  the catalog). Unknown spellings and non-string values fail closed with the
+  `copy_to_clipboard`, `command:<owner:cmd>`, and the rest of the catalog).
+  Unknown spellings and non-string values fail closed with the
   owning field path (`mouse.right` / `mouse.middle`), never coerced.
 - Every `mouse` leaf is independent and presence-gated: a layer that omits
   `mouse.right`/`mouse.middle` (or `focus_follows_mouse`, or its delay) says
