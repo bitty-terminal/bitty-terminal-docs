@@ -363,8 +363,17 @@ the daemon refuses the cell instead of serving it weakly.
 `crates/bitty-ipc-winpipe/src/pipe.rs:14` (`MAX_SID_BYTES = 68`), `:18`
 (`MAX_PIPE_NAME_CHARS = 256`), `:22` (`ACCEPT_POLL = 20 ms`), and the SID parser
 at `:36-58`, which rejects a value that is not revision 1 with a 0..=15
-subauthority count and an exact `8 + 4 * count` length. `bitty-ipc-auth`
-`crates/bitty-ipc-auth/src/auth.rs:219` performs the SID comparison. `bitty-ipc-devtools`
+subauthority count and an exact `8 + 4 * count` length. The pipe itself is
+created with the SDDL `O:<sid>D:P(A;;GA;;;<sid>)` — owner is the current user
+and the DACL is protected and grants only that user
+(`crates/bitty-ipc-winpipe/src/ffi.rs:249-252`), with
+`PIPE_REJECT_REMOTE_CLIENTS` set so a remote client is refused by the kernel
+rather than by policy (`ffi.rs:325`). Creation then attests the endpoint it just
+made: a null (allow-all) DACL, a foreign owner, a deny/inherited/non-SID entry,
+or a SID other than the current user all fail closed
+(`ffi.rs:363-443`). `bitty-ipc-auth`
+`crates/bitty-ipc-auth/src/auth.rs:219` performs the SID comparison.
+`bitty-ipc-devtools`
 `crates/bitty-ipc-devtools/src/devtools/serve.rs:1779` serves a bound pipe under
 the endpoint budget with the peer proof described in C-2.
 
@@ -381,14 +390,14 @@ in `bitty-ipc`; the daemon half does not.
 **Candidate.** The commitment stated as an obligation with its current
 satisfaction:
 
-| Obligation                                          | Satisfied by                         | Status        |
-| --------------------------------------------------- | ------------------------------------ | ------------- |
-| Pipe name and DACL are per-user, never machine-wide | `bitty-ipc-winpipe` listener         | `implemented` |
-| Peer proof is SID equality, never pid alone         | `verify_windows_peer_for_connection` | `implemented` |
-| Remote clients are refused at the pipe layer        | pipe ACL construction                | `implemented` |
-| Proof is bound to one connection and cannot replay  | `ConnectedPeerProof` handle identity | `implemented` |
-| The daemon serves the cell                          | —                                    | not built     |
-| A native-runner conformance campaign exists         | —                                    | not built     |
+| Obligation                                          | Satisfied by                                                | Status        |
+| --------------------------------------------------- | ----------------------------------------------------------- | ------------- |
+| Pipe name and DACL are per-user, never machine-wide | `bitty-ipc-winpipe` listener (`ffi.rs:249-252`, `:363-443`) | `implemented` |
+| Peer proof is SID equality, never pid alone         | `verify_windows_peer_for_connection` (`auth.rs:219`)        | `implemented` |
+| Remote clients are refused at the pipe layer        | `PIPE_REJECT_REMOTE_CLIENTS` (`ffi.rs:325`)                 | `implemented` |
+| Proof is bound to one connection and cannot replay  | `ConnectedPeerProof` handle identity (`serve.rs:380-385`)   | `implemented` |
+| The daemon serves the cell                          | —                                                           | not built     |
+| A native-runner conformance campaign exists         | —                                                           | not built     |
 
 **Open.** `LQ-4`: who owns the native-runner campaign, and what is the earliest
 release that may claim Windows endpoint support? Owner: `bitty` platform owner
