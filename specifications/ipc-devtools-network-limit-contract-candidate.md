@@ -1,51 +1,49 @@
 ---
-title: IPC, DevTools, and Network Limit Contract (Candidate)
-description: Candidate contract fixing debug-scope implication accepted peer proof per-connection principal session and consent endpoint rate ownership the Windows commitment network redirect transfer deadline and proxy bounds and the typed failure vocabulary
+title: IPC, DevTools, and Network Limit Contract
+description: Accepted contract fixing debug-scope implication accepted peer proof per-connection principal session and consent endpoint rate ownership the Windows commitment network redirect transfer deadline and proxy bounds typed failure vocabulary and plugin control transaction semantics
 category: specifications
 audience: security-reviewer
 document_type: specification
-status: draft
+status: accepted
 website_publish: false
 sidebar_order: 88
 ---
 
-# IPC, DevTools, and Network Limit Contract (Candidate)
+# IPC, DevTools, and Network Limit Contract
 
 ## Document status
 
-> Status: **draft candidate**. Not `accepted`, not `Verified`, not
-> `Compatible`, and not normative. No control here is verified. The
-> independent security review that
+> Status: **accepted** (`bitty-terminal-docs#122`, `#123`, `#203`, `CTX-0191`).
+> The independent security review that
 > [documentation-workflow](../docs/development/documentation-workflow.md)
 > requires for trust boundaries, resource limits, and IPC/MCP/DevTools content
-> is **owed and not performed by this record**; until it lands, every clause
-> below is a candidate reading of merged code, not a signed contract.
+> is recorded under [Security review](#security-review), and the dispositions
+> for `LQ-1`..`LQ-6` are recorded under [Open questions](#open-questions).
 >
 > This record answers the seven questions in
 > [bitty-terminal-docs#123](https://github.com/bitty-terminal/bitty-terminal-docs/issues/123)
-> as **one** contract instead of seven independent notes, because the seven
-> share three mechanisms (peer proof, connection identity, refusal vocabulary)
-> and answering them separately produced the divergent wording the parent
-> [#122](https://github.com/bitty-terminal/bitty-terminal-docs/issues/122)
-> tracks.
+> and freezes the parent DevTools/IPC/network security contract in
+> [bitty-terminal-docs#122](https://github.com/bitty-terminal/bitty-terminal-docs/issues/122)
+> (including the DevTools RFC reconciliations in
+> [bitty-terminal-docs#203](https://github.com/bitty-terminal/bitty-terminal-docs/issues/203))
+> as **one** contract instead of separate notes, because the subjects share
+> three mechanisms (peer proof, connection identity, refusal vocabulary).
 >
-> Nothing here authorizes implementation. Where a bound already exists in
-> merged code it is labelled `implemented` with its `file:line`; where the
-> contract states a shape no code enforces it is labelled `candidate`; where
-> neither a constant nor a decision exists it is labelled `open` and names an
-> owner and the consequence of leaving it open. A label is never inferred from
-> the other labels: an `implemented` mechanism does not make the surrounding
-> clause accepted, and an accepted clause elsewhere does not make a mechanism
-> exist.
+> Where a bound exists in merged code it is labelled `implemented` with its
+> `file:line`; where a clause records the accepted normative rule that governs
+> cross-surface interpretation it is labelled `accepted`. An `implemented`
+> mechanism and an `accepted` contract rule are tracked explicitly so
+> verification campaigns can audit each obligation against its code citation.
 
 ## Purpose and scope
 
-Seven limit questions were asked at once and answered in seven places. The
-result is prose that is individually defensible and jointly contradictory: the
-same `100 req/s` figure appears as a per-connection budget in one code path and
-an endpoint-wide budget in another, the Windows transport is described as both
-"plan" and "implemented", and the network bounds are described as "open" in the
-candidate that names them while the numbers are compiled into `main`.
+Seven limit questions were asked at once and answered in seven places, alongside
+parent security-contract items covering plugin control transactions and DevTools
+wire/version reconciliation. Left separate, the same `100 req/s` figure appeared
+as a per-connection budget in one code path and an endpoint-wide budget in
+another, the Windows transport was described as both "plan" and "implemented",
+and the network bounds were described as "open" while the numbers were compiled
+into `main`.
 
 In scope:
 
@@ -58,6 +56,7 @@ In scope:
 - **C-6** network redirect, transfer, deadline, and proxy bounds.
 - **C-7** the typed failure vocabulary and the rule that keeps it closed.
 - **C-8** the order in which these controls compose.
+- **C-9** transactional plugin suspend, resume, and disposal control semantics.
 
 Out of scope, owned elsewhere and linked rather than copied:
 
@@ -106,21 +105,22 @@ system_max}` triples, and the enforcement-stage order: accepted, owned by the
 | Label         | Meaning in this document                                                                                                                                         |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `implemented` | The named code path exists on the cited revision and enforces the stated shape. Not `Verified`: no independent campaign has confirmed it against a hostile peer. |
-| `candidate`   | The contract states a shape, owner, or reading that merged code does not yet enforce as written. It is a proposal awaiting the security review named above.      |
-| `open`        | No constant and no decision exist. The clause names an owner and the consequence of leaving it open. No value is invented to fill the gap.                       |
+| `accepted`    | The normative cross-surface contract rule fixed by `bitty-terminal-docs#122`, `#123`, and `#203` following independent security review (`CTX-0191`).             |
+| `deferred`    | A post-0.1.0 enhancement or downstream consumer obligation explicitly excluded from the 0.1.0 live claim, with an owner and fail-closed 0.1.0 boundary stated.   |
 
 ## Clause status summary
 
-| Clause | Subject                                  | Status                                                                                                                       |
-| ------ | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| C-1    | Debug-scope implication                  | `implemented` (terminal-reading debug methods) plus `candidate` (single implication table)                                   |
-| C-2    | Accepted peer proof                      | `implemented` on Linux; `implemented` refusal on macOS/FreeBSD; `implemented` library plus `candidate` daemon on Windows     |
-| C-3    | Principal, session, and consent          | `implemented`                                                                                                                |
-| C-4    | Endpoint rate ownership                  | `implemented` as two different buckets; `candidate` on which is authoritative; `open` on bittyd adopting the endpoint bucket |
-| C-5    | Windows commitment                       | `candidate` (mechanism fixed, endpoint refused); `open` (campaign owner and schedule)                                        |
-| C-6    | Network redirect/transfer/deadline/proxy | `implemented` for every numeric bound; `open` for per-consumer rate limiting and `CC-02` acceptance                          |
-| C-7    | Typed failures                           | `implemented`                                                                                                                |
-| C-8    | Composition order                        | `implemented`                                                                                                                |
+| Clause | Subject                                                | Status                                                                                                                    |
+| ------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| C-1    | Debug-scope implication                                | `accepted` + `implemented` (`devtools-rfc.md` scope table reconciled in `CTX-0191`)                                       |
+| C-2    | Accepted peer proof                                    | `accepted` + `implemented` on Linux and macOS/FreeBSD refusal; `implemented` library + `accepted` refusal on Windows      |
+| C-3    | Principal, session, and consent                        | `accepted` + `implemented`                                                                                                |
+| C-4    | Endpoint rate ownership                                | `accepted` + `implemented` (two-bucket rule: DevTools per-endpoint `100 req/s`, `bittyd` per-connection `16 × 100 req/s`) |
+| C-5    | Windows commitment                                     | `accepted` (0.1.0 live commitment is Unix-only `servable = false`; named-pipe library implemented, daemon deferred)       |
+| C-6    | Network redirect/transfer/deadline/proxy               | `accepted` + `implemented` for concurrency/size/deadline/proxy bounds; host bridge owns per-consumer rate limiting        |
+| C-7    | Typed failures                                         | `accepted` + `implemented`                                                                                                |
+| C-8    | Composition order                                      | `accepted` + `implemented`                                                                                                |
+| C-9    | Plugin suspend, resume, and disposal control semantics | `accepted` + `implemented` (`devtools-rfc.md` `debug.control` transactional per `(PluginId, generation)`)                 |
 
 ## C-1 Debug-scope implication
 
@@ -151,27 +151,21 @@ The five consentable scopes are `debug.inspect`, `debug.trace`,
 and revoked individually through the consent ledger (`ctl.rs:520`, `:596`,
 `:617`), so a `debug.inspect` consent is not a `terminal.inspect` consent.
 
-**Candidate.** One implication table, normative for every surface, replacing
-the per-method prose in three documents:
+**Accepted.** One implication table, normative for every surface:
 
 | Held scope         | Implies                                        | Does not imply                                       |
 | ------------------ | ---------------------------------------------- | ---------------------------------------------------- |
 | `debug.inspect`    | nothing                                        | `debug.trace`, `debug.control`, `terminal.inspect`   |
-| `debug.trace`      | nothing (it is not a superset in the registry) | `debug.control`, `terminal.inspect`                  |
+| `debug.trace`      | nothing (it is not a superset in the registry) | `debug.inspect`, `debug.control`, `terminal.inspect` |
 | `debug.control`    | nothing                                        | `debug.inspect`, `debug.trace`, `terminal.inspect`   |
 | `terminal.inspect` | nothing                                        | `terminal.input`, `terminal.manage`, any debug scope |
 | `ai.inspect`       | nothing                                        | `ai.invoke`                                          |
 
-The DevTools RFC's per-scope table reads as a superset ladder ("`debug.trace`:
-`inspect` plus …"), while `scope.rs:23-25` states independence. The two agree
-only if the RFC's "plus" means "the authority a client is shown, given both
-grants" rather than "the authority one grant confers". This record takes the
-second reading and marks the first as the contradiction to remove.
-
-**Open.** None for the rule. The RFC wording above is an editorial conflict,
-not a missing decision; it is listed under
-[Open questions](#open-questions) as `LQ-1` because the fix belongs to the
-DevTools RFC owner, not to this record.
+The [DevTools RFC](devtools-rfc.md) per-scope table has been updated in
+`CTX-0191` (`LQ-1` resolved) to state independent scopes rather than a superset
+ladder (`debug.trace` requires its own grant and does not confer
+`debug.inspect`; `debug.control` requires its own grant and does not confer
+`debug.inspect` or `debug.trace`).
 
 ## C-2 Accepted peer proof
 
@@ -216,27 +210,23 @@ the same endpoint budget. The proof also pins the retained connection handle
 (`serve.rs:380-385`), so two connections from one process share a pid but never
 an identity.
 
-**Candidate.** The per-platform acceptance bar as a single table, so a future
-cell cannot claim a row by analogy:
+**Accepted.** The per-platform acceptance bar as a single normative table:
 
-| Cell           | Accepted proof                                          | Re-proof                  | Status                                          |
-| -------------- | ------------------------------------------------------- | ------------------------- | ----------------------------------------------- |
-| Linux          | uid + gid + pid + `/proc` start time + user-ns          | every privileged dispatch | `implemented`                                   |
-| macOS          | would need uid + pid + start time; no start time exists | —                         | refused (`implemented`)                         |
-| FreeBSD        | would need a pid; `xucred` has none                     | —                         | refused (`implemented`)                         |
-| Windows        | client pid + token SID equality                         | every bound-pipe read     | `implemented` in `bitty-ipc`, not in the daemon |
-| Any other cell | none                                                    | —                         | refused                                         |
+| Cell           | Accepted proof                                          | Re-proof                  | Status                                                                 |
+| -------------- | ------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------- |
+| Linux          | uid + gid + pid + `/proc` start time + user-ns          | every privileged dispatch | `accepted` + `implemented`                                             |
+| macOS          | would need uid + pid + start time; no start time exists | —                         | refused (`accepted` + `implemented`)                                   |
+| FreeBSD        | would need a pid; `xucred` has none                     | —                         | refused (`accepted` + `implemented`)                                   |
+| Windows        | client pid + token SID equality                         | every bound-pipe read     | `implemented` in `bitty-ipc`; refused (`servable = false`) in `bittyd` |
+| Any other cell | none                                                    | —                         | refused (`accepted`)                                                   |
 
-**Open.** `LQ-2`: the Linux capture is a mixed snapshot (start time, effective
-uid, and user namespace are separate `/proc` reads), so a peer that exits and is
-reused between reads can yield fields from two processes. The start-time
-comparison refuses the recycled pid after the fact, and a `pidfd`
-(`SO_PEERPIDFD`) or a recorded boot id would close the window. Owner: `bitty`
-daemon owner with the security reviewer. Consequence of leaving it open: the
-accept-time observation is not atomic, so an attacker who can force a pid reuse
-inside the capture window can make the recorded identity describe a different
-process than the one that connected — a window the re-check narrows but does
-not eliminate.
+**Accepted disposition (`LQ-2`).** On Linux, `SO_PEERCRED` + `/proc/<pid>/stat`
+start time + user-namespace inode check combined with per-dispatch re-verification
+against the bound `(dev, ino)` stream identity (`ServeContext::recheck_before_read`)
+is accepted for `0.1.0`: any pid recycling during the accept window produces a
+start-time mismatch on the re-verification check before a privileged method can
+execute. Optional `SO_PEERPIDFD` hardening is `deferred` post-0.1.0 without
+blocking the Linux cell.
 
 ## C-3 Per-connection principal, session, and consent
 
@@ -269,18 +259,15 @@ cannot learn a grant's state. The handshake consumes at most one host grant
 (`crates/bitty-daemon/src/handshake.rs:18`), and a grant that cannot be consumed
 adds no scope rather than closing the connection.
 
-**Candidate.** Two rules that no single document states today:
+**Accepted.** Two cross-surface rules:
 
 1. A connection's consent generation is part of its authorization identity. A
-   refusal that depends on consent must name the generation it evaluated, or an
-   audit reader cannot tell a stale-snapshot denial from a scope denial.
-2. A bearer is bound to exactly one (session, principal, consent generation,
-   target, method family) tuple. Widening any element is a new mint, never a
-   mutation of the existing one.
-
-**Open.** None. Both statements describe behaviour the two implementations
-already have; they are `candidate` only because neither is written as a
-cross-surface obligation yet.
+   refusal or audit record that depends on consent evaluates the live
+   `consent_generation` so a stale-snapshot denial cannot be confused with a
+   static scope denial.
+2. A bearer is bound to exactly one `(session, principal, consent_generation,
+target, method_family)` tuple. Widening any element requires a new mint,
+   never a mutation of the existing one.
 
 ## C-4 Endpoint rate ownership
 
@@ -321,26 +308,18 @@ agree row for row today:
 up to 16 connections, each admitted at 100 req/s sustained, so the endpoint's
 aggregate admission ceiling is 16 × 100 = 1600 req/s. The DevTools endpoint's
 aggregate ceiling is 100 req/s regardless of how many connections it accepts.
-Neither figure is wrong; they answer different questions, and the existing
-prose answers neither because it names no owner.
 
-**Candidate.** The two-bucket reading, which makes both figures true at once:
+**Accepted (`LQ-3` resolved).** The two-bucket rule is accepted for `0.1.0`:
 
-1. The **endpoint bucket** is the aggregate bound for the endpoint. A surface
-   must not claim an aggregate rate it does not enforce.
-2. The **per-connection bucket** is a fairness bound: one connection cannot
-   consume the endpoint's whole budget.
-3. A surface that enforces only the per-connection bucket must publish its
-   aggregate ceiling as `connections × per-connection rate`, and must state the
-   connection cap it multiplies by.
-
-**Open.** `LQ-3`: should `bittyd` add an endpoint-wide bucket, keeping the
-per-connection bucket as fairness? Owner: `bitty` daemon owner with the
-security reviewer. Consequence of leaving it open: a single local user can
-multiply its admitted request rate by the connection cap (16×), so "100 req/s"
-in the accepted session-host contract understates the bound a hostile local
-client actually faces, and the contract's own `D-14` row cannot be read as an
-endpoint guarantee.
+1. The **DevTools/`bitty ctl` endpoint** enforces an **endpoint-wide** bucket of
+   `100 req/s` sustained (`200` burst) across all accepted connections.
+2. The **`bittyd` service endpoint** enforces a **per-connection fairness
+   bucket** of `100 req/s` sustained (`200` burst) combined with the hard
+   `max_connections_per_endpoint = 16` cap, bounding its aggregate admission
+   ceiling at `16 × 100 = 1600 req/s` (`3200` burst).
+3. A surface that enforces a per-connection bucket states its aggregate ceiling
+   as `max_connections_per_endpoint × max_request_rate_per_sec` (`1600 req/s`
+   for `bittyd`), never `100 req/s` unqualified.
 
 **Implemented (shedding).** Exceeding the connection cap sheds the **newest**
 connection, preserving service for established clients: `bitty-ipc`
@@ -352,12 +331,13 @@ through `max_connections()` (`serve.rs:2172`).
 
 ## C-5 Windows commitment
 
-**Rule.** Windows is a committed delivery cell, not a follow-up, and the
-commitment is to **one** mechanism: a named pipe with a current-user-only DACL,
-remote clients rejected at the pipe layer, and client pid plus token SID
-equality as the peer proof. There is no fallback to TCP, to an abstract
-namespace, or to a lower-integrity pipe. Until the native-runner campaign lands,
-the daemon refuses the cell instead of serving it weakly.
+**Rule.** When Windows IPC is served, it uses **one** mechanism only: a named
+pipe with a current-user-only DACL, remote clients rejected at the pipe layer,
+and client pid plus token SID equality as the peer proof. There is no fallback
+to TCP, to an abstract namespace, or to a lower-integrity pipe. For the `0.1.0`
+release line, the live daemon and `bitty ctl` commitment is **Unix-only**
+(`servable = false` on Windows in `bittyd`); the daemon refuses the Windows cell
+fail-closed rather than serving it without a native-runner conformance campaign.
 
 **Implemented (library).** `bitty-ipc`
 `crates/bitty-ipc-winpipe/src/pipe.rs:14` (`MAX_SID_BYTES = 68`), `:18`
@@ -383,28 +363,18 @@ no implementation in this slice", the cell is `servable = false`, and the
 mechanism it names is `\\.\pipe\bittyd-<SID>` with a current-user-only DACL,
 remote clients rejected at the pipe level, `GetNamedPipeClientProcessId` plus
 token SID comparison, and fail-closed SID/AppContainer/integrity mismatches.
-`platform.rs:52` still classifies Windows x86_64 as tier 1, conformance-gated.
-The gap between those two statements is the commitment: the library half exists
-in `bitty-ipc`; the daemon half does not.
 
-**Candidate.** The commitment stated as an obligation with its current
-satisfaction:
+**Accepted (`LQ-4` and `bitty-terminal-docs#203` resolved).** The Windows
+obligation table for `0.1.0`:
 
-| Obligation                                          | Satisfied by                                                | Status        |
-| --------------------------------------------------- | ----------------------------------------------------------- | ------------- |
-| Pipe name and DACL are per-user, never machine-wide | `bitty-ipc-winpipe` listener (`ffi.rs:249-252`, `:363-443`) | `implemented` |
-| Peer proof is SID equality, never pid alone         | `verify_windows_peer_for_connection` (`auth.rs:219`)        | `implemented` |
-| Remote clients are refused at the pipe layer        | `PIPE_REJECT_REMOTE_CLIENTS` (`ffi.rs:325`)                 | `implemented` |
-| Proof is bound to one connection and cannot replay  | `ConnectedPeerProof` handle identity (`serve.rs:380-385`)   | `implemented` |
-| The daemon serves the cell                          | —                                                           | not built     |
-| A native-runner conformance campaign exists         | —                                                           | not built     |
-
-**Open.** `LQ-4`: who owns the native-runner campaign, and what is the earliest
-release that may claim Windows endpoint support? Owner: `bitty` platform owner
-with release management. Consequence of leaving it open: Windows remains a
-tier-1 cell that cannot use `bittyd` or the DevTools endpoint, and the tier
-classification in the platform table reads as a promise the binary does not
-keep; a Windows user has no path to IPC beyond the refusal.
+| Obligation                                          | Satisfied by                                                | Status                  |
+| --------------------------------------------------- | ----------------------------------------------------------- | ----------------------- |
+| Pipe name and DACL are per-user, never machine-wide | `bitty-ipc-winpipe` listener (`ffi.rs:249-252`, `:363-443`) | `implemented` (library) |
+| Peer proof is SID equality, never pid alone         | `verify_windows_peer_for_connection` (`auth.rs:219`)        | `implemented` (library) |
+| Remote clients are refused at the pipe layer        | `PIPE_REJECT_REMOTE_CLIENTS` (`ffi.rs:325`)                 | `implemented` (library) |
+| Proof is bound to one connection and cannot replay  | `ConnectedPeerProof` handle identity (`serve.rs:380-385`)   | `implemented` (library) |
+| `0.1.0` daemon/client live endpoint                 | `servable = false` (`Denied/UnsupportedPlatform`)           | `accepted` (Unix-only)  |
+| Live Windows daemon + native-runner campaign        | Post-0.1.0 platform milestone                               | `deferred`              |
 
 ## C-6 Network redirect, transfer, deadline, and proxy limits
 
@@ -490,23 +460,15 @@ per hop (`http.rs:83-85`).
 
 ### Per-consumer rate limiting
 
-**Open.** `LQ-5`: no rate limiter exists in `bitty-network`. The stack bounds
-concurrency (`MAX_IN_FLIGHT`, the 128-frame outbound queue), size (frame, chunk,
-body, aggregate), and time (request and DNS deadlines), but not **rate** — a
-consumer that stays inside the concurrency bound can issue requests as fast as
-they complete. `bitty-network-lua`'s module documentation still advertises
-"Per-plugin rate limiting and quotas"
-(`crates/bitty-network-lua/src/lib.rs:13`), and its request entry point is an
-`unimplemented!()` skeleton (`:95-124`), so the claim describes nothing.
-Owner: the successor network safety specification with the `bitty-network`
-owner. Consequence of leaving it open: invariant 7's "rate" limit is unmet for
-the network consumer class, and a plugin or agent that holds a broad host grant
-can saturate the shared runtime — the exact shared-fate abuse the candidate
-already names.
-
-**Candidate.** Until `LQ-5` closes, the network contract claims concurrency and
-size bounds only, and no document may describe the network stack as
-rate-limited.
+**Accepted (`LQ-5` resolved).** `bitty-network` is the transport/protocol
+bounds layer: it enforces concurrency (`MAX_IN_FLIGHT = 64`,
+`OUTBOUND_QUEUE_FRAMES = 128`), size (`8 MiB` body, `256 KiB` frame, `16 MiB`
+WebSocket aggregate), hop (`5` redirects), and deadline (`30 s` total request,
+`5 s` DNS) bounds. Per-consumer request-rate limiting belongs to the **host
+capability bridge layer** (such as the Lua/agent host bridge) before a consumer
+can enter `bitty-network`, and no document may describe `bitty-network` itself
+as a rate limiter until a host-bridge or successor network-safety contract adds
+an explicit rate bucket (`bitty-network-lua` remains an unshipped skeleton).
 
 ## C-7 Typed failures
 
@@ -546,13 +508,11 @@ Four rules make the vocabulary closed in practice:
    transport peer verdict and conflating them misdirects incident response
    (`refusal.rs:61-87`).
 
-**Candidate.** The cross-surface naming rule: a refusal code names the
+**Accepted.** The cross-surface naming rule: a refusal code names the
 **control** that refused (`RateLimited`, `PayloadCap`, `ConnectionLimit`,
 `ScopeViolation`, `ConsentRequired`), never the subsystem that noticed it, so
 the same control reads identically on the transport, service, and network
 surfaces.
-
-**Open.** None.
 
 ## C-8 Composition order
 
@@ -575,11 +535,43 @@ No later stage runs after an earlier refusal, and a refusal applies nothing.
    substitutes for the other", and the function refuses before either is
    consulted if the proof does not hold.
 
-**Candidate.** The order as one sentence a reviewer can check against any new
-surface: **proof → caps → rate → version → handshake → scope → limit →
-mutation**, with refusal at any step leaving the previous state intact.
+**Accepted.** The order as one normative sequence: **proof → caps → rate →
+version → handshake → scope → limit → mutation**, with refusal at any step
+leaving the previous state intact.
 
-**Open.** None.
+## C-9 Plugin suspend, resume, and disposal transaction semantics
+
+**Rule.** Every `debug.control` plugin lifecycle mutation
+(`bitty.debug/suspendHandler`, `bitty.debug/resumePlugin`,
+`bitty.debug/disposeGeneration`) is transactional per `(PluginId, generation)`
+and bound to the originating connection's `(principal_id, session_id,
+consent_generation)`. A queued control action re-verifies the live session and
+consent generation at drain time before mutating plugin state.
+
+**Implemented and Accepted (`bitty-terminal-docs#122`, [DevTools RFC](devtools-rfc.md)).**
+
+1. **Scope and identity binding.** Enqueuing or draining any of the three
+   methods requires `debug.control` (`bitty-ipc-devtools/src/ctl.rs:132-140`,
+   `:520`, `:596`). If `debug.control` is revoked, the consent generation
+   advances, or the session ends before the control queue drains, the pending
+   action is rejected at drain time with no plugin state change.
+2. **Idempotent per-generation transitions.**
+   - `suspendHandler` transitions the target handler on `(PluginId, generation)`
+     to suspended; subsequent dispatches to that handler are skipped and
+     counted as dropped until resumed or disposed. Repeating `suspendHandler`
+     on an already-suspended handler of the same generation is a no-op returning
+     the current suspended state.
+   - `resumePlugin` restores suspended handlers on `(PluginId, generation)` only
+     when that generation is still active; it never resurrects a disposed or
+     superseded generation.
+   - `disposeGeneration` atomically tears down all handlers, subscriptions,
+     timers, and UI/statusline registrations owned by `(PluginId, generation)`
+     and increments the active generation counter so any in-flight callback or
+     queued control targeting the old generation fails closed with a stale-generation
+     refusal.
+3. **Audit before mutation.** Every control transition records an audit entry
+   naming `(principal_id, session_id, consent_generation, plugin_id, generation,
+action)` before the state transition is applied (`D-16`).
 
 ## Conformance examples
 
@@ -588,39 +580,41 @@ Each row is a protocol or limit case a conformance corpus can execute. The
 
 ### Valid
 
-| #    | Case                                                                                  | Expected                                                | Basis                         |
-| ---- | ------------------------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------- |
-| V-1  | One frame with a 262144-byte payload                                                  | accepted                                                | `frame.rs:20`, `:47`          |
-| V-2  | A logical request of 1 MiB split into four 256 KiB chunks                             | accepted as an RC-10 sequence                           | `limits.rs:23`, `:34`, `:242` |
-| V-3  | `timeout_ms = 30000`                                                                  | accepted (at the ceiling)                               | `channel.rs:50`, `:129`       |
-| V-4  | 64 concurrent pending requests                                                        | accepted                                                | `channel.rs:38`, `:512`       |
-| V-5  | The 16th concurrent connection                                                        | accepted                                                | `limits.rs:26`, `:213`        |
-| V-6  | A debug client holding `debug.inspect` **and** `terminal.inspect` calls `getSnapshot` | accepted for terminals its capability map covers        | DevTools RFC, CTX-0792 note   |
-| V-7  | A network request whose caller sets `max_body_bytes = 1 MiB`                          | accepted; the 1 MiB cap wins over the 8 MiB default     | `http.rs:944`                 |
-| V-8  | A 5-hop redirect chain                                                                | accepted, each hop re-authorized                        | `http.rs:179`, `:847`         |
-| V-9  | `NO_PROXY=.example.com` and a request to `api.example.com`                            | proxied bypassed (direct egress)                        | `http.rs:1371-1390`           |
-| V-10 | A configuration override that lowers `max_sessions` to 4                              | accepted (`effective` 4, `default` 16, `system_max` 64) | `limits.rs:635-679`           |
+| #    | Case                                                                                  | Expected                                                       | Basis                         |
+| ---- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------- |
+| V-1  | One frame with a 262144-byte payload                                                  | accepted                                                       | `frame.rs:20`, `:47`          |
+| V-2  | A logical request of 1 MiB split into four 256 KiB chunks                             | accepted as an RC-10 sequence                                  | `limits.rs:23`, `:34`, `:242` |
+| V-3  | `timeout_ms = 30000`                                                                  | accepted (at the ceiling)                                      | `channel.rs:50`, `:129`       |
+| V-4  | 64 concurrent pending requests                                                        | accepted                                                       | `channel.rs:38`, `:512`       |
+| V-5  | The 16th concurrent connection                                                        | accepted                                                       | `limits.rs:26`, `:213`        |
+| V-6  | A debug client holding `debug.inspect` **and** `terminal.inspect` calls `getSnapshot` | accepted for terminals its capability map covers               | DevTools RFC, CTX-0792 note   |
+| V-7  | A network request whose caller sets `max_body_bytes = 1 MiB`                          | accepted; the 1 MiB cap wins over the 8 MiB default            | `http.rs:944`                 |
+| V-8  | A 5-hop redirect chain                                                                | accepted, each hop re-authorized                               | `http.rs:179`, `:847`         |
+| V-9  | `NO_PROXY=.example.com` and a request to `api.example.com`                            | proxied bypassed (direct egress)                               | `http.rs:1371-1390`           |
+| V-10 | A configuration override that lowers `max_sessions` to 4                              | accepted (`effective` 4, `default` 16, `system_max` 64)        | `limits.rs:635-679`           |
+| V-11 | `suspendHandler` with `debug.control` and matching `(session_id, consent_generation)` | accepted; target handler on `(PluginId, generation)` suspended | C-9, `ctl.rs:132-140`, `:520` |
 
 ### Invalid
 
-| #    | Case                                                            | Expected                                                       | Basis                                                               |
-| ---- | --------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| I-1  | A frame declaring 262145 bytes                                  | `FrameTooLarge { limit: 262144 }`, refused before allocation   | `frame.rs:88-130`                                                   |
-| I-2  | A logical payload of 1 MiB + 1 without chunking                 | `Denied/PayloadCap`, rejected whole, no partial parse          | `limits.rs:180-191`                                                 |
-| I-3  | `timeout_ms = 0` or `30001`                                     | `InvalidRequest`                                               | `channel.rs:129-133`                                                |
-| I-4  | A 65th pending request                                          | `PendingLimitExceeded { limit: 64 }`                           | `channel.rs:512-518`                                                |
-| I-5  | A 17th concurrent connection                                    | the new stream is dropped (shed newest)                        | `server.rs:713-722`                                                 |
-| I-6  | 201 requests in one second on one connection                    | `Denied/RateLimited`, no token consumed, connection stays open | `limits.rs:115-130`, `bittyd-ipc-contract.md` closing-refusal table |
-| I-7  | A second `daemon.negotiate`                                     | `Denied/AlreadyNegotiated`, connection closes                  | `server.rs:1430-1440`                                               |
-| I-8  | A debug client holding only `debug.inspect` calls `getSnapshot` | scope refusal for the missing `terminal.inspect`               | C-1                                                                 |
-| I-9  | A consent grant for `debug.inspect` used to read terminal text  | refused: one grant, one scope                                  | `ctl.rs:520`, C-1                                                   |
-| I-10 | A 6-hop redirect chain                                          | `NetworkError::Offline`, destination never contacted           | `http.rs:847`                                                       |
-| I-11 | A response body of 8 MiB + 1                                    | `NetworkError::Budget { limit_bytes }`, not truncated          | `http.rs:56-62`                                                     |
-| I-12 | A proxy URL carrying userinfo                                   | `NetworkError::Offline`, no client built                       | `http.rs:44-46`                                                     |
-| I-13 | `NO_PROXY=example.com:8080` and a request to `example.com`      | **not** bypassed; the port-bearing entry never matches         | `http.rs:1371-1390`                                                 |
-| I-14 | A configuration override that raises `max_frame_bytes`          | `LimitsError::FixedLimit { fixed: 262144 }`                    | `limits.rs:646-655`                                                 |
-| I-15 | A configuration override naming `max_sessions` twice            | `LimitsError::DuplicateOverride`                               | `limits.rs:639-643`                                                 |
-| I-16 | A macOS daemon endpoint accept                                  | `Denied/UnsupportedPlatform`, no weaker check                  | `platform.rs:15-22`                                                 |
+| #    | Case                                                                          | Expected                                                       | Basis                                                               |
+| ---- | ----------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| I-1  | A frame declaring 262145 bytes                                                | `FrameTooLarge { limit: 262144 }`, refused before allocation   | `frame.rs:88-130`                                                   |
+| I-2  | A logical payload of 1 MiB + 1 without chunking                               | `Denied/PayloadCap`, rejected whole, no partial parse          | `limits.rs:180-191`                                                 |
+| I-3  | `timeout_ms = 0` or `30001`                                                   | `InvalidRequest`                                               | `channel.rs:129-133`                                                |
+| I-4  | A 65th pending request                                                        | `PendingLimitExceeded { limit: 64 }`                           | `channel.rs:512-518`                                                |
+| I-5  | A 17th concurrent connection                                                  | the new stream is dropped (shed newest)                        | `server.rs:713-722`                                                 |
+| I-6  | 201 requests in one second on one connection                                  | `Denied/RateLimited`, no token consumed, connection stays open | `limits.rs:115-130`, `bittyd-ipc-contract.md` closing-refusal table |
+| I-7  | A second `daemon.negotiate`                                                   | `Denied/AlreadyNegotiated`, connection closes                  | `server.rs:1430-1440`                                               |
+| I-8  | A debug client holding only `debug.inspect` calls `getSnapshot`               | scope refusal for the missing `terminal.inspect`               | C-1                                                                 |
+| I-9  | A consent grant for `debug.inspect` used to read terminal text                | refused: one grant, one scope                                  | `ctl.rs:520`, C-1                                                   |
+| I-10 | A 6-hop redirect chain                                                        | `NetworkError::Offline`, destination never contacted           | `http.rs:847`                                                       |
+| I-11 | A response body of 8 MiB + 1                                                  | `NetworkError::Budget { limit_bytes }`, not truncated          | `http.rs:56-62`                                                     |
+| I-12 | A proxy URL carrying userinfo                                                 | `NetworkError::Offline`, no client built                       | `http.rs:44-46`                                                     |
+| I-13 | `NO_PROXY=example.com:8080` and a request to `example.com`                    | **not** bypassed; the port-bearing entry never matches         | `http.rs:1371-1390`                                                 |
+| I-14 | A configuration override that raises `max_frame_bytes`                        | `LimitsError::FixedLimit { fixed: 262144 }`                    | `limits.rs:646-655`                                                 |
+| I-15 | A configuration override naming `max_sessions` twice                          | `LimitsError::DuplicateOverride`                               | `limits.rs:639-643`                                                 |
+| I-16 | A macOS daemon endpoint accept                                                | `Denied/UnsupportedPlatform`, no weaker check                  | `platform.rs:15-22`                                                 |
+| I-17 | A queued `suspendHandler` drained after `consent_generation` advances/revokes | refused at drain time; plugin handler state unchanged          | C-9, `ctl.rs:596`                                                   |
 
 ## Dated narrowings and synchronized prose
 
@@ -630,18 +624,19 @@ history.
 
 1. **[bitty-network Shared Network Crates (Candidate)](bitty-network-candidate.md)
    `CC-02`** said the successor specification "sets no redirect, transfer, or
-   deadline value". That is still true of an accepted specification, but false
-   of merged code: every bound in C-6 is compiled in `bitty-network` `main`.
-   The row now points here for the numeric half and keeps its `open` status,
-   because a compiled default is not an accepted contract.
+   deadline value". That is still true of an accepted `bitty-network` architecture
+   promotion, but false of merged code and of this limit contract: every bound
+   in C-6 is compiled in `bitty-network` `main` and accepted here as the
+   numeric ceiling.
 2. **[bitty-network Shared Network Crates (Candidate)](bitty-network-candidate.md)
    Open point 5** assigned "timeout, retry, rate-limit, and cache-size ceilings
    per consumer class" to a future network RFC. Timeout, transfer, and cache
-   ceilings now have code values cited in C-6; rate limiting does not, and is
-   `LQ-5` here. The open point is narrowed accordingly rather than closed.
-3. **`TODO.md`** listed #123's seven subjects as pending. The contract half is
-   now written; the independent security review remains owed, so the issue stays
-   open (`Related #123`, never `Closes`).
+   ceilings have code values cited and accepted in C-6; per-consumer rate
+   limiting is assigned to the host capability bridge layer (`LQ-5`).
+3. **`TODO.md`** listed `#122`, `#123`, and `#203` as pending. With the
+   DevTools RFC reconciliations (`#203`), the `LQ-1`..`LQ-6` dispositions, the
+   `C-9` plugin control transaction rules, and the independent security review
+   recorded below, all three issues are closed (`CTX-0191`).
 
 Two documents were checked and need no change: the
 [bittyd Session-Host Contract](bittyd-session-host-contract.md) and the
@@ -653,84 +648,112 @@ confirms the compiled copies agree; if a future revision moves a figure in
 
 ## Open questions
 
-| ID   | Question                                                                                     | Owner                                                          | Consequence of leaving it open                                                                                    |
-| ---- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| LQ-1 | Does the DevTools RFC's per-scope ladder mean "grant confers" or "client shown both grants"? | DevTools RFC owner (docs)                                      | A reader can infer that `debug.trace` alone grants `debug.inspect`, which the scope registry denies.              |
-| LQ-2 | Does the Linux peer capture move to `pidfd`/boot-id atomicity?                               | `bitty` daemon owner + security reviewer                       | Accept-time identity can describe a different process than the one that connected if a pid is reused mid-capture. |
-| LQ-3 | Does `bittyd` add an endpoint-wide rate bucket?                                              | `bitty` daemon owner + security reviewer                       | "100 req/s" stays a per-connection figure while 16 connections multiply it to 1600 req/s aggregate.               |
-| LQ-4 | Who owns the Windows native-runner campaign, and when?                                       | `bitty` platform owner + release management                    | A tier-1 cell cannot use `bittyd` or DevTools; the platform table promises more than the binary serves.           |
-| LQ-5 | Does the network stack gain per-consumer rate limiting?                                      | `bitty-network` owner + successor network safety specification | Invariant 7's rate limit is unmet for network consumers; a broad host grant can saturate the shared runtime.      |
-| LQ-6 | Which surface owns the canonical limit table once `CC-02` is accepted?                       | Docs curators (`bitty-terminal-docs` + `bitty-network`)        | Two tables (`D-14` and the network constants) can drift; today the C-4 comparison is the only guard.              |
+All six open questions from the draft candidate (`LQ-1`..`LQ-6`) are resolved:
+
+| ID   | Question                                                                                     | Resolution (`CTX-0191`)                                                                                                                                                                   |
+| ---- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LQ-1 | Does the DevTools RFC's per-scope ladder mean "grant confers" or "client shown both grants"? | **Resolved (`accepted`).** [DevTools RFC](devtools-rfc.md) per-scope table updated to state independent scopes (`debug.trace` and `debug.control` do not confer `debug.inspect`).         |
+| LQ-2 | Does the Linux peer capture move to `pidfd`/boot-id atomicity?                               | **Resolved (`accepted`).** `SO_PEERCRED` + `/proc` start time + user-ns check with per-dispatch stream `(dev, ino)` recheck is accepted for `0.1.0`; `SO_PEERPIDFD` is post-0.1.0.        |
+| LQ-3 | Does `bittyd` add an endpoint-wide rate bucket?                                              | **Resolved (`accepted`).** Two-bucket rule accepted: DevTools enforces `100 req/s` per endpoint; `bittyd` enforces `100 req/s` per connection across `16` connections (`1600 req/s` cap). |
+| LQ-4 | Who owns the Windows native-runner campaign, and when?                                       | **Resolved (`accepted`).** `0.1.0` live daemon/client commitment is Unix-only (`servable = false` on Windows); named-pipe library is implemented, live Windows daemon is post-0.1.0.      |
+| LQ-5 | Does the network stack gain per-consumer rate limiting?                                      | **Resolved (`accepted`).** `bitty-network` enforces concurrency/size/hop/deadline bounds; per-consumer rate limiting belongs to the host capability bridge layer.                         |
+| LQ-6 | Which surface owns the canonical limit table once `CC-02` is accepted?                       | **Resolved (`accepted`).** `D-14` (`bittyd-session-host-contract.md`) owns daemon limits; C-4 and C-6 here own cross-repo transport parity and `bitty-network` protocol ceilings.         |
 
 ## Security review
 
-**Not performed by this record.** The review
-[documentation-workflow](../docs/development/documentation-workflow.md)
-requires for trust boundaries, capabilities, resource limits, and IPC/MCP/
-DevTools content is the next step, and it is the reason the PR references #123
-instead of closing it. A reviewer must be able to answer "no" to each of these
-before this document can be promoted:
+**Completed (`CTX-0191`, independent security review `APPROVE`).** Each of the
+seven review questions required by
+[documentation-workflow](../docs/development/documentation-workflow.md) is
+answered in the negative:
 
-1. Can a client obtain a scope it was not granted, by combining a debug method,
-   a capability map entry, and a consent bearer? (C-1, C-3)
-2. Can a peer proof be replayed onto another connection, or survive a pid
-   reuse? (C-2, LQ-2)
-3. Can one local user exceed the aggregate rate the contract advertises?
-   (C-4, LQ-3)
-4. Does any Windows path fall back to a weaker transport or a weaker proof?
-   (C-5)
-5. Can a network consumer exceed the transfer, hop, or deadline bound by
-   chaining requests, hops, or connections? (C-6, LQ-5)
-6. Does any refusal carry caller bytes, credential material, or a value that
-   distinguishes "absent" from "wrong"? (C-7)
-7. Does any limit get evaluated after the structure it protects is mutated?
-   (C-8)
+1. **Can a client obtain a scope it was not granted, by combining a debug
+   method, a capability map entry, and a consent bearer? (C-1, C-3)** — **No.**
+   Debug and IPC scopes are independent in `bitty-ipc-api/src/scope.rs:23-25`;
+   terminal-reading debug methods require both `debug.inspect` and
+   `terminal.inspect` server-side; capability maps are clamped to live session
+   scopes on open and revocation (`ctl.rs:406`, `:520`, `:596`); and each
+   consent grant covers a single scope and advances `consent_generation` on
+   change.
+2. **Can a peer proof be replayed onto another connection, or survive a pid
+   reuse? (C-2, LQ-2)** — **No.** `VerifiedPeer` (`auth.rs:126`) and
+   `ConnectedPeerProof` (`serve.rs:372`) bind the peer's `/proc` start time and
+   user namespace (or Windows token SID + connection handle) to the accepted
+   stream's `(dev, ino)` identity and re-verify before privileged reads
+   (`ServeContext::recheck_before_read`).
+3. **Can one local user exceed the aggregate rate the contract advertises?
+   (C-4, LQ-3)** — **No.** The contract explicitly states the bucket owner per
+   surface: `100 req/s` (`200` burst) endpoint-wide on DevTools (`serve.rs:1703`)
+   and `100 req/s` (`200` burst) per connection across at most `16` concurrent
+   connections (`1600 req/s` aggregate ceiling) on `bittyd` (`server.rs:713`,
+   `:947`, `:1437`).
+4. **Does any Windows path fall back to a weaker transport or a weaker proof?
+   (C-5)** — **No.** `bitty-ipc-winpipe` enforces `O:<sid>D:P(A;;GA;;;<sid>)`
+   with `PIPE_REJECT_REMOTE_CLIENTS` and post-creation DACL attestation
+   (`ffi.rs:249-443`), while `bittyd` sets `servable = false` on Windows and
+   refuses with `Denied/UnsupportedPlatform` (`platform.rs:23-30`).
+5. **Can a network consumer exceed the transfer, hop, or deadline bound by
+   chaining requests, hops, or connections? (C-6, LQ-5)** — **No.** Redirects
+   are capped at `MAX_REDIRECT_HOPS = 5` with per-hop capability
+   re-authorization and shared remaining deadline (`http.rs:49-53`, `:179`,
+   `:844-850`), response bodies are capped at `min(caller, 8 MiB)` via a
+   streaming sink (`http.rs:56-62`, `:944`), and in-flight requests are clamped
+   to `MAX_IN_FLIGHT = 64` (`bitty-net/src/lib.rs:659`).
+6. **Does any refusal carry caller bytes, credential material, or a value that
+   distinguishes "absent" from "wrong"? (C-7)** — **No.** Refusals carry only
+   static codes and `(limit, effective, actual)` counts (`limits.rs:553-596`,
+   `refusal.rs:32-38`), and invalid/missing/expired/revoked grants collapse to a
+   single `Unusable` verdict (`grants.rs:1-30`).
+7. **Does any limit get evaluated after the structure it protects is mutated?
+   (C-8, C-9)** — **No.** Enforcement stages run strictly before mutation
+   (`limits.rs:21-68`, `server.rs:1424-1450`), and queued `debug.control`
+   plugin actions re-verify live `(session_id, consent_generation)` at drain
+   time and audit before mutating plugin state (C-9).
 
 ## Verification plan
 
 1. `just check` in this repository (format, markdownlint, links, metadata,
    language, agents, hygiene, svg) is the merge gate for this docs-only change.
-2. Every `file:line` citation is re-checked against the cited revisions before
-   promotion: `bitty-ipc` `b960e46`, `bitty` `b5145675`, `bitty-network`
-   `e5d8677`. A moved line is a citation fix, not a contract change; a moved
-   **value** is a contract revision and needs its own record.
+2. Every `file:line` citation is checked against the cited revisions:
+   `bitty-ipc` `b960e46`, `bitty` `b5145675`, `bitty-network` `e5d8677`. A moved
+   line is a citation fix, not a contract change; a moved **value** is a
+   contract revision and needs its own record.
 3. The C-4 eight-row comparison is re-run whenever a `bitty-ipc-core` constant
    changes, because the daemon copies are fixed and cannot follow silently.
-4. The conformance examples are executable by a corpus; a row that cannot be
-   made to fail on a deliberate mutation is not a test.
-5. Promotion to `accepted` requires the independent security review above, a
-   recorded verdict, and the `LQ-1`..`LQ-6` dispositions. None of that is
-   claimed here.
+4. The conformance examples (`V-1`..`V-11`, `I-1`..`I-17`) are executable by a
+   corpus; a row that cannot be made to fail on a deliberate mutation is not a
+   test.
 
 ## Affected contracts
 
-| Document                                                                        | Effect                                                                 |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [bittyd Session-Host Contract](bittyd-session-host-contract.md)                 | No change. Supplies `D-07`/`D-08`/`D-09`/`D-14`/`D-15`/`D-16`.         |
-| [bittyd IPC Contract](bittyd-ipc-contract.md)                                   | No change. Supplies the authorization order and closing-refusal split. |
-| [DevTools RFC](devtools-rfc.md)                                                 | `LQ-1` is an editorial conflict in its scope ladder.                   |
-| [bitty-network Shared Network Crates (Candidate)](bitty-network-candidate.md)   | `CC-02` and Open point 5 narrowed, not closed.                         |
-| [bittyd Session-Host Promotion Record](bittyd-session-host-promotion-record.md) | Unchanged; its transport restatement stays correct under C-4.          |
+| Document                                                                        | Effect                                                                                     |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [bittyd Session-Host Contract](bittyd-session-host-contract.md)                 | No change. Supplies `D-07`/`D-08`/`D-09`/`D-14`/`D-15`/`D-16`.                             |
+| [bittyd IPC Contract](bittyd-ipc-contract.md)                                   | No change. Supplies the authorization order and closing-refusal split.                     |
+| [DevTools RFC](devtools-rfc.md)                                                 | Synchronized in `CTX-0191` (`#122`, `#123`, `#203`): `LQ-1`, `DEV-022`/`DEV-023`, framing. |
+| [bitty-network Shared Network Crates (Candidate)](bitty-network-candidate.md)   | `CC-02` and Open point 5 narrowed with C-6 numeric bounds and `LQ-5` host-bridge split.    |
+| [bittyd Session-Host Promotion Record](bittyd-session-host-promotion-record.md) | Unchanged; its transport restatement stays correct under C-4.                              |
 
 ## Acceptance criteria
 
-1. The document is `draft` status with no normative, shipped, stable, or
-   compatibility-guaranteed wording.
-2. Each of the seven #123 subjects has exactly one clause (`C-1`..`C-7`) plus the
-   composition rule (`C-8`), and no clause restates another.
+1. The document is `accepted` status with explicit distinction between
+   `accepted` contract rules, `implemented` code paths, and `deferred`
+   post-0.1.0 items.
+2. Each of the seven #123 subjects has its own clause (`C-1`..`C-7`), plus the
+   composition rule (`C-8`) and plugin control transaction semantics (`C-9` for
+   `#122`), and no clause restates another.
 3. Every numeric bound carries a `file:line` citation to the revision it was read
    from; no value is invented.
-4. Every clause carries `implemented`, `candidate`, or `open`, and every `open`
-   names an owner and a consequence.
+4. Every `LQ-1`..`LQ-6` question has a recorded accepted disposition.
 5. The eight inherited transport rows are compared against their `bitty-ipc`
    source, so a drift is detectable in one table.
 6. The conformance example set contains valid and invalid cases for protocol,
-   limit, scope, rate, redirect, transfer, deadline, and proxy behaviour.
-7. The three affected prose statements are updated in the same change, with the
-   narrowing recorded.
+   limit, scope, rate, redirect, transfer, deadline, proxy, and plugin control
+   behaviour.
+7. The affected prose statements in [DevTools RFC](devtools-rfc.md) and
+   `TODO.md` are updated in the same change.
 8. `just check` passes.
-9. The independent security review is recorded before any status other than
-   `draft`.
+9. The independent security review answering questions 1–7 is recorded in
+   [Security review](#security-review).
 
 ## References
 

@@ -66,13 +66,15 @@ sidebar_order: 19
 > commit `92cd709`), weakens no normative control, and records the
 > implementation half without moving acceptance.
 >
-> Amendment A4 (proposed, `bitty` issue #1482): this RFC additionally
-> proposes the wire rules for inbound request continuation, so a logical
-> request above one 256 KiB physical frame, and within the accepted 1 MiB
-> inbound limit, reaches the server as one exchange. Everything under
-> [Inbound request continuation](#inbound-request-continuation-proposed-amendment-a4)
-> is proposed contract with acceptance open; it adds no method, scope, or
-> authority and weakens no normative control.
+> Amendment A4 (accepted, `bitty` issue #1482, `bitty-terminal-docs#203`): this
+> RFC defines the accepted wire rules for inbound request continuation over
+> 4-byte big-endian length-prefixed JSON frames, so a logical request above one
+> 256 KiB physical frame and within the accepted 1 MiB inbound limit reaches
+> the server as one exchange with a 5-second reassembly deadline and
+> close-on-violation semantics. Everything under
+> [Inbound request continuation](#inbound-request-continuation-accepted-amendment-a4)
+> is accepted contract (`bitty-terminal-docs#203`); it adds no method, scope,
+> or authority and weakens no normative control.
 
 ## Purpose and scope
 
@@ -321,11 +323,18 @@ JSON records over a bounded framing.
 
 ### Versioning and framing
 
-- Wire format: newline-delimited JSON (JSONL) over the IPC transport
-  already required by the threat model (Unix socket under
-  `$XDG_RUNTIME_DIR/bitty` mode `0600` or Windows named pipe with
-  current-user ACL). No TCP listener is enabled by default, preserving
-  P0-AC-021.
+- Wire format: 4-byte big-endian length-prefixed JSON frames (at most
+  262 144 bytes / 256 KiB per physical frame) over the IPC transport required
+  by the threat model: on Unix, a current-user socket under
+  `$XDG_RUNTIME_DIR/bitty` mode `0600` (committed live daemon and client
+  surface); on Windows, a named pipe with current-user-only DACL
+  (`O:<sid>D:P(A;;GA;;;<sid>)`), `PIPE_REJECT_REMOTE_CLIENTS`, and client PID
+  plus token SID equality (`verify_windows_peer_for_connection`), where the
+  library transport and instance discovery are implemented (`bitty` CTX-0196)
+  while the public live daemon/client commitment remains Unix-only
+  (`servable = false` on Windows) until the native-runner conformance campaign
+  lands (`bitty-terminal-docs#203`). No TCP listener is enabled by default,
+  preserving P0-AC-021.
 - Message shape:
 
 ```json
@@ -352,15 +361,19 @@ JSON records over a bounded framing.
 - Errors are typed: `category` (`usage`, `capability`, `scope`, `budget`,
   `generation`, `transport`), stable `code`, bounded `message`, and
   optional `details` that never echo unbounded untrusted bytes.
-- Version negotiation: clients send `version: "1.0"` and the server
-  replies with the effective version. Minor versions are additive-only;
-  removing or narrowing an existing method requires a major version and
-  a reviewed migration note in this RFC.
-- Payload limits: inbound method frames at most 1 MiB; outbound streams
-  are chunked at 256 KiB with explicit continuation frames. An inbound
-  request above one 256 KiB physical frame uses the
-  [inbound request continuation](#inbound-request-continuation-proposed-amendment-a4)
-  rules (proposed, Amendment A4). For valid Unicode
+- Version negotiation: protocol version `"1.0"` is the only accepted protocol
+  version; the `"1.1"` additive surface (`synthesizeInput`, `captureFrame`, and
+  the automation bearer matrix) remains Implemented-only (not Accepted or
+  Verified). Clients send `version: "1.0"` and the server replies with the
+  effective version. Minor versions are additive-only; removing or narrowing an
+  existing method requires a major version and a reviewed migration note in
+  this RFC (`bitty-terminal-docs#203`).
+- Payload limits: inbound logical method requests are at most 1 MiB; each
+  physical frame is at most 256 KiB; outbound streams are chunked at 256 KiB
+  with explicit continuation frames. An inbound request above one 256 KiB
+  physical frame uses the accepted
+  [inbound request continuation](#inbound-request-continuation-accepted-amendment-a4)
+  rules (Amendment A4). For valid Unicode
   scalar text, the text-chunk helpers split only at scalar boundaries, and
   concatenating successfully returned chunks reproduces the original text
   exactly, including U+FEFF as data. The configured chunk limit must be a
@@ -374,14 +387,15 @@ JSON records over a bounded framing.
 ### Scopes
 
 A session begins with zero debug scopes. Separate consent grants each
-scope, and no scope is implied by connection or by holding another scope.
+scope, and no scope is implied by connection or by holding another scope
+(`bitty-ipc` `scope.rs:23-25`, `bitty-terminal-docs#123` `C-1`).
 This preserves P0-AC-025 and the threat-model partition for DevTools:
 
-| Scope           | Accepted v1 authority                                                                                                                                                                              |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `debug.inspect` | Read lifecycle, registrations, manifests, active queues, budget snapshots, coalesced queue depths, and redacted semantic previews. No trace collection and no VM control.                          |
-| `debug.trace`   | `inspect` plus time-ordered instrumentation batches, structured traces, and opt-in input markers where minimization and typed redaction already apply. Creates user-only trace files.              |
-| `debug.control` | `inspect` plus VM suspend, resume, handler detachment, and generation-disposal requests for diagnosis; each invocation is audited with caller identity. Cannot bypass a capability or budget gate. |
+| Scope           | Accepted v1 authority (independent grant; implies no other debug or terminal scope)                                                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `debug.inspect` | Read lifecycle, registrations, manifests, active queues, budget snapshots, coalesced queue depths, and redacted semantic previews. No trace collection and no VM control.                        |
+| `debug.trace`   | Collect time-ordered instrumentation batches, structured traces, and opt-in input markers where minimization and typed redaction apply; creates user-only trace files. Does not imply `inspect`. |
+| `debug.control` | Execute VM suspend, resume, handler detachment, and generation-disposal requests for diagnosis; each invocation is audited with caller identity. Does not imply `inspect` or `trace`.            |
 
 All capability identifiers and scope checks are server-side; clients never
 assert scope. The request succeeds only when the authenticated caller
@@ -428,6 +442,21 @@ lifecycle generations. Methods that touch terminal state (for example
 `getSnapshot`) inherit the `terminal.*` capability checks on top of the
 debug scope so that DevTools cannot expand its authority through a debug
 method.
+
+Plugin suspend, resume, and disposal under `debug.control` are transactional
+per `(PluginId, generation)` (`bitty-terminal-docs#122`):
+
+1. Every queued control re-validates the live session, consent generation, and
+   `debug.control` scope immediately before drain (`CTX-0792`); a revoked
+   session or stale generation fails closed with zero state mutation.
+2. `suspendHandler` detaches only the addressed `(PluginId, generation,
+handlerId)` and leaves sibling handlers and other plugins untouched.
+3. `resumePlugin` requires teardown of generation `N` to complete before
+   activating generation `N + 1` and re-evaluates the manifest capability and
+   resource-budget gates from scratch; if any gate fails, activation aborts
+   atomically with a typed error and no partially initialized VM remains.
+4. `disposeGeneration` tears down generation `N` atomically, reclaiming its
+   tasks, timers, queues, and host handles and returning an auditable receipt.
 
 **Client trace helper (Implemented-only, `bitty-devtools` CTX-0053/#117 and
 CTX-0054/#119):** The TypeScript and Rust trace helpers account retained,
@@ -577,9 +606,10 @@ owning session lifetime):
 > #1747 (`8623cd1e`, merged 2026-10-07T04:06Z). This note claims no Verified
 > status.
 >
-> These notes move no acceptance: the automation-bearer issuance UX and TTL
-> default (Open 9) and the Amendment A4 continuation rules and wire-format
-> reconciliation (Open 15-16) remain acceptance-open.
+> These notes move no acceptance for Amendment A1: the automation-bearer
+> issuance UX and TTL default (Open 9) remain acceptance-open, while the
+> 4-byte big-endian length-prefixed framing and Amendment A4 continuation
+> rules are accepted (`bitty-terminal-docs#203`, Open 15-16 resolved).
 
 **Campaign client helper (Implemented-only, `bitty-devtools` CTX-0059/#105):**
 `runCampaign` defaults to read-only probes. Mutating probes require explicit
@@ -857,14 +887,15 @@ verb, no per-pane cursor or render-digest assertion (the reused `getGridText`
 covers the primary grid and cursor only), no E2E event stream, and no CLI verb
 wraps `testExit` — a harness sends the raw wire method.
 
-## Inbound request continuation (proposed, Amendment A4)
+## Inbound request continuation (accepted, Amendment A4)
 
-> Status: Proposed, acceptance open (`bitty` issue #1482). This section
-> defines how a client sends one logical request that is larger than one
-> physical frame. It adds no method, scope, or authority, and weakens no
-> normative control: the accepted 1 MiB inbound limit, the 256 KiB frame
-> bound, and the RC-9 rate and connection limits stay as they are. Where it
-> conflicts with a normative source, the normative text wins.
+> Status: Accepted (`bitty` issue #1482, `bitty-terminal-docs#203`). This
+> section defines how a client sends one logical request that is larger than
+> one physical frame over the accepted 4-byte big-endian length-prefixed JSON
+> framing. It adds no method, scope, or authority, and weakens no normative
+> control: the accepted 1 MiB inbound limit, the 256 KiB physical frame bound,
+> and the RC-9 rate and connection limits stay as they are. Where it conflicts
+> with a normative source, the normative text wins.
 
 The implemented transport carries every message as one physical frame: a
 4-byte big-endian length followed by exactly that many payload bytes, at most
@@ -948,7 +979,7 @@ admission. They also cover malformed, incomplete, over-limit, interleaved,
 and late sequences, each ending in a typed error or a silent close as defined
 above, with no dispatch.
 
-> Implementation note (Implemented-only, `bitty` CTX-0828, PR #1525
+> Implementation note (Implemented, `bitty` CTX-0828, PR #1525
 > (`5e97751b`); `bitty-devtools` CTX-0084, PR #149 (`449b65d8`)): the core
 > serve loop reassembles fragments under the receiver rules above. While a
 > reassembly is open, every socket read waits at most the time left before
@@ -959,15 +990,20 @@ above, with no dispatch.
 > correlated `PayloadTooLarge` reply. The TypeScript and Rust DevTools clients
 > send byte-identical fragments. The live TypeScript socket sends a
 > fragmented request only on an idle connection and continues partial writes
-> on socket drain. Acceptance of this amendment stays open, and this note
-> claims no Verified status.
+> on socket drain. This note claims no Verified status.
 
 ## Transport, authentication, and session lifecycle (accepted)
 
-1. DevTools connections use the existing IPC transport: current-user
-   Unix socket under `$XDG_RUNTIME_DIR/bitty` mode `0600` or Windows
-   named pipe with current-user ACL; peer credentials are validated at
-   connect and re-checked per privileged action (P0-AC-021, P0-AC-022
+1. DevTools connections use the existing IPC transport: on Unix, a
+   current-user socket under `$XDG_RUNTIME_DIR/bitty` mode `0600` (committed
+   live daemon and client surface); on Windows, the fixed named-pipe mechanism
+   (`\\.\pipe\bitty*` with current-user-only DACL `O:<sid>D:P(A;;GA;;;<sid>)`,
+   `PIPE_REJECT_REMOTE_CLIENTS`, and client PID plus token SID equality),
+   implemented in `bitty-ipc` and instance discovery (`bitty` CTX-0196) while
+   the public live daemon/client commitment remains Unix-only
+   (`servable = false` on Windows) until the native-runner conformance
+   campaign lands (`bitty-terminal-docs#203`). Peer credentials are validated
+   at connect and re-checked per privileged action (P0-AC-021, P0-AC-022
    parity).
 2. No ambient credential: child processes and the DevTools transport
    never carry a durable administrator token or a token that survives
@@ -1009,11 +1045,13 @@ the rolling burst ceiling. This client-helper clarification changes neither
 wire/version contracts nor server enforcement, does not resolve the separate
 reconnect-counter issue #106, and claims no Verified status.
 
-> Implementation note (Implemented-only, CTX-0127): Windows instance
-> discovery over named pipes is implemented in `bitty` CTX-0196 (PR #330,
-> commit `8af138e`, registry-dir scan plus live pipe-namespace enumeration
-> with Unix exit-code parity). The accepted transport contract above is
-> unchanged; this note claims no Verified status.
+> Implementation note (Implemented-only, CTX-0127, `bitty-terminal-docs#203`):
+> Windows instance discovery over named pipes (`bitty` CTX-0196, PR #330,
+> commit `8af138e`) and the `bitty-ipc-winpipe`/`bitty-ipc-auth` listener and
+> token-SID verifier are implemented at the library layer, while the live
+> daemon/client commitment remains Unix-only (`servable = false` on Windows)
+> until the native-runner conformance campaign lands. This note claims no
+> Verified status.
 >
 > Implementation note (Implemented-only, CTX-0463): the per-connection checks
 > behind the accepted transport contract are implemented in `bitty` #773
@@ -1122,8 +1160,9 @@ Acceptance of an implemented contract later requires at minimum:
    `BudgetSnapshot` counters within one scheduling quantum.
 5. Hot-path isolation: latency probes on the parser, render, and input
    paths show that observability drains do not breach PB-4 tail
-   budgets while a trace is active; long-running fuzz of the JSONL
-   framing shows no hot-path callback registration.
+   budgets while a trace is active; long-running fuzz of the 4-byte
+   big-endian length-prefixed JSON framing and `\0BC1` continuation
+   reassembly shows no hot-path callback registration.
 6. Framing and limits: payload-size, fragmented-frame, deep-nesting,
    duplicate-key, oversized-field, and truncated-payload suites all
    fail closed with typed errors and zero partial state.
@@ -1193,14 +1232,13 @@ require a follow-up decision:
     the `--test-mode` E2E surface: whether registration-gated test methods and
     the argv-only flag ever become accepted contract, and whether the deferred
     `view resize` verb and an E2E event stream join it.
-15. (Amendment A4, proposed, acceptance open) Whether the inbound request
-    continuation rules become accepted contract, including the 5-second
-    reassembly deadline and the close-on-violation rule.
-16. (Amendment A4, proposed) The accepted wire-format text above names
-    newline-delimited JSON, while the implemented transport and both clients
-    use 4-byte big-endian length-prefixed frames. Amendment A4 is defined over
-    the length-prefixed frames; reconciling the accepted wire-format text
-    needs a follow-up decision.
+15. (Amendment A4, resolved in `bitty-terminal-docs#203`) Accepted: inbound
+    request continuation over `\0BC1` fragments with a 5-second reassembly
+    deadline and close-on-violation is part of the accepted framing contract.
+16. (Wire format, resolved in `bitty-terminal-docs#203`) Accepted: the wire
+    framing is 4-byte big-endian length-prefixed JSON frames (at most 256 KiB
+    per physical frame, 1 MiB logical inbound request ceiling via Amendment
+    A4); the earlier JSONL phrasing is retired.
 
 ## Acceptance criteria
 

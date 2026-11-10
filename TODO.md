@@ -58,24 +58,19 @@ than accumulating here.
 ### Completed
 
 - [x] IME contract specification (#126 -> PR #127, merged)
-- [x] #123: peer, session, rate, and network limit contract specified in the
-      [IPC, DevTools, and Network Limit Contract (Candidate)](specifications/ipc-devtools-network-limit-contract-candidate.md)
+- [x] #123: peer, session, rate, and network limit contract specified and
+      promoted to `accepted` in the
+      [IPC, DevTools, and Network Limit Contract](specifications/ipc-devtools-network-limit-contract-candidate.md)
       — debug-scope implication, accepted peer proof, per-connection
       principal/session/consent, endpoint rate ownership, Windows commitment,
-      network redirect/transfer/deadline/proxy bounds, and typed failures, each
-      clause labelled `implemented`, `candidate`, or `open` with code evidence.
-      The pull request references #123; the issue stays open for review.
-
-### Pending (P1)
-
-- [ ] #123: independent security review of the limit contract
-  - Required before the document leaves `draft`
-  - Requires: Security review
-
-- [ ] #122: Freeze DevTools/IPC/network security contracts
-  - Parent issue for #123
-  - Consolidate all security contract decisions
-  - Requires: Independent review
+      network redirect/transfer/deadline/proxy bounds, typed failures, and
+      plugin control transaction semantics, with `LQ-1`..`LQ-6` dispositions and
+      independent security review recorded (`CTX-0191`).
+- [x] #122: Freeze DevTools/IPC/network security contracts (`CTX-0191`).
+- [x] #203: Reconcile `devtools-rfc.md` internal contradictions (`DEV-022`,
+      `DEV-023`, `Open 15-16` framing vs Amendment A4, `LQ-1` independent
+      debug scopes, and `debug.control` plugin transaction semantics;
+      `CTX-0191`).
 
 ### Dependencies
 
@@ -85,4 +80,4 @@ than accumulating here.
 
 ---
 
-Updated: 2026-09-26
+Updated: 2026-11-11
