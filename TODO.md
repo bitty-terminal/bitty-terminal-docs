@@ -58,17 +58,18 @@ than accumulating here.
 ### Completed
 
 - [x] IME contract specification (#126 -> PR #127, merged)
+- [x] #123: peer, session, rate, and network limit contract specified in the
+      [IPC, DevTools, and Network Limit Contract (Candidate)](specifications/ipc-devtools-network-limit-contract-candidate.md)
+      — debug-scope implication, accepted peer proof, per-connection
+      principal/session/consent, endpoint rate ownership, Windows commitment,
+      network redirect/transfer/deadline/proxy bounds, and typed failures, each
+      clause labelled `implemented`, `candidate`, or `open` with code evidence.
+      The pull request references #123; the issue stays open for review.
 
 ### Pending (P1)
 
-- [ ] #123: Specify peer/session/rate/network restriction contracts
-  - Define debug scope implication
-  - Accepted peer proof
-  - Per-connection principal/session/consent
-  - Endpoint rate ownership
-  - Windows commitment
-  - Network redirect/transfer/deadline/proxy restrictions
-  - Typed failure
+- [ ] #123: independent security review of the limit contract
+  - Required before the document leaves `draft`
   - Requires: Security review
 
 - [ ] #122: Freeze DevTools/IPC/network security contracts
