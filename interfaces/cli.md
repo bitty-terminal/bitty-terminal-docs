@@ -133,6 +133,7 @@ Status: **candidate contract.**
 ```sh
 bitty ctl instance list
 bitty ctl window list
+bitty ctl window new
 bitty ctl view list
 bitty ctl terminal list --format json
 
@@ -157,6 +158,46 @@ lowest free `ws:N` in `1..=16` and slots stay ordered by id, so deleting
 candidate; see the
 [Workspace Compositor Specification](../specifications/workspace-compositor.md)
 evidence section.
+
+Shipped slice: the `bitty ctl window new` verb is implemented (`bitty` PR #3140,
+issue #1765 slice 5) as the runtime-control path to one more OS window. It maps
+to `core.window.new` in the output envelope, takes no positional arguments and
+no verb-specific option, and requires the `view.manage` scope — the scope
+`view split` needs, with no elevation. The handler authorizes that scope
+against the live connection grant before it offers the request, so a connection
+without it is refused as `scope/ScopeDenied` and never reaches the app. The
+verb is the only `ctl` verb that does not ride the shared control queue: a
+window is created through the platform context the app thread owns while
+handling an event, so the request travels over a bounded single-slot lane,
+wakes an idle instance, and is serviced on the next event turn through the same
+latch and creation path as the `new_window` key binding. It therefore lands on
+the same window registry and the same 16-window ceiling
+(`bitty_platform::MAX_OS_WINDOWS`, shared with the chord) instead of a second
+creation path or a second registry.
+
+The refusal set is typed, and the `(category, code)` pair — not the reporting
+site — decides both the exit code and the message. One request may be in flight
+per instance: a second concurrent caller gets `conflict/ControlBusy` rather
+than a queued turn, so the lane cannot grow. A caller whose deadline passes
+before the app claims the request gets `transport/Unavailable` saying nothing
+was created and leaves no request behind; a caller whose deadline passes after
+the app claimed it also gets `transport/Unavailable`, but saying the outcome is
+unknown, because the app owns the result from that point. A platform backend
+with no window system refuses with `transport/WindowRefused`, and an instance
+already at its ceiling refuses with `conflict/WindowAtCapacity`, naming the
+live count and the ceiling. Exit codes follow the v1 set: `0` admitted, `5` for
+version skew (a running instance that predates the verb answers
+`NotFound`/`UnknownMethod` for `bitty.debug/newWindow`, reported as
+`VersionMismatch/UnsupportedVersion`: restart the instance with this build),
+`6` for transport failure, no live or ambiguous instance, `WindowRefused`, and
+both deadline outcomes, `7` for the scope denial, and `8` for `ControlBusy` or
+`WindowAtCapacity`. `--format json` emits the standard envelope, for example
+`{"v":1,"command":"core.window.new","ok":true,"result":{"requested":true,"windows":2}}`,
+and failures carry `error.class` (`Conflict`, `Unavailable`, or `Denied`) with
+the stable `code` and message. The success reply states that the instance
+_requested_ the window and reports the registered count; the creation result
+itself is recorded in the instance log, so the human table names the instance
+and points at that log instead of claiming an outcome it cannot observe.
 
 Runtime control should travel over a versioned IPC protocol and share the
 capability model used by agents and plugins. Reading terminal text, sending
