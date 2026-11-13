@@ -481,12 +481,16 @@ What merged, exactly:
    presentation layer reuses `OverlayTier::Float` for overlay-like
    `PresentationMode`s, but multi-tier stacking through
    `overlay_tiered`/`overlay_stack` is not yet consumed by the app present path.
-6. **Adaptive dwindle `smart_split` orientation and cell aspect ratio** (`bitty` #358 `75f8637`,
+6. **Adaptive `dwindle_split` (`smart_split`) orientation and cell aspect ratio** (`bitty` #358 `75f8637`,
    CTX-0209, closes `bitty` #357; updated in PR #1542, CTX-0881, closes `bitty` #1541):
-   `LayoutNode::smart_split` and `smart_split_with_multiplier` choose the split axis
-   from the container aspect ratio with the heuristic
+   `LayoutNode::dwindle_split` / `dwindle_split_with_multiplier` (and their backwards-compatible
+   aliases `smart_split` / `smart_split_with_multiplier`) choose the split axis
+   from the container aspect ratio with the Hyprland `dwindle` `split_width_multiplier` heuristic
    `split_vertical = (height * width_multiplier * CELL_ASPECT_RATIO) > width`
-   (`smart_split_axis`). `CELL_ASPECT_RATIO = 2.0` accounts for monospace terminal
+   (`dwindle_split_axis` / `smart_split_axis`). (Note: in Hyprland's official layout docs,
+   `dwindle:smart_split = true` divides the focused window by cursor quadrant into 4 triangles,
+   whereas `dwindle_split*` in Bitty implements Hyprland's default aspect-driven `dwindle` split
+   axis with `force_split = 0`.) `CELL_ASPECT_RATIO = 2.0` accounts for monospace terminal
    characters having roughly a 1:2 width-to-height ratio, preventing wide containers
    from prematurely stacking vertically when characters are tall. Wide containers
    split side-by-side, tall containers stack, square ties break side-by-side, and
@@ -510,10 +514,10 @@ What merged, exactly:
 8. **Spiral layout provider and child shell exit reaping** (`bitty` PR #1542 `15897cad`,
    CTX-0881, closes `bitty` #1541):
    - `SpiralProvider` (`SPIRAL_PROVIDER_ID = ProviderId(4)`) registered under
-     `"spiral"` implements 4-way clockwise spiral tiling (`Right -> Down -> Left -> Up`),
-     alternating split cut axes and leaf placement sides. Unlike `dwindle` (which
-     always places the new view at the bottom/right child), `spiral` rotates
-     placement around all four edges.
+     `"spiral"` implements dwm-fibonacci 4-way clockwise spiral tiling (`Right -> Down -> Left -> Up`),
+     alternating split cut axes and leaf placement sides. Unlike Hyprland's `dwindle` (which
+     splits along the container aspect and always places the new view at the bottom/right child),
+     `spiral` rotates placement around all four edges.
    - Child shell process lifecycle: `TerminalApp::reap_exited_shells` checks
      child shell processes on presentation ticks via non-blocking `try_wait()`.
      When a child shell exits (e.g. via `exit` or `Ctrl+D`), its pane leaf is
@@ -849,12 +853,12 @@ Properties:
 
 ### Algorithm mapping
 
-| Algorithm | Hyprland precedent | Bitty behavior as LayoutProvider                                                                                   |
-| --------- | ------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `dwindle` | Hyprland dwindle   | Recursive H and V splits that spiral inward; direction alternates per depth; respects `gaps_in` only via Core.     |
-| `spiral`  | Hyprland spiral    | True 4-way clockwise spiral splits (Right -> Down -> Left -> Up) rotating placement side and alternating cut axis. |
-| `master`  | Hyprland master    | One master `View` on the left at a fixed ratio with remaining `View`s stacked vertically on the right.             |
-| `grid`    | Hyprland grid      | Views arranged in a near-square grid using only `H` and `V` splits; empty cells render as empty `View`s.           |
+| Algorithm | Tiling precedent                       | Bitty behavior as LayoutProvider                                                                                                                                                             |
+| --------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dwindle` | Hyprland `dwindle` (`force_split = 0`) | Recursive H and V binary splits driven by container aspect (`split_width_multiplier`); new view placed at right/bottom; respects `gaps_in` via Core.                                         |
+| `spiral`  | dwm `fibonacci` `spiral`               | 4-way clockwise spiral splits (`Right -> Down -> Left -> Up`) rotating placement side and alternating cut axis (distinct from Hyprland's built-in `dwindle`/`master`/`monocle`/`scrolling`). |
+| `master`  | Hyprland `master`                      | One master `View` on the left at a fixed ratio with remaining `View`s stacked vertically on the right.                                                                                       |
+| `grid`    | Grid tiler                             | Views arranged in a near-square grid using only `H` and `V` splits; empty cells render as empty `View`s.                                                                                     |
 
 Additional providers may be registered under qualified names
 `owner.name:algorithm`; bare names `dwindle`, `spiral`, `master`, and `grid` are reserved

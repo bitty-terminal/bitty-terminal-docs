@@ -418,14 +418,14 @@ non-zero value at validation with a typed `window.blur_radius` diagnostic.
 
 ### `selection`, `close_confirm`, `layout`, `workspace`
 
-| Key path              | Type    | Default                                                     | Valid range                                                                                                                                                      | Fail-closed                    | Reload  |
-| --------------------- | ------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------- |
-| `selection.auto_copy` | boolean | `false`                                                     | `true` \| `false`                                                                                                                                                | ignore element / reject reload | restart |
-| `close_confirm`       | string  | `when_busy`                                                 | `always` \| `when_busy` \| `never` (exact lowercase)                                                                                                             | ignore element / reject reload | restart |
-| `layout.gaps_in`      | integer | `0`                                                         | `[0, 16]` cells                                                                                                                                                  | ignore element / reject reload | restart |
-| `layout.gaps_out`     | integer | `0`                                                         | `[0, 16]` cells                                                                                                                                                  | ignore element / reject reload | restart |
-| `layout.resize_step`  | float   | `0.05`                                                      | finite, `[0.01, 0.20]` split-ratio delta per `resize_split` keypress (CTX-0963, `bitty` #1697; out-of-range, NaN, and infinite rejected, never clamped)          | ignore element / reject reload | live    |
-| `workspace.layout`    | string  | unset (current tree preserved via the built-in no-op tiler) | well-formed provider name (bare `dwindle`, `spiral`, `master`, `grid` or qualified `owner.name:algorithm`); membership enforced at apply by the runtime registry | ignore element / reject reload | restart |
+| Key path              | Type    | Default                                                     | Valid range                                                                                                                                                                                                                                           | Fail-closed                    | Reload  |
+| --------------------- | ------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------- |
+| `selection.auto_copy` | boolean | `false`                                                     | `true` \| `false`                                                                                                                                                                                                                                     | ignore element / reject reload | restart |
+| `close_confirm`       | string  | `when_busy`                                                 | `always` \| `when_busy` \| `never` (exact lowercase)                                                                                                                                                                                                  | ignore element / reject reload | restart |
+| `layout.gaps_in`      | integer | `0`                                                         | `[0, 16]` cells                                                                                                                                                                                                                                       | ignore element / reject reload | restart |
+| `layout.gaps_out`     | integer | `0`                                                         | `[0, 16]` cells                                                                                                                                                                                                                                       | ignore element / reject reload | restart |
+| `layout.resize_step`  | float   | `0.05`                                                      | finite, `[0.01, 0.20]` split-ratio delta per `resize_split` keypress (CTX-0963, `bitty` #1697; out-of-range, NaN, and infinite rejected, never clamped)                                                                                               | ignore element / reject reload | live    |
+| `workspace.layout`    | string  | unset (current tree preserved via the built-in no-op tiler) | well-formed provider name (bare `dwindle` [Hyprland-style aspect-driven binary splits], `spiral` [dwm-fibonacci 4-way clockwise spiral], `master`, `grid`, or qualified `owner.name:algorithm`); membership enforced at apply by the runtime registry | ignore element / reject reload | restart |
 
 `close_confirm` must not be declared by project layers: a
 repository-local file must not disable a data-loss guard.
@@ -435,19 +435,22 @@ repository-local file must not disable a data-loss guard.
 `workspace.layout` selects a layout-provider name; it is not the adaptive
 new-panel placement policy. `Mod+N` / `new_panel` uses the Core
 `PanelLayoutMode`, whose shipped default is `Spiral` (0.0.28, `bitty`
-issue #2571): the fresh pane rotates clockwise (Right -> Down -> Left -> Up)
-around the focused pane, continuing only while the pane created by the
-previous split still holds focus, and the chain restarts at Right on any
-other focus or close. `Balanced` keeps the 0.0.27 bisect-largest policy
-(split the physically largest slot along the cell-aspect-aware axis and
-place the fresh pane after it, right or below) as an explicit opt-in since
-0.0.28; `Dwindle` always splits the focused pane right/down, and
-`BisectLargest` bisects the largest panel on the raw axis. The mode is
-exposed through `Runtime::panel_layout_mode` / `set_panel_layout_mode`; the
-shipped release has no TOML or Lua selector for it, and a user
-configuration cannot choose `Balanced`, `Spiral`, or any other mode.
-Explicit `new_split:<dir>` always splits the focused pane on the requested
-axis.
+issue #2571): in dwm-fibonacci spiral fashion, the fresh pane rotates
+clockwise (Right -> Down -> Left -> Up) around the focused pane, continuing
+only while the pane created by the previous split still holds focus, and the
+chain restarts at Right on any other focus or close. `Balanced` keeps the
+0.0.27 bisect-largest policy (split the physically largest feasible slot along
+the cell-aspect-aware axis and place the fresh pane after it, right or below)
+as an explicit opt-in since 0.0.28; `Dwindle` follows Hyprland's default
+`dwindle` `force_split = 0` + `default_split_ratio = 1.0` behavior by always
+splitting the focused pane right or down according to its container-normalized
+aspect ratio; and `BisectLargest` bisects the largest panel on the raw cell
+axis. The mode is exposed through `Runtime::panel_layout_mode` /
+`set_panel_layout_mode`; the shipped release has no TOML or Lua selector for
+it, and a user configuration cannot choose `Balanced`, `Spiral`, or any other
+mode. Explicit `new_split:<dir>` always splits the focused pane on the
+requested axis (mirroring Hyprland's `force_split = 1`/`2` directional split
+overrides).
 
 Adaptive insertion is bounded by a gap-aware minimum pane of 10 columns by 4
 rows. A target is refused, with a warning and no layout change, when
