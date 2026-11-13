@@ -25,6 +25,13 @@ sidebar_order: 64
 > and `workspace.bar.pill_align` keys are superseded by the candidate
 > [Chrome Surface API](chrome-surface-api-candidate.md); band geometry, reflow,
 > degradation, and hit-test geometry here remain in force.
+>
+> Per-item implementation status for every rule below — including which slot
+> names have a host surface, which node kinds the bridge accepts, and which
+> bounds are enforced — is recorded in the
+> [Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md).
+> This record keeps the contract text; the reconciliation record carries the
+> evidence.
 
 ## Purpose and scope
 

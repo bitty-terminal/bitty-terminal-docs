@@ -25,6 +25,11 @@ sidebar_order: 65
 > and sidebars are optional plugins; the Core workspaceline and the bundled
 > `bitty-terminal.workspace` manifest retire) is **accepted** by
 > [ADR 0014](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0014-workspace-core-presentation-plugins.md). The API shapes in this record remain candidate.
+>
+> Per-item implementation status for every slot, node kind, field, capability,
+> and bound named below is recorded in the
+> [Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md).
+> That record, not this one, is the authority for what the current host does.
 
 ## Purpose and scope
 
@@ -71,9 +76,11 @@ and `statusline` plugin implementations (plugin repositories).
   (accepted): `bitty.ui.mount(slot, component)`, the closed slot set
   (`terminal | top | bottom | left | right | tabline | statusline | overlay`),
   the v1 node subset (`Text | Row | Column | List`), the exclusive `tabline`
-  claim, and "host layout owns placement and decoration". The RFC's frozen
-  vocabulary predates the CTX-1140 removal of `statusline`; the current Core
-  build accepts the seven remaining names (see "Current state").
+  claim, and "host layout owns placement and decoration". The accepted text was
+  amended on 2026-10-26 to the same seven-name set the host accepts, so the
+  RFC, the bridge, and this record no longer diverge on `statusline`. The
+  per-item mapping is in the
+  [reconciliation record](lua-ui-composition-reconciliation.md).
 - [Rich Presentation RFC](rich-presentation-rfc.md) (accepted): `SCN-1`
   (2048 nodes per block) and `SCN-3` (256 KiB text per block).
 - [Workspace Compositor Specification](workspace-compositor.md) (accepted):
@@ -157,15 +164,24 @@ else in this record is implemented.
 - `statusline` is not a slot in this build. Core removed it as a breaking
   change in CTX-1140 (`bitty#1962`); the name is rejected as an unknown slot
   with `E_UI_COMPONENT_INVALID`, and status presentation is a `bottom`-band
-  composition (bar replacement). The accepted Lua Surface RFC still lists
-  `statusline` in its frozen v1 vocabulary, so that accepted text and this
-  implementation fact diverge until the RFC is revised. The revision goes
-  through the owner amendment process tracked as
-  [bitty#2676](https://github.com/bitty-terminal/bitty/issues/2676); this
-  record does not rewrite the accepted source, and the API-design track
+  composition (bar replacement). The accepted Lua Surface RFC now states the
+  same seven-name set — the owner amendment landed on 2026-10-26 through
+  [bitty#2676](https://github.com/bitty-terminal/bitty/issues/2676) — so the
+  accepted text and this implementation fact no longer diverge and nothing is
+  pending on that point. This record still does not rewrite the accepted
+  source, and the API-design track
   (CTX-1299) and the release-scope track (CTX-1305) stay open under their own
   tasks while CTX-1419 is the completed implementation evidence.
-- No Lua workspace read API and no workspace events exist.
+- The workspace L1 domain is implemented: `bitty.workspace.list()` returns at
+  most 16 identity rows (`id`, `name`, `active`, `panel_count`,
+  `scratchpad_count`, `attention`) under `workspace.read`,
+  `workspace.created|closed|renamed|focused|changed` are published under the
+  same gate, and `bitty.workspace.focus|new|next|close|rename|move_panel` are
+  gated by `workspace.control` and enqueue Core workspace requests
+  (`crates/bitty-lua/src/host.rs`,
+  `crates/bitty-runtime/src/plugin_runtime/mod.rs`). Every `attention` flag is
+  currently reported `false`: Core has no per-workspace attention source yet,
+  and the row shape is fixed ahead of one.
 - A Core pill renderer with `workspace.bar.colors` and `workspace.bar.pill_align`
   was attempted and not merged; it is dropped by this record.
 - Every `UiNode` variant (`Text | Row | Column | List`) carries an optional
@@ -460,6 +476,15 @@ pattern itself.
    `bitty-terminal.workspace:new|close|next` names from the retiring bundled
    manifest are not the target namespace, and the final namespace is pending
    OQ-056.
+
+_Implementation note (read at `bitty` `0b92e27d`):_ the read and event rows are
+implemented as written, including the `workspace.read` gate and the 16-row
+snapshot bound. The mutation row is not: `focus`, `new`, `next`, `close`,
+`rename`, and `move_panel` are `bitty.workspace.*` Lua functions gated by
+`workspace.control`, not `workspace:*` command ids, so an `on_click` binding
+cannot name them today. The `attention` members exist in the snapshot and are
+always `false`. The per-item status is in the
+[reconciliation record](lua-ui-composition-reconciliation.md).
 
 ```lua
 -- Illustrative-only candidate shape; not an implemented API.
