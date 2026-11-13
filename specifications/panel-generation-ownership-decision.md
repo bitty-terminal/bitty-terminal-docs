@@ -110,7 +110,7 @@ sidebar_order: 87
 > `3311892f` and records, per residual carried on
 > [bitty#2476](https://github.com/bitty-terminal/bitty/issues/2476), whether it
 > has landed, is implemented but unwired, or is blocked on an undecided
-> contract. Five residuals now have a landed and reachable mechanism — the
+> contract. Five residuals now have a landed mechanism — the
 > `PanelRecord` binding and owner (`c526f81e`), the two typed refusals
 > (`1567da45`), the bulk dispose-by-workspace path (`2431ad49`), the
 > owner-keyed tombstone (`52c1bfa6`), and the conformance matrix that names a
@@ -1571,8 +1571,8 @@ production caller. It therefore does not promote this record: `status` stays
 `draft`, and the acceptance sentence's four clauses — accepted decision,
 updated `PanelRuntime` data model, no orphaned panel or widened permission
 path, tests and docs synchronized — each remain unmet.
-The 2026-11-13 read of `3311892f` found five of the ten residuals landed and
-reachable, two implemented with no production caller, and three blocked on an
+The 2026-11-13 read of `3311892f` found five of the ten residuals landed, two
+implemented with no production caller, and three blocked on an
 undecided contract ([Residual ledger](#residual-ledger)); it also found four
 non-blocking defects in the landed bind and tombstone code, recorded under
 [Open follow-ups from the landed work](#open-follow-ups-from-the-landed-work).
