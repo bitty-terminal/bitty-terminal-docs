@@ -364,10 +364,10 @@ session, the workspace runtime, and the composition files did change in that
 range and were re-read at `3311892f`. `0f6a1c7b` then changed
 `plugin_runtime/panel_generation.rs` (new), `plugin_runtime/mod.rs`,
 `registry/panel.rs`, `registry/host.rs`, and
-`crates/bitty-terminal/src/plugin_runtime.rs`, so every row resting on those
-files **that this merge can move** is re-read at `26360f15` and says so; the
-rows on `registry/panel.rs` whose numbers the merge did not move keep their
-`3311892f` pin under the table headers below. These rows
+`crates/bitty-terminal/src/plugin_runtime.rs`, so every row this merge re-read
+is re-read at `26360f15` and says so. The rows on `registry/panel.rs` that it
+was not re-read for keep their `3311892f` pin under the table headers below,
+and their line numbers have drifted since that read. These rows
 record what exists; none is a conformance claim against this record, and none
 promotes anything to **Verified** or **Compatible**. Line numbers drift; the file path
 is the durable citation.
