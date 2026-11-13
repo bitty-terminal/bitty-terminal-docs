@@ -380,6 +380,7 @@ server-side per [IPC and Agent RFC](https://github.com/bitty-terminal/bitty-ai-d
 bitty ctl [--socket <path>] [--instance <id>] <resource> <verb> [args]
 bitty ctl instance list
 bitty ctl window list
+bitty ctl window new
 bitty ctl view list --format json
 bitty ctl terminal list --format jsonl
 bitty ctl terminal spawn [--cwd <path>]
@@ -399,6 +400,14 @@ selection precedence is exactly the one owned by
 then inherited `BITTY_SOCKET` or `BITTY_INSTANCE_ID`, then exactly-one-live
 fallback, otherwise ambiguity error. Ambiguity never silently selects an
 unrelated instance.
+
+`bitty ctl window new` is implemented in `bitty` source (`bitty` PR #3140,
+issue #1765 slice 5) as review evidence under this accepted tree: it maps
+one-to-one to `core.window.new`, requires `view.manage` with no elevation, and
+stays inside the v1 exit codes below — including `5` when the running instance
+predates the verb, which is protocol skew rather than a bad token. This note
+records the implementation; it does not extend, weaken, or re-status the
+contract.
 
 ### `bitty config` (local with one runtime verb)
 
