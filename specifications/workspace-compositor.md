@@ -1009,6 +1009,22 @@ for layout leaves. The [Candidate Panel model](#candidate-panel-model)
 retains its alternatives for future review; the memory diagnostics select
 none of them.
 
+### Wayland dynamic tiling compositor vs. toolkit widget-tree terminal splitters (Tilix)
+
+Although Bitty superficially resembles split-pane terminal emulators such as
+Tilix (inspected as an untrusted read-only reference snapshot at commit
+`46b6a7c`, Mozilla Public License 2.0), Bitty's architecture is derived from
+Wayland dynamic tiling compositors (Hyprland + Waybar) rather than a GUI
+toolkit splitter tree:
+
+| Dimension               | Toolkit widget-tree splitter (Tilix `gx.tilix.session`)                                                                                                    | Bitty Workspace Compositor (Hyprland + Waybar precedent)                                                                                                                                                                   |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Container model         | `gtk.Notebook` pages (`Session : gtk.Stack`) nesting physical `gtk.Paned` widget dividers around composite per-pane GTK widgets (title bar + VTE + frame). | Pure data `Workspace` + `LayoutTree` (`H`/`V` ratio splits and `ViewId` leaves decoupled from `TerminalId`), solved headlessly and rendered in a single GPU scene pass with zero per-pane toolkit title bars.              |
+| Placement & layout      | Manual horizontal/vertical `gtk.Paned` insertion and handle redistribution (`PanedModel`).                                                                 | Algorithmic dynamic tiling (`Spiral`, Hyprland `Dwindle`, `Balanced`, `BisectLargest`, and capability-gated `LayoutProvider` plugins `dwindle`, `spiral`, `master`, `grid`) plus explicit directional splits.              |
+| Directional actions     | Toolkit focus traversal and drag-and-drop widget reparenting across `gtk.Paned` containers.                                                                | Compositor-style spatial actions (`goto_split:<dir>`, `move_split:<dir>` / `swapwindow`, `toggle_split` / `togglesplit`, `resize_split:<dir>`) and live `Mod`+drag swap/edge-split/corner-split reflow.                    |
+| Zoom & layered surfaces | Maximizing reparents the terminal widget out of `stackGroup` into a separate `stackMaximized` GTK container; no floating, pinned, or scratchpad tier.      | In-place `toggle_zoom` geometry reflow (`SIGWINCH` without tree mutation) plus layered presentation tiers: tiled leaves, workspace-local floating panels, window-global pinned panels, scratchpad, and transient overlays. |
+| Decoration & status bar | GTK CSD `HeaderBar`, sidebar/notebook session switcher, and per-terminal GTK title bars inside the host process.                                           | Core-owned cell-grid `gaps_in`/`gaps_out`, `border`, `radius`, and `content_inset`; Core draws no workspace bar, delegating bar presentation to sandboxed extensions (`bitty-terminal.bar`) in reserved chrome slots.      |
+
 ## Affected contracts
 
 The [TerminalRegistry and View Lifecycle Contract](terminal-registry-view-lifecycle-rfc.md),
@@ -1115,6 +1131,10 @@ or security-risk closure; the normative security corpus remains binding.
   `master`, and decoration model `gaps_in`, `gaps_out`, `border`, `rounding`.
 - Waybar: highly customizable Wayland bar with composable modules and
   `modules-left`, `modules-center`, `modules-right` slot composition.
+- Tilix (`gnunn1/tilix`, commit `46b6a7c`, MPL-2.0, read-only comparative
+  reference): GTK 3 + VTE tiling terminal emulator using nested `gtk.Paned`
+  widget trees; cited only to contrast toolkit splitter trees with Bitty's
+  Hyprland-inspired `Workspace` compositor.
 - [Configuration Model RFC](configuration-model-rfc.md)
 - [Plugin Platform RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/specifications/plugin-platform-rfc.md)
 - [Isolation Resource RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/runtime/isolation-resource-rfc.md)
