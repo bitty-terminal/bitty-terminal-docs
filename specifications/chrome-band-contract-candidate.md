@@ -81,10 +81,10 @@ values (accepted, [Workspace Compositor](workspace-compositor.md)).
 - [Rich Presentation RFC](rich-presentation-rfc.md) (accepted): the scene
   limits `SCN-1` (2048 nodes per block) and `SCN-3` (256 KiB text per block).
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
-  (accepted): `bitty.ui.mount(slot, component)`, the closed slot set
-  (`terminal | top | bottom | left | right | tabline | statusline | overlay`),
-  the v1 node subset (`Text | Row | Column | List`), the exclusive `tabline`
-  claim, and "host layout owns placement and decoration".
+  (accepted): `bitty.ui.mount(slot, component)`, the closed seven-name slot set
+  (`terminal | top | bottom | left | right | tabline | overlay`), the v1 node
+  subset (`Text | Row | Column | List`), the exclusive `tabline` claim, and
+  "host layout owns placement and decoration".
 - [Chrome Surface Contract](chrome-surface-contract-candidate.md) (candidate):
   rules 1 to 10; this record refines rule 2 and composes with the rest.
 - [Status System Specification](status-system.md) (draft): the registry
@@ -109,9 +109,9 @@ values (accepted, [Workspace Compositor](workspace-compositor.md)).
 ### Edges and thickness
 
 1. The contract defines four band edges: `top`, `bottom`, `left`, `right`.
-   Each edge holds at most one band. The v0.1 implementation is **planned** to
-   ship `top` and `bottom` only; `left` and `right` are defined here so later
-   work adds edges without changing the geometry rules.
+   Each edge holds at most one band. The v0.1 host ships `top` and `bottom`
+   only; `left` and `right` are defined here so later work adds edges without
+   changing the geometry rules.
 2. Band thickness is resolved to logical px by Core. A configuration value in
    rows resolves as `rows x cell height` of the chrome font at the current
    scale; a value in px is used as-is. Resolution is clamped to a Core-owned
@@ -233,7 +233,7 @@ usable = container inset by gaps_out and the accepted decoration insets,
    frame, the band renders a truncation marker, and a diagnostic is recorded;
    the frame still presents.
    _Current host note (CTX-1419, bitty PRs #2385 `cd6b0724` and #2392
-   `c816b00e`, `bitty@7d98f53a`):_ the per-frame cap is not implemented. The
+   `c816b00e`, `bitty@26360f15`):_ the per-frame cap is not implemented. The
    host enforces the accepted scene budgets per plugin generation instead —
    64 retained blocks and a 2 MiB retained-string aggregate per generation
    (the `SCN-4`/`SCN-5` numbers, with the aggregate charging every
@@ -294,7 +294,7 @@ usable = container inset by gaps_out and the accepted decoration insets,
    Neither emission nor hit-testing enters a plugin VM.
 9. **Overlay scene nodes are not band interactions** (kept deferred by
    CTX-1419, bitty PRs #2385 `cd6b0724` and #2392 `c816b00e`,
-   `bitty@7d98f53a`): bindings mounted in the focusable `overlay` slot are
+   `bitty@26360f15`): bindings mounted in the focusable `overlay` slot are
    accepted and retained but route no pointer events, because no accepted
    overlay hit-test/geometry contract exists. Overlay interaction is the
    separately gated `ui.overlay.focus` capture path; band click/scroll/region
@@ -347,6 +347,33 @@ usable = container inset by gaps_out and the accepted decoration insets,
    (`bitty#1721` `819f286`); the candidate defaults above carry over.
 4. Changes to `edge`, `size`, and `show_bar` are live-reconcilable and take
    effect through the reflow above.
+
+## Reconciliation (2026-11-14)
+
+This record was re-read against `bitty` at `26360f15` (`origin/main`). The band
+host behind the `top` and `bottom` slots is implemented and unchanged in shape:
+one window row per visible mount, an exclusive zone carved out of the layout
+container, stacking by plugin id with a stable sort, and all-or-nothing
+degradation when the visible bands plus the content floor do not fit the window.
+No band row is ever painted inside the container, so the occlusion defect this
+record answers is closed in the host. `left` and `right` have no vertical band
+host and fail closed `E_UI_UNAVAILABLE`; `tabline` needs the `workspaceline`
+exclusive claim and then fails closed as reserved for panel tabs.
+
+Still candidate here, with no host path performing it: px/row thickness
+resolution and its clamp, the per-band per-frame node cap and its truncation
+marker, priority-ordered degradation, and one-surface-per-edge multiplicity.
+
+Corrected in this revision, because the corpus contradicted the code: the
+normative-source list quoted the accepted slot set with eight names, including
+`statusline`, which is not a slot and is rejected as unknown; it now quotes the
+seven-name set. The current-host notes pin `26360f15` instead of `7d98f53a`.
+
+Per-clause status — `implemented`, `accepted-but-unimplemented`, `candidate`,
+`deferred`, or `contradicted-by-code` — is in the
+[Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md). This
+record keeps its `status: draft` and its contract text; this section records
+evidence, not acceptance.
 
 ## Security review
 
