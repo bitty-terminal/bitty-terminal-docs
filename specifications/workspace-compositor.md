@@ -678,7 +678,8 @@ What merged, exactly:
     children); 21 columns can. Center swaps are geometry-neutral and remain
     allowed. Evidence: `crates/bitty-ui/src/layout.rs` and
     `crates/bitty-ui/src/drag.rs`.
-20. **Directional focus ranking** (`bitty` PR #2538 `4b740cfe`, issue #2526):
+20. **Directional focus ranking, panel move, and split-axis toggle** (`bitty`
+    PR #2538 `4b740cfe`, issue #2526):
     a `goto_split:<dir>` candidate must lie fully beyond the focused pane's
     facing edge. Aligned candidates (positive perpendicular overlap) rank
     above disjoint ones; within a tier the order is nearest facing-edge
@@ -688,8 +689,19 @@ What merged, exactly:
     order and `ViewId`. `Mod+j` from the top pane of a `1+1+2` layout lands on
     the bottom-left pane even when the bottom-right pane is wider or earlier
     in creation order. Only separated tiled candidates participate in the
-    ranked pass; zero-area panes are skipped. Evidence:
-    `crates/bitty-ui/src/focus.rs`.
+    ranked pass; zero-area panes are skipped. `move_split:<dir>`
+    (`ctrl+alt+h/j/k/l` and `ctrl+alt+left/down/up/right`, rebounding to
+    `ctrl+super+*` under `mod_key = "super"`, aliases `move_panel`,
+    `swap_split`, `movewindow`, `swapwindow`) swaps the focused tiled leaf
+    with the spatially adjacent tiled leaf resolved by the same directional
+    ranking while keeping focus on the moved leaf; when the focused view is a
+    floating or pinned panel, `move_split:<dir>` nudges its anchored float
+    offset by a 4-cell step clamped to the viewport. `toggle_split` (`alt+s`,
+    rebounding to `super+s` under `mod_key = "super"`, aliases `togglesplit`,
+    `split_toggle`) flips the innermost enclosing `Split` axis of the focused
+    tiled leaf between `Horizontal` and `Vertical` (matching Hyprland dwindle
+    `togglesplit`). Evidence: `crates/bitty-ui/src/focus.rs` and
+    `crates/bitty-ui/src/layout.rs`.
 21. **Close focus follows the expanding sibling** (`bitty` PR #2538
     `4b740cfe`, issue #2528): after a close, focus moves to the sibling
     subtree that expands into the vacated slot: its first leaf when the

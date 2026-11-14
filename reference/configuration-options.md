@@ -602,7 +602,9 @@ ASCII character. A bound chord is consumed by chrome and never reaches
 the PTY; unbound keys always go to the shell.
 
 Bindable actions: `goto_split:<left|right|up|down>`,
+`move_split:<left|right|up|down>` (aliases `move_panel`, `swap_split`, `movewindow`, `swapwindow`; shipped on `ctrl+alt+h/j/k/l` and `ctrl+alt+left/down/up/right`, Mod-aware),
 `new_split:<left|right|up|down>`, `new_panel`, `resize_split:<left|right|up|down>`,
+`toggle_split` (aliases `togglesplit`, `split_toggle`; shipped on `alt+s`, Mod-aware),
 `close_view` (aliases `close_surface`, `close_panel`, `exit_panel`, `close_focused_panel`),
 `toggle_zoom` (aliases `toggle_split_zoom`, `suspend_panel`, `detach_panel`, `suspend_focused_panel`, `detach_focused_panel`),
 `toggle_floating` (alias `floating_toggle`; CTX-0962),
