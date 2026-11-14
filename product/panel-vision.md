@@ -641,8 +641,9 @@ strategy:
    rich structured blocks (styled spans, tables, borders, rule lines, progress
    indicators, key-value rows, and closed `scene_style` padding/radius/border
    tokens) mounted on the panel/leaf scene surface under `SCN-1..5` budgets
-   (`64` blocks per terminal, `2048` nodes per block, depth `32`, `2 MiB` per
-   terminal), as specified in the
+   (`64` blocks per terminal, `2048` nodes per block, depth `16` on the Lua
+   bridge, stricter than the accepted `SCN-2 = 32`, `2 MiB` per terminal), as
+   specified in the
    [Panel GUI Content Presentation Candidate](../specifications/panel-gui-content-presentation-candidate.md)
    and the
    [Panel Content Scene Path Decision](../specifications/panel-content-scene-path-decision.md).

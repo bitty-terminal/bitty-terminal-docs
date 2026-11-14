@@ -66,8 +66,8 @@ plugin chrome-slot grants (accepted v1 surface,
   segment count, and the module cadence and failure posture.
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
   (accepted): the closed v1 slot set (`terminal | top | bottom | left | right |
-tabline | statusline | overlay`), the exclusive tabline declaration, and the
-  `SceneNode` subset (`Text | Row | Column | List`).
+tabline | overlay`), the exclusive tabline declaration, and the `SceneNode`
+  subset (`Text | Row | Column | List`).
 
 ## Terminology
 
@@ -163,7 +163,7 @@ fail closed at mount. The envelopes below remain candidate.
 
 | Slot                                 | Envelope                                                                                                                                                                                                            | Conflict resolution                                                                                                                                             |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `top`, `bottom`                      | Scene bounds only (`SCN-2` depth 32, accepted Rich Presentation bound); no plugin-set geometry; band is painted while a surface is mounted                                                                          | Host layout owns placement and decoration; geometry conflicts are impossible by construction                                                                    |
+| `top`, `bottom`                      | Scene bounds only (bridge depth 16, `UI_MAX_DEPTH`, deliberately stricter than the accepted `SCN-2 = 32`); no plugin-set geometry; band is painted while a surface is mounted                                       | Host layout owns placement and decoration; geometry conflicts are impossible by construction                                                                    |
 | `left`, `right`                      | Not hosted: this Core build has no vertical band host, so no vertical band geometry is reserved                                                                                                                     | Mount fails closed with the typed runtime error `E_UI_UNAVAILABLE`; no block is stored, so a slot can never be admitted and then silently unpainted             |
 | `terminal`                           | Core scene host: one attached `Scene` on the focused leaf, bounded by `SCN-1..5` and composited inside the leaf content rect; the grid path stays authoritative                                                     | A second plugin generation cannot displace an attached scene (`E_UI_UNAVAILABLE`); suspend, dispose, and reload release the scene, the bind, and the Core panel |
 | `overlay`                            | Shipped: text truncated at char boundary to 128; at most 4 non-modal plus 1 modal per window (`4+1`)                                                                                                                | Shipped fail-closed typed errors (`OverlayBusy`, `TooManyOverlays`); no silent eviction, no last-wins replacement                                               |
@@ -202,6 +202,26 @@ stay open behind a capability-gated host surface when defined.
   order.
 - A panel rule may express a request about chrome (for example, hiding the
   strip); only Core plus user final applies it, and the request is auditable.
+
+## Reconciliation (2026-11-14)
+
+This record was re-read against `bitty` at `26360f15` (`origin/main`). Corrected
+in this revision, because the corpus contradicted the code:
+
+- the normative-source list quoted the accepted slot set with eight names,
+  including `statusline`. The set is closed at seven names and `statusline` is
+  rejected as an unknown slot (`crates/bitty-lua/src/ui.rs`, `UI_SLOTS`), so the
+  list quotes the seven names;
+- the `top`/`bottom` slot envelope quoted the accepted `SCN-2` depth of 32 as the
+  bound on a mounted plugin tree. The Lua bridge enforces `UI_MAX_DEPTH = 16`, a
+  deliberate stricter bridge budget than `SCN-2` (`crates/bitty-lua/src/ui.rs`,
+  `ui_rich.rs`), and the envelope cites that bound.
+
+Per-clause status — `implemented`, `accepted-but-unimplemented`, `candidate`,
+`deferred`, or `contradicted-by-code` — is in the
+[Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md), which
+is the authority for what the current host does. This record keeps its candidate
+rules and its `status: draft`; this section records evidence, not acceptance.
 
 ## Security review
 
