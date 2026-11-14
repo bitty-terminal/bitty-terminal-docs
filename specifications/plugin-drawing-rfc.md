@@ -469,7 +469,11 @@ direction they are: the [Chrome Surface Contract (Candidate)](chrome-surface-con
 records the ordering as a direction, not as an accepted layer order, and this
 record does not convert it into one:
 
-`chrome bands (tabline/statusline/left/right/top/bottom)` — `panel contents` — `overlay`
+`chrome bands (top/bottom/left/right/tabline)` — `panel contents` — `overlay`
+
+The status bar is a plugin presentation on the `bottom` band, not a chrome band
+of its own: `statusline` is not a mount slot
+([Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md)).
 
 Concretely:
 
