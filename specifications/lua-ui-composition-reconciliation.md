@@ -56,26 +56,34 @@ status implementations (plugin repositories).
 
 ## Status vocabulary and evidence rules
 
-Every row in the tables below carries exactly one of four labels.
+Every row in the tables below carries exactly one of five labels.
 
-| Label                      | Meaning                                                                                                     | Required evidence                                                                    |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| implemented                | The current `bitty` host performs this behavior.                                                            | A repository-relative code path read at the pinned revision, plus its headless test. |
-| accepted-but-unimplemented | An accepted contract (or an accepted slot name) requires it; this build has no host surface for it.         | The accepted source plus the code path that refuses or omits it.                     |
-| candidate                  | Design direction in a candidate record. No accepted contract requires it and no host path performs it.      | Absence of a host path; the candidate rule named.                                    |
-| deferred                   | Explicitly postponed by an accepted record or by an implemented boundary, with the blocking contract named. | The deferring statement plus the boundary that enforces it.                          |
+| Label                      | Meaning                                                                                                                       | Required evidence                                                                    |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| implemented                | The current `bitty` host performs this behavior.                                                                              | A repository-relative code path read at the pinned revision, plus its headless test. |
+| accepted-but-unimplemented | An accepted contract (or an accepted slot name) requires it; this build has no host surface for it.                           | The accepted source plus the code path that refuses or omits it.                     |
+| candidate                  | Design direction in a candidate record. No accepted contract requires it and no host path performs it.                        | Absence of a host path; the candidate rule named.                                    |
+| deferred                   | Explicitly postponed by an accepted record or by an implemented boundary, with the blocking contract named.                   | The deferring statement plus the boundary that enforces it.                          |
+| contradicted-by-code       | A statement a candidate still carries that the host contradicts, or an implemented host behavior a candidate does not record. | The candidate's sentence plus the host symbol that contradicts it.                   |
 
 Nothing is labeled implemented because a candidate says so, because a comment
 describes it, or because a test fixture exists. Where a label would be
 contested, the row names the specific host symbol a reviewer can read.
 
+`contradicted-by-code` rows are collected in
+[Divergences between the candidates and the host](#divergences-between-the-candidates-and-the-host),
+one row per statement, so a candidate revision can retire them by editing the
+sentence rather than by re-deriving the host behavior.
+
 ## Implementation evidence
 
 The implementation facts below were read from the `bitty` repository at
-`0b92e27d` (main). `origin/main` had advanced two commits at read time; none of
-them touch the paths cited here. The evidence is static reading plus the
-headless test files named per row; **no headed run was performed for this
-record**, so it makes no usability, performance, or accessibility claim.
+`26360f15` (`origin/main`). Every path below was re-read at that revision, and
+the line numbers in the code-side table are the ones this reading produced —
+line numbers move with the file, so a reviewer should match on the named symbol
+as well as the number. The evidence is static reading plus the headless test
+files named per row; **no headed run was performed for this record**, so it
+makes no usability, performance, or accessibility claim.
 
 | Area                | Primary code path                                                                                                                                                                         |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -89,6 +97,33 @@ record**, so it makes no usability, performance, or accessibility claim.
 | Terminal scene host | `crates/bitty-runtime/src/scene_host.rs`, `crates/bitty-runtime/src/runtime/scene_present.rs`                                                                                             |
 | Overlay surfaces    | `crates/bitty-runtime/src/plugin_runtime/overlay.rs`, `crates/bitty-runtime/src/plugin_runtime/presentation_overlay.rs`                                                                   |
 | Headless tests      | `crates/bitty-runtime/tests/lua_ui_parity.rs`, `crates/bitty-runtime/tests/host_chrome_gaps.rs`, `crates/bitty-runtime/tests/band_groups_hover.rs`, `crates/bitty-lua/tests/ui_bridge.rs` |
+
+### Code-side surface at the pinned revision
+
+One row per claim this record rests on, with the symbol and the line that
+carries it in `bitty` at `26360f15`.
+
+| Claim                                                                                                      | Evidence (`bitty` at `26360f15`)                                                                                                                     |
+| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The slot set is closed at seven names: `terminal`, `top`, `bottom`, `left`, `right`, `tabline`, `overlay`. | `crates/bitty-lua/src/ui.rs:94` (`enum UiSlot`), `ui.rs:108` (`ALL: [Self; 7]`), `ui.rs:159` (`UI_SLOTS: [&str; 7]`)                                 |
+| Slot parsing is exact and case-sensitive, with no aliases.                                                 | `crates/bitty-lua/src/ui.rs:132` (`UiSlot::parse`)                                                                                                   |
+| `statusline` is not a slot and parses to `None`.                                                           | `crates/bitty-lua/src/ui.rs:159`; the closed-set test rejects `statusline`/`Statusline` at `ui.rs:1330`                                              |
+| An unknown slot is rejected `E_UI_COMPONENT_INVALID` before any host effect.                               | `crates/bitty-lua/src/ui.rs:1303` (`component_invalid`), `crates/bitty-runtime/src/plugin_runtime/services.rs:6511`                                  |
+| The v1 component vocabulary is exactly `Text`, `Row`, `Column`, `List`.                                    | `crates/bitty-lua/src/ui.rs:185` (`UI_V1_NODE_KINDS: [&str; 4]`)                                                                                     |
+| The `terminal` scene path accepts the nine accepted kinds instead.                                         | `crates/bitty-lua/src/ui_rich.rs:101` (`UI_RICH_NODE_KINDS: [&str; 9]`)                                                                              |
+| `ui.rich` gates every mount and update.                                                                    | `crates/bitty-runtime/src/plugin_runtime/services.rs:6519`, `:6577`                                                                                  |
+| `ui.overlay` additionally gates the `overlay` slot and is not implied by `ui.rich`.                        | `crates/bitty-runtime/src/plugin_runtime/services.rs:6522`                                                                                           |
+| `ui.overlay.focus` gates the transient capture; `ui.present` gates non-modal presentation.                 | `crates/bitty-runtime/src/plugin_runtime/services.rs:2804` (`require_overlay_focus`), `:2837` (`require_presentation_overlay`)                       |
+| `tabline` requires the canonical `workspaceline` exclusive claim, then fails closed.                       | `crates/bitty-runtime/src/plugin_runtime/services.rs:223` (`WORKSPACELINE_CLAIM`), `:6537` (`E_UI_CLAIM_REQUIRED`), `:6548` (placement refusal)      |
+| `left`/`right`/`tabline` and a v1 tree on `terminal` fail closed `E_UI_UNAVAILABLE`.                       | `crates/bitty-runtime/src/runtime/band_slots.rs:93` (`ui_slot_placement`), `:101`, `:103`, `:113`, `:120` (`unsupported_slot_error`)                 |
+| The `terminal` scene mount fails closed with no installed scene backend.                                   | `crates/bitty-runtime/src/plugin_runtime/services.rs:6563`, `:6579`                                                                                  |
+| Node, depth, text, block, and retained-string ceilings.                                                    | `crates/bitty-lua/src/ui.rs:194` (2048), `:191` (16), `:197` (256 KiB), `:201` (64), `:209` (2 MiB)                                                  |
+| The accepted `SCN-2`/`SCN-4`/`SCN-5` numbers the bridge is stricter than or equal to.                      | `crates/bitty-lua/src/ui.rs:55-60` (module-level `SCN` table)                                                                                        |
+| Band region cap and scroll queue bound.                                                                    | `crates/bitty-runtime/src/runtime/band_host.rs:131` (`BAND_MAX_REGIONS = 64`), `:99` (`BAND_SCROLL_QUEUE_MAX = 8`)                                   |
+| The closed five-token style table with unknown-token fallback and a diagnostic count.                      | `crates/bitty-runtime/src/runtime/band_host.rs:813` (`resolve_band_token` returns `None`), `:825` (token arms)                                       |
+| Overlay painting has no hit-testing and no pointer capture.                                                | `crates/bitty-runtime/src/runtime/present.rs:6521` (`paint_presentation_overlay`), `:6557` (`paint_overlay_surface`), `:7052` (`overlay_scene_rows`) |
+| Band flattening joins `Row` children horizontally and `Column`/`List` into the same row.                   | `crates/bitty-runtime/src/runtime/band_host.rs:294`                                                                                                  |
+| The workspace snapshot is bounded at 16 rows.                                                              | `crates/bitty-lua/src/host.rs:76` (`WORKSPACE_LIST_MAX_ITEMS`)                                                                                       |
 
 ## Slot reconciliation
 
@@ -169,11 +204,13 @@ listed here so a reader does not mistake their absence for an omission.
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `statusline` | Retired. Rejected as an unknown slot with `E_UI_COMPONENT_INVALID` before any host call; status presentation composes on `bottom`. | `crates/bitty-lua/src/ui.rs` (`UiSlot::parse`), `crates/bitty-lua/src/host.rs` (mount binding) |
 
-The Chrome Surface API still describes this removal as a live divergence from
-accepted text. It is not: the accepted Lua Surface RFC was amended on
-2026-10-26 and now states the same seven-name set, the same rejection code, and
-the same `bottom`-band migration, so the corpus and the host agree. That
-paragraph is stale and is corrected in this delivery.
+No candidate describes this removal as a live divergence from accepted text.
+The accepted Lua Surface RFC was amended on 2026-10-26 and states the same
+seven-name set, the same rejection code, and the same `bottom`-band migration,
+so the corpus and the host agree. What both chrome candidates still carried was
+the pre-amendment eight-name set in their normative-source list, which
+contradicted their own current-state sections; those two quotes are corrected in
+this revision.
 
 ## Capabilities
 
@@ -237,19 +274,83 @@ aggregate today.
 
 Each row is a statement still present in a candidate that the host contradicts,
 or a host behavior at least as strong as the candidate's that the candidate does
-not record.
+not record. Every row below carries the `contradicted-by-code` label; row 9 is
+the omission shape of it (a host behavior no candidate sentence records) rather
+than a contradiction.
 
-| #   | Candidate statement                                                                                             | Host fact                                                                                                                                                                           |
-| --- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Chrome Surface API: "No Lua workspace read API and no workspace events exist."                                  | `bitty.workspace.list()` returns bounded identity rows, `workspace.*` topics are published and gated by `workspace.read`, and mutation functions are gated by `workspace.control`.  |
-| 2   | Chrome Surface API: the accepted Lua Surface RFC "still lists `statusline` … diverge until the RFC is revised". | The RFC amendment landed on 2026-10-26 and states the seven-name set; there is no outstanding divergence.                                                                           |
-| 3   | Both: band thickness resolves from px/rows configuration and clamps to a named bound.                           | Height is exactly one window row per visible mount; there is no thickness configuration on the band path.                                                                           |
-| 4   | Both: a second mount on the same edge from one plugin fails with a diagnostic.                                  | Every mount is kept. Bands order by plugin id, and the sort is stable, so one plugin's own mounts keep mount order while plugin ids never do.                                       |
-| 5   | Both: a per-band per-frame cap truncates with a marker and a diagnostic.                                        | No per-frame cap and no truncation path; the mount-time node cap refuses the tree instead.                                                                                          |
-| 6   | Both: unknown theme tokens reject the mount (fail closed).                                                      | Unknown but well-formed tokens resolve to the span default and increment a host diagnostic count; only wrong types, unknown attributes, and malformed shapes reject.                |
-| 7   | Both: degradation hides surfaces innermost-first by priority.                                                   | Degradation is all-or-nothing per window: if the visible bands plus the content floor do not fit, no band reserves a row.                                                           |
-| 8   | Both: the workspace mutation surface is a set of Core commands invoked by `on_click`.                           | Mutations are `bitty.workspace.*` functions gated by `workspace.control` that enqueue bounded Core workspace requests; `on_click` still names registered commands, not these verbs. |
-| 9   | Neither candidate mentions `anchor`, `on_hover`, `bitty.ui.unmount`, or `bitty.ui.state`.                       | All four are implemented (`crates/bitty-lua/src/ui.rs`, `crates/bitty-lua/src/host.rs`) and covered by headless tests.                                                              |
+| #   | Candidate statement                                                                             | Host fact                                                                                                                                                                                                                                                                                 |
+| --- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Chrome Band Contract: "The v0.1 implementation is **planned** to ship `top` and `bottom` only." | Both edges ship: `top`/`bottom` mounts are placed, one window row per visible mount, and carved out of the layout container (`crates/bitty-runtime/src/runtime/band_host.rs:1730` `visible_band_count`, `:1795` `band_exclusive_container`). The candidate is corrected in this revision. |
+| 2   | Both: the accepted closed slot set is quoted with eight names, including `statusline`.          | The set has seven names (`crates/bitty-lua/src/ui.rs:159`) and `statusline` parses to `None` (`ui.rs:1330`). Both quotes are corrected to the seven-name set in this revision.                                                                                                            |
+| 3   | Both: band thickness resolves from px/rows configuration and clamps to a named bound.           | Height is exactly one window row per visible mount; there is no thickness configuration on the band path.                                                                                                                                                                                 |
+| 4   | Both: a second mount on the same edge from one plugin fails with a diagnostic.                  | Every mount is kept. Bands order by plugin id, and the sort is stable, so one plugin's own mounts keep mount order while plugin ids never do.                                                                                                                                             |
+| 5   | Both: a per-band per-frame cap truncates with a marker and a diagnostic.                        | No per-frame cap and no truncation path; the mount-time node cap refuses the tree instead.                                                                                                                                                                                                |
+| 6   | Both: unknown theme tokens reject the mount (fail closed).                                      | Unknown but well-formed tokens resolve to the span default and increment a host diagnostic count; only wrong types, unknown attributes, and malformed shapes reject.                                                                                                                      |
+| 7   | Both: degradation hides surfaces innermost-first by priority.                                   | Degradation is all-or-nothing per window: if the visible bands plus the content floor do not fit, no band reserves a row.                                                                                                                                                                 |
+| 8   | Both: the workspace mutation surface is a set of Core commands invoked by `on_click`.           | Mutations are `bitty.workspace.*` functions gated by `workspace.control` that enqueue bounded Core workspace requests; `on_click` still names registered commands, not these verbs.                                                                                                       |
+| 9   | Neither candidate mentions `anchor`, `on_hover`, `bitty.ui.unmount`, or `bitty.ui.state`.       | All four are implemented (`crates/bitty-lua/src/ui.rs`, `crates/bitty-lua/src/host.rs`) and covered by headless tests.                                                                                                                                                                    |
+
+## Clauses the code cannot settle
+
+The rows above are settled by reading `bitty`. The clauses below are not, and no
+amount of further code reading will settle them, because each asks which of two
+implementable shapes is the intended one — a decision that belongs to an owner or
+to an accepted record, not to the host. [Open points](#open-points) carries the
+same set as a decision queue for the next revision; this section records why the
+code itself cannot close any of them. Each item names the decision that would.
+
+1. **Normative spelling.** The bridge fixes the strings `bitty.ui.mount`,
+   `bitty.ui.update`, the seven slot names, and the four node kind names. Whether
+   the candidate spellings (`chrome.<edge>.order`, `surface.*` tokens, the
+   `<domain>.read`/`<domain>.control` pairs, `workspace:*` command ids) become
+   normative is [OQ-056](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md);
+   the code implements one set of spellings without ruling on the candidate's.
+2. **Vertical bands.** `left` and `right` are accepted names that fail closed.
+   Whether a vertical band host is built, and whether the WorkspaceRail uses it
+   or stays a separate surface, is a product decision the refusal cannot answer.
+3. **Stacking and multiplicity.** The host keeps every mount on an edge and
+   orders by plugin id with a stable sort. Whether that order or an explicit
+   `chrome.<edge>.order` key is the contract, and whether one plugin may hold
+   more than one surface per edge, are both undecided; the code records the
+   status quo, not an intent.
+4. **Degradation.** The host hides every visible band together when they do not
+   fit above the content floor. The candidate hides innermost-first by priority.
+   Which behavior is the contract is a review decision, and both are
+   implementable.
+5. **Node vocabulary width.** No band or overlay path accepts `Block`,
+   `Table`, `Rule`, `CodeBlock`, or `Image`, and the v1 reader refuses them
+   typed. Whether the v1 subset is extended (and under which bounds) is an
+   accepted-extension decision; the refusal proves only today's boundary.
+6. **Work budgets.** Node count, depth, text bytes, retained strings, and
+   argument sizes are bounded. Layout work per frame, style-resolution work, and
+   update cadence have no counter anywhere in the host, so neither "bounded" nor
+   "unbounded" is decidable from the code — only that nothing measures them.
+7. **Terminal-wide aggregation.** `SCN-4`/`SCN-5` are enforced per plugin
+   generation. Whether the accepted terminal-wide ceiling is met by that subset
+   or violated by two plugins each holding 2 MiB cannot be read from a
+   per-generation counter; closing it needs the aggregation slice.
+8. **Token namespaces.** The host resolves five flat token names and falls back
+   for anything else. Whether `chrome.*`, `content.*`, and `plugin.<name>.*`
+   namespaces exist, and whether an unknown name must reject rather than fall
+   back, waits on the
+   [Theme Token Contract](theme-token-contract-candidate.md). The fallback
+   behavior contradicts the candidate's fail-closed rule, but which rule is
+   correct is not a code question.
+9. **Command exposure of mutations.** Workspace mutations are Lua functions, so
+   an `on_click` binding cannot name them. Whether they also become registered
+   commands is a decision about the command surface, not an inference from the
+   current bindings.
+10. **Accessibility roles.** Regions are derived paint geometry with no announced
+    role, and no consumer of such a role exists in the tree. Whether chrome
+    regions should announce anything, and with which vocabulary, is a decision
+    the absent consumer cannot settle.
+11. **Headed usability.** Whether a capsule or pill composition is legible at the
+    shipped cell metrics is a headed observation. Chrome coverage in the `bitty`
+    test tree is headless (residual gap 9) and none was performed for this record,
+    so the code settles nothing here.
+12. **Overlay pointer routing.** Overlay paint has no hit-test path at all. Whether
+    a routing contract is a small addition or a subsystem cannot be read from the
+    absence of the code, only awaited from a record that defines overlay geometry.
 
 ## Residual gaps
 

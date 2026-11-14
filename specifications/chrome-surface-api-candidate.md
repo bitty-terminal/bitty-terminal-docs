@@ -73,12 +73,12 @@ and `statusline` plugin implementations (plugin repositories).
   (accepted): deny-by-default capabilities, no ambient authority, command
   dispatch as the only invocable path, manifest-declared bounded bus topics.
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
-  (accepted): `bitty.ui.mount(slot, component)`, the closed slot set
-  (`terminal | top | bottom | left | right | tabline | statusline | overlay`),
-  the v1 node subset (`Text | Row | Column | List`), the exclusive `tabline`
-  claim, and "host layout owns placement and decoration". The accepted text was
-  amended on 2026-10-26 to the same seven-name set the host accepts, so the
-  RFC, the bridge, and this record no longer diverge on `statusline`. The
+  (accepted): `bitty.ui.mount(slot, component)`, the closed seven-name slot set
+  (`terminal | top | bottom | left | right | tabline | overlay`), the v1 node
+  subset (`Text | Row | Column | List`), the exclusive `tabline` claim, and
+  "host layout owns placement and decoration". The accepted text was amended on
+  2026-10-26 to that seven-name set, so the RFC, the bridge, and this record no
+  longer diverge: `statusline` is not a slot and is rejected as unknown. The
   per-item mapping is in the
   [reconciliation record](lua-ui-composition-reconciliation.md).
 - [Rich Presentation RFC](rich-presentation-rfc.md) (accepted): `SCN-1`
@@ -118,7 +118,7 @@ else in this record is implemented.
 - `bitty.ui.mount(slot, tree)` and `bitty.ui.update(handle, tree)` exist behind
   `ui.rich`, with the closed slot set, the `Text`/`Row`/`Column`/`List` nodes,
   and the limits `UI_MAX_DEPTH = 16`, `UI_MAX_NODES = 2048`, and
-  `UI_MAX_TEXT_BYTES = 256 KiB` (`bitty@7d98f53a`). The accepted scene budgets
+  `UI_MAX_TEXT_BYTES = 256 KiB` (`bitty@26360f15`). The accepted scene budgets
   are enforced per plugin generation as a strict subset: 64 retained blocks and
   a 2 MiB retained-string aggregate per generation (`SCN-4`/`SCN-5` numbers,
   with the aggregate charging every host-retained string, CTX-1340); the
@@ -195,7 +195,7 @@ else in this record is implemented.
 ### Current host versus candidate delta
 
 The following distinctions keep the candidate rules below from being read as
-claims about the pinned current host (`bitty@7d98f53a`, with UI parity evidence
+claims about the pinned current host (`bitty@26360f15`, with UI parity evidence
 from PR #2385 `cd6b0724` and PR #2392 `c816b00e`):
 
 - **Token behavior:** the current resolver accepts exactly five host tokens —
@@ -264,7 +264,7 @@ from PR #2385 `cd6b0724` and PR #2392 `c816b00e`):
    limits (`UI_MAX_DEPTH`, `UI_MAX_NODES`, `UI_MAX_TEXT_BYTES`) apply at mount
    time, and the per-band per-frame cap `BAND_MAX_NODES_PER_FRAME` from the
    Chrome Band Contract applies at render time across all surfaces on a band.
-   _Current host note (CTX-1419, bitty PRs #2385/#2392, `bitty@7d98f53a`):_
+   _Current host note (CTX-1419, bitty PRs #2385/#2392, `bitty@26360f15`):_
    `BAND_MAX_NODES_PER_FRAME` is not implemented; the host enforces the
    accepted scene budgets per plugin generation instead (64 blocks and a
    2 MiB retained-string aggregate per generation, the `SCN-4`/`SCN-5`
@@ -287,7 +287,7 @@ from PR #2385 `cd6b0724` and PR #2392 `c816b00e`):
    unknown attribute rejects the mount or update with a source-attributed
    error; nothing renders with a guessed style.
    _Current host note (CTX-1419, bitty PRs #2385 `cd6b0724` and #2392
-   `c816b00e`, `bitty@7d98f53a`):_ wrong types, unknown attributes, and
+   `c816b00e`, `bitty@26360f15`):_ wrong types, unknown attributes, and
    malformed shapes already reject typed (`E_UI_COMPONENT_INVALID`) before
    any host call; the host resolves the closed token table `foreground`,
    `background`, `cursor`, `selection`, `accent`, paints `bold` with the
@@ -477,7 +477,7 @@ pattern itself.
    manifest are not the target namespace, and the final namespace is pending
    OQ-056.
 
-_Implementation note (read at `bitty` `0b92e27d`):_ the read and event rows are
+_Implementation note (read at `bitty` `26360f15`):_ the read and event rows are
 implemented as written, including the `workspace.read` gate and the 16-row
 snapshot bound. The mutation row is not: `focus`, `new`, `next`, `close`,
 `rename`, and `move_panel` are `bitty.workspace.*` Lua functions gated by
@@ -550,6 +550,31 @@ bounds; this record fixes only the shape.
    deprecation window, or are removed with the Core workspaceline; the choice
    is an open point. `workspace.bar.colors` and `workspace.bar.pill_align` are
    not introduced.
+
+## Reconciliation (2026-11-14)
+
+This record was re-read against `bitty` at `26360f15` (`origin/main`). The
+code-side surface behind every rule in this record is unchanged in shape: the
+slot set is closed at seven names and `statusline` is not one of them, the v1
+node subset is `Text | Row | Column | List`, `ui.rich` gates every mount with
+`ui.overlay` added for the `overlay` slot, `tabline` requires the `workspaceline`
+exclusive claim before it fails closed, and the bridge budgets are 2048 nodes,
+depth 16, 256 KiB text, 64 blocks, and a 2 MiB retained-string aggregate per
+plugin generation.
+
+Corrected in this revision, because the corpus contradicted the code:
+
+- the normative-source list quoted the accepted slot set with eight names,
+  including `statusline`; it now quotes the seven-name set the accepted RFC
+  carries and the host accepts;
+- the current-state and delta pins pointed at `7d98f53a` and `0b92e27d`; they
+  point at `26360f15`.
+
+Per-clause status — `implemented`, `accepted-but-unimplemented`, `candidate`,
+`deferred`, or `contradicted-by-code` — is in the
+[Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md), which
+is the authority for what the current host does. This record keeps its candidate
+rules and its `status: draft`; this section records evidence, not acceptance.
 
 ## Security review
 
