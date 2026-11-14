@@ -92,21 +92,22 @@ A near-full-panel focusable overlay (`ui.overlay.focus`, the accepted W-01
 capture contract) opened by the plugin's command. The plugin paints
 through `bitty.ui.overlay.update`; it holds no terminal-grid authority.
 
-| Section     | Rows                                                                                                                                                                                                                              |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Overview    | profile, resolved theme + layer, font family/size, decoration geometry, config path                                                                                                                                               |
-| Plugins     | one row per bundled catalog entry and installed record: state, source, version                                                                                                                                                    |
-| Settings    | one row per declared setting of every installed plugin: current value, shipped default, source (`user`/`default`)                                                                                                                 |
-| Profiles    | `default` plus every valid `profiles/<name>.lua` with the active marker                                                                                                                                                           |
-| Extensions  | per extension: active version, tier, ABI, descriptor digest, target path, last-recorded activation, liveness (explicitly not probed), trust derived from that record, and the exact install/update/remove CLI command (read-only) |
-| Diagnostics | app version; config file and directory; plugin ledger; plugin store; extension user/system roots; extension state root; profile and theme source layers; each path marked present/missing                                         |
+| Section     | Rows                                                                                                                                                                                                                                        |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overview    | profile, resolved theme + layer, font family/size, decoration geometry, config path                                                                                                                                                         |
+| Plugins     | one row per bundled catalog entry and installed record: state, source, version                                                                                                                                                              |
+| Settings    | one row per declared setting of every installed plugin: current value, shipped default, source (`user`/`default`)                                                                                                                           |
+| Profiles    | `default` plus every valid `profiles/<name>.lua` with the active marker                                                                                                                                                                     |
+| Wheel       | defaults (`default_provider`, `default_model`, `thinking_enabled`, `thinking_gear`, `approval_mode`, `timeout_ms`), 14 built-in providers (`configured`, `auth_source`, `effective_model`), 15 tool permissions, and up to 32 approval rows |
+| Extensions  | per extension: active version, tier, ABI, descriptor digest, target path, last-recorded activation, liveness (explicitly not probed), trust derived from that record, and the exact install/update/remove CLI command (read-only)           |
+| Diagnostics | app version; config file and directory; plugin ledger; plugin store; extension user/system roots; extension state root; profile and theme source layers; each path marked present/missing                                                   |
 
 A read-only Overview/Plugins/Extensions/Diagnostics slice is the MVP; Settings,
-Profiles, and any write row stay read-only until P-3 lands.
+Profiles, Wheel, and any write row use the P-3 `config.manage` surface.
 
 ### Navigation and bounds
 
-`j`/`k` (or arrows) move, `h`/`l` (or left/right, Tab) change section, `1`–`6`
+`j`/`k` (or arrows) move, `h`/`l` (or left/right, Tab) change section, `1`–`7`
 jump, `g`/`G` first/last, `PageUp`/`PageDown` page, `Enter` activates, `r`
 reloads the state query, and `q`/`Esc` closes. The plugin owns the overlay
 capture while open; nothing typed reaches the shell.
@@ -234,17 +235,23 @@ budgets, and atomic write rules.
 All values are validated by the `bitty-config` typed plan before any write.
 Unknown keys fail closed; no method takes a table of loose key/value pairs.
 
-| Method                                             | Arguments                                   | Result                                     | Notes                                                                                                                |
-| -------------------------------------------------- | ------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `config.get(key)`                                  | one dotted key from the scalar allowlist    | typed value + source layer                 | `appearance.theme`, `font.family`, `font.size`, `decoration.*`, `close_confirm`, `terminal.scrollback`, `profile`    |
-| `config.preview_set(key, value)`                   | allowlisted key + typed scalar value        | `{ preview_digest, diff, ... }`            | validates candidate via typed planner without mutating disk                                                          |
-| `config.set(key, value, preview_digest)`           | allowlisted key + typed value + digest      | applied + source layer + backup path       | re-verifies `preview_digest` against live preimage; writes user layer atomically with rolling `.bak`                 |
-| `profiles.list()`                                  | none                                        | bounded names (`default` + files) + active | read-only helper under `bitty.profiles` / `bitty.config.profiles`                                                    |
-| `profiles.preview_use(name)` / `use(name, digest)` | validated profile name (+ `preview_digest`) | preview record / applied active profile    | updates `profile = "<name>"` in user `init.lua` and triggers live runtime reload                                     |
-| `profiles.preview_create` / `create`               | `name`, optional `{ from, force, digest }`  | preview record / created profile metadata  | writes `$XDG_CONFIG_HOME/bitty/profiles/<name>.lua`; preserves `extends` verbatim when seeded via `from`             |
-| `profiles.preview_clone` / `clone`                 | `src`, `dst`, optional `{ force, digest }`  | preview record / cloned profile metadata   | copies source profile body (preserving `extends`) into `<dst>.lua`                                                   |
-| `profiles.preview_rename` / `rename`               | `old`, `new`, optional `{ force, digest }`  | preview record / renamed profile metadata  | renames `<old>.lua` to `<new>.lua` and updates `init.lua` `profile` when `<old>` was active                          |
-| `profiles.preview_delete` / `delete`               | `name`, `{ force = true, preview_digest }`  | preview record / deleted + `.bak-<epoch>`  | refuses `default` and refuses deleting the active profile unless switched first; always retains `<name>.lua.bak-...` |
+| Method                                                                | Arguments                                   | Result                                     | Notes                                                                                                                 |
+| --------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `config.get(key)`                                                     | one dotted key from the scalar allowlist    | typed value + source layer                 | `appearance.theme`, `font.family`, `font.size`, `decoration.*`, `close_confirm`, `terminal.scrollback`, `profile`     |
+| `config.preview_set(key, value)`                                      | allowlisted key + typed scalar value        | `{ preview_digest, diff, ... }`            | validates candidate via typed planner without mutating disk                                                           |
+| `config.set(key, value, preview_digest)`                              | allowlisted key + typed value + digest      | applied + source layer + backup path       | re-verifies `preview_digest` against live preimage; writes user layer atomically with rolling `.bak`                  |
+| `profiles.list()`                                                     | none                                        | bounded names (`default` + files) + active | read-only helper under `bitty.profiles` / `bitty.config.profiles`                                                     |
+| `profiles.preview_use(name)` / `use(name, digest)`                    | validated profile name (+ `preview_digest`) | preview record / applied active profile    | updates `profile = "<name>"` in user `init.lua` and triggers live runtime reload                                      |
+| `profiles.preview_create` / `create`                                  | `name`, optional `{ from, force, digest }`  | preview record / created profile metadata  | writes `$XDG_CONFIG_HOME/bitty/profiles/<name>.lua`; preserves `extends` verbatim when seeded via `from`              |
+| `profiles.preview_clone` / `clone`                                    | `src`, `dst`, optional `{ force, digest }`  | preview record / cloned profile metadata   | copies source profile body (preserving `extends`) into `<dst>.lua`                                                    |
+| `profiles.preview_rename` / `rename`                                  | `old`, `new`, optional `{ force, digest }`  | preview record / renamed profile metadata  | renames `<old>.lua` to `<new>.lua` and updates `init.lua` `profile` when `<old>` was active                           |
+| `profiles.preview_delete` / `delete`                                  | `name`, `{ force = true, preview_digest }`  | preview record / deleted + `.backups/`     | refuses `default` and refuses deleting the active profile unless switched first; archives backup under `.backups/`    |
+| `wheel.get()`                                                         | none                                        | redacted Wheel snapshot                    | defaults, 14 built-in providers (`configured`, `auth_source`, `effective_model`), 15 tool permissions, <=32 approvals |
+| `wheel.preview_set` / `set`                                           | `key`, `value` (+ `preview_digest`)         | preview record / applied Wheel setting     | updates `$XDG_DATA_HOME/wheel/settings.json` (`0600`) under `.approvals.lock`                                         |
+| `wheel.preview_auth_set` / `auth_set`                                 | `provider`, `api_key` (+ `preview_digest`)  | redacted preview (`***REDACTED***`) / set  | write-only credential update in `$XDG_DATA_HOME/wheel/credentials.json` (`0600`)                                      |
+| `wheel.preview_auth_unset` / `auth_unset`                             | `provider` (+ `preview_digest`)             | preview record / cleared credential        | removes stored key for `provider` in `$XDG_DATA_HOME/wheel/credentials.json` (`0600`)                                 |
+| `wheel.preview_resolve_approval` / `resolve_approval`                 | `id`, `decision` (+ `preview_digest`)       | preview record / resolved approval entry   | resolves pending entry (`allow_once` \| `allow_session` \| `allow_always` \| `deny`) in `approvals.json`              |
+| `wheel.preview_clear_resolved_approvals` / `clear_resolved_approvals` | none (+ `preview_digest`)                   | preview record / pruned resolved entries   | removes resolved entries from `$XDG_DATA_HOME/wheel/approvals.json`                                                   |
 
 Allowlisted scalar keys for `bitty.config.{get,preview_set,set}`:
 
@@ -273,10 +280,12 @@ closed with a typed error; nothing is clamped silently.
 4. Every write is atomic and durable: temp file in the same directory with
    owner-only mode (`0600`), `fsync`, atomic rename, and directory `fsync`.
    Whenever an existing user-layer file is modified, overwritten (`force =
-true`), or deleted (`profiles.delete`), Core retains a rolling backup
-   (`init.lua.bak` or `<name>.lua.bak-<epoch>`) in the same directory so the
-   previous content is recoverable without data loss. A crash leaves either the
-   old or the new file, never a partial one.
+true`), or deleted (`profiles.delete`), Core retains a backup under
+   `$XDG_CONFIG_HOME/bitty/.backups/` (`0700` directory, `0600` files, retaining
+   the 10 newest backups per file stem; legacy top-level `.bak*` files are
+   migrated into `.backups/` on startup) so the previous content is recoverable
+   without data loss. A crash leaves either the old or the new file, never a
+   partial one.
 5. Managed scalar writes update only the targeted assignment in the user-layer
    `init.lua` (preserving surrounding user comments and statements) and are
    re-parsed by the restricted `ConfigLuaVm` before commit; arbitrary Lua text
