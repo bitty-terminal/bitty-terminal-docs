@@ -220,6 +220,15 @@ sidebar_order: 87
 > names the revision it was read at instead of inheriting an older one. This
 > revision accepts nothing, promotes nothing to **Verified** or **Compatible**,
 > changes no accepted text, and does not describe shipped behaviour.
+>
+> The owner-level decision this record states in detail is recorded as
+> [ADR 0020 - Panel Lifecycle and Plugin-Generation Ownership Across
+> Reload](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0020-panel-lifecycle-plugin-generation-ownership.md)
+> in `bitty-docs`, accepted for review with project-initiator acceptance
+> outstanding. It answers the `OQ-084` residual that ADR 0013 parked and does
+> not change any rule, status, residual, or row in this record; see
+> [Reload ownership](#reload-ownership-adr-0020) for the division of authority
+> between the two documents.
 
 ## Purpose and scope
 
@@ -691,6 +700,45 @@ Primary files:
 `panel_placeholder_bounds.rs`, `panel_grant_ceiling.rs`,
 `panel_unbind_release.rs`, `panel_workspace_identity.rs`, and
 `presentation_overlay_attribution.rs`).
+
+## Reload ownership (ADR 0020)
+
+The owner-level decision this record states in detail is recorded as
+[ADR 0020 - Panel Lifecycle and Plugin-Generation Ownership Across
+Reload](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0020-panel-lifecycle-plugin-generation-ownership.md)
+(`status: draft`; accepted for review, with project-initiator acceptance
+outstanding). It answers the `OQ-084` residual that
+[ADR 0013 - Core Ontology and Identity
+Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/adrs/ADR-0013-core-ontology-identity.md)
+parked, and it joins the accepted Panel Runtime RFC reload behaviour to the
+accepted Plugin Host Runtime RFC FS-6 ordering:
+
+- a panel container is workspace-owned and survives a plugin generation change,
+  while panel content, grants, capture, overlay attribution, and queued events
+  are generation-owned and released at the generation edge before the unbound
+  presentation is shown;
+- `PanelId` survives a reload and is never the restore key, which stays
+  `(WorkspaceId, PersistentId)` with a fresh `PanelId` on restore;
+- a rebound panel inherits nothing it did not itself obtain: the predecessor's
+  grant set is a ceiling, and widening needs a consent granted for that binding;
+- recovery has exactly three outcomes — placeholder, unavailable, or drop — and
+  never a silent orphan.
+
+The division of authority is deliberate, and neither document may drift from it:
+
+| Concern                                               | Owner       |
+| ----------------------------------------------------- | ----------- |
+| The decision, and the `OQ-084` residual it answers    | ADR 0020    |
+| Normative rule text for Decisions A through E         | This record |
+| The residual ledger for `bitty#2476`                  | This record |
+| The `PGO-1` to `PGO-23` conformance matrix            | This record |
+| Review history, open follow-ups, acceptance checklist | This record |
+
+Where this record states a rule and the ADR states the same rule, this record's
+text is authoritative; a conflict is a defect in the ADR. This record stays
+`status: draft` after the ADR lands: accepting the decision does not clear the
+open points, the code-side residuals, or this record's own acceptance
+checklist, and no line here promotes anything to **Verified** or **Compatible**.
 
 ## Decision A: ownership
 
