@@ -304,12 +304,26 @@ provides generic host mechanisms only; named bars are plugin compositions on
 them (see the draft
 [Chrome Surface API](chrome-surface-api-candidate.md)):
 
-- **Edge surfaces (bands)** — `top` and `bottom` mounts that reserve space only
-  while a plugin mounts a tree, stack deterministically per edge, render within
-  budgets, and route clicks to registered commands. `left` and `right` are
-  accepted slot names with no vertical band host yet, so mounts fail closed
-  with `E_UI_UNAVAILABLE`; `statusline` is not a slot (bar replacement) and
-  status presentation composes on the `bottom` band.
+- **Edge surfaces (bands)** — `top`, `bottom`, `left`, and `right` mounts that
+  reserve space only while a plugin mounts a tree, stack deterministically per
+  edge, render within budgets, and route clicks to registered commands. All four
+  edges are band edges on two axes: `top`/`bottom` are one-row bands, and
+  `left`/`right` are column bands that stack one content row per root child and
+  are clipped to their granted share of the window. `statusline` is not a slot
+  (bar replacement) and status presentation composes on the `bottom` band.
+  _Corrected 2026-11-16 at `bitty@a8abf31c`: this bullet said `left` and `right`
+  "are accepted slot names with no vertical band host yet, so mounts fail closed
+  with `E_UI_UNAVAILABLE`". The vertical band host landed in `bitty#3167`
+  (`1994f6e6`) with routing in `bitty#3172` (`76485e80`), and `ui.state`
+  reporting for a painted column band in `bitty#3181` (`a8abf31c`), so the
+  refusal the old text described no longer exists. Evidence:
+  `crates/bitty-runtime/src/runtime/band_slots.rs:130` (`BAND_EDGES`), `:154`
+  (`ui_slot_placement`), `crates/bitty-runtime/src/runtime/band_host.rs:2007`
+  (`column_band_plan`). What still holds is narrower than the old refusal:
+  `workspace.bar.edge` carries `Top`/`Bottom` only
+  (`crates/bitty-config/src/types.rs:3225`), a group `anchor` resolves on row
+  bands, and whether a rail becomes a vertical band is a product decision, not
+  a missing host path._
 - **`OverlayRoot`** — the host-owned root for transient overlays such as the
   command palette, which-key help, and jump labels.
 - **Notification primitive** — the notification and attention-badge
