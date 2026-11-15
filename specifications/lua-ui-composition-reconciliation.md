@@ -37,7 +37,7 @@ This record is the single reconciliation table for both candidates. It covers:
   each one;
 - the `SceneNode` variants reachable from Lua and the v1 node subset;
 - the node fields the bridge accepts (`fg`, `bg`, `bold`, `anchor`, `on_click`,
-  `on_scroll`, `on_hover`, `region`);
+  `on_scroll`, `on_hover`, `region`, and `style` on the `terminal` slot only);
 - the capabilities that gate the surface, the budgets that bound it, and the
   interaction paths that consume it;
 - the places where the candidates' rules and the host disagree, named so a
@@ -81,9 +81,12 @@ The implementation facts below were read from the `bitty` repository at
 `26360f15` (`origin/main`). Every path below was re-read at that revision, and
 the line numbers in the code-side table are the ones this reading produced —
 line numbers move with the file, so a reviewer should match on the named symbol
-as well as the number. The evidence is static reading plus the headless test
-files named per row; **no headed run was performed for this record**, so it
-makes no usability, performance, or accessibility claim.
+as well as the number. The two `style` rows were read at `a64c283c`
+([bitty#3175](https://github.com/bitty-terminal/bitty/pull/3175)), which is
+later than the pinned revision and names its own symbols. The evidence is
+static reading plus the headless test files named per row; **no headed run was
+performed for this record**, so it makes no usability, performance, or
+accessibility claim.
 
 | Area                | Primary code path                                                                                                                                                                         |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -103,27 +106,29 @@ makes no usability, performance, or accessibility claim.
 One row per claim this record rests on, with the symbol and the line that
 carries it in `bitty` at `26360f15`.
 
-| Claim                                                                                                      | Evidence (`bitty` at `26360f15`)                                                                                                                     |
-| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The slot set is closed at seven names: `terminal`, `top`, `bottom`, `left`, `right`, `tabline`, `overlay`. | `crates/bitty-lua/src/ui.rs:94` (`enum UiSlot`), `ui.rs:108` (`ALL: [Self; 7]`), `ui.rs:159` (`UI_SLOTS: [&str; 7]`)                                 |
-| Slot parsing is exact and case-sensitive, with no aliases.                                                 | `crates/bitty-lua/src/ui.rs:132` (`UiSlot::parse`)                                                                                                   |
-| `statusline` is not a slot and parses to `None`.                                                           | `crates/bitty-lua/src/ui.rs:159`; the closed-set test rejects `statusline`/`Statusline` at `ui.rs:1330`                                              |
-| An unknown slot is rejected `E_UI_COMPONENT_INVALID` before any host effect.                               | `crates/bitty-lua/src/ui.rs:1303` (`component_invalid`), `crates/bitty-runtime/src/plugin_runtime/services.rs:6511`                                  |
-| The v1 component vocabulary is exactly `Text`, `Row`, `Column`, `List`.                                    | `crates/bitty-lua/src/ui.rs:185` (`UI_V1_NODE_KINDS: [&str; 4]`)                                                                                     |
-| The `terminal` scene path accepts the nine accepted kinds instead.                                         | `crates/bitty-lua/src/ui_rich.rs:101` (`UI_RICH_NODE_KINDS: [&str; 9]`)                                                                              |
-| `ui.rich` gates every mount and update.                                                                    | `crates/bitty-runtime/src/plugin_runtime/services.rs:6519`, `:6577`                                                                                  |
-| `ui.overlay` additionally gates the `overlay` slot and is not implied by `ui.rich`.                        | `crates/bitty-runtime/src/plugin_runtime/services.rs:6522`                                                                                           |
-| `ui.overlay.focus` gates the transient capture; `ui.present` gates non-modal presentation.                 | `crates/bitty-runtime/src/plugin_runtime/services.rs:2804` (`require_overlay_focus`), `:2837` (`require_presentation_overlay`)                       |
-| `tabline` requires the canonical `workspaceline` exclusive claim, then fails closed.                       | `crates/bitty-runtime/src/plugin_runtime/services.rs:223` (`WORKSPACELINE_CLAIM`), `:6537` (`E_UI_CLAIM_REQUIRED`), `:6548` (placement refusal)      |
-| `left`/`right`/`tabline` and a v1 tree on `terminal` fail closed `E_UI_UNAVAILABLE`.                       | `crates/bitty-runtime/src/runtime/band_slots.rs:93` (`ui_slot_placement`), `:101`, `:103`, `:113`, `:120` (`unsupported_slot_error`)                 |
-| The `terminal` scene mount fails closed with no installed scene backend.                                   | `crates/bitty-runtime/src/plugin_runtime/services.rs:6563`, `:6579`                                                                                  |
-| Node, depth, text, block, and retained-string ceilings.                                                    | `crates/bitty-lua/src/ui.rs:194` (2048), `:191` (16), `:197` (256 KiB), `:201` (64), `:209` (2 MiB)                                                  |
-| The accepted `SCN-2`/`SCN-4`/`SCN-5` numbers the bridge is stricter than or equal to.                      | `crates/bitty-lua/src/ui.rs:55-60` (module-level `SCN` table)                                                                                        |
-| Band region cap and scroll queue bound.                                                                    | `crates/bitty-runtime/src/runtime/band_host.rs:131` (`BAND_MAX_REGIONS = 64`), `:99` (`BAND_SCROLL_QUEUE_MAX = 8`)                                   |
-| The closed five-token style table with unknown-token fallback and a diagnostic count.                      | `crates/bitty-runtime/src/runtime/band_host.rs:813` (`resolve_band_token` returns `None`), `:825` (token arms)                                       |
-| Overlay painting has no hit-testing and no pointer capture.                                                | `crates/bitty-runtime/src/runtime/present.rs:6521` (`paint_presentation_overlay`), `:6557` (`paint_overlay_surface`), `:7052` (`overlay_scene_rows`) |
-| Band flattening joins `Row` children horizontally and `Column`/`List` into the same row.                   | `crates/bitty-runtime/src/runtime/band_host.rs:294`                                                                                                  |
-| The workspace snapshot is bounded at 16 rows.                                                              | `crates/bitty-lua/src/host.rs:76` (`WORKSPACE_LIST_MAX_ITEMS`)                                                                                       |
+| Claim                                                                                                      | Evidence (`bitty` at `26360f15`)                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The slot set is closed at seven names: `terminal`, `top`, `bottom`, `left`, `right`, `tabline`, `overlay`. | `crates/bitty-lua/src/ui.rs:94` (`enum UiSlot`), `ui.rs:108` (`ALL: [Self; 7]`), `ui.rs:159` (`UI_SLOTS: [&str; 7]`)                                                     |
+| Slot parsing is exact and case-sensitive, with no aliases.                                                 | `crates/bitty-lua/src/ui.rs:132` (`UiSlot::parse`)                                                                                                                       |
+| `statusline` is not a slot and parses to `None`.                                                           | `crates/bitty-lua/src/ui.rs:159`; the closed-set test rejects `statusline`/`Statusline` at `ui.rs:1330`                                                                  |
+| An unknown slot is rejected `E_UI_COMPONENT_INVALID` before any host effect.                               | `crates/bitty-lua/src/ui.rs:1303` (`component_invalid`), `crates/bitty-runtime/src/plugin_runtime/services.rs:6511`                                                      |
+| The v1 component vocabulary is exactly `Text`, `Row`, `Column`, `List`.                                    | `crates/bitty-lua/src/ui.rs:185` (`UI_V1_NODE_KINDS: [&str; 4]`)                                                                                                         |
+| The `terminal` scene path accepts the nine accepted kinds instead.                                         | `crates/bitty-lua/src/ui_rich.rs:101` (`UI_RICH_NODE_KINDS: [&str; 9]`)                                                                                                  |
+| `ui.rich` gates every mount and update.                                                                    | `crates/bitty-runtime/src/plugin_runtime/services.rs:6519`, `:6577`                                                                                                      |
+| `ui.overlay` additionally gates the `overlay` slot and is not implied by `ui.rich`.                        | `crates/bitty-runtime/src/plugin_runtime/services.rs:6522`                                                                                                               |
+| `ui.overlay.focus` gates the transient capture; `ui.present` gates non-modal presentation.                 | `crates/bitty-runtime/src/plugin_runtime/services.rs:2804` (`require_overlay_focus`), `:2837` (`require_presentation_overlay`)                                           |
+| `tabline` requires the canonical `workspaceline` exclusive claim, then fails closed.                       | `crates/bitty-runtime/src/plugin_runtime/services.rs:223` (`WORKSPACELINE_CLAIM`), `:6537` (`E_UI_CLAIM_REQUIRED`), `:6548` (placement refusal)                          |
+| `left`/`right`/`tabline` and a v1 tree on `terminal` fail closed `E_UI_UNAVAILABLE`.                       | `crates/bitty-runtime/src/runtime/band_slots.rs:93` (`ui_slot_placement`), `:101`, `:103`, `:113`, `:120` (`unsupported_slot_error`)                                     |
+| The `terminal` scene mount fails closed with no installed scene backend.                                   | `crates/bitty-runtime/src/plugin_runtime/services.rs:6563`, `:6579`                                                                                                      |
+| Node, depth, text, block, and retained-string ceilings.                                                    | `crates/bitty-lua/src/ui.rs:194` (2048), `:191` (16), `:197` (256 KiB), `:201` (64), `:209` (2 MiB)                                                                      |
+| The accepted `SCN-2`/`SCN-4`/`SCN-5` numbers the bridge is stricter than or equal to.                      | `crates/bitty-lua/src/ui.rs:55-60` (module-level `SCN` table)                                                                                                            |
+| Band region cap and scroll queue bound.                                                                    | `crates/bitty-runtime/src/runtime/band_host.rs:131` (`BAND_MAX_REGIONS = 64`), `:99` (`BAND_SCROLL_QUEUE_MAX = 8`)                                                       |
+| The closed five-token style table with unknown-token fallback and a diagnostic count.                      | `crates/bitty-runtime/src/runtime/band_host.rs:813` (`resolve_band_token` returns `None`), `:825` (token arms)                                                           |
+| Overlay painting has no hit-testing and no pointer capture.                                                | `crates/bitty-runtime/src/runtime/present.rs:6521` (`paint_presentation_overlay`), `:6557` (`paint_overlay_surface`), `:7052` (`overlay_scene_rows`)                     |
+| Band flattening joins `Row` children horizontally and `Column`/`List` into the same row.                   | `crates/bitty-runtime/src/runtime/band_host.rs:294`                                                                                                                      |
+| The workspace snapshot is bounded at 16 rows.                                                              | `crates/bitty-lua/src/host.rs:76` (`WORKSPACE_LIST_MAX_ITEMS`)                                                                                                           |
+| The rich reader takes an optional capped `style` table.                                                    | `bitty` at `a64c283c`: `crates/bitty-lua/src/ui_style.rs` (`parse_node_style`, `UI_STYLE_FIELDS`, `UI_STYLE_MAX_*`), `crates/bitty-lua/src/ui.rs` (module note)          |
+| A non-flat rich style lowers to `SceneNode::Styled`; a flat one lowers to nothing.                         | `bitty` at `a64c283c`: `crates/bitty-lua/src/ui_rich.rs` (`UiRichNode::Styled`, post-walk depth re-check), `crates/bitty-runtime/src/scene_bridge.rs` (`scene_style_of`) |
 
 ## Slot reconciliation
 
@@ -177,18 +182,19 @@ subset, not a reuse of the scene gallery.
 
 ### Node fields
 
-| Field                                    | Status      | Applies to                                 | Notes                                                                                                                                                                                                                                    |
-| ---------------------------------------- | ----------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fg`, `bg`                               | implemented | v1 band and overlay nodes                  | Resolved against a closed five-token table (`foreground`, `background`, `cursor`, `selection`, `accent`). A well-formed but unknown token falls back to the span default and increments a host diagnostic count; raw colors are refused. |
-| `bold`                                   | implemented | v1 band and overlay nodes, rich `Text`     | Painted with the host's synthetic double-strike; the rich path accepts it only on `Text`.                                                                                                                                                |
-| `anchor`                                 | implemented | band scene root `Row` direct children only | `left`/`center`/`right` resolved against the presented band width. Declared anywhere else it fails closed (`E_UI_COMPONENT_INVALID`) rather than being ignored.                                                                          |
-| `on_click`                               | implemented | v1 band nodes                              | `{ command, args }` with scalar bounded args; dispatches a registered command through the runtime command path. Overlay declarations are retained, not routed.                                                                           |
-| `on_scroll`                              | implemented | every v1 node kind, band nodes             | Same shape as `on_click`; the host injects a signed `delta` as the last argument and reserves its arg slot so dispatch cannot exceed the argument cap.                                                                                   |
-| `on_hover`                               | implemented | band nodes, requires `region`              | Dispatches the declared command with the region id and `phase = "enter" \| "leave"`; at most one pending transition per region, queue bounded. Hover never captures input.                                                               |
-| `region`                                 | implemented | band nodes carrying a binding              | `{ id, kind = "module" \| "item" }`; the host derives the display-cell rectangle from painted spans, merges adjacent runs with one id, and refuses a band above the region cap as a whole.                                               |
-| spacing, size, alignment beyond `anchor` | candidate   | —                                          | No spacing, padding, size-constraint, or cross-axis alignment field exists on either bridge.                                                                                                                                             |
-| interaction-state styling                | candidate   | —                                          | No `hover`/`active`/`pressed` style state exists; a plugin re-mounts a tree to change appearance.                                                                                                                                        |
-| raw colors, coordinates, thickness       | candidate   | —                                          | Refused by construction: the bridge has no field for them and Core owns band geometry.                                                                                                                                                   |
+| Field                                                   | Status      | Applies to                                 | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------- | ----------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fg`, `bg`                                              | implemented | v1 band and overlay nodes                  | Resolved against a closed five-token table (`foreground`, `background`, `cursor`, `selection`, `accent`). A well-formed but unknown token falls back to the span default and increments a host diagnostic count; raw colors are refused.                                                                                                                                                                                                             |
+| `bold`                                                  | implemented | v1 band and overlay nodes, rich `Text`     | Painted with the host's synthetic double-strike; the rich path accepts it only on `Text`.                                                                                                                                                                                                                                                                                                                                                            |
+| `anchor`                                                | implemented | band scene root `Row` direct children only | `left`/`center`/`right` resolved against the presented band width. Declared anywhere else it fails closed (`E_UI_COMPONENT_INVALID`) rather than being ignored.                                                                                                                                                                                                                                                                                      |
+| `on_click`                                              | implemented | v1 band nodes                              | `{ command, args }` with scalar bounded args; dispatches a registered command through the runtime command path. Overlay declarations are retained, not routed.                                                                                                                                                                                                                                                                                       |
+| `on_scroll`                                             | implemented | every v1 node kind, band nodes             | Same shape as `on_click`; the host injects a signed `delta` as the last argument and reserves its arg slot so dispatch cannot exceed the argument cap.                                                                                                                                                                                                                                                                                               |
+| `on_hover`                                              | implemented | band nodes, requires `region`              | Dispatches the declared command with the region id and `phase = "enter" \| "leave"`; at most one pending transition per region, queue bounded. Hover never captures input.                                                                                                                                                                                                                                                                           |
+| `region`                                                | implemented | band nodes carrying a binding              | `{ id, kind = "module" \| "item" }`; the host derives the display-cell rectangle from painted spans, merges adjacent runs with one id, and refuses a band above the region cap as a whole.                                                                                                                                                                                                                                                           |
+| `style` (`padding`, `radius`, `border`, `border_token`) | implemented | `terminal` rich path only                  | Optional additive-minor table on any rich kind; padding in cells `0..=32`, radius and border in physical px `0..=16`, border token from a closed six-name `content.*`/`state.*` set. One past a cap, an unknown or duplicate key, a colour literal, and a Core chrome token all reject `E_UI_COMPONENT_INVALID`; there is no clamp. A flat declaration lowers to no node and paints nothing. A band or overlay mount accepts the key and ignores it. |
+| spacing beyond `style`, size, alignment beyond `anchor` | candidate   | —                                          | No `gap`/sibling-spacing, size-constraint, or cross-axis alignment field exists on either bridge; `style.padding` insets a node's own content on the `terminal` path and is the only spacing primitive.                                                                                                                                                                                                                                              |
+| interaction-state styling                               | candidate   | —                                          | No `hover`/`active`/`pressed` style state exists; a plugin re-mounts a tree to change appearance.                                                                                                                                                                                                                                                                                                                                                    |
+| raw colors, coordinates, thickness                      | candidate   | —                                          | Refused by construction: the bridge has no field for them and Core owns band geometry.                                                                                                                                                                                                                                                                                                                                                               |
 
 `anchor` and `on_hover` are the clearest example of why this record exists:
 both are implemented, tested
@@ -360,21 +366,27 @@ reconciliation item is answered by this record; the additive-vocabulary,
 backward-compatibility, bounds/fail-closed, and dogfood items are blocked as
 follows. Each gap names what would have to land, not merely that it is missing.
 
-1. **No additive composition vocabulary.** `anchor` is the only placement
-   control; there is no spacing, padding, size constraint, capsule/badge
-   primitive, or interaction-state styling. Any bar that wants grouped capsules
-   today composes them out of `Row`/`Text` and accepts default spacing. The
-   issue's additive-vocabulary item has no accepted contract and no
-   implementation, so it stays open.
+1. **No additive composition vocabulary on the band path.** `anchor` is the
+   only placement control a band has. Padding, corner radius, and border width
+   landed as the `style` key on the `terminal` rich path
+   ([bitty#3175](https://github.com/bitty-terminal/bitty/pull/3175)), and a
+   band or overlay mount accepts that key and ignores it; there is still no
+   sibling spacing, size constraint, capsule/badge primitive, or
+   interaction-state styling on either path. Any bar that wants grouped
+   capsules today composes them out of `Row`/`Text` and accepts default
+   spacing. The issue's additive-vocabulary item has no accepted contract — the
+   `style` table is implemented-only, not accepted — so it stays open.
 2. **No accepted extension of the v1 node subset.** `Block`, `Table`, `Rule`,
    `CodeBlock`, and `Image` exist only on the terminal scene path. A band cannot
    draw a bordered card, so any contract that promises bordered chrome has to
    extend the v1 subset deliberately rather than borrow the scene gallery.
-3. **Layout and style work remain unbounded as quantities.** Node count, depth,
-   text bytes, retained strings, and per-binding argument bytes are bounded;
-   layout work per frame, style-resolution work, and update cadence are not.
-   "Bound layout work and style resolution" from the issue has no implemented
-   counter.
+3. **Layout work and update cadence remain unbounded as quantities.** Node
+   count, depth, text bytes, retained strings, and per-binding argument bytes
+   are bounded, and the `style` table is a closed four-field integer set with
+   fixed caps resolved on the mount/update path rather than per frame. No
+   counter measures layout work per frame, update cadence, or style-resolution
+   work itself, so "bound layout work and style resolution" from the issue has
+   no implemented counter.
 4. **Terminal-wide budget aggregation is deferred.** Per-generation `SCN-4`/
    `SCN-5` accounting cannot bound the sum across plugins.
 5. **Overlay pointer routing has no accepted contract.** Both candidates record
@@ -386,9 +398,10 @@ follows. Each gap names what would have to land, not merely that it is missing.
 7. **Stacking and multiplicity are undecided.** `chrome.<edge>.order` is not
    wired and the one-surface-per-edge rule is not enforced; both are composition
    semantics a plugin author would rely on.
-8. **Token namespaces are unpromoted.** The five-token table is the whole style
-   vocabulary; capsule and state theming need the Theme Token Contract, which
-   also gates fail-closed rejection of unknown tokens.
+8. **Token namespaces are unpromoted.** The five-token table is the whole
+   `fg`/`bg` vocabulary, and the `style` border token set closes at six
+   `content.*`/`state.*` names; capsule and state theming need the Theme Token
+   Contract, which also gates fail-closed rejection of unknown tokens.
 9. **The bar capsule dogfood is gated, not scheduled.** The issue's headed
    validation ("one plugin-owned capsule/pill composition") has no counterpart
    in the `bitty` test tree, whose band coverage is entirely headless, and it
@@ -412,6 +425,15 @@ follows. Each gap names what would have to land, not merely that it is missing.
   `on_click`) in addition to Lua functions.
 - Attention flag sources: the row shape and per-flag names exist, but every flag
   is currently reported `false` because Core has no per-workspace source.
+- Whether one node may carry both `Block.border` (cells, cap `8`) and
+  `style.border` (physical px, cap `16`). Both paint today — a rounded ring
+  plus the four-op cell frame — and no composition rule or typed refusal is
+  recorded, so one of the two has to be decided in the owning repository
+  ([bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176)).
+- Whether `bitty --safe` flattens plugin-declared scene style. The declaration
+  surface is plugin-reachable now that the wire key ships, and the present
+  build does not force scene style geometry flat; the wiring is a follow-up,
+  not an implemented rule.
 
 ## References
 
@@ -436,3 +458,8 @@ follows. Each gap names what would have to land, not merely that it is missing.
   anchors, hover dispatch, and button routing.
 - [bitty#2785](https://github.com/bitty-terminal/bitty/issues/2785) — the
   `terminal`-slot scene host.
+- [bitty#3175](https://github.com/bitty-terminal/bitty/pull/3175) — the landed
+  `style` table on the `terminal`-slot rich reader (merged `a64c283c`).
+- [bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176) — review
+  follow-ups for that landing, including border composition, the silent
+  band/overlay tolerance, and safe-mode flattening.
