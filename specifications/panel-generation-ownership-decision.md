@@ -229,6 +229,26 @@ sidebar_order: 87
 > not change any rule, status, residual, or row in this record; see
 > [Reload ownership](#reload-ownership-adr-0020) for the division of authority
 > between the two documents.
+>
+> The 2026-11-16 sync resolves the three blocking findings the fourth review
+> left — `B-2`, `B-5`, and `B-6` — against `bitty` `origin/main` `631f1f9c`
+> (2026-11-16), and records each with its file:line evidence and the test that
+> exercises it in
+> [Fourth-review findings](#fourth-review-findings-b-2-b-5-b-6). `A.7`'s
+> identifier citations now match that revision; `Security review` item 7 no
+> longer claims the binding is written only at the reload edge, because the
+> create path has written the first binding since `776631dd`; and item 7's
+> unclaimed-row list now matches residual `9` after `5cb706f2` homed `PGO-6`,
+> `PGO-9`, and `PGO-13`. Three suites were executed for this sync rather than
+> read: `panel_generation_ownership` 15 passed, `panel_grant_ceiling` 19
+> passed, and the `bitty-terminal` `startup_panel_create_backend` group 6
+> passed, with no failures. None of this promotes the record. `status` stays
+> `draft`: [ADR 0020](#reload-ownership-adr-0020) is itself `status: draft` with
+> project-initiator acceptance outstanding, no follow-up security sign-off is
+> recorded, residuals `8` and `10` remain BLOCKED-ON-CONTRACT, the restore path
+> stays open under `RFC-OQ-9`, and `PGO-15` still has no test home. The record
+> accepts nothing, promotes nothing to **Verified** or **Compatible**, changes
+> no accepted text, and does not describe shipped behaviour.
 
 ## Purpose and scope
 
@@ -656,20 +676,53 @@ last_ended.is_some()`) guards both writes: the tombstone through
 
 - **(g) The `None`-predecessor adoption rule belongs in the OQ record, not only
   in a test comment.** After an epoch edge the predecessor owner is `None` — the
-  field's contract (`crates/bitty-runtime/src/registry/panel.rs:641-644`, field
-  at `:645`) — so the entry fence in `rebind_panel` has no owner to compare and
-  admits a bind from any plugin (`:3819`, with the comment at `:3819-3826`
-  naming `B.6`). The ceiling that bind receives is the epoch edge's tombstone —
-  the row the host wrote before any controller existed — and not another
-  plugin's grant set: `capture_rebind_source` (`:3431`) reads it on the
-  `last_controller_generation` branch (`:3470-3498`) and compares it against the
-  record's retained pair. That is consistent with both the field's doc and the
-  fence's doc, but the rule it implies — a `None` predecessor admits any owner —
+  field's contract (`crates/bitty-runtime/src/registry/panel.rs:634-649`, field
+  at `:650`) — so the entry fence in `rebind_panel` (`:3848`) has no owner to
+  compare and admits a bind from any plugin (fence at `:3924-3940`, with the
+  comment at `:3928-3931` naming `B.6`). The ceiling that bind receives is the
+  epoch edge's tombstone — the row the host wrote before any controller existed
+  — and not another plugin's grant set: `capture_rebind_source` (`:3535`) reads
+  it on the `last_controller_generation` branch (`:3552-3601`) and compares it
+  against the record's retained pair. That is consistent with both the field's
+  doc and the fence's doc, but the rule it implies — a `None` predecessor
+  admits any owner —
   is the cross-plugin adoption question
   [Decision B](#decision-b-identity-and-the-restore-key) item 6 leaves undecided.
   It is recorded here as a note that needs an owner decision where `OQ-084` is
   answered; this revision does not decide it, and no implementer should read a
   rule out of it.
+
+### Fourth-review findings `B-2`, `B-5`, `B-6`
+
+The fourth independent review (`bitty-docs`
+`docs/security/panel-generation-ownership-fourth-review.md`, verdict
+`NEEDS-FIX`) left three blocking findings. Each is resolved below against
+`bitty` `origin/main` `631f1f9c` (2026-11-16), and every mechanism claim in the
+table was exercised by the test named beside it rather than only read.
+"Resolved" means the record no longer asserts something the tree contradicts
+and, where the finding was about the matrix, the row now fails an
+implementation carrying the defect. It is not a conformance claim against this
+record, promotes nothing to **Verified** or **Compatible**, and does not
+describe shipped behaviour.
+
+| Finding | What the review rejected                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Code evidence at `631f1f9c`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Test exercise at `631f1f9c`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status                                                                      |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `B-2`   | `A.7` claimed no `WorkspaceId` was reachable from `Runtime`, that `WorkspaceSlot` carried no id, and that `TerminalRegistry::create_workspace` was the only minter — all false at the review's revision — while the create path still passed `None`, so the record's `E_UI_UNAVAILABLE` sentence described a mapping that did not exist.                                                                                                                                                                                    | `WorkspaceSlot.id` `crates/bitty-runtime/src/runtime/workspaces.rs:80`; `Runtime::mint_workspace_id` `:296`; `active_workspace_id` `:256`; `focused_workspace_id` `:278`. `TerminalRegistry::create_workspace` `crates/bitty-runtime/src/registry/terminal.rs:342` still mints from its own `next_workspace_raw` (`:26`) and its callers are tests, so it remains a second counter, neither bridged nor retired — the record says so. Create backend `startup_panel_create_backend` `crates/bitty-terminal/src/plugin_runtime.rs:701` reads the Core-published `focused_workspace` cell, returns `E_UI_UNAVAILABLE` at `:723` before any allocation, and calls `create_panel(parsed, Some(workspace))` at `:729`; the first binding is written through `rebind_panel` at `:746-755`, and a refused bind disposes the record it allocated (`:759`). `PanelError` still carries no `E_UI_UNAVAILABLE` variant, so the mapping stays at the bridge seam, as the row states.                     | `crates/bitty-runtime/tests/panel_workspace_identity.rs:32` `focused_workspace_id_resolves_the_presented_workspace`, `:138` `plugin_workspace_focus_input_never_supplies_the_id`, `:187` `the_resolved_id_is_the_panel_registry_bucket_key`; create path `crates/bitty-terminal/src/plugin_runtime.rs:3407` `startup_panel_create_backend_fails_closed_without_a_presented_workspace` (asserts `E_UI_UNAVAILABLE` at `:3425`) and `:3300` `startup_panel_create_backend_allocates_registry_records`.                        | Resolved 2026-11-16                                                         |
+| `B-5`   | Three sub-claims against the first merged retained-ceiling implementation: (1) a missing ceiling granted the whole successor resolution instead of refusing, because `PanelRecord` had no last-controller discriminator; (2) `dispose_panel` kept the tombstone, contradicting `A.2`; (3) the table was capped at the absolute `MAX_RETAINED_GRANT_CEILINGS = 64` and evicted the lowest `PanelId`, so a long-lived live panel could lose its ceiling and a successor could then take the `T-25` authority carry-over path. | (1) `PanelRecord.last_controller_generation` `crates/bitty-runtime/src/registry/panel.rs:633`; `PanelError::CeilingLost` `:170`; `capture_rebind_source` `:3535` refuses with `CeilingLost` when a live row survives with no binding after a predecessor ended (`:3566-3575`), when a predecessor is named and the tombstone is absent (`:3577-3586`), and when the tombstone's owner or generation does not match (`:3591-3600`). (2) `dispose_panel` `:2137` resolves the `(owner, panel)` key and removes the tombstone at `:2233-2235`. (3) `retain_grant_ceiling` `:3463` sizes the table from the instance's configured `max_panels_per_window` clamped by `MAX_RETAINED_GRANT_CEILINGS` (`:3469-3472`, the constant now aliasing `MAX_PANELS_PER_WINDOW` at `:1273`), replaces the panel's own prior entry, and returns `ResourceExhausted` at `:3480-3486` — "refusing to evict a live panel's ceiling". No eviction path remains in the file.                                       | `crates/bitty-runtime/tests/panel_grant_ceiling.rs:178` `panel_disposal_drops_the_retired_ceiling_with_the_container`, `:255` `an_absent_predecessor_is_not_an_empty_ceiling`, `:277` `an_empty_predecessor_ceiling_is_a_real_ceiling`, `:354` `a_live_row_on_an_unbound_record_is_refused_not_consumed`, `:467` `retired_ceilings_are_bounded_by_live_panels_and_never_evicted`, `:510` `many_panel_edges_do_not_evict_a_long_lived_panels_ceiling`, `:613` `a_panels_next_edge_replaces_its_own_tombstone_across_owners`. | Resolved 2026-11-16                                                         |
+| `B-6`   | `PGO-18` named a narrowing with no widening, so an implementation that never wrote a tombstone and granted `R` whole produced the same observable set and passed; `PGO-7` named no no-ceiling implementation and required no widening; `PGO-22`'s refusal clause was embedded in a row whose set assertion could not discriminate; `PGO-23` named no retained-ceiling accessor.                                                                                                                                             | The four rows now carry the rejecting setup: `PGO-7` ([test matrix](#decision-f-required-test-matrix)) runs both edges with a `panel.overlay` widening outside the predecessor set and fails "an implementation that ignores the ceiling and grants `R` whole" and "one that reads only a live row and treats the reload's missing row as no ceiling"; `PGO-18` uses `R = {panel.create, panel.provider}` against a predecessor holding `{panel.create, panel.focus, panel.overlay}` and requires the widening to be denied without consent; `PGO-22` is four named sub-cases, including (c) the empty tombstone committing `∅` and (d) the `CeilingLost` refusal with no usable source; `PGO-23` names `retained_grant_ceiling(PanelId)` and `retained_grant_ceiling_count()`. Backing accessors: `retained_grant_ceiling` `crates/bitty-runtime/src/registry/panel.rs:3234`, `last_controller_generation` `:3293`, `retained_grant_ceiling_count` `:3412`, `unbind_release_count` `:3431`. | The registry behaviours the sub-cases assert are exercised by `crates/bitty-runtime/tests/panel_grant_ceiling.rs:277`, `:255`, `:354`, and `:467`; `PGO-22`(a)–(d) and the other matrix rows are still proposals, not named tests — `PGO-15` remains without a home in `crates/bitty-runtime/tests/panel_generation_ownership.rs` (follow-up `(d)`), and `PGO-4`, `PGO-5`, `PGO-11`, and `PGO-20` remain unclaimed per residual `9`.                                                                                        | Resolved in text 2026-11-16; row-to-test homes stay tracked by residual `9` |
+
+What these resolutions do not do, and why the record's own status does not
+move, is stated once here so no reader infers acceptance from this table:
+`B-2`, `B-5`, and `B-6` were defects in the record's factual text and its test
+wiring, and correcting them clears the fourth review's blocking list — it does
+not supply the owner acceptance, the follow-up security sign-off, or the
+unclaimed matrix rows that [Acceptance criteria](#acceptance-criteria) and
+[P0 Review Sign-off](#p0-review-sign-off) require. The owner-level decision
+lives in [ADR 0020](#reload-ownership-adr-0020), which is itself
+`status: draft` with project-initiator acceptance outstanding. Residuals `8`
+(the `panel.overlay` verb grammar) and `10` (the persistence contract) stay
+BLOCKED-ON-CONTRACT, the restore path stays open under `RFC-OQ-9`, and the
+permission-diff consent record the bind takes is still empty in production.
 
 ### Code grounding
 
@@ -679,7 +732,14 @@ revision; the residual ledger and the landed changes were re-read there, and
 the release, restore, and lifecycle rows keep the revisions they name. The rows
 this sync moved — residual `1`, `5`, and `9`, follow-ups `(e)` and `(f)`, and
 the two entries it adds to the landed table — were re-read at `ec1481f9`
-(2026-11-15).
+(2026-11-15). The
+[fourth-review resolution table](#fourth-review-findings-b-2-b-5-b-6) was read
+and executed at `631f1f9c` (2026-11-16): `cargo test -p bitty-runtime --test
+panel_generation_ownership` ran 15 tests with 0 failures, `cargo test -p
+bitty-runtime --test panel_grant_ceiling` ran 19 with 0 failures, and `cargo
+test -p bitty-terminal --bin bitty startup_panel_create_backend` ran 6 with 0
+failures. Every other row keeps the revision it names; line numbers drift and
+the file path is the durable citation.
 Primary files:
 `crates/bitty-runtime/src/scene_host.rs`,
 `crates/bitty-runtime/src/plugin_runtime/services.rs`,
@@ -894,22 +954,23 @@ controller binding are generation-owned and ephemeral**.
    it fails only when Core has no focused view to read.
 
    **The identity that names that workspace exists in the runtime, and the
-   create path now uses it.** At `bitty` `origin/main` revision `cec83552`
-   (2026-11-05), `WorkspaceSlot` carries `pub id: WorkspaceId`
-   (`crates/bitty-runtime/src/runtime/workspaces.rs:75`), minted once by
-   `Runtime::mint_workspace_id` (`:282`) when the slot is created and never
-   reused. `Runtime::active_workspace_id` (`:251`) always answers for the
-   presented workspace, and `Runtime::focused_workspace_id` (`:268`) reads
+   create path now uses it.** At `bitty` `origin/main` revision `631f1f9c`
+   (2026-11-16; first read at `cec83552`, 2026-11-05), `WorkspaceSlot` carries
+   `pub id: WorkspaceId`
+   (`crates/bitty-runtime/src/runtime/workspaces.rs:80`), minted once by
+   `Runtime::mint_workspace_id` (`:296`) when the slot is created and never
+   reused. `Runtime::active_workspace_id` (`:256`) always answers for the
+   presented workspace, and `Runtime::focused_workspace_id` (`:278`) reads
    `focused_view()`, verifies the leaf is in the live layout, and returns the
    presented slot's id or `None`. The id lives on the same `WorkspaceSlot` that
    holds `layout` and `focus`, not on an index-keyed side table.
    `TerminalRegistry::create_workspace`
-   (`crates/bitty-runtime/src/registry/terminal.rs:336`) still mints from its
-   own `next_workspace_raw` counter, but its callers are tests; it remains a
-   separate counter, neither bridged to the slot id nor retired, and no create
-   path may consult it.
-   `TerminalRegistry::active_workspace` (`:393`) and `set_active_workspace`
-   (`:402`) still have no production callers. The earlier claim that no
+   (`crates/bitty-runtime/src/registry/terminal.rs:342`) still mints from its
+   own `next_workspace_raw` counter (`:26`), but its callers are tests; it
+   remains a separate counter, neither bridged to the slot id nor retired, and
+   no create path may consult it.
+   `TerminalRegistry::active_workspace` (`:399`) and `set_active_workspace`
+   (`:408`) still have no production callers. The earlier claim that no
    `WorkspaceId` is reachable from `Runtime`, that `WorkspaceSlot` carries no
    id, and that `TerminalRegistry::create_workspace` is the only minter is
    withdrawn: it was true at the previous pin and is false at this revision.
@@ -1657,10 +1718,15 @@ decides what authority survives a generation change.
    against the class this record names (follow-up `(d)`).
 7. The record states where enforcement does not exist. `PanelError` now
    carries both typed refusals (`1567da45`) and the grant table is keyed by the
-   controller generation when one is bound (`c526f81e`), but the binding is
-   written only by `rebind_panel`'s phase 2 step 2, whose only production
-   caller is the reload edge's port, so a panel that has not reloaded still
-   presents the allocation epoch as its only key. `create_panel_overlay` has a production writer since
+   controller generation when one is bound (`c526f81e`). Two production writers
+   now write that binding, so a created panel is no longer keyed by its
+   allocation epoch: `rebind_panel`'s phase 2 step 2 from the reload edge's
+   port, and the `bitty.panel.create` backend, which writes the container's
+   first binding from the creating generation
+   (`crates/bitty-terminal/src/plugin_runtime.rs:746-755`, since `776631dd`,
+   follow-up `(e)`). What is still missing is the consent side, not the
+   binding: the create path passes an empty consent set, so every widening is
+   denied there rather than granted (D.1). `create_panel_overlay` has a production writer since
    `3311892f`, but only for a generation that owns a `terminal`-slot scene
    panel, and the plugin-facing `panel.overlay` verb is still absent from the
    tree — its grammar and proposed bounds live only in a draft candidate in
@@ -1668,15 +1734,19 @@ decides what authority survives a generation change.
    (`2431ad49`), and a placeholder exists (`7c50c9db`) with a production caller
    since `0f6a1c7b` — the port's `release_generation`. The seam itself implements the tombstone capture,
    the `CeilingLost` refusal, the empty-versus-missing distinction, live-row
-   precedence, and the live-panel capacity bound with fail-closed insertion
-   (`6bc0c5fa`, `B-5`), and since `7dd0a8ec` the four-family unbind release
+   precedence, and the configured `max_panels_per_window` capacity bound that
+   refuses rather than evicts (`6bc0c5fa`, `B-5`; the three sub-claims are
+   resolved in the
+   [fourth-review table](#fourth-review-findings-b-2-b-5-b-6)), and since
+   `7dd0a8ec` the four-family unbind release
    with its `GenerationReleaseRecord`/`unbind_release_count` accessors and the
    `(WorkspaceId, PersistentId)` restore key with the `StableIdentity`
-   refusal; the create path is wired at `b0d86eee`. `PGO-15` still has no row,
-   `PGO-12` is half-satisfied (the
+   refusal; the create path is wired at `b0d86eee`. `PGO-15` still has no test
+   home, `PGO-12` is half-satisfied (the
    refusal is landed and tested, but no production caller restores a session),
-   and `PGO-4`, `PGO-5`, `PGO-6`, `PGO-9`, `PGO-11`, `PGO-13`, and `PGO-20`
-   are listed by the matrix as unclaimed rather than implied covered. A reader
+   and `PGO-4`, `PGO-5`, `PGO-11`, and `PGO-20` — the set residual `9` names
+   after `5cb706f2` homed `PGO-6`, `PGO-9`, and `PGO-13` — are listed by the
+   matrix as unclaimed rather than implied covered. A reader
    cannot mistake this section for a statement of current
    safety.
 
