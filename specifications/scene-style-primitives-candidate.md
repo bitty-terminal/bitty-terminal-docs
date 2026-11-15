@@ -115,20 +115,26 @@ and does not widen it.
 
 ## Problem statement
 
-Today an extension declares `fg`/`bg` token names and `bold` on `UiNode`
-trees, and the scene model offers `Block { border: Option<Border> }` with a
-width in cells and a producer-supplied colour string. Neither surface is a
-style system:
+Until the additive `style` key landed ([bitty#3175](https://github.com/bitty-terminal/bitty/pull/3175),
+merged `a64c283c`), an extension declared `fg`/`bg` token names and `bold` on
+`UiNode` trees, and the scene model offered `Block { border: Option<Border> }`
+with a width in cells and a producer-supplied colour string. Neither surface
+was a style system:
 
-- there is no spacing, radius, or stroke vocabulary, so extension content
-  cannot express visual hierarchy beyond coloured text;
-- `Border.color` is an unbounded producer string rather than a theme-resolved
-  value, so a producer can smuggle an arbitrary colour, and the string counts
-  against the text budget without a resolution rule;
-- there is no documented cap or failure mode for style-like values, so any
-  future property risks silent clamping or an accidental CSS-like surface;
-- there is no stated precedence between a theme's content style and the
+- there was no spacing, radius, or stroke vocabulary, so extension content
+  could not express visual hierarchy beyond coloured text;
+- `Border.color` was an unbounded producer string rather than a
+  theme-resolved value, so a producer could smuggle an arbitrary colour, and
+  the string counted against the text budget without a resolution rule;
+- there was no documented cap or failure mode for style-like values, so any
+  future property risked silent clamping or an accidental CSS-like surface;
+- there was no stated precedence between a theme's content style and the
   extension's own declaration.
+
+That gap is now closed on one surface, as **`Implemented`-only** evidence: the
+closed set below is hosted on the `terminal`-slot `ui.rich` reader (see
+[Extension wire half](#extension-wire-half)). This record stays a draft
+candidate and promotes nothing; the acceptance vehicle is still open.
 
 At the same time, terminal cells and the scene budget make a full CSS model
 neither feasible nor desirable: no transforms, no shaders, no per-node
@@ -186,7 +192,8 @@ Resolution is per field, from lowest to highest:
    content. The extension may style its own content; it cannot style Core
    chrome or another plugin's content.
 4. **`bitty --safe`** — forces every geometry primitive flat (`0`, no
-   border), regardless of the layers below.
+   border), regardless of the layers below. This row is specified, not wired:
+   see [Extension wire half](#extension-wire-half).
 
 Rules:
 
@@ -245,12 +252,16 @@ Rules:
 
 ## Extension API shape
 
-The wire shape is a closed table of typed fields. It is candidate direction,
-not a supported key today; the accepted Plugin API v1 remains unchanged.
+The wire shape is a closed table of typed fields. It ships as an
+**additive-minor optional** key on the `terminal`-slot `ui.rich` reader
+([bitty#3175](https://github.com/bitty-terminal/bitty/pull/3175)); the accepted
+Plugin API v1 required surface is unchanged, and shipping the key promotes
+none of the candidate spellings below.
 
 ```lua
--- Candidate only. Not shipped, not supported, and not a compatibility promise.
-bitty.ui.mount("bottom", {
+-- Implemented-only on the `terminal` slot. Not accepted, not a compatibility
+-- promise. A band or overlay mount accepts `style` and ignores it.
+bitty.ui.mount("terminal", {
   kind = "Row",
   style = {
     padding = 2,          -- integer, cells, 0..32
@@ -280,11 +291,15 @@ Rules:
    capture, clipboard, search, selection, terminal state, or the
    accessibility tree's content. A decoration never hides text from the
    accessibility tree.
+6. On a band or overlay mount the key is accepted and ignored: the accepted
+   additive-minor rule tolerates an unknown optional field there, and the v1
+   tree is unchanged by its presence. The declaration takes no effect, and no
+   diagnostic reports the omission yet (see [Open points](#open-points)).
 
 ### Scene-layer authoring (implemented candidate evidence)
 
-The scene model already accepts the vocabulary, so an extension author can
-express it today at the `RichBlock` layer even though no Lua key ships. The
+The scene model accepts the vocabulary directly, so an extension author can
+express it at the `RichBlock` layer without going through the Lua key. The
 kind is additive: a v1 producer never emits it, and a consumer that predates
 it still sees the same v1 kinds and the bounded `Unknown` fallback.
 
@@ -381,12 +396,72 @@ not an acceptance claim:
 
 Remaining for a successor: wiring the live theme palette into
 `ScenePaintStyle` (the default palette resolves the Bitty Dark reference
-roles), and the wgpu batch-count measurement for a styled scene. The
-extension API (`ui.rich`) remains v1 and ships no style key.
+roles), and the wgpu batch-count measurement for a styled scene.
 
 If a future renderer cannot batch radius/border without a new pipeline, that
 is a paint-path decision for the owning implementation task; this record does
 not claim a batching result.
+
+### Extension wire half
+
+The `style` table is no longer scene-model-only. [bitty#3175](https://github.com/bitty-terminal/bitty/pull/3175)
+(merged `a64c283c`) hosts the closed four-key table on the `terminal`-slot
+`ui.rich` reader as an **additive-minor optional** field. Everything below is
+**`Implemented`-only** evidence: no acceptance record adopts it, no status is
+promoted, and no compatibility promise attaches to it.
+
+- **Surface.** Any rich kind may carry `style`; a non-flat declaration lowers
+  to the additive `SceneNode::Styled` wrapper through
+  `crates/bitty-runtime/src/scene_bridge.rs` (`scene_style_of`). It is a
+  modifier, not a tenth kind: `UiRichNode::kind()` still reports the wrapped
+  kind and `UI_RICH_NODE_KINDS` is unchanged. A flat declaration lowers to no
+  wrapper, so it adds no node and paints nothing.
+- **Caps as implemented.** Padding `0..=32` cells, corner radius `0..=16`
+  physical px, border `0..=16` physical px, and a border token from the closed
+  six-name `content.*`/`state.*` set. Boundary values are accepted, one past a
+  cap is a typed `E_UI_COMPONENT_INVALID` naming both values, and the scene
+  model re-checks the same caps at admission (`RichBlock::new`). There is no
+  clamp and no best-effort default.
+- **Unknown-property tolerance.** On a band or overlay mount the key is
+  accepted and ignored, because the accepted additive-minor rule tolerates an
+  unknown optional field there
+  (`crates/bitty-runtime/tests/lua_ui_parity.rs`,
+  `unknown_properties_are_tolerated`). Nothing paints, and the v1 tree keeps
+  the same node count, text bytes, and retained strings as it would without
+  the key. The declaration is inert, not refused.
+- **Accounting.** A non-flat style is one node and one depth level under
+  SCN-1/SCN-2 on top of the content it styles, which is why a tree at the
+  ceiling is refused rather than admitted over budget. Style values charge no
+  SCN-3 text bytes and, resolving to an enum token, no SCN-4 string bytes.
+- **Safe mode.** The declaration surface is now **plugin-reachable**: a plugin
+  can put a non-flat style into the scene path, so the `bitty --safe` row of
+  the resolution order below acts on real content instead of a hypothetical
+  one. The flattening itself is not wired in this build — `bitty --safe` does
+  not force scene style geometry flat today, bitty#3175 left that path
+  unchanged, and this record does not claim it. It is an open follow-up (see
+  [Open points](#open-points)).
+
+Evidence paths: `crates/bitty-lua/src/ui_style.rs` (`UI_STYLE_FIELDS`,
+`UI_STYLE_MAX_PADDING_CELLS`, `UI_STYLE_MAX_RADIUS_PX`,
+`UI_STYLE_MAX_BORDER_PX`, `parse_node_style`, `UiNodeStyle::validate`),
+`crates/bitty-lua/src/ui_rich.rs` (`UiRichNode::Styled` and the post-walk depth
+re-check), `crates/bitty-runtime/src/scene_bridge.rs` (`scene_style_of`), and
+`crates/bitty-runtime/tests/lua_ui_style_vocab.rs` (14 integration tests
+through the shipped chain).
+
+Two follow-ups from the review of that landing ([bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176))
+are recorded here as gaps, not claimed as done:
+
+- **Border composition is undecided.** `Block { border }` (cells, cap `8`) and
+  `style.border` (physical px, cap `16`) can both be set on one node, and both
+  paint: a rounded ring plus the four-op cell frame. No composition rule and
+  no typed refusal exists yet, and this record prescribes neither.
+- **The band/overlay tolerance is silent.** A plugin author who writes `style`
+  on a band or overlay mount gets no signal that it was dropped. A one-shot
+  non-fatal diagnostic is tracked; it is not implemented.
+
+Both belong to the owning code repository; this record records the boundary
+rather than describing a behaviour nobody has implemented.
 
 ## Accessibility, input, and safety
 
@@ -407,26 +482,31 @@ not claim a batching result.
   content-token contrast remains an owner-pending theme concern. If a named
   token is absent, resolution fails closed rather than substituting an
   unthemed colour.
-- **Safe mode.** `bitty --safe` forces all style geometry flat, so extension
-  content degrades to plain themed text without a second policy path.
+- **Safe mode.** The rule is that `bitty --safe` forces all style geometry
+  flat, so extension content degrades to plain themed text without a second
+  policy path. The declaration surface this rule governs is now
+  plugin-reachable (the wire key ships), but the flattening is not wired in
+  the present build: `bitty --safe` does not force plugin-declared scene style
+  flat today. The rule stays specified and unimplemented, and it is an open
+  follow-up rather than a shipped behavior.
 - **No hot path.** No PTY read, VT parse, damage computation, keystroke, or
   render-per-frame path invokes the extension runtime for style. Resolution
   happens at mount/update, not per frame.
 
 ## Security review
 
-| Concern                     | Control                                                                                  |
-| --------------------------- | ---------------------------------------------------------------------------------------- |
-| Arbitrary styling surface   | Closed four-key vocabulary; unknown and duplicate keys fail closed.                      |
-| Untrusted colour input      | Token-only colour from a closed content set; literals and Core chrome tokens rejected.   |
-| Unbounded input             | Documented inclusive caps on every integer; typed overflow errors; no clamp.             |
-| Renderer or platform escape | No handle, path, image, shader, pipeline, or function crosses the wire form.             |
-| Privilege escalation        | Presentation data scoped to owned content; no capability, command, or input binding.     |
-| Hot-path execution          | Pure cold-path resolution; no plugin VM, callback, or per-frame script.                  |
-| Silent degradation          | Missing token, bad type, duplicate key, and overflow all reject with a typed diagnostic. |
-| Safe mode                   | All geometry forced flat, independent of declarations.                                   |
-| Resource exhaustion         | O(1) bounded values per node; SCN-1..SCN-5 unchanged; no new collection or decode path.  |
-| Accessibility regression    | Paint-only changes; content, roles, order, selection, and search are untouched.          |
+| Concern                     | Control                                                                                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Arbitrary styling surface   | Closed four-key vocabulary; unknown and duplicate keys fail closed.                                                                                    |
+| Untrusted colour input      | Token-only colour from a closed content set; literals and Core chrome tokens rejected.                                                                 |
+| Unbounded input             | Documented inclusive caps on every integer; typed overflow errors; no clamp.                                                                           |
+| Renderer or platform escape | No handle, path, image, shader, pipeline, or function crosses the wire form.                                                                           |
+| Privilege escalation        | Presentation data scoped to owned content; no capability, command, or input binding.                                                                   |
+| Hot-path execution          | Pure cold-path resolution; no plugin VM, callback, or per-frame script.                                                                                |
+| Silent degradation          | Missing token, bad type, duplicate key, and overflow all reject with a typed diagnostic.                                                               |
+| Safe mode                   | All geometry forced flat, independent of declarations. Specified rule; the present build does not wire the flattening for plugin-declared scene style. |
+| Resource exhaustion         | O(1) bounded values per node; SCN-1..SCN-5 unchanged; no new collection or decode path.                                                                |
+| Accessibility regression    | Paint-only changes; content, roles, order, selection, and search are untouched.                                                                        |
 
 This record adds no capability identifier and no fourth security domain. Any
 future capability for plugin-supplied appearance remains OQ-044 and follows
@@ -507,7 +587,10 @@ this record and are not claimed as done.
   the paint consumer that would apply these operations is that path's
   decision, not this record's.
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
-  — unchanged; a style table would be a future additive surface.
+  — its required surface is unchanged; `style` ships as an additive-minor
+  optional field on the `terminal`-slot rich reader, and a band or overlay
+  mount tolerates and ignores it. Promoting the spellings into that accepted
+  surface stays a successor decision.
 - [UI Runtime Candidate](ui-runtime-candidate.md) — the owner-pending runtime
   RFC is the acceptance vehicle for the primitive set and precedence.
 
@@ -543,6 +626,20 @@ this record and are not claimed as done.
 8. **Schema placement.** Whether style is a new `SceneNode` field, a wrapper,
    or a per-block attribute is a Rich Presentation RFC minor-version
    decision.
+9. **Border composition.** `Block { border }` (cells, cap `8`) and
+   `style.border` (physical px, cap `16`) can both be set on one node and both
+   paint, so one node can carry a rounded ring and a four-op cell frame at
+   once. Whether the pair composes, or is refused as a typed error, is
+   undecided; `bitty` issue
+   [bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176) tracks it
+   in the owning repository. Until that decision, nothing in this record
+   describes a composition rule.
+10. **Safe-mode flattening of plugin-declared style.** The `bitty --safe` row
+    of the resolution order is specified but not wired: the declaration
+    surface is plugin-reachable, and the present build does not force
+    plugin-declared scene style flat. bitty#3175 left the path unchanged;
+    [bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176) tracks
+    the follow-up.
 
 ## Acceptance criteria
 
@@ -580,3 +677,8 @@ This candidate can be accepted only when:
 - [RFC-0002 Panel Animations](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md)
 - [UI Extensibility Architecture](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/architecture/ui-extensibility-architecture.md)
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
+- [bitty#3175](https://github.com/bitty-terminal/bitty/pull/3175) — the landed
+  `style` table on the `terminal`-slot rich reader (merged `a64c283c`).
+- [bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176) — review
+  follow-ups for that landing: border composition, the silent band/overlay
+  tolerance, and safe-mode flattening.
