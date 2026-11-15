@@ -425,6 +425,9 @@ follows. Each gap names what would have to land, not merely that it is missing.
   `SceneNode` gallery.
 - [Theme Token Contract (Candidate)](theme-token-contract-candidate.md) — token
   namespaces behind `fg`/`bg`.
+- [Tabs Scope Decision](tabs-scope-decision.md) — the landed `core.tab:*` record:
+  `tabline` now names Core tab-projection state with no host surface, and `PW-10`
+  stays candidate.
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
   — the accepted slot set, node subset, and `ui.overlay`/`ui.present` split.
 - [bitty#2191](https://github.com/bitty-terminal/bitty/issues/2191) — the

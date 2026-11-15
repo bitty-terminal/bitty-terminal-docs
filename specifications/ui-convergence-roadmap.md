@@ -198,6 +198,8 @@ decision changes. The security review above records that disposition.
   open items.
 - [Panel Placement Decision](panel-placement-decision.md) — placement direction
   blocking three successors.
+- [Tabs Scope Decision](tabs-scope-decision.md) — the landed `core.tab:*` Core
+  verb record, its Stack-free projection, and the residual that it is unhosted.
 - [Overlay Ownership Reconciliation](overlay-ownership-reconciliation.md) —
   overlay boundary for the Scene RFC.
 - [Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md) —
