@@ -158,17 +158,24 @@ design record (issue #688) so the candidate text has one canonical home;
 `bitty@da63e42e`: `top`/`bottom` bands and the `overlay` host are implemented,
 `terminal` is served by the Core terminal-attached scene host (`bitty.ui.mount`
 reads the v2 rich vocabulary and attaches a `Scene` to the focused leaf,
-`bitty` #2799, CTX-1641), while `left`, `right`, and `tabline` have no host and
-fail closed at mount. The envelopes below remain candidate.
+`bitty` #2799, CTX-1641). `left` and `right` are served by the column band host
+on the same four-edge geometry (see
+[Landed surface of the vertical bands](#landed-surface-of-the-vertical-bands-verified-2026-11-16-at-a8abf31c));
+`tabline` still has no host and fails closed at mount. The envelopes below
+remain candidate. _Corrected 2026-11-16 at `bitty@a8abf31c`: this paragraph
+said `left`, `right`, and `tabline` all had no host and failed closed. The
+vertical band host landed in `bitty#3167` (`1994f6e6`) with input routing in
+`bitty#3172` (`76485e80`), and `ui.state` reporting for a painted column band
+in `bitty#3181` (`a8abf31c`); the `tabline` half of the sentence still holds._
 
-| Slot                                 | Envelope                                                                                                                                                                                                            | Conflict resolution                                                                                                                                             |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `top`, `bottom`                      | Scene bounds only (bridge depth 16, `UI_MAX_DEPTH`, deliberately stricter than the accepted `SCN-2 = 32`); no plugin-set geometry; band is painted while a surface is mounted                                       | Host layout owns placement and decoration; geometry conflicts are impossible by construction                                                                    |
-| `left`, `right`                      | Not hosted: this Core build has no vertical band host, so no vertical band geometry is reserved                                                                                                                     | Mount fails closed with the typed runtime error `E_UI_UNAVAILABLE`; no block is stored, so a slot can never be admitted and then silently unpainted             |
-| `terminal`                           | Core scene host: one attached `Scene` on the focused leaf, bounded by `SCN-1..5` and composited inside the leaf content rect; the grid path stays authoritative                                                     | A second plugin generation cannot displace an attached scene (`E_UI_UNAVAILABLE`); suspend, dispose, and reload release the scene, the bind, and the Core panel |
-| `overlay`                            | Shipped: text truncated at char boundary to 128; at most 4 non-modal plus 1 modal per window (`4+1`)                                                                                                                | Shipped fail-closed typed errors (`OverlayBusy`, `TooManyOverlays`); no silent eviction, no last-wins replacement                                               |
-| `tabline`                            | Shipped claim semantics: the canonical workspace claim is `workspaceline`; `tabline` survives only as a deprecated alias (removal at or after v0.2.0)                                                               | A second claimant is rejected fail-closed with a diagnostic; the incumbent keeps the slot; a `tabline` mount itself fails closed with `E_UI_UNAVAILABLE`        |
-| `palette` (effective, via `overlay`) | Candidate (formerly shipped; now in the Lua `palette` plugin): per-panel command bound 32, query and entry text within the 128-char overlay bound, duplicates rejected; at most one effective picker per invocation | A second concurrent picker invocation is rejected or queued behind the active one; overlay exhaustion still fails closed per the `4+1` rule                     |
+| Slot                                 | Envelope                                                                                                                                                                                                                                                                             | Conflict resolution                                                                                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `top`, `bottom`                      | Scene bounds only (bridge depth 16, `UI_MAX_DEPTH`, deliberately stricter than the accepted `SCN-2 = 32`); no plugin-set geometry; band is painted while a surface is mounted                                                                                                        | Host layout owns placement and decoration; geometry conflicts are impossible by construction                                                                                                           |
+| `left`, `right`                      | Column band: the mount is admitted, the block is stored, the granted columns are reserved out of the layout container, and the band paints and routes input. A `Column`/`List` root stacks one content row per direct child, `Text` is one row, and a `Row` root is refused at mount | Core owns the granted column range, so two column bands never overlap and a band is clipped to its share; a `Row` root fails closed with the typed `E_UI_COMPONENT_INVALID` before any block is stored |
+| `terminal`                           | Core scene host: one attached `Scene` on the focused leaf, bounded by `SCN-1..5` and composited inside the leaf content rect; the grid path stays authoritative                                                                                                                      | A second plugin generation cannot displace an attached scene (`E_UI_UNAVAILABLE`); suspend, dispose, and reload release the scene, the bind, and the Core panel                                        |
+| `overlay`                            | Shipped: text truncated at char boundary to 128; at most 4 non-modal plus 1 modal per window (`4+1`)                                                                                                                                                                                 | Shipped fail-closed typed errors (`OverlayBusy`, `TooManyOverlays`); no silent eviction, no last-wins replacement                                                                                      |
+| `tabline`                            | Shipped claim semantics: the canonical workspace claim is `workspaceline`; `tabline` survives only as a deprecated alias (removal at or after v0.2.0)                                                                                                                                | A second claimant is rejected fail-closed with a diagnostic; the incumbent keeps the slot; a `tabline` mount itself fails closed with `E_UI_UNAVAILABLE`                                               |
+| `palette` (effective, via `overlay`) | Candidate (formerly shipped; now in the Lua `palette` plugin): per-panel command bound 32, query and entry text within the 128-char overlay bound, duplicates rejected; at most one effective picker per invocation                                                                  | A second concurrent picker invocation is rejected or queued behind the active one; overlay exhaustion still fails closed per the `4+1` rule                                                            |
 
 `statusline` is not a v1 slot in the current Core build: it was removed as a
 breaking change in CTX-1140 (`bitty#1962`) and the name now fails as an unknown
@@ -191,6 +198,70 @@ under the rules above; a `left` / `center` / `right` vocabulary, if ever
 adopted, describes host-owned intra-bar regions, never additional mount
 slots. The provider interface name, version, metadata, and filtering protocol
 stay open behind a capability-gated host surface when defined.
+
+## Landed surface of the vertical bands (verified 2026-11-16 at `a8abf31c`)
+
+`left` and `right` are hosted column bands. This section records the reading so
+the envelopes above are not re-derived from the historical pin they quote.
+
+> Correction: the slot table above said `left` and `right` are "not hosted: this
+> Core build has no vertical band host, so no vertical band geometry is
+> reserved" and that a mount "fails closed with the typed runtime error
+> `E_UI_UNAVAILABLE`". That was accurate for the pin the sentence named. The
+> vertical band host landed in `bitty#3167` (`1994f6e6`), its input routing in
+> `bitty#3172` (`76485e80`), and `ui.state` reporting for a painted column band
+> in `bitty#3181` (`a8abf31c`). The superseded row is replaced, not deleted, and
+> the record's candidate status is unchanged.
+
+- **All four edges are band edges, on two axes.** `BandEdge` enumerates `Top`,
+  `Bottom`, `Left`, and `Right`, and `BAND_EDGES` holds all four in
+  construction order; `BandEdge::axis` maps the first two to `BandAxis::Row`
+  and the last two to `BandAxis::Column`
+  (`crates/bitty-runtime/src/runtime/band_slots.rs:86`, `:121`, `:130`).
+- **One placement decision covers all four.** `ui_slot_placement` returns
+  `Band(BandEdge::Left)` and `Band(BandEdge::Right)` for the vertical slots,
+  the same variant the row bands get (`band_slots.rs:154`, `:161`-`:162`).
+- **Column bands are admitted, planned, painted, and routed.** `column_band_plan`
+  turns the granted per-side budget into one `ColumnBandRect` per visible band
+  inside a disjoint column range, and `plugin_band_column_budget` reports the
+  two shares (`crates/bitty-runtime/src/runtime/band_host.rs:2007`, `:1983`);
+  `column_band_width` and `column_band_rows` hold the measure and the
+  one-row-per-child stack (`:624`, `:645`); `paint_chrome_bands` paints each
+  granted rect and `paint_band_column_rule` draws its content-edge rule
+  (`crates/bitty-runtime/src/runtime/present.rs:6260`, `:6556`); clicks resolve
+  through `plugin_band_cell_hit` and `band_line_at` (`band_host.rs:2236`,
+  `:2306`).
+- **`ui.state` agrees with the paint walk.** `slot_state_rule` returns
+  `BandVisibility` for `Left`/`Right` as well as `Top`/`Bottom`, so a painted
+  column band reports `presented = true` (`band_slots.rs:220`-`:223`, consumed
+  at `crates/bitty-runtime/src/plugin_runtime/services.rs:3360`
+  `ui_block_state`, `:3384`); `crates/bitty-runtime/tests/band_column_presented.rs`
+  and `band_four_edge_geometry.rs` drive it end to end.
+- **The scene axis is checked per edge.** A `Row` root on a column band is
+  refused at mount with `E_UI_COMPONENT_INVALID` (`band_scene_matches`
+  `band_slots.rs:241`, `band_scene_direction_error` `:257`), so the refusal is a
+  direction mismatch, never an unhosted slot.
+
+Limits that still hold at this pin — none of them a hosting gap:
+
+- `workspace.bar.edge` is not a four-edge setting. The config type carries
+  `Top` and `Bottom` only (`crates/bitty-config/src/types.rs:3225`), so a Bar or
+  rail that follows that key cannot yet be placed on a vertical edge even
+  though the band host serves both.
+- A group `anchor` resolves on row bands only: `anchored_slots` splits a root
+  `Row`'s direct children across the band width
+  (`crates/bitty-runtime/src/runtime/band_host.rs:505`), and a column band
+  stacks its children top-down instead.
+- A row band is still exactly one window row per mounted band
+  (`visible_band_count`, `band_host.rs:1907`). Only a column band stacks one
+  content row per root child.
+- A column band is clipped to its granted share: `column_band_plan` grants
+  `min(want, remaining)` per side and the band that crosses the cap takes the
+  remainder rather than vanishing (`band_host.rs:2047`-`:2065`).
+
+Geometry stays owned by the [Chrome Band Contract](chrome-band-contract-candidate.md),
+the placement table and the surface facts by the
+[Chrome Surface API](chrome-surface-api-candidate.md).
 
 ## Chrome-side consequences of the candidate UI runtime
 
