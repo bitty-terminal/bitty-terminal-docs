@@ -17,8 +17,11 @@ sidebar_order: 64
 > [bitty#1431](https://github.com/bitty-terminal/bitty/issues/1431) (the
 > workspace bar painted over terminal content). It authorizes no shipped
 > behavior, weakens no accepted source it cites, and makes no implementation
-> claim. Implementation is **planned** under separate `bitty` tasks; every type
-> name, configuration key, and constant below is a candidate spelling.
+> claim beyond its `Landed surface` section, which records what the host does
+> today at a named pin without promoting any rule here. The rest of the
+> implementation is **planned** under separate `bitty` tasks; every type name,
+> configuration key, and constant below that is not marked landed is a
+> candidate spelling.
 >
 > Partly superseded: the owner direction moves bar content to optional Lua
 > plugins. The Core-rendered `workspace` pills and the `workspace.bar.colors`
@@ -109,9 +112,15 @@ values (accepted, [Workspace Compositor](workspace-compositor.md)).
 ### Edges and thickness
 
 1. The contract defines four band edges: `top`, `bottom`, `left`, `right`.
-   Each edge holds at most one band. The v0.1 host ships `top` and `bottom`
-   only; `left` and `right` are defined here so later work adds edges without
-   changing the geometry rules.
+   Each edge holds at most one band. The host serves all four: `top` and
+   `bottom` as one-row bands, `left` and `right` as column bands that stack one
+   content row per root child, both carving their edge out of the layout
+   container. _Corrected 2026-11-16 at `bitty@0f4d64b7`: this item said the
+   v0.1 host shipped `top` and `bottom` only and that `left`/`right` were
+   defined ahead of a later revision. The vertical band host landed in
+   `bitty#3167` (`1994f6e6`) with input routing in `bitty#3172` (`76485e80`),
+   so the deferral clause is spent and only the geometry rules below still
+   apply unchanged to both axes._
 2. Band thickness is resolved to logical px by Core. A configuration value in
    rows resolves as `rows x cell height` of the chrome font at the current
    scale; a value in px is used as-is. Resolution is clamped to a Core-owned
@@ -191,8 +200,14 @@ usable = container inset by gaps_out and the accepted decoration insets,
    render order equals declaration order, `left` then `center` then `right`.
 2. Overflow follows the Status System rule: lower-priority segments truncate,
    then hide; nothing is drawn outside the band rectangle.
-3. On `left` and `right` bands (future), regions map to start, middle, and end
-   along the vertical axis.
+3. On `left` and `right` bands the vertical axis is live, and it is a stack of
+   lines rather than a `left`/`center`/`right` split: the band stacks one line
+   per direct child of its root and the region table emits one line of regions
+   per line, top-down, from the same bounded walk the row table uses. A
+   module's position on a column band is therefore its child index, not a
+   region name. _Corrected 2026-11-16 at `bitty@0f4d64b7`: this item described
+   the vertical mapping as future work; it shipped in `bitty#3172`
+   (`76485e80`) as `collect_band_regions` over root children._
 
 ### Built-in `workspace` module
 
@@ -220,9 +235,13 @@ usable = container inset by gaps_out and the accepted decoration insets,
 
 1. Lua plugins keep `bitty.ui.mount("top" | "bottom" | ...)` with `Text`,
    `Row`, `Column`, and `List` nodes. `top`/`bottom` subtrees render inside the
-   band on that edge. `left` and `right` are accepted slot names, but this
-   build has no vertical band host, so those mounts fail closed with
-   `E_UI_UNAVAILABLE` and create no band. `statusline` is not a slot: Core
+   band on that edge. `left` and `right` are served by a column band: the
+   subtree stacks one content row per direct child of a `Column`/`List` root,
+   a `Text` root is one row, and a `Row` root is refused at mount with
+   `E_UI_COMPONENT_INVALID` because a horizontal composition cannot stack down
+   a column (corrected 2026-11-16 at `bitty@0f4d64b7`; this sentence said the
+   slots fail closed with `E_UI_UNAVAILABLE`, which was true before
+   `bitty#3167` `1994f6e6`). `statusline` is not a slot: Core
    removed it in CTX-1140 (`bitty#1962`), the name fails as an unknown slot
    with `E_UI_COMPONENT_INVALID`, and a bar plugin composes status presentation
    on `bottom` instead.
@@ -243,6 +262,17 @@ usable = container inset by gaps_out and the accepted decoration insets,
    It is not a band region and does not host workspace pills.
 4. A mount never supplies coordinates, thickness, or edge; host layout owns
    placement exactly as the Lua Surface RFC states.
+5. **Band style is flat.** A band node may declare the rich `style` table
+   (`padding`, `radius`, `border`, `border_token`), because the v1 surface
+   tolerates an unknown optional field on an additive minor. The host drops it
+   and reports once per generation — a diagnostic, not a refusal, because the
+   tree is already mounted. A band paints `fg`/`bg`/`bold` only: `padding`, a
+   rounded ring, and a border width are not painted in a band. The four
+   primitives host on the `terminal` rich path
+   (`bitty#3175` `a64c283c`, tightened by `bitty#3176` `0f4d64b7`); hosting them
+   on a band is a separate accepted-extension decision and is not done here.
+   _Added 2026-11-16 at `bitty@0f4d64b7`; the earlier text said nothing about a
+   band `style` key, which was correct before it existed._
 
 ## Band interaction
 
@@ -337,7 +367,12 @@ usable = container inset by gaps_out and the accepted decoration insets,
    diagnostics.
 2. `workspace.bar.edge` accepts `left` and `right` only once a later revision
    ships vertical bands; until then those values are rejected, not silently
-   mapped.
+   mapped. _2026-11-16 at `bitty@0f4d64b7`: the host half of that condition is
+   now met (all four edges are served), but the key is still a bar-plugin key
+   with no Core runtime mapping, and the config type it parses into carries
+   only `Top` and `Bottom` — `WorkspaceBarEdge::parse` is exact and
+   fail-closed. Widening the value set is a bar-plugin or later-revision
+   decision, not something this record or the host has done._
 3. `workspace.bar.colors` (and the unmerged `workspace.bar.pill_align`) is
    superseded and will not be introduced; plugin surfaces use theme token
    style attributes under the
@@ -348,7 +383,88 @@ usable = container inset by gaps_out and the accepted decoration insets,
 4. Changes to `edge`, `size`, and `show_bar` are live-reconcilable and take
    effect through the reflow above.
 
+## Landed surface (verified 2026-11-16 at `0f4d64b7`)
+
+Re-derived symbol by symbol from the `bitty` code repository at `0f4d64b7`
+(`origin/main` has since advanced to `631f1f9c`, a test-only commit that adds
+`crates/bitty-runtime/tests/band_four_edge_geometry.rs` and changes no source
+symbol). Paths are relative to that repository. This section states what the
+band host does today; it promotes nothing and leaves the contract text above
+unchanged.
+
+| Band aspect     | What the host does today                                                                                                                                                                                                                                                                                                                             | Evidence                                                                                                                                       |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Edges           | All four are real band edges, enumerated in construction order `top`, `bottom`, `left`, `right`.                                                                                                                                                                                                                                                     | `crates/bitty-runtime/src/runtime/band_slots.rs:86` (`enum BandEdge`), `:130` (`BAND_EDGES: [BandEdge; 4]`)                                    |
+| Axis            | Each edge declares its stacking axis: `top`/`bottom` are `Row`, `left`/`right` are `Column`.                                                                                                                                                                                                                                                         | `band_slots.rs:99` (`enum BandAxis`), `:121` (`BandEdge::axis`)                                                                                |
+| Slot placement  | One placement decision per accepted slot: `top`/`bottom`/`left`/`right` → `Band`; `overlay` → `Overlay`; `tabline` and a v1 `terminal` tree → `Unsupported` (`E_UI_UNAVAILABLE`).                                                                                                                                                                    | `band_slots.rs:154` (`ui_slot_placement`), `:156`-`:175`                                                                                       |
+| Scene direction | A row band admits every v1 root. A column band stacks one line per direct child of a `Column`/`List` root, admits `Text` as one line, and refuses a `Row` root typed.                                                                                                                                                                                | `band_slots.rs:226` (`band_scene_matches`), `:242` (`band_scene_direction_error`, `E_UI_COMPONENT_INVALID`)                                    |
+| Row geometry    | One window row per visible mount; the container loses exactly those rows. Degradation is all-or-nothing: when the visible rows plus the content floor do not fit, the budget is `(0, 0)`.                                                                                                                                                            | `crates/bitty-runtime/src/runtime/band_host.rs:1947`-`:1969` (`plugin_band_budget`), `:2140` (`band_row_container`)                            |
+| Column geometry | One column range per visible mount, width measured from the root, one line per root child, top-down.                                                                                                                                                                                                                                                 | `band_host.rs:624` (`column_band_width`), `:645` (`column_band_rows`), `:2121` (`visible_band_column`)                                         |
+| Exclusive zone  | Horizontal bands reserve rows and vertical bands reserve columns from that rect, so no terminal cell paints under a band on either axis; the no-mount frame is byte-identical to before.                                                                                                                                                             | `band_host.rs:2165` (`band_exclusive_container`)                                                                                               |
+| Content floor   | One Core-owned floor per axis, derived from the compositor content floor plus gaps and the live decoration ring: `chrome_min_rows`, `chrome_min_cols`.                                                                                                                                                                                               | `crates/bitty-runtime/src/runtime/layout_focus.rs:3836`, `:3859`                                                                               |
+| Unfittable band | Each vertical side is capped at an equal part of the window's spare columns above the content floor and above a half-window content share (`BAND_COLUMN_CONTENT_SHARE_DIVISOR = 2`); the band that crosses the cap is granted the remainder and clipped to it, so a 79-column line in an 80-column window leaves 40 content columns rather than one. | `band_host.rs:148`, `:2007`-`:2040` (`column_band_plan`), `:1983` (`plugin_band_column_budget`)                                                |
+| Paint           | Column bands plan separately and paint through the same clipped span renderer as row bands. The shared chrome rule is one muted strip on the content-facing edge either way: horizontal across a row band, one vertical strip for the whole column band (never one per content line).                                                                | `crates/bitty-runtime/src/runtime/present.rs:6260` (`paint_chrome_bands`), `:6411` (`paint_band_row` rule), `:6556` (`paint_band_column_rule`) |
+| Hit-testing     | One axis-parameterized hit test resolves either axis through the granted band rect, then narrows onto the band's own content line. Click, wheel, hover, and release share that one mapping.                                                                                                                                                          | `band_host.rs:2236` (`plugin_band_cell_hit`), `:2306` (`band_line_at`)                                                                         |
+| Gesture origin  | A queued action carries the presented band origin — row **and** granted column — so a reflow on either axis refuses a stale gesture before dispatch.                                                                                                                                                                                                 | `band_host.rs:987` (`struct BandOrigin`)                                                                                                       |
+| Regions         | One line of regions per column-band root child from the same bounded walk the row table uses; 64 distinct regions per band, fail-closed above the cap.                                                                                                                                                                                               | `band_host.rs:2378` (`band_item_regions`), `:768` (`collect_band_regions`), `:131` (`BAND_MAX_REGIONS`)                                        |
+| Input queues    | Click queue 8 and scroll queue 8, newest dropped and counted past the cap; wheel capture saturation `4096.0`.                                                                                                                                                                                                                                        | `band_host.rs:90`, `:99`; `crates/bitty-lua/src/ui.rs:298`                                                                                     |
+| Tests           | Band coverage at this pin: `band_column_input.rs` (left/right click, hover, wheel, origins, regions, clipping), `band_groups_hover.rs`, `chrome_bands_render.rs`. The four-edge acceptance test (`band_four_edge_geometry.rs`: extents, disjoint rects, routing on all four edges, degrade without underflow) is at `631f1f9c`.                      | `crates/bitty-runtime/tests/`                                                                                                                  |
+
+### Deferred
+
+- **`BAND_MAX_THICKNESS_PX`, px/row thickness resolution, and the clamp.** No
+  such symbol exists. A row band is one window row; a column band is the width
+  of its widest root child clipped to its granted share. A mount still supplies
+  no coordinates, thickness, or edge.
+- **`BAND_MAX_NODES_PER_FRAME`, the truncation marker, and its diagnostic.**
+  None exists; the per-generation block and retained-string budgets do the
+  bounding instead.
+- **Priority-ordered degradation.** Neither axis implements "plugin-only bands
+  first, then the band carrying the `workspace` module": rows are all-or-nothing
+  and columns clip to an equal share. A hidden-by-degradation band reappears
+  when space returns, because both budgets are recomputed per frame.
+- **One band per edge.** The host serves every visible band on an edge and
+  stacks them by plugin id; a second mount neither replaces nor fails.
+- **Animated thickness transitions.** There is no thickness value to animate.
+- **`workspace.bar.edge` accepting `left`/`right`.** The config type still
+  carries `Top` and `Bottom` only (`crates/bitty-config/src/types.rs:3225`,
+  `:3236`), even though the host serves both vertical edges.
+- **Excluded APIs.** `register_panel` has no host path. `PanelId` and
+  `PanelProvider` are Core-internal types (the provider is capability-gated in
+  the registry host; a `PanelId` is the handle `bitty.panel.create` yields),
+  absent from the `bitty.ui.*` composition surface, as are Level 3/4
+  presentation and protocol registration.
+
+### Residuals for bitty#2191
+
+1. **Corpus staleness outside this lane.**
+   [Chrome Surface Contract](chrome-surface-contract-candidate.md) and
+   [UI Runtime](ui-runtime-candidate.md) still say the vertical slots are not
+   hosted, and [Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md)
+   still carries the pre-`bitty#3165` rows. Those records are reconciled under
+   their own tasks; this record only stops repeating the stale claim.
+2. **Acceptance criterion 1 of bitty#2191 needs an independent review.** This
+   record plus [Chrome Surface API](chrome-surface-api-candidate.md) now state
+   the shipped surface at a named pin; whether that is a sufficient contract for
+   the reviewer is the open question, and neither record is `Accepted`.
+3. **Two verification-plan items cannot pass.** The per-band frame budget has
+   no host counterpart (item 7, and the truncation marker it asserts), and
+   degradation is not priority-ordered (item 4), so neither may be claimed.
+4. **Column-band `ui.state` is wrong.** `slot_state_rule` returns
+   `NeverPresented` for `left`/`right`, so a painted column band reports
+   `presented = false` (`band_slots.rs:205`-`:213`, consumed at
+   `crates/bitty-runtime/src/plugin_runtime/services.rs:3377`). Filed here as a
+   host defect for a follow-up.
+5. **`anchor` does not resolve on a column band**, so the three-region
+   `left`/`center`/`right` reading above is row-band only in practice
+   (`services.rs:6737`-`:6746`).
+
 ## Reconciliation (2026-11-14)
+
+> Superseded in part on 2026-11-16 by the
+> [Landed surface](#landed-surface-verified-2026-11-16-at-0f4d64b7) section
+> above. This one is kept as what the earlier re-read found at `26360f15`, and
+> its `left`/`right` sentence is information about that pin only.
 
 This record was re-read against `bitty` at `26360f15` (`origin/main`). The band
 host behind the `top` and `bottom` slots is implemented and unchanged in shape:
@@ -359,6 +475,9 @@ No band row is ever painted inside the container, so the occlusion defect this
 record answers is closed in the host. `left` and `right` have no vertical band
 host and fail closed `E_UI_UNAVAILABLE`; `tabline` needs the `workspaceline`
 exclusive claim and then fails closed as reserved for panel tabs.
+_That `left`/`right` sentence is now stale: the vertical band host landed after
+this pin (`bitty#3167` `1994f6e6`, routing `bitty#3172` `76485e80`) and both
+slots are served. The `tabline` sentence still holds._
 
 Still candidate here, with no host path performing it: px/row thickness
 resolution and its clamp, the per-band per-frame node cap and its truncation
@@ -418,13 +537,13 @@ influence band thickness or edge.
 
 ## Alternatives considered
 
-| Alternative                                                  | Trade-off                                                                        | Disposition                                |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------ |
-| Keep the bar as an overlay and reserve rows inside each pane | No layout change; every pane loses rows and the overlay still hides content      | Rejected — occlusion remains               |
-| Treat the bar as a tiling leaf in `LayoutTree`               | Reuses split geometry; breaks the accepted hierarchy and lets layout move chrome | Rejected — chrome is not a panel           |
-| Let plugins size and place bands                             | Flexible; violates Core-owned geometry and the Lua Surface placement rule        | Rejected                                   |
-| Define only `top`/`bottom` geometry                          | Smaller contract; forces a rewrite when vertical bands or the rail arrive        | Rejected — four edges defined, two shipped |
-| Keep the numbered `1:ws2*` label                             | Familiar; numbers shift as workspaces close and conflict with stable identity    | Rejected — pills show name and state only  |
+| Alternative                                                  | Trade-off                                                                        | Disposition                                                                                                                             |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Keep the bar as an overlay and reserve rows inside each pane | No layout change; every pane loses rows and the overlay still hides content      | Rejected — occlusion remains                                                                                                            |
+| Treat the bar as a tiling leaf in `LayoutTree`               | Reuses split geometry; breaks the accepted hierarchy and lets layout move chrome | Rejected — chrome is not a panel                                                                                                        |
+| Let plugins size and place bands                             | Flexible; violates Core-owned geometry and the Lua Surface placement rule        | Rejected                                                                                                                                |
+| Define only `top`/`bottom` geometry                          | Smaller contract; forces a rewrite when vertical bands or the rail arrive        | Rejected — four edges defined; the host shipped the row axis first and the column axis later (`bitty#3167`), so the rewrite was avoided |
+| Keep the numbered `1:ws2*` label                             | Familiar; numbers shift as workspaces close and conflict with stable identity    | Rejected — pills show name and state only                                                                                               |
 
 ## Affected contracts
 

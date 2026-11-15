@@ -17,8 +17,9 @@ sidebar_order: 65
 > line are optional, independent Lua plugins, and Core provides generic
 > infrastructure they assemble. It authorizes no shipped behavior, weakens no
 > accepted source it cites, and makes no implementation claim beyond the
-> current-state section. Every API name, capability, event, command, and
-> constant below is a candidate spelling pending
+> current-state and `Landed surface` sections, which record what the host does
+> today at a named pin without promoting any rule here. Every API name,
+> capability, event, command, and constant below is a candidate spelling pending
 > [OQ-056](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md).
 >
 > The ownership direction (Workspace is Core mechanism; workspace bars, tabs,
@@ -124,6 +125,19 @@ else in this record is implemented.
   with the aggregate charging every host-retained string, CTX-1340); the
   terminal-wide aggregation across plugins and the per-band per-frame render
   cap are not implemented and stay deferred.
+- The bounded scene `style` table hosts on `ui.rich`, on the `terminal` rich
+  path only (`bitty#3175` `a64c283c`, tightened by `bitty#3176` `0f4d64b7`):
+  `style = { padding, radius, border, border_token }`, a closed four-key set
+  with inclusive caps 32 cells / 16 px / 16 px, a closed six-name
+  `content.*`/`state.*` border token, a colour literal or Core chrome token
+  refused, and a non-flat declaration lowering to the additive
+  `SceneNode::Styled` wrapper (one node, one depth level) while a flat one
+  lowers to nothing. `padding`/`radius`/`border` are the only spacing and
+  stroke vocabulary in the bridge: there is no `gap`, size constraint,
+  elevation, opacity, transform, or interaction-state style. A band or overlay
+  mount accepts the key and drops it with one host diagnostic per generation
+  instead of refusing the mount. Evidence is in the
+  [Landed surface](#landed-surface-verified-2026-11-16-at-0f4d64b7) section.
 - Band/overlay style parity (CTX-1419, bitty PR #2385 `cd6b0724`): the
   `overlay` surface accepts the same style vocabulary as a band and paints
   `fg`/`bg`/`bold` per flattened run through the same closed host token table
@@ -150,10 +164,21 @@ else in this record is implemented.
 - `top` and `bottom` mounts are retained and painted as edge bands. `overlay`
   mounts are retained by the Core focusable-overlay host and are not edge
   bands (CTX-0941).
-- `left` and `right` mounts fail closed with the typed runtime error
-  `E_UI_UNAVAILABLE` because this build has no vertical band host; no handle is
-  returned, no block is stored, and no columns are reserved
-  (`bitty#2234`, CTX-1341).
+- `left` and `right` mounts are **served** by a column band host: the mount is
+  admitted, the block is stored, the granted columns are reserved out of the
+  layout container, and the band paints and routes. A column band stacks one
+  content row per direct child of a `Column`/`List` root and admits the
+  axis-neutral `Text` root; a `Row` root is refused at mount with the typed
+  `E_UI_COMPONENT_INVALID` because it cannot stack down a column
+  (`crates/bitty-runtime/src/runtime/band_slots.rs:161`-`:162`,
+  `:226` `band_scene_matches`, `:242` `band_scene_direction_error`;
+  `crates/bitty-runtime/src/runtime/band_host.rs:1983`
+  `plugin_band_column_budget`). _Corrected 2026-11-16 at `bitty@0f4d64b7`: this
+  bullet recorded `E_UI_UNAVAILABLE` for both slots under CTX-1341 and
+  `bitty#2234`, which is what the host did before the vertical band host
+  landed (`bitty#3167` `1994f6e6`, routing `bitty#3172` `76485e80`). The
+  previous statement was accurate for the pin it named and is superseded here,
+  not erased._
 - `terminal` is the terminal-attached scene slot: its value is read with the
   v2 rich vocabulary (`SceneNode` kinds, `SCN-1..5`) and attached to the
   focused leaf by the Core scene host (`bitty` #2799, CTX-1641). The scene
@@ -195,8 +220,12 @@ else in this record is implemented.
 ### Current host versus candidate delta
 
 The following distinctions keep the candidate rules below from being read as
-claims about the pinned current host (`bitty@26360f15`, with UI parity evidence
-from PR #2385 `cd6b0724` and PR #2392 `c816b00e`):
+claims about the pinned current host (`bitty@0f4d64b7`, with UI parity evidence
+from PR #2385 `cd6b0724` and PR #2392 `c816b00e`). _The pin was `26360f15`
+before 2026-11-16; it moved to `0f4d64b7` when the style-table and band-routing
+slices landed. The distinctions below still hold at the new pin; the
+[Landed surface](#landed-surface-verified-2026-11-16-at-0f4d64b7) section
+records the surface they are relative to._
 
 - **Token behavior:** the current resolver accepts exactly five host tokens —
   `foreground`, `background`, `cursor`, `selection`, and `accent`. A
@@ -217,20 +246,117 @@ from PR #2385 `cd6b0724` and PR #2392 `c816b00e`):
   Overlay scene-node bindings are retained data, not overlay pointer
   hit-testing or routing.
 
+## Landed surface (verified 2026-11-16 at `0f4d64b7`)
+
+This section re-derives the accepted surface symbol by symbol from the `bitty`
+code repository at `0f4d64b7` (`origin/main` has since advanced to `631f1f9c`,
+a test-only commit that adds
+`crates/bitty-runtime/tests/band_four_edge_geometry.rs` and changes no source
+symbol). Paths are relative to that repository. It states what the host accepts
+today, with the file and line for each claim; it promotes nothing, and every
+candidate rule in this record stays candidate.
+
+### Accepted by the host
+
+| Surface              | What the host accepts today                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Evidence                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Slot set             | A closed set of **seven** names: `terminal`, `top`, `bottom`, `left`, `right`, `tabline`, `overlay`. Matching is exact and case-sensitive; `statusline` and every other name are unknown and reject with `E_UI_COMPONENT_INVALID`.                                                                                                                                                                                                                                                      | `crates/bitty-lua/src/ui.rs:113` (`enum UiSlot`), `:142` (`ALL: [Self; 7]`), `:155` (`parse`), `:182` (`UI_SLOTS: [&str; 7]`); host boundary re-check `crates/bitty-runtime/src/plugin_runtime/services.rs:6600`                                                                                                                                                                   |
+| `top`, `bottom`      | Row band: one window row per visible mount, content flattened left to right, any v1 root shape admitted.                                                                                                                                                                                                                                                                                                                                                                                | `crates/bitty-runtime/src/runtime/band_slots.rs:156`-`:157` (`Band(Row)`), `:226` (`band_scene_matches`, row axis accepts every root)                                                                                                                                                                                                                                              |
+| `left`, `right`      | Column band: the mount is admitted, the block stored, columns reserved, the band painted and routed. `Column`/`List` root stacks one content row per direct child, `Text` is one row, `Row` is refused.                                                                                                                                                                                                                                                                                 | `band_slots.rs:161`-`:162` (`Band(Column)`), `:99` (`BandAxis`), `:242` (`band_scene_direction_error`); `crates/bitty-runtime/src/runtime/band_host.rs:624` (`column_band_width`), `:645` (`column_band_rows`), `:1983` (`plugin_band_column_budget`)                                                                                                                              |
+| `terminal`           | Served by the v2 rich scene host (`SCN-1..5`); a **v1** tree on this slot still fails closed, because the v1 band host has no terminal surface.                                                                                                                                                                                                                                                                                                                                         | `services.rs:6670` (`ui_mount_scene`), `band_slots.rs:172`-`:174` (`Terminal` → `Unsupported`)                                                                                                                                                                                                                                                                                     |
+| `tabline`            | Requires the `workspaceline` exclusive claim in `[lazy].claims` first (`E_UI_CLAIM_REQUIRED`), then fails closed `E_UI_UNAVAILABLE` as Core tab-projection state with no host surface.                                                                                                                                                                                                                                                                                                  | `services.rs:6613`-`:6635`, `band_slots.rs:163`-`:165`                                                                                                                                                                                                                                                                                                                             |
+| `overlay`            | Retained by the Core focusable-overlay host; not a band; owns the transient capture through `bitty.ui.overlay.*`.                                                                                                                                                                                                                                                                                                                                                                       | `band_slots.rs:169` (`UiSlotPlacement::Overlay`)                                                                                                                                                                                                                                                                                                                                   |
+| Node kinds           | v1 accepts exactly `Text`, `Row`, `Column`, `List`; `Block`, `Image`, `CodeBlock`, `Table`, `Rule` are excluded with a typed rejection.                                                                                                                                                                                                                                                                                                                                                 | `crates/bitty-lua/src/ui.rs:208` (`UI_V1_NODE_KINDS`), `:211` (`UI_V1_EXCLUDED_NODE_KINDS`)                                                                                                                                                                                                                                                                                        |
+| Host bounds          | 2048 nodes per block, bridge depth `UI_MAX_DEPTH = 16` (deliberately stricter than accepted `SCN-2 = 32`), 256 KiB text per block, 64 retained blocks per plugin generation, 2 MiB aggregated retained strings per generation.                                                                                                                                                                                                                                                          | `ui.rs:214`, `:217`, `:220`, `:224`, `:232`; the 16-vs-32 ratio is stated at `ui.rs:80`-`:86`                                                                                                                                                                                                                                                                                      |
+| `style` table        | `style = { padding, radius, border, border_token }` on the `terminal` rich path. Closed key set; inclusive caps 32 cells / 16 px / 16 px; `border_token` from a closed six-name `content.*`/`state.*` set; an unknown or duplicate key, an over-cap value, a name over 32 bytes, a colour literal, and a Core chrome token all reject `E_UI_COMPONENT_INVALID` with no clamp. A non-flat style lowers to `SceneNode::Styled` (one node, one depth level); a flat one lowers to nothing. | `crates/bitty-lua/src/ui_style.rs:94` (`UI_STYLE_FIELDS`), `:99`, `:104`, `:109` (caps), `:115` (`UI_STYLE_MAX_NAME_BYTES`), `:132` (`UiBorderToken`), `:150` (`ALL: [Self; 6]`), `:311` (`is_flat`), `:353` (`parse_node_style`); `crates/bitty-lua/src/ui_rich.rs:322`, `:441`; `crates/bitty-runtime/src/scene_bridge.rs:138`; paint at `crates/bitty-render/src/scene.rs:1170` |
+| One stroke per node  | A `Block` that declares both `style.border` (px) and its own cell `border` is refused `E_UI_COMPONENT_INVALID` naming both widths; a zero width never collides.                                                                                                                                                                                                                                                                                                                         | `ui_style.rs:327` (`collides_with_cell_frame`), `ui_rich.rs:360`                                                                                                                                                                                                                                                                                                                   |
+| Band/overlay `style` | The key is accepted and **dropped with a diagnostic**, not a refusal: the reader counts the nodes that declared it and the mount path reports once per generation, after the mount succeeded.                                                                                                                                                                                                                                                                                           | `ui.rs:927`-`:933` (count), `:531` (`UiTolerated`), `:539` (`rich_style_nodes`); `crates/bitty-lua/src/host.rs:3750` (`note_style_ignored` one-shot latch); `services.rs:6752` (`ui_style_ignored`, one `eprintln` line, fixed text plus two bounded values)                                                                                                                       |
+| Bindings             | `on_click`, `on_scroll`, `on_hover` and a per-item `region` identity, validated typed at the bridge. Click args cap 16 (`UI_CLICK_MAX_ARGS`); regions cap 64 per band; scroll queue 8; wheel capture saturation 4096.0.                                                                                                                                                                                                                                                                 | `ui.rs:238`, `:298`; `band_host.rs:90`, `:99`, `:131`                                                                                                                                                                                                                                                                                                                              |
+| Workspace L1         | `bitty.workspace.list()` returns at most 16 identity rows under `workspace.read`; the `workspace.created`, `workspace.closed`, `workspace.renamed`, `workspace.focused`, and `workspace.changed` topics publish under the same gate; `focus`, `new`, `next`, `close`, `rename`, and `move_panel` mutate under `workspace.control`.                                                                                                                                                      | `crates/bitty-lua/src/host.rs:74` (row bound), `:2934` (`workspace_list`); `crates/bitty-runtime/src/plugin_runtime/mod.rs:230`, `:234` (topics)                                                                                                                                                                                                                                   |
+
+### Deferred
+
+- **Per-band per-frame node cap.** No `BAND_MAX_NODES_PER_FRAME` symbol exists
+  in the code repository; the host enforces the per-generation block and
+  retained-string budgets instead. The truncation marker and its diagnostic
+  ship with the cap, so neither exists.
+- **Thickness resolution and `BAND_MAX_THICKNESS_PX`.** Band thickness is not
+  read from a px or row value: a row band is one window row and a column band is
+  the width of its widest root child, clipped to its granted share
+  (`band_host.rs:624`, `:2007`-`:2040` `column_band_plan`). No clamp symbol
+  exists.
+- **One surface per edge.** The host keeps every visible band per edge and
+  stacks them by plugin id; a second mount does not replace or fail.
+- **Terminal-wide `SCN-4`/`SCN-5` aggregation.** Accounting stays per plugin
+  generation, a strict subset of the accepted per-terminal budget.
+- **Priority-ordered degradation.** Row bands degrade all-or-nothing
+  (`band_host.rs:1947`-`:1969` `plugin_band_budget` returns `(0, 0)` when the
+  visible rows plus `chrome_min_rows` do not fit), and column bands clip to an
+  equal side share bounded by `chrome_min_cols` and
+  `BAND_COLUMN_CONTENT_SHARE_DIVISOR` (`band_host.rs:148`, `:2034`). Neither is
+  the "plugin-only bands first, `workspace` module last" order.
+- **Candidate token namespaces.** `chrome.*` and `surface.*` names are not
+  resolved: the five-token table plus diagnostic fallback is the whole
+  vocabulary, and fail-closed rejection of an unknown well-formed token is not
+  implemented.
+- **Overlay pointer routing.** Bindings mounted in `overlay` are retained data;
+  click, scroll, hover, and region routing are band-only.
+- **`workspace:*` command ids.** The mutations are `bitty.workspace.*` Lua
+  functions, so an `on_click` binding cannot name them yet.
+- **Group `anchor` on a column band.** `ui_scene_scope` resolves `Band` only for
+  `top`/`bottom`, so a `left`/`right` mount is validated `Unanchored` and a
+  declared `anchor` there fails closed (`services.rs:6737`-`:6746`).
+- **Excluded APIs.** `register_panel` has no host path. `PanelId` and
+  `PanelProvider` exist as Core-internal types (`PanelProvider` is
+  capability-gated in the registry host, and a `PanelId` is the Core handle a
+  `bitty.panel.create` call yields), but neither is part of the `bitty.ui.*`
+  composition surface: a plugin cannot register, receive, or address a panel
+  through it. Level 3/4 presentation and protocol registration are likewise
+  absent from the plugin surface.
+
+### Residuals for bitty#2191
+
+1. **Corpus staleness outside this lane.**
+   [Chrome Surface Contract](chrome-surface-contract-candidate.md) (`left`,
+   `right` "not hosted") and [UI Runtime](ui-runtime-candidate.md) still state
+   that the vertical slots fail closed, and
+   [Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md)
+   still carries the pre-`bitty#3165` slot rows. Those records are reconciled
+   under their own tasks; this record only stops repeating the stale claim.
+2. **`bitty.ui.state` disagrees with the column band.** `slot_state_rule`
+   returns `NeverPresented` for `left`/`right`, so `ui.state` reports
+   `presented = false` for a column-band mount that does paint. That is a host
+   defect, not a contract gap (`band_slots.rs:205`-`:213` consumed at
+   `services.rs:3377`).
+3. **No per-band frame budget.** Without `BAND_MAX_NODES_PER_FRAME` the
+   "rendering and budgets" rules of this record have no host counterpart, so
+   the acceptance criterion that maps them to tests cannot be met.
+4. **No capability or security sign-off.** The `workspace.read` and
+   `workspace.control` capabilities and the input-to-command path stay
+   unreviewed; the P0 sign-off section below is still pending.
+5. **No accepted text.** Everything here is `Implemented-only`, evidenced at a
+   pin. The record stays `status: draft`.
+
 ## L0 Surfaces
 
 ### Requesting a band
 
 1. Any plugin holding `ui.rich` requests an edge band by mounting on the `top`
-   or `bottom` slot. The mount is the request; there is no separate band API.
-   Core paints a placed surface on its edge and reserves that edge's exclusive
-   zone.
-2. `left` and `right` are accepted slot names with no vertical band host in
-   this build. A mount on either fails closed at `ui.mount` with the typed
-   runtime error `E_UI_UNAVAILABLE` after the capability and claim gates; no
-   handle is returned and nothing is stored or placed. Vertical bands stay
-   deferred until a host implements the four-edge geometry the Chrome Band
-   Contract already defines.
+   or `bottom` slot, or on `left` or `right` for a vertical band. The mount is
+   the request; there is no separate band API. Core paints a placed surface on
+   its edge and reserves that edge's exclusive zone.
+2. `left` and `right` are served by the column band host: the mount is placed
+   on that edge and the host reserves columns exactly as `top`/`bottom` reserve
+   rows. The component must fit the band's axis — a `Column` or `List` root
+   stacks one content row per direct child, a `Text` root is a single row, and
+   a `Row` root fails closed at `ui.mount` with the typed
+   `E_UI_COMPONENT_INVALID` because a horizontal composition cannot stack down
+   a column. _Corrected 2026-11-16 at `bitty@0f4d64b7`: this item said both
+   slots fail closed with `E_UI_UNAVAILABLE` because no vertical band host
+   existed. The host landed in `bitty#3167` (`1994f6e6`) and its input routing
+   in `bitty#3172` (`76485e80`), so the deferral the old text described is
+   over; the four-edge geometry the Chrome Band Contract defines is now the
+   shipped geometry on both axes._
 3. `statusline` is not a slot: Core removed it in CTX-1140 (`bitty#1962`), and
    the name fails as an unknown slot with `E_UI_COMPONENT_INVALID`. A bar
    plugin composes status presentation on `bottom` instead.
@@ -296,6 +422,17 @@ from PR #2385 `cd6b0724` and PR #2392 `c816b00e`):
    rejection of unknown token names stays deferred to the Theme Token
    Contract and is not promoted by this record. Bands and the overlay
    surface paint the same style vocabulary (style parity).
+
+_Landed addition (2026-11-16 at `bitty@0f4d64b7`):_ the bridge also accepts a
+nested bounded `style` table — `style = { padding, radius, border,
+border_token }` — on the `terminal` rich path, which is the shape a rounded
+ring and a cell inset need and the flat `fg`/`bg`/`bold` triple cannot express.
+It does not replace the flat attributes above and it is not hosted on a band or
+overlay mount, where the key is accepted and dropped with one host diagnostic
+per generation. This is an implementation fact, not a promotion: the four
+primitives stay candidate vocabulary owned by the
+[Scene Style Primitives](scene-style-primitives-candidate.md) record, and the
+flat token-name resolution rule above still governs `fg`/`bg`.
 
 ### Click bindings
 
@@ -553,6 +690,12 @@ bounds; this record fixes only the shape.
 
 ## Reconciliation (2026-11-14)
 
+> Superseded in part on 2026-11-16 by
+> [Landed surface (verified 2026-11-16 at `0f4d64b7`)](#landed-surface-verified-2026-11-16-at-0f4d64b7).
+> That section is the current evidence: this one is kept as the record of what
+> the earlier re-read found at `26360f15`, and its `left`/`right` wording is
+> information about that pin, not about the host now.
+
 This record was re-read against `bitty` at `26360f15` (`origin/main`). The
 code-side surface behind every rule in this record is unchanged in shape: the
 slot set is closed at seven names and `statusline` is not one of them, the v1
@@ -664,8 +807,15 @@ rules and its `status: draft`; this section records evidence, not acceptance.
 - Fate of `workspace.show_bar` and `workspace.bar.edge`: plugin-setting
   mapping with deprecation, or removal with the Core workspaceline.
 - Attention flag sources and bounds.
-- Pointer events beyond primary click (hover, secondary click, drag source)
-  and their accessibility roles.
+- Pointer events beyond press, release, scroll, and hover: the PW-8 drag
+  source and drag-onto-a-band gesture, and the accessibility roles of regions,
+  remain open. _Corrected 2026-11-16 at `bitty@0f4d64b7`: this point listed
+  hover and secondary click as unshipped. Both are implemented — `on_hover`
+  dispatches enter/leave with a required `region` and a `phase` arg, and a
+  region-aware press/release carries `button = "left" | "right" | "middle"`
+  (`crates/bitty-lua/src/ui.rs` module docs,
+  `crates/bitty-runtime/src/runtime/band_host.rs` hover phases). Drag and the
+  a11y mapping are what is left._
 - Overlay scene-node pointer routing (kept deferred by CTX-1419): declared
   `on_click`/`on_scroll`/`region` on the `overlay` surface are retained and
   not routed until an accepted overlay hit-test/geometry contract exists;
