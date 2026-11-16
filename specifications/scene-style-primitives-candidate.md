@@ -160,12 +160,15 @@ claim.
 
 The hosted table is not four keys: it also carries **two width bounds**,
 `min_width` and `max_width`, each an integer in cells with `0` meaning "no bound
-on that side" and an inclusive cap of `1000`, and the **sibling gap**, `gap`, an
-integer in cells with `0` meaning "no spacing" and an inclusive cap of `32`.
-They are extent and spacing vocabulary rather than paint — a bound sizes a
-node's content box, a gap separates adjacent siblings, and neither emits an
-operation of its own — so they are not paint primitives five, six, and seven, and
-the [Extension wire half](#extension-wire-half) records them as landed behavior
+on that side" and an inclusive cap of `1000`, the **sibling gap**, `gap`, an
+integer in cells with `0` meaning "no spacing" and an inclusive cap of `32`, and
+the **cross-axis placement**, `align`, a closed `start`/`center`/`end` string
+that places a container's direct children inside its own content box.
+They are extent, spacing, and placement vocabulary rather than paint — a bound
+sizes a node's content box, a gap separates adjacent siblings, a placement moves
+them inside a box the container already owns, and none emits an operation of its
+own — so none is a fifth paint primitive, and the
+[Extension wire half](#extension-wire-half) records them as landed behavior
 rather than as a proposal of this record.
 
 Rules:
@@ -288,6 +291,7 @@ bitty.ui.mount("terminal", {
     min_width = 8,        -- integer, display cells, 0..1000 (0 = no floor)
     max_width = 24,       -- integer, display cells, 0..1000 (0 = no cap)
     gap = 1,              -- integer, cells, 0..32 (adjacent siblings only)
+    align = "center",     -- closed set: start, center, end
   },
   children = { { kind = "Text", text = "ready" } },
 })
@@ -295,8 +299,8 @@ bitty.ui.mount("terminal", {
 
 Rules:
 
-1. The parser accepts only the seven keys above, with the two value shapes
-   (integer, token string). Unknown keys fail closed.
+1. The parser accepts only the eight keys above, with the three value shapes
+   (integer, token string, closed placement string). Unknown keys fail closed.
 2. The parser never accepts a function, table, closure, renderer handle,
    shader, path, or image. It has no authority fields: `on_click`,
    `on_scroll`, `command`, `capability`, and any future input binding are
@@ -426,8 +430,9 @@ not claim a batching result.
 
 The `style` table is no longer scene-model-only. [bitty#3175](https://github.com/bitty-terminal/bitty/pull/3175)
 (merged `a64c283c`, widened by [bitty#3186](https://github.com/bitty-terminal/bitty/pull/3186),
-merged `9ebe5285`, and by [bitty#3188](https://github.com/bitty-terminal/bitty/pull/3188),
-merged `90deb814`) hosts the closed seven-key table on the `terminal`-slot
+merged `9ebe5285`, by [bitty#3188](https://github.com/bitty-terminal/bitty/pull/3188),
+merged `90deb814`, and by [bitty#3198](https://github.com/bitty-terminal/bitty/pull/3198),
+merged `9f407a37`) hosts the closed eight-key table on the `terminal`-slot
 `ui.rich` reader as an **additive-minor optional** field. Everything below is
 **`Implemented`-only** evidence: no acceptance record adopts it, no status is
 promoted, and no compatibility promise attaches to it.
@@ -461,7 +466,8 @@ promoted, and no compatibility promise attaches to it.
   End-to-end evidence is `crates/bitty-runtime/tests/lua_ui_style_size.rs`.
 - **Sibling spacing as implemented (`bitty#3188` `90deb814`).** `gap` is an
   integer in display cells, inclusive `0..=32`
-  (`crates/bitty-lua/src/ui_style.rs:156` `UI_STYLE_FIELDS: [&str; 7]`, `:205`
+  (`crates/bitty-lua/src/ui_style.rs:156` `UI_STYLE_FIELDS: [&str; 7]` at that
+  commit, `:205`
   `UI_STYLE_MAX_GAP_CELLS`, which reuses the `decoration.content_inset` bound).
   It is the spacing between **adjacent siblings** inside a `Row`, `Column`, or
   `List`, inserted on the composed walk so a following sibling starts `gap`
@@ -477,6 +483,23 @@ promoted, and no compatibility promise attaches to it.
   container whose children plus gaps do not fit is clipped, and a fit failure is
   never a refusal. End-to-end evidence is
   `crates/bitty-runtime/tests/lua_ui_gap.rs`.
+- **Cross-axis placement as implemented (`bitty#3198` `9f407a37`).** `align` is
+  a closed, case-sensitive `start`/`center`/`end` string
+  (`crates/bitty-lua/src/ui_style.rs:250` `UI_STYLE_FIELDS: [&str; 8]`, `:388`
+  `UiStyleAlign`). It places the **direct children** of a `Row`, `Column`, or
+  `List` on the axis its siblings do not advance, inside the container's own
+  content box (`crates/bitty-rich/src/scene.rs:268` `SceneStyleAlign`, `:304`
+  `offset`, which saturates so a child as large as its box stays at zero). A
+  declared `start` is the offset-zero walk and flat, so it lowers to no wrapper;
+  `center` and `end` move a child and are not flat, so they lower to the
+  wrapper, and the render walk takes the spacing/placement path only when it is
+  not inert (`crates/bitty-render/src/scene.rs:1135` `is_inert`, `:1439`/`:1501`
+  the paint offsets). A non-`start` value on a kind that places no adjacent
+  children is refused `E_UI_COMPONENT_INVALID` rather than dropped
+  (`crates/bitty-lua/src/ui_rich.rs:480`). The set has no `space-between`: that
+  is the band root `Row`'s distribution field, refused here rather than handing
+  this surface a distribution it cannot apply (`ui_style.rs:452`). End-to-end
+  evidence is `crates/bitty-runtime/tests/lua_ui_style_align.rs`.
 - **Unknown-property tolerance.** On a band or overlay mount the key is
   accepted and ignored, because the accepted additive-minor rule tolerates an
   unknown optional field there
@@ -499,12 +522,15 @@ promoted, and no compatibility promise attaches to it.
 Evidence paths: `crates/bitty-lua/src/ui_style.rs` (`UI_STYLE_FIELDS`,
 `UI_STYLE_MAX_PADDING_CELLS`, `UI_STYLE_MAX_RADIUS_PX`,
 `UI_STYLE_MAX_BORDER_PX`, `UI_STYLE_MAX_WIDTH_CELLS`, `UI_STYLE_MAX_GAP_CELLS`,
-`parse_node_style`, `UiNodeStyle::validate`),
-`crates/bitty-lua/src/ui_rich.rs` (`UiRichNode::Styled`, the sibling-axis
-refusal, and the post-walk depth re-check), `crates/bitty-runtime/src/scene_bridge.rs`
+`UiStyleAlign`, `parse_node_style`, `UiNodeStyle::validate`),
+`crates/bitty-lua/src/ui_rich.rs` (`UiRichNode::Styled`, the sibling-axis and
+placement kind refusals, and the post-walk depth re-check),
+`crates/bitty-rich/src/scene.rs` (`SceneStyleAlign`, `offset`),
+`crates/bitty-runtime/src/scene_bridge.rs`
 (`scene_style_of`), `crates/bitty-runtime/tests/lua_ui_style_vocab.rs` (14
-integration tests through the shipped chain), and the gap's end-to-end coverage
-in `crates/bitty-runtime/tests/lua_ui_gap.rs`.
+integration tests through the shipped chain), the gap's end-to-end coverage
+in `crates/bitty-runtime/tests/lua_ui_gap.rs`, and the placement's coverage in
+`crates/bitty-runtime/tests/lua_ui_style_align.rs`.
 
 Two follow-ups from the review of that landing ([bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176))
 are recorded here as gaps, not claimed as done:
@@ -554,7 +580,7 @@ rather than describing a behaviour nobody has implemented.
 
 | Concern                     | Control                                                                                                                                                |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Arbitrary styling surface   | Closed seven-key vocabulary; unknown and duplicate keys fail closed.                                                                                   |
+| Arbitrary styling surface   | Closed eight-key vocabulary; unknown and duplicate keys fail closed.                                                                                   |
 | Untrusted colour input      | Token-only colour from a closed content set; literals and Core chrome tokens rejected.                                                                 |
 | Unbounded input             | Documented inclusive caps on every integer; typed overflow errors; no clamp.                                                                           |
 | Renderer or platform escape | No handle, path, image, shader, pipeline, or function crosses the wire form.                                                                           |

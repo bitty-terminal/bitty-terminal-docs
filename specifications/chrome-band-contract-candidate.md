@@ -264,19 +264,21 @@ usable = container inset by gaps_out and the accepted decoration insets,
    placement exactly as the Lua Surface RFC states.
 5. **Band style is flat.** A band node may declare the rich `style` table
    (`padding`, `radius`, `border`, `border_token`, `min_width`, `max_width`,
-   `gap`), because the v1 surface tolerates an unknown optional field on an
-   additive minor. The host drops it and reports once per generation — a
+   `gap`, `align`), because the v1 surface tolerates an unknown optional field on
+   an additive minor. The host drops it and reports once per generation — a
    diagnostic, not a refusal, because the tree is already mounted. A band paints
    `fg`/`bg`/`bold` only: `padding`, a rounded ring, a border width, a
-   content-width bound, and sibling spacing are not painted in a band, a
-   dropped `min_width`/`max_width` sizes nothing, and a dropped `gap` separates
-   nothing. The seven keys host on the `terminal` rich path
+   content-width bound, sibling spacing, and a cross-axis placement are not
+   painted in a band, a dropped `min_width`/`max_width` sizes nothing, a
+   dropped `gap` separates nothing, and a dropped `align` places nothing. The
+   eight keys host on the `terminal` rich path
    (`bitty#3175` `a64c283c`, tightened by `bitty#3176` `0f4d64b7`, widened by
-   `bitty#3186` `9ebe5285` and by `bitty#3188` `90deb814`); hosting them on a
-   band is a separate accepted-extension decision and is not done here.
-   _Added 2026-11-16 at `bitty@0f4d64b7`, widened at `9ebe5285` and `90deb814`;
-   the earlier text said nothing about a band `style` key, which was correct
-   before it existed._
+   `bitty#3186` `9ebe5285`, by `bitty#3188` `90deb814`, and by `bitty#3198`
+   `9f407a37`); hosting them on a band is a separate accepted-extension
+   decision and is not done here.
+   _Added 2026-11-16 at `bitty@0f4d64b7`, widened at `9ebe5285`, `90deb814`,
+   and `9f407a37`; the earlier text said nothing about a band `style` key,
+   which was correct before it existed._
 
 ## Band interaction
 
