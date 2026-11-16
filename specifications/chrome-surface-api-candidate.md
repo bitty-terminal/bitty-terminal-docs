@@ -254,7 +254,10 @@ a test-only commit that adds
 `crates/bitty-runtime/tests/band_four_edge_geometry.rs` and changes no source
 symbol). Paths are relative to that repository. It states what the host accepts
 today, with the file and line for each claim; it promotes nothing, and every
-candidate rule in this record stays candidate.
+candidate rule in this record stays candidate. The `ui.state` row was read at
+`a8abf31c` ([bitty#3181](https://github.com/bitty-terminal/bitty/pull/3181)),
+which is later than `0f4d64b7` and touches only that rule, its consumer, and
+its new test.
 
 ### Accepted by the host
 
@@ -263,6 +266,7 @@ candidate rule in this record stays candidate.
 | Slot set             | A closed set of **seven** names: `terminal`, `top`, `bottom`, `left`, `right`, `tabline`, `overlay`. Matching is exact and case-sensitive; `statusline` and every other name are unknown and reject with `E_UI_COMPONENT_INVALID`.                                                                                                                                                                                                                                                      | `crates/bitty-lua/src/ui.rs:113` (`enum UiSlot`), `:142` (`ALL: [Self; 7]`), `:155` (`parse`), `:182` (`UI_SLOTS: [&str; 7]`); host boundary re-check `crates/bitty-runtime/src/plugin_runtime/services.rs:6600`                                                                                                                                                                   |
 | `top`, `bottom`      | Row band: one window row per visible mount, content flattened left to right, any v1 root shape admitted.                                                                                                                                                                                                                                                                                                                                                                                | `crates/bitty-runtime/src/runtime/band_slots.rs:156`-`:157` (`Band(Row)`), `:226` (`band_scene_matches`, row axis accepts every root)                                                                                                                                                                                                                                              |
 | `left`, `right`      | Column band: the mount is admitted, the block stored, columns reserved, the band painted and routed. `Column`/`List` root stacks one content row per direct child, `Text` is one row, `Row` is refused.                                                                                                                                                                                                                                                                                 | `band_slots.rs:161`-`:162` (`Band(Column)`), `:99` (`BandAxis`), `:242` (`band_scene_direction_error`); `crates/bitty-runtime/src/runtime/band_host.rs:624` (`column_band_width`), `:645` (`column_band_rows`), `:1983` (`plugin_band_column_budget`)                                                                                                                              |
+| `ui.state`           | A painted mount reports `presented = true` on both axes: `slot_state_rule` keys on the band content gate for all four band edges and returns `NeverPresented` only for `tabline` and `terminal`. Contentless bands and a direction-mismatch refusal stay `false`.                                                                                                                                                                                                                       | `bitty` at `a8abf31c`: `band_slots.rs:220` (`slot_state_rule`), `:226` (`NeverPresented` arms), `services.rs:3377` (`ui_block_state`), `crates/bitty-runtime/tests/band_column_presented.rs`                                                                                                                                                                                       |
 | `terminal`           | Served by the v2 rich scene host (`SCN-1..5`); a **v1** tree on this slot still fails closed, because the v1 band host has no terminal surface.                                                                                                                                                                                                                                                                                                                                         | `services.rs:6670` (`ui_mount_scene`), `band_slots.rs:172`-`:174` (`Terminal` → `Unsupported`)                                                                                                                                                                                                                                                                                     |
 | `tabline`            | Requires the `workspaceline` exclusive claim in `[lazy].claims` first (`E_UI_CLAIM_REQUIRED`), then fails closed `E_UI_UNAVAILABLE` as Core tab-projection state with no host surface.                                                                                                                                                                                                                                                                                                  | `services.rs:6613`-`:6635`, `band_slots.rs:163`-`:165`                                                                                                                                                                                                                                                                                                                             |
 | `overlay`            | Retained by the Core focusable-overlay host; not a band; owns the transient capture through `bitty.ui.overlay.*`.                                                                                                                                                                                                                                                                                                                                                                       | `band_slots.rs:169` (`UiSlotPlacement::Overlay`)                                                                                                                                                                                                                                                                                                                                   |
@@ -316,18 +320,23 @@ candidate rule in this record stays candidate.
 
 ### Residuals for bitty#2191
 
-1. **Corpus staleness outside this lane.**
-   [Chrome Surface Contract](chrome-surface-contract-candidate.md) (`left`,
-   `right` "not hosted") and [UI Runtime](ui-runtime-candidate.md) still state
-   that the vertical slots fail closed, and
+1. **Corpus sweep over the same claim class: closed (2026-11-16).** When this
+   residual was written, [Chrome Surface Contract](chrome-surface-contract-candidate.md)
+   (`left`, `right` "not hosted"), [UI Runtime](ui-runtime-candidate.md), and
    [Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md)
-   still carries the pre-`bitty#3165` slot rows. Those records are reconciled
-   under their own tasks; this record only stops repeating the stale claim.
-2. **`bitty.ui.state` disagrees with the column band.** `slot_state_rule`
-   returns `NeverPresented` for `left`/`right`, so `ui.state` reports
-   `presented = false` for a column-band mount that does paint. That is a host
-   defect, not a contract gap (`band_slots.rs:205`-`:213` consumed at
-   `services.rs:3377`).
+   still stated that the vertical slots fail closed. All three now state the
+   landed surface at `bitty@a8abf31c`, and a re-grep of the corpus finds no
+   remaining record that calls `left`/`right` unhosted or fail-closed. Kept in
+   the list, marked closed, so the sweep is not mistaken for an open gap.
+2. **`bitty.ui.state` on a column band (fixed 2026-11-16).** `slot_state_rule`
+   used to return `NeverPresented` for `left`/`right`, so `ui.state` reported
+   `presented = false` for a column-band mount that paints. Fixed at
+   `bitty#3181` (`a8abf31c`): the rule returns `BandVisibility` for all four
+   band edges and `NeverPresented` only for `tabline` and `terminal`, consumed
+   by `PluginServices::ui_block_state` (`band_slots.rs:220`-`:226`,
+   `services.rs:3377`). Contentless bands and the direction-mismatch refusal
+   still report `false`. This was a host defect and is now closed; no contract
+   gap remains on that point.
 3. **No per-band frame budget.** Without `BAND_MAX_NODES_PER_FRAME` the
    "rendering and budgets" rules of this record have no host counterpart, so
    the acceptance criterion that maps them to tests cannot be met.
