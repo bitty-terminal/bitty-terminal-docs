@@ -220,10 +220,18 @@ promoted, verified, or compatibility-guaranteed.
   and it does not displace a PTY.
 - The accepted `ui.mount` slot set is `terminal`, `top`, `bottom`, `left`,
   `right`, `tabline`, and `overlay` (`crates/bitty-lua/src/ui.rs`). `terminal`
-  is served by the scene host above; `top`/`bottom` are chrome bands;
-  `left`/`right`/`tabline` fail closed with `E_UI_UNAVAILABLE`
-  (`crates/bitty-runtime/src/runtime/band_slots.rs`); `statusline` is not in
-  the set. The `overlay` slot holds the block used by the focusable capture
+  is served by the scene host above; `top`/`bottom` are one-row chrome bands and
+  `left`/`right` are column bands that reserve columns out of the layout
+  container and stack one content row per root child
+  (`crates/bitty-runtime/src/runtime/band_slots.rs`,
+  `crates/bitty-runtime/src/runtime/band_host.rs`); only `tabline` still fails
+  closed with `E_UI_UNAVAILABLE`, because a tab strip is Core tab-projection
+  state with no host surface. `statusline` is not in the set: the set is closed
+  at seven names and the statusline plugin composes on `bottom`. _Corrected
+  2026-11-16 at `bitty@a8abf31c`: this bullet grouped `left` and `right` with
+  `tabline` as failing closed, which was true before the column band host
+  landed in `bitty#3167` (`1994f6e6`, routing `bitty#3172` `76485e80`)._ The
+  `overlay` slot holds the block used by the focusable capture
   session (`bitty.ui.overlay.*`, `ui.overlay.focus`) and by `ui.present`.
 - The focusable overlay is a single global session with a 30-second lease, a
   256-event queue, 4096-byte events, drop-oldest overflow, and Core-owned
