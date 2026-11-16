@@ -164,9 +164,12 @@ property of the code rather than of any candidate:
    this path is `E_UI_BLOCK_BUDGET` for the 2 MiB aggregate
    (`crates/bitty-runtime/src/plugin_runtime/services.rs:1258`).
 
-A `spacing`, `align`, `padding`, or `gap` field does not exist anywhere on the
-surface: the strings return zero field references in `ui.rs`, and the single
-textual match is a test fixture literal (`ui.rs:1524`).
+No top-level `spacing`, `align`, `padding`, or `gap` field exists on the v1
+`UiNode` surface: the strings return zero field references in `ui.rs`, and the
+single textual match is a test fixture literal (`ui.rs:1524`). A `gap` key does
+exist inside the nested rich `style` table, which is not the shape this record
+proposes; the landed-form note under the verification plan records that
+occurrence, and it does not change what the band reader reads above.
 
 ## The additive vocabulary
 
@@ -529,16 +532,17 @@ be quoted as a budget.
 ## Verification plan
 
 Most rows have no implementation; they are the checks an implementing slice
-owes, and are not evidence that anything works. The three `size` rows are the
-exception: a content-width bound shipped, but on a different key and a different
-surface than this record proposes, so their Evidence cells name the landed tests
-and the note under the table states the delta.
+owes, and are not evidence that anything works. Two groups are the exception,
+because a field shipped on a different key and a narrower surface than this
+record proposes: the three `size` rows (a content-width bound) and the two `gap`
+rows (a sibling spacing). Their Evidence cells name the landed tests, and the
+notes under the table state the delta for each.
 
 | Check                                  | Expected result                                                                                                                                                                                                                                                           | Evidence                                                                                                                                                                                                                        |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Unstyled tree identity                 | A tree using none of the four fields paints byte-identically to `d4cb95ba`.                                                                                                                                                                                               | Pending                                                                                                                                                                                                                         |
-| `gap` spacing and cursor advance       | Adjacent siblings are `gap` cells apart and the following sibling shifts by it.                                                                                                                                                                                           | Pending                                                                                                                                                                                                                         |
-| `gap` clipping under over-subscription | The group clips at the slot; no sibling exceeds the row width; runs never overlap.                                                                                                                                                                                        | Pending                                                                                                                                                                                                                         |
+| `gap` spacing and cursor advance       | Measured on the landed form (`style.gap`): adjacent siblings are `gap` cells apart and the following sibling shifts by it; `Row`, `Column`, and `List` each compose on their own axis.                                                                                    | Measured — `crates/bitty-runtime/tests/lua_ui_gap.rs` (`a_gap_on_a_row_moves_every_following_sibling`, `a_gap_on_a_column_stacks_with_spacing`, `a_gap_on_a_list_composes_like_a_column`)                                       |
+| `gap` clipping under over-subscription | Measured on the landed form (`style.gap`): the group clips at the slot, no sibling is truncated to make room for the gap, a sibling pushed past the slot is dropped, and runs never overlap.                                                                              | Measured — `lua_ui_gap.rs` (`an_over_subscribed_group_clips_without_truncating_a_node`, `a_gap_that_pushes_a_sibling_past_the_slot_drops_it`)                                                                                   |
 | `align` four values                    | `start` equals today; `center`/`end` shift the group; `space-between` pins edges.                                                                                                                                                                                         | Pending                                                                                                                                                                                                                         |
 | `align` + `anchor` refusal             | The mixed row refuses with `E_UI_COMPONENT_INVALID` naming the conflict.                                                                                                                                                                                                  | Pending                                                                                                                                                                                                                         |
 | `size.max_width` clip                  | Measured on the landed form (`style.max_width`): the painted run is clipped at the node's own boundary and the row advance shrinks, so the following sibling starts earlier. Clipped characters are not painted; a scene node has no per-node hit region to claim.        | Measured — `crates/bitty-runtime/tests/lua_ui_style_size.rs` (`max_width_clips_the_painted_run_and_the_row_advance`); reader `bitty_lua::ui_style::parse_node_style` (`max_width` arm), model `SceneNodeStyle::constrain_width` |
@@ -566,6 +570,22 @@ the measure and paint walk (`crates/bitty-render/src/scene.rs:1197`, `:1341`,
 node's region — is **not** implemented, and no row above is evidence for it: a
 successor slice that adopts the `size` spelling still owes the fill and region
 halves, and this record's status and candidate posture are unchanged.
+
+**The two `gap` rows are measured against a narrower shape.** A sibling gap
+shipped as `style.gap` — one key inside the same `style` table, not a top-level
+node field — on the `terminal`-slot rich scene path only, an integer in display
+cells inclusive `0..=32` on the `decoration.content_inset` bound
+(`crates/bitty-lua/src/ui_style.rs:156` `UI_STYLE_FIELDS: [&str; 7]`, `:205`
+`UI_STYLE_MAX_GAP_CELLS`), where a declared `0` renders identically to an absent
+key, a non-zero value on a kind that composes no siblings is refused
+`E_UI_COMPONENT_INVALID` rather than dropped
+(`crates/bitty-lua/src/ui_rich.rs:460`), an over-cap value is
+`GapOverCap { found, cap }` and never a clamp (`:329`), and a group that does not
+fit is clipped rather than wrapped, scrolled, truncated, or shrunk. The
+band-and-overlay scope this record proposes for a top-level `gap` is **not**
+implemented: a band or overlay mount accepts the `style` table and drops it. The
+two rows above are evidence for the landed shape only, and this record's status
+and candidate posture are unchanged.
 
 ## Security review
 

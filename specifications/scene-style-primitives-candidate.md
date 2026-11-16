@@ -160,10 +160,12 @@ claim.
 
 The hosted table is not four keys: it also carries **two width bounds**,
 `min_width` and `max_width`, each an integer in cells with `0` meaning "no bound
-on that side" and an inclusive cap of `1000`. They are extent vocabulary rather
-than paint — a bound sizes a node's content box and emits no operation of its
-own — so they are not a fifth and sixth paint primitive, and the
-[Extension wire half](#extension-wire-half) records them as landed behavior
+on that side" and an inclusive cap of `1000`, and the **sibling gap**, `gap`, an
+integer in cells with `0` meaning "no spacing" and an inclusive cap of `32`.
+They are extent and spacing vocabulary rather than paint — a bound sizes a
+node's content box, a gap separates adjacent siblings, and neither emits an
+operation of its own — so they are not paint primitives five, six, and seven, and
+the [Extension wire half](#extension-wire-half) records them as landed behavior
 rather than as a proposal of this record.
 
 Rules:
@@ -230,22 +232,25 @@ Rules:
 
 ## Caps and fail-closed overflow
 
-| Input                                             | Result                                                                                              |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `padding` `0..=32`                                | Accepted.                                                                                           |
-| `padding` `33` or greater                         | `PaddingOverCap { found, cap }`; the declaration is rejected.                                       |
-| `radius` `0..=16`                                 | Accepted.                                                                                           |
-| `radius` `17` or greater                          | `RadiusOverCap { found, cap }`; rejected.                                                           |
-| `border` `0..=16`                                 | Accepted.                                                                                           |
-| `border` `17` or greater                          | `BorderOverCap { found, cap }`; rejected.                                                           |
-| `min_width` / `max_width` `0..=1000`              | Accepted; `0` declares no bound on that side.                                                       |
-| `min_width` or `max_width` `1001` or greater      | `MinWidthOverCap { found, cap }` / `MaxWidthOverCap { found, cap }`; rejected.                      |
-| `min_width` above a declared `max_width`          | `WidthRangeInverted { min, max }`; rejected, never reordered.                                       |
-| Negative, fractional, boolean, or table value     | `InvalidValue { field }`; rejected.                                                                 |
-| Unknown key (including CSS-like names)            | `UnsupportedField { field }`; rejected, never ignored.                                              |
-| Field or token name longer than `32` bytes        | `OversizedField` / `OversizedToken`; rejected without echoing an unbounded input in the diagnostic. |
-| Duplicate key                                     | `DuplicateField { field }`; rejected, never last-write-wins.                                        |
-| Token outside the closed content set or a literal | `UnknownToken { token }`; rejected.                                                                 |
+| Input                                             | Result                                                                                               |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `padding` `0..=32`                                | Accepted.                                                                                            |
+| `padding` `33` or greater                         | `PaddingOverCap { found, cap }`; the declaration is rejected.                                        |
+| `radius` `0..=16`                                 | Accepted.                                                                                            |
+| `radius` `17` or greater                          | `RadiusOverCap { found, cap }`; rejected.                                                            |
+| `border` `0..=16`                                 | Accepted.                                                                                            |
+| `border` `17` or greater                          | `BorderOverCap { found, cap }`; rejected.                                                            |
+| `min_width` / `max_width` `0..=1000`              | Accepted; `0` declares no bound on that side.                                                        |
+| `min_width` or `max_width` `1001` or greater      | `MinWidthOverCap { found, cap }` / `MaxWidthOverCap { found, cap }`; rejected.                       |
+| `min_width` above a declared `max_width`          | `WidthRangeInverted { min, max }`; rejected, never reordered.                                        |
+| `gap` `0..=32`                                    | Accepted; `0` declares no spacing and renders identically to an absent key.                          |
+| `gap` `33` or greater                             | `GapOverCap { found, cap }`; rejected, never shrunk to make the container fit.                       |
+| A non-zero `gap` on a kind without sibling axis   | `E_UI_COMPONENT_INVALID`; refused, not dropped — only `Row`, `Column`, and `List` separate siblings. |
+| Negative, fractional, boolean, or table value     | `InvalidValue { field }`; rejected.                                                                  |
+| Unknown key (including CSS-like names)            | `UnsupportedField { field }`; rejected, never ignored.                                               |
+| Field or token name longer than `32` bytes        | `OversizedField` / `OversizedToken`; rejected without echoing an unbounded input in the diagnostic.  |
+| Duplicate key                                     | `DuplicateField { field }`; rejected, never last-write-wins.                                         |
+| Token outside the closed content set or a literal | `UnknownToken { token }`; rejected.                                                                  |
 
 Rules:
 
@@ -282,6 +287,7 @@ bitty.ui.mount("terminal", {
     border_token = "content.accent", -- closed content token
     min_width = 8,        -- integer, display cells, 0..1000 (0 = no floor)
     max_width = 24,       -- integer, display cells, 0..1000 (0 = no cap)
+    gap = 1,              -- integer, cells, 0..32 (adjacent siblings only)
   },
   children = { { kind = "Text", text = "ready" } },
 })
@@ -289,7 +295,7 @@ bitty.ui.mount("terminal", {
 
 Rules:
 
-1. The parser accepts only the six keys above, with the two value shapes
+1. The parser accepts only the seven keys above, with the two value shapes
    (integer, token string). Unknown keys fail closed.
 2. The parser never accepts a function, table, closure, renderer handle,
    shader, path, or image. It has no authority fields: `on_click`,
@@ -420,7 +426,8 @@ not claim a batching result.
 
 The `style` table is no longer scene-model-only. [bitty#3175](https://github.com/bitty-terminal/bitty/pull/3175)
 (merged `a64c283c`, widened by [bitty#3186](https://github.com/bitty-terminal/bitty/pull/3186),
-merged `9ebe5285`) hosts the closed six-key table on the `terminal`-slot
+merged `9ebe5285`, and by [bitty#3188](https://github.com/bitty-terminal/bitty/pull/3188),
+merged `90deb814`) hosts the closed seven-key table on the `terminal`-slot
 `ui.rich` reader as an **additive-minor optional** field. Everything below is
 **`Implemented`-only** evidence: no acceptance record adopts it, no status is
 promoted, and no compatibility promise attaches to it.
@@ -452,6 +459,24 @@ promoted, and no compatibility promise attaches to it.
   (`:259`/`:266` `MinWidthOverCap`/`MaxWidthOverCap`, `:273`
   `WidthRangeInverted`); an inverted pair is never reordered into a legal one.
   End-to-end evidence is `crates/bitty-runtime/tests/lua_ui_style_size.rs`.
+- **Sibling spacing as implemented (`bitty#3188` `90deb814`).** `gap` is an
+  integer in display cells, inclusive `0..=32`
+  (`crates/bitty-lua/src/ui_style.rs:156` `UI_STYLE_FIELDS: [&str; 7]`, `:205`
+  `UI_STYLE_MAX_GAP_CELLS`, which reuses the `decoration.content_inset` bound).
+  It is the spacing between **adjacent siblings** inside a `Row`, `Column`, or
+  `List`, inserted on the composed walk so a following sibling starts `gap`
+  cells later (`crates/bitty-runtime/src/scene_bridge.rs:179`, `.with_gap` on
+  the field copy). A declared `0` renders identically to an absent key and both
+  lower to no wrapper (`:522` `is_flat`), so `gap = 0` is legal on every kind; a
+  non-zero `gap` on a kind with no composed sibling axis is refused
+  `E_UI_COMPONENT_INVALID` rather than dropped
+  (`crates/bitty-lua/src/ui_rich.rs:460`), and it insets no node's own content.
+  An over-cap value is `GapOverCap { found, cap }` (`:329`/`:500`, re-checked by
+  the scene model at `crates/bitty-rich/src/scene.rs:524`), never a clamp. Core
+  never wraps, scrolls, truncates, or shrinks to make room for a gap: a
+  container whose children plus gaps do not fit is clipped, and a fit failure is
+  never a refusal. End-to-end evidence is
+  `crates/bitty-runtime/tests/lua_ui_gap.rs`.
 - **Unknown-property tolerance.** On a band or overlay mount the key is
   accepted and ignored, because the accepted additive-minor rule tolerates an
   unknown optional field there
@@ -473,11 +498,13 @@ promoted, and no compatibility promise attaches to it.
 
 Evidence paths: `crates/bitty-lua/src/ui_style.rs` (`UI_STYLE_FIELDS`,
 `UI_STYLE_MAX_PADDING_CELLS`, `UI_STYLE_MAX_RADIUS_PX`,
-`UI_STYLE_MAX_BORDER_PX`, `parse_node_style`, `UiNodeStyle::validate`),
-`crates/bitty-lua/src/ui_rich.rs` (`UiRichNode::Styled` and the post-walk depth
-re-check), `crates/bitty-runtime/src/scene_bridge.rs` (`scene_style_of`), and
-`crates/bitty-runtime/tests/lua_ui_style_vocab.rs` (14 integration tests
-through the shipped chain).
+`UI_STYLE_MAX_BORDER_PX`, `UI_STYLE_MAX_WIDTH_CELLS`, `UI_STYLE_MAX_GAP_CELLS`,
+`parse_node_style`, `UiNodeStyle::validate`),
+`crates/bitty-lua/src/ui_rich.rs` (`UiRichNode::Styled`, the sibling-axis
+refusal, and the post-walk depth re-check), `crates/bitty-runtime/src/scene_bridge.rs`
+(`scene_style_of`), `crates/bitty-runtime/tests/lua_ui_style_vocab.rs` (14
+integration tests through the shipped chain), and the gap's end-to-end coverage
+in `crates/bitty-runtime/tests/lua_ui_gap.rs`.
 
 Two follow-ups from the review of that landing ([bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176))
 are recorded here as gaps, not claimed as done:
@@ -527,7 +554,7 @@ rather than describing a behaviour nobody has implemented.
 
 | Concern                     | Control                                                                                                                                                |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Arbitrary styling surface   | Closed six-key vocabulary; unknown and duplicate keys fail closed.                                                                                     |
+| Arbitrary styling surface   | Closed seven-key vocabulary; unknown and duplicate keys fail closed.                                                                                   |
 | Untrusted colour input      | Token-only colour from a closed content set; literals and Core chrome tokens rejected.                                                                 |
 | Unbounded input             | Documented inclusive caps on every integer; typed overflow errors; no clamp.                                                                           |
 | Renderer or platform escape | No handle, path, image, shader, pipeline, or function crosses the wire form.                                                                           |
