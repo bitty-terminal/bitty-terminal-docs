@@ -10,6 +10,18 @@ and this project adheres to
 
 ### Added
 
+- 0.0.45 post-release hardening and evidence currency: the `bittyd` daemon
+  process is proven to open zero TCP sockets (`bitty#2921` via `#3218`), the
+  AC-1 presentation-mode clause is homed at the generation rebind edge
+  (`bitty#2476` via `#3219`), and Windows adopts `CONIN$` on attached consoles
+  while resolving `%APPDATA%`/`%LOCALAPPDATA%` roots (`bitty#3223` via
+  `#3226`). The `chrono` unmaintained advisory is recorded as a dated
+  exception (`#3221`), a stale `tokio` lock entry is bumped past
+  `RUSTSEC-2026-0386` (`#3225`), and a nightly `cargo-fuzz` campaign is wired
+  as the evidence vehicle for R-001 / P0-AC-002 (`#3228`, CI only). These
+  entries record implementation evidence only, not a `Verified` or
+  `Compatible` claim.
+
 - 0.0.44 bounded Lua UI composition and plugin-owned panels: `ui.rich` content
   height and cross-axis align bounds complete the bounded composition surface
   (`bitty#2191` via `#3212`, `#3198`); plugin-owned Dwindle panels gain a
@@ -21,16 +33,6 @@ and this project adheres to
   (`#3217`), and plugin network/filesystem denial with the zero-TCP lifecycle
   is proven by test (`#3209`). These entries record implementation evidence
   only, not a `Verified` or `Compatible` claim.
-
-- After 0.0.44 (merged on `bitty` `main`, not in a release yet): the daemon
-  process is proven to open zero TCP sockets (`bitty#2921` via `#3218`), the
-  `chrono` unmaintained advisory is recorded as a dated exception (`#3221`), a
-  stale `tokio` lock entry is bumped past `RUSTSEC-2026-0386` (`#3225`), the
-  AC-1 presentation-mode clause is homed at the generation rebind edge
-  (`bitty#2476` via `#3219`), and Windows resolves `%APPDATA%`/`%LOCALAPPDATA%`
-  roots and adopts `CONIN$` on attached consoles (`bitty#3223` via `#3226`).
-  These entries record implementation evidence only, not a `Verified` or
-  `Compatible` claim.
 
 - 0.0.43 bounded Lua UI composition and chrome bands: style `gap` spacing
   (`bitty#2191` via `#3188`), band root align distribution (`#3190`), and

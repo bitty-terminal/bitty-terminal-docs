@@ -113,10 +113,11 @@ named root error instead of guessing a path.
 
 Status: **implemented-only for the data root.** The config-root precedence
 above, including `%APPDATA%` and the last-resort `%LOCALAPPDATA%`, predates
-release `v0.0.44`. The data-root order is newer: it is merged on `bitty` `main`
-(`67f51b56`, bitty#3223 via PR #3226) and is not part of `v0.0.44` (`7b3d3df`),
-whose resolver used `$XDG_DATA_HOME` else `$HOME/.local/share` and therefore
-preferred `$HOME` whenever it was set.
+release `v0.0.44`. The data-root order is newer than the config-root
+precedence: it landed on `bitty` `main` (bitty#3223 via PR #3226) and first
+ships in `v0.0.45` (`5d19152`, 2026-11-18); `v0.0.44` (`7b3d3df`) used
+`$XDG_DATA_HOME` else `$HOME/.local/share` and therefore preferred `$HOME`
+whenever it was set.
 
 Every derived location under those roots:
 
