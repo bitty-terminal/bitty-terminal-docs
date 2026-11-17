@@ -67,17 +67,30 @@ child process connected via a pseudo-terminal (PTY) pair.
 
 Bitty abstracts paths through a five-role semantic hierarchy:
 
-| Role        | Linux / BSD                                        | macOS                                                          | Windows                              |
-| ----------- | -------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------ |
-| **Config**  | `$XDG_CONFIG_HOME/bitty` (`~/.config/bitty`)       | `~/Library/Application Support/bitty` (also `~/.config/bitty`) | `%APPDATA%\bitty` (roaming)          |
-| **Data**    | `$XDG_DATA_HOME/bitty` (`~/.local/share/bitty`)    | `~/Library/Application Support/bitty`                          | `%LOCALAPPDATA%\bitty\data` (local)  |
-| **State**   | `$XDG_STATE_HOME/bitty` (`~/.local/state/bitty`)   | `~/Library/Application Support/bitty`                          | `%LOCALAPPDATA%\bitty\state` (local) |
-| **Cache**   | `$XDG_CACHE_HOME/bitty` (`~/.cache/bitty`)         | `~/Library/Caches/bitty`                                       | `%LOCALAPPDATA%\bitty\cache` (local) |
-| **Runtime** | `$XDG_RUNTIME_DIR/bitty` (`/run/user/<uid>/bitty`) | `$TMPDIR/bitty-<uid>/`                                         | `\\.\pipe\bitty-<instance-id>`       |
+| Role        | Linux / BSD                                        | macOS                      | Windows                                                               |
+| ----------- | -------------------------------------------------- | -------------------------- | --------------------------------------------------------------------- |
+| **Config**  | `$XDG_CONFIG_HOME/bitty` (`~/.config/bitty`)       | `$HOME/.config/bitty`      | `%APPDATA%\bitty` (roaming)                                           |
+| **Data**    | `$XDG_DATA_HOME/bitty` (`~/.local/share/bitty`)    | `$HOME/.local/share/bitty` | `%LOCALAPPDATA%\bitty` (local; `plugins/`, `plugins-state/` under it) |
+| **State**   | `$XDG_STATE_HOME/bitty` (`~/.local/state/bitty`)   | `$HOME/.local/state/bitty` | `$HOME/.local/state/bitty` (no `%LOCALAPPDATA%` fallback)             |
+| **Cache**   | `$XDG_CACHE_HOME/bitty` (`~/.cache/bitty`)         | `$HOME/.cache/bitty`       | `%LOCALAPPDATA%\bitty\cache` (local)                                  |
+| **Runtime** | `$XDG_RUNTIME_DIR/bitty` (`/run/user/<uid>/bitty`) | `$TMPDIR/bitty-<uid>/`     | `\\.\pipe\bitty-<instance-id>`                                        |
 
-On Windows, configuration roams with user domain profiles (`%APPDATA%`), while
-rebuildable caches and session state stay machine-local (`%LOCALAPPDATA%`). The
-runtime endpoint is a per-instance named pipe with a current-user-only DACL;
+The Windows column lists the resolved default, not an exclusive root: the
+config resolver tries `$XDG_CONFIG_HOME` > `%APPDATA%` > `$HOME/.config` >
+`%LOCALAPPDATA%`, and the data resolver tries `$XDG_DATA_HOME` >
+`%LOCALAPPDATA%` > `$HOME/.local/share` > `%APPDATA%`. Config roams because it
+lives under `%APPDATA%`; installed plugins, their persistent state, and
+rebuildable caches stay machine-local under `%LOCALAPPDATA%`. The plugin store
+is `%LOCALAPPDATA%\bitty\plugins` and persistent plugin state is
+`%LOCALAPPDATA%\bitty\plugins-state`; there is no `data` segment between them
+and `bitty`. The full table of derived locations is in the
+[configuration options reference](../reference/configuration-options.md#platform-roots-and-windows-precedence).
+
+A Windows install that previously ran with `HOME` set may still hold its plugin
+store under `$HOME/.local/share/bitty`. That legacy tree is not read or migrated
+automatically (bitty CTX-1876), so move it by hand after an upgrade.
+
+The runtime endpoint is a per-instance named pipe with a current-user-only DACL;
 clients also verify the server's process-token SID, so another user cannot
 connect to or impersonate the endpoint.
 
@@ -94,7 +107,10 @@ exist, Bitty fails closed with exit code 2 rather than falling back.
 
 There is no `--config-dir` flag, and no `BITTY_CONFIG_DIR`, `BITTY_DATA_DIR`, or
 `BITTY_LOG_DIR` variables. Data and state directories come from
-`$XDG_DATA_HOME` and `$XDG_STATE_HOME` (`~/.local/share` and `~/.local/state`).
+`$XDG_DATA_HOME` and `$XDG_STATE_HOME` (`~/.local/share` and `~/.local/state`),
+with `%LOCALAPPDATA%` and `%APPDATA%` standing in for the data root on Windows
+as described above. The state root used by the daemon audit sink has no
+Windows-variable fallback: it reads `$XDG_STATE_HOME`, then `$HOME/.local/state`.
 
 Other dedicated override variables include:
 
