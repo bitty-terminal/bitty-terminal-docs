@@ -716,7 +716,7 @@ state change. User entries replace the shipped chord by
 `command:bitty.workspace:scratchpad-toggle`, `toggle_scratchpad`, or
 `scratchpad_toggle` on the chrome key path) toggles
 the window scratchpad slot for the core-owned keymap command (bitty issue
-2091, CTX-1241, and `bitty#3078` / `bitty#3074` at `d79f455b`;
+2091, CTX-1241, and `bitty#3078` / `bitty#3074` at `9db82bb9` (tag `v0.0.37`);
 `crates/bitty-terminal/src/chrome_keys.rs`). The command
 routes past the plugin runtime straight to the core runtime
 (`Runtime::scratchpad_toggle`), validated on the live tree before any state
