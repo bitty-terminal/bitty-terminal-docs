@@ -20,7 +20,7 @@ sidebar_order: 10
   `show-source`, preview updates, and recover from refused spawns.
 
 No other product how-to guide is currently admissible. Experimental code and
-pre-alpha releases exist (latest `v0.0.29`, released 2026-10-26), but no
+pre-alpha releases exist (latest `v0.0.44`, released 2026-11-17), but no
 stable or supported public contract is claimed: no command set or workflow is
 `Verified`, `Compatible`, or `Release-ready`, so this directory records only
 the category contract and the guide above.

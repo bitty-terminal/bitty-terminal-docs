@@ -1,6 +1,6 @@
 ---
 title: Configuration options reference
-description: Complete user-facing configuration inventory for the pre-0.0.21 config surface with types defaults ranges reload behavior and gaps
+description: Complete user-facing configuration inventory with types, defaults, ranges, reload behavior, platform roots, and gaps
 category: reference
 audience: user
 document_type: reference
@@ -30,7 +30,7 @@ sidebar_order: 30
   `bitty-config/src/types.rs`, chord/action grammar in
   `bitty-config/src/keymap.rs`, discovery bounds in
   `bitty-config/src/wheel.rs`, the Lua admission surface in
-  `bitty-lua/src/config.rs`, CLI parsing in `bitty-app/src/cli.rs`, and the
+  `bitty-lua/src/config.rs`, CLI parsing in `bitty-terminal/src/cli.rs`, and the
   manifest reader in `bitty-runtime/src/plugin_runtime/manifest_toml.rs`
   plus `bitty-plugin-host/src/manifest.rs` and
   `bitty-plugin-host/src/capability.rs`.
@@ -39,7 +39,8 @@ sidebar_order: 30
   same rows with per-option `since`, `status`, and `source` fields for
   website import. The JSON is data, not prose: it has no frontmatter and is
   regenerated from code, never hand-edited for new options.
-- Honesty rule: `since` is uniformly **pre-0.0.21 (implemented-only)**.
+- Honesty rule: `since` values are uniform pre-release implementation markers
+  (`pre-0.0.21`, with two rows at `pre-0.0.22`), all implemented-only.
   Nothing below has shipped as a stable contract in any release, and rows
   marked **gap** name behavior the code does not own yet instead of
   inventing it.
@@ -81,6 +82,70 @@ The user file is `$XDG_CONFIG_HOME/bitty/init.lua` (fallback
 `init.lua` is absent). `BITTY_CONFIG` overrides the file path and
 `BITTY_PROFILE` overrides the profile name; `--config` / `--profile` win
 over both.
+
+### Platform roots and Windows precedence
+
+Two resolvers own the roots. Both read every candidate from the calling
+environment, in a fixed order, and skip empty or whitespace-only values; no
+host path is compiled in.
+
+Config root (`<config-dir>`; every candidate is joined with the `bitty`
+segment):
+
+1. `$XDG_CONFIG_HOME/bitty`
+2. `%APPDATA%\bitty` (roaming)
+3. `$HOME/.config/bitty`
+4. `%LOCALAPPDATA%\bitty` (local)
+
+Data root (`<data-dir>`; the bare base, with `bitty` added by each consumer):
+
+1. `$XDG_DATA_HOME`
+2. `%LOCALAPPDATA%` (local)
+3. `$HOME/.local/share`
+4. `%APPDATA%` (roaming)
+
+The two orders are deliberately asymmetric. Configuration roams with the user
+domain profile, so `%APPDATA%` outranks `$HOME/.config` and machine-local
+`%LOCALAPPDATA%` is the last resort. Installed plugins and their state are
+machine-local, so `%LOCALAPPDATA%` outranks `$HOME` and roaming `%APPDATA%` is
+the last resort. When no candidate is usable, the caller fails closed with a
+named root error instead of guessing a path.
+
+Status: **implemented-only for the data root.** The config-root precedence
+above, including `%APPDATA%` and the last-resort `%LOCALAPPDATA%`, predates
+release `v0.0.44`. The data-root order is newer: it is merged on `bitty` `main`
+(`67f51b56`, bitty#3223 via PR #3226) and is not part of `v0.0.44` (`7b3d3df`),
+whose resolver used `$XDG_DATA_HOME` else `$HOME/.local/share` and therefore
+preferred `$HOME` whenever it was set.
+
+Every derived location under those roots:
+
+| Location                | Path                                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| User configuration      | `<config-dir>/init.lua` (or a sibling `config.lua`)                                                                                        |
+| Named profiles          | `<config-dir>/profiles/<name>.lua`                                                                                                         |
+| Per-plugin settings     | `<config-dir>/plugins/<owner>.<name>.lua`                                                                                                  |
+| Plugin ledger           | `<config-dir>/bitty-plugins.lua`                                                                                                           |
+| Plugin budget overrides | `<config-dir>/plugin-budgets.lua`                                                                                                          |
+| Plugin store            | `<data-dir>/bitty/plugins`                                                                                                                 |
+| Plugin persistent state | `<data-dir>/bitty/plugins-state/<plugin-id>/store.json`                                                                                    |
+| Installed components    | `<data-dir>/bitty/extensions/<name>/<version>`                                                                                             |
+| Font index cache        | `$XDG_CACHE_HOME/bitty/font-index-v2`, else `%LOCALAPPDATA%\bitty\cache\font-index-v2` on Windows, else `$HOME/.cache/bitty/font-index-v2` |
+
+On Windows that resolves to `%APPDATA%\bitty\init.lua` for the user file,
+`%LOCALAPPDATA%\bitty\plugins` for the plugin store, and
+`%LOCALAPPDATA%\bitty\plugins-state` for persistent plugin state. The store
+root is `...\bitty\plugins` itself, not a `data` subdirectory beneath it. The
+font index cache is the one root with a different shape: `$XDG_CACHE_HOME/bitty`,
+else `%LOCALAPPDATA%\bitty\cache` on Windows, else `$HOME/.cache/bitty`.
+
+Known limitation: a Windows install that ran before the `%LOCALAPPDATA%`
+precedence change with `HOME` set may hold its plugin store and
+`plugins-state` under `$HOME/.local/share/bitty/`. The resolver does not read
+or migrate that legacy location, so those plugins are not discovered after an
+upgrade until the store is moved by hand. Automatic migration is tracked as
+bitty CTX-1876; until it lands, treat the old tree as an operator-assisted
+move, not a second discovery root — plugin discovery stays single-authority.
 
 ### Named profiles
 
@@ -869,18 +934,21 @@ at dispatch.
 
 ## Environment variables
 
-| Variable              | Role                                                            | Values                         |
-| --------------------- | --------------------------------------------------------------- | ------------------------------ |
-| `BITTY_CONFIG`        | Config file path override (below `--config`, above XDG default) | file path                      |
-| `BITTY_PROFILE`       | Profile name override (below `--profile`)                       | profile name                   |
-| `BITTY_SOCKET`        | IPC socket surface used by test-mode and `ctl`                  | socket path                    |
-| `BITTY_VERBOSE`       | Tick stats on (`1`/`true`); shorthand for debug level           | `1`, `true` (case-insensitive) |
-| `BITTY_HEADLESS`      | Single headless tick smoke (`1`/`true`)                         | `1`, `true` (case-insensitive) |
-| `BITTY_LOG`           | Explicit stderr log level override                              | level name                     |
-| `$SHELL`              | Shell fallback when `terminal.shell` is unset                   | executable path                |
-| `$VISUAL` / `$EDITOR` | Editor for `bitty config edit` (`$VISUAL` first)                | executable                     |
-| `NO_COLOR`            | Disables ANSI coloring in table output when set                 | presence                       |
-| `XDG_CONFIG_HOME`     | Config root (above `%APPDATA%` above `$HOME/.config`)           | directory                      |
+| Variable              | Role                                                                             | Values                         |
+| --------------------- | -------------------------------------------------------------------------------- | ------------------------------ |
+| `BITTY_CONFIG`        | Config file path override (below `--config`, above XDG default)                  | file path                      |
+| `BITTY_PROFILE`       | Profile name override (below `--profile`)                                        | profile name                   |
+| `BITTY_SOCKET`        | IPC socket surface used by test-mode and `ctl`                                   | socket path                    |
+| `BITTY_VERBOSE`       | Tick stats on (`1`/`true`); shorthand for debug level                            | `1`, `true` (case-insensitive) |
+| `BITTY_HEADLESS`      | Single headless tick smoke (`1`/`true`)                                          | `1`, `true` (case-insensitive) |
+| `BITTY_LOG`           | Explicit stderr log level override                                               | level name                     |
+| `$SHELL`              | Shell fallback when `terminal.shell` is unset                                    | executable path                |
+| `$VISUAL` / `$EDITOR` | Editor for `bitty config edit` (`$VISUAL` first)                                 | executable                     |
+| `NO_COLOR`            | Disables ANSI coloring in table output when set                                  | presence                       |
+| `XDG_CONFIG_HOME`     | Config root (above `%APPDATA%`, `$HOME/.config`, `%LOCALAPPDATA%`)               | directory                      |
+| `XDG_DATA_HOME`       | Data root (above `%LOCALAPPDATA%`, `$HOME/.local/share`, `%APPDATA%`)            | directory                      |
+| `APPDATA`             | Windows roaming config root fallback (above `$HOME/.config`)                     | directory                      |
+| `LOCALAPPDATA`        | Windows local data root (above `$HOME/.local/share`) and last-resort config root | directory                      |
 
 Plugin-side environment access is capability-gated (`env.read`,
 deny-by-default), not ambient.
