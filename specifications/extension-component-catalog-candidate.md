@@ -1,576 +1,391 @@
 ---
-title: Extension Component Catalog (Candidate)
-description: Candidate catalog of five reusable extension building blocks over the accepted v1 node set with typed descriptors caps deterministic order and no new authority
+title: Extension Composition Boundary (Candidate)
+description: Terminal-platform boundary for extension UI composition, naming the corpus that owns the plugin-facing component catalog, the surfaces and budgets Core owns, and the bitty#2114 evidence state
 category: specifications
-audience: plugin-author
+audience: contributor
 document_type: specification
 status: draft
 website_publish: false
 sidebar_order: 75
 ---
 
-# Extension Component Catalog (Candidate)
+# Extension Composition Boundary (Candidate)
 
 ## Document status
 
 > Status: **draft candidate** — not **Accepted**, not **Verified**, not
-> **Compatible**, and not normative. This record defines a candidate catalog of
-> reusable extension building blocks and records a headless implementation
-> slice. It changes no accepted text: the
-> [Rich Presentation RFC](rich-presentation-rfc.md) still owns `SceneNode` and
-> SCN-1..SCN-5, the
+> **Compatible**, and not normative. This record states a boundary, not a
+> catalog: it names which terminal-platform surfaces an extension composition
+> lands on, what Core owns at each of them, which budgets every composition
+> inherits, and what the `bitty` implementation actually carries for
+> [bitty#2114](https://github.com/bitty-terminal/bitty/issues/2114).
+>
+> **This record is not the extension component catalog and does not maintain
+> one.** The plugin-facing catalog of reusable composition patterns — per-entry
+> scene shape, style hooks, accessibility notes, caller evidence, availability,
+> and headed example — lives in exactly one corpus,
+> [bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs)
+> ([Extension Component Catalog (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/extension-component-catalog-candidate.md)).
+> That placement is argued in [Corpus ownership](#corpus-ownership) below.
+>
+> It changes no accepted text: the [Rich Presentation RFC](rich-presentation-rfc.md)
+> still owns `SceneNode` and SCN-1..SCN-5, the
 > [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
 > still owns the accepted `Text`/`Row`/`Column`/`List` surface and its
-> exclusions, and the [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md)
+> exclusions, the [Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md)
+> still owns the slot envelopes, and the [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md)
 > and [Status System Specification](status-system.md) still own edge-band
-> regions and status slots. Entry names, shapes, caps, and ordering below are
-> candidate spellings that a successor acceptance adopts or rejects. The
-> implementation is **`Implemented`-only**, headless, has no consumer, and
-> carries no compatibility promise.
->
-> This record is the separate follow-up that
-> [bitty#2191](https://github.com/bitty-terminal/bitty/issues/2191) keeps out of
-> the bounded Lua composition API. It authorizes no Lua surface, no new node
-> kind, no capability, and no release scope. The bar dogfood remains deferred
-> to the `bitty-plugins` repository.
+> regions and status slots.
+
+## Corpus ownership
+
+Four documentation corpora overlap by design, and each topic has exactly one
+canonical home; the others cross-link. Until this revision the five-pattern
+catalog existed in two of them — here (599 lines, `category: specifications`)
+and in bitty-plugins-docs (1293 lines, `category: extensibility`, plus the
+deprecated [Plugin UI Component Catalog](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/ui-component-catalog-candidate.md)
+that points at it). Two records with the same five entry names, the same scene
+shapes, and different statements of the same caps is the duplication this
+revision removes.
+
+**Ruling: bitty-plugins-docs owns the plugin-facing extension component
+catalog.** The catalog is plugin SDK material, and the owning corpus says so in
+its own words:
+
+| Evidence                                                       | Statement                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| bitty-plugins-docs `README.md`, "Scope / This repository owns" | "Plugin SDK documentation: public API surface, versioning, and compatibility." A catalog that tells a plugin author which scene shape to compose is public API guidance.                                                                             |
+| bitty-plugins-docs `README.md`, "This repository does not own" | Terminal-platform documentation stays in bitty-terminal-docs; the inverse boundary is the same rule read the other way.                                                                                                                              |
+| bitty-plugins-docs `extensibility/README.md`                   | The catalog is an indexed Draft row of the extensibility topic tree, beside the per-slot inventory, the Lua UI component model, cross-plugin composition, and the DevTools live view — the whole "how a plugin builds UI" topic already lives there. |
+| bitty-plugins-docs catalog, per-entry fields                   | Every entry carries caller evidence at plugin `file:line`, the closed-set slot and capability it needs, and an availability verdict against the current build. Only the plugin corpus can verify plugin sources.                                     |
+
+Two consequences follow, and they are the substance of this revision:
+
+- **This corpus keeps the platform half.** Which surfaces and slots exist, what
+  Core owns at each, the node vocabulary, the budgets every composition
+  inherits, the composition rules that hold platform-wide, and the implementation
+  evidence for bitty#2114. None of that is a per-pattern contract, and none of
+  it is duplicated in the plugin corpus.
+- **This corpus stops maintaining the pattern half.** Scene shapes, style hooks,
+  per-entry caps, accessibility notes, headed examples, and caller evidence for
+  `band`, `pill-row`, `tooltip-detail-fallback`, `modal-sheet`, and
+  `status-strip` are removed from this record and cross-linked. The removal is
+  deliberate: where the two records disagreed, this one was not automatically
+  right, and the plugin corpus is the one with caller evidence.
+
+### Why the file keeps its path
+
+The filename stays `extension-component-catalog-candidate.md` because three
+things cite the path rather than the title: the headless module's own doc
+comment (`crates/bitty-lua/src/ui_catalog.rs`, "the candidate
+`bitty-terminal-docs/specifications/extension-component-catalog-candidate.md`
+record"), the [Lua UI Style and Layout Vocabulary (Candidate)](lua-ui-style-layout-candidate.md)
+record, and the Draft row in the [specifications index](README.md). Renaming the
+path would break those citations in other repositories to buy a cosmetic change;
+the title and the opening paragraph carry the correction instead. Follow-up
+FU-C2 records the one in-repo citation that should be reworded.
 
 ## Purpose and scope
 
-Downstream extensions currently hand-roll the same presentation patterns: a bar
-composes one `Row` with bracket-wrapped workspace pills; a status line orders
-modules into `left`/`center`/`right`; a tooltip-less click falls back to a
-detail line; an overlay modal paints a titled row stack. Each plugin invents the
-shape, its caps, and its failure behavior, so the same content renders
-differently and over-cap input fails inconsistently.
+Extensions compose UI by building scene trees by hand. The platform question is
+not "what should a band look like" — that is the plugin corpus's job — but
+**which surfaces such a composition can land on, what the host does with it
+there, and which bounds and refusals apply to every composition regardless of
+which pattern it implements.**
 
-This record answers one question: **which reusable extension building blocks
-may a typed, host-side catalog compose from the accepted v1 node set, with what
-documented bounds and failure behavior, without creating a new input, style,
-rendering, or code surface?**
+In scope:
 
-In scope (all **Candidate**):
+- the closed slot set and the node vocabulary a composition may use;
+- the style table the bridge parses and the caps it enforces, counted from code;
+- what Core owns at each surface (placement, focus, modality, tokens, status);
+- the composition rules that hold for any extension tree;
+- the budgets a composition inherits, with the symbol that enforces each;
+- the `bitty` headless composition slice as implementation evidence, including
+  the bitty#2114 checkbox state.
 
-- a closed five-entry catalog: `band`, `pill-row`,
-  `tooltip-detail-fallback`, `modal-sheet`, `status-strip`;
-- each entry's typed descriptor fields and canonical Scene shape;
-- documented caps, inclusive boundaries, and typed fail-closed overflow;
-- deterministic composition order and canonical round-trip recognition;
-- reserved style hooks (not implemented) and accessibility notes;
-- a headless implementation slice and its verification evidence;
-- the explicit remainder: bar migration, Lua exposure, and headed proof.
+Out of scope, with the owner named:
 
-Out of scope and owned elsewhere:
-
+- the five reusable patterns, their scene shapes, style hooks, accessibility
+  notes, headed examples, caller evidence, and availability — owned by
+  [bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs)
+  ([Extension Component Catalog (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/extension-component-catalog-candidate.md));
 - the accepted `SceneNode` schema, SCN-1..SCN-5, and the rule that presentation
-  never becomes Terminal Truth (accepted,
-  [Rich Presentation RFC](rich-presentation-rfc.md));
+  never becomes Terminal Truth (accepted, [Rich Presentation RFC](rich-presentation-rfc.md));
 - the accepted v1 extension node set and slot set (accepted,
-  [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md);
-  `Image`, `CodeBlock`, `Table`, `Rule`, and bordered `Block` stay excluded);
+  [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md));
+- per-slot purpose, multiplicity, and conflict resolution (candidate,
+  [Plugin UI Slot Inventory](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/plugin-ui-slot-inventory-candidate.md));
 - edge-band geometry, region hit-testing, and reserved thickness (candidate,
-  [Chrome Band Contract](chrome-band-contract-candidate.md)); the band host
-  remains the only owner of placement in `bitty`;
+  [Chrome Band Contract](chrome-band-contract-candidate.md));
+- slot envelopes and fragment composition (candidate,
+  [Chrome Surface Contract](chrome-surface-contract-candidate.md));
 - status modules, slots, sampling cadence, and privileged metrics (draft,
   [Status System Specification](status-system.md));
 - overlay placement, focus, modality, and input capture (accepted identity and
-  focus routing, [Panel Runtime RFC](panel-runtime-rfc.md); presentation
-  surface, [Chrome Surface Contract](chrome-surface-contract-candidate.md));
-- the candidate Scene Style Primitives set and its precedence (draft,
+  focus routing, [Panel Runtime RFC](panel-runtime-rfc.md); the three-owner
+  boundary, [Overlay Ownership Reconciliation](overlay-ownership-reconciliation.md));
+- the candidate style primitives and their precedence (draft,
   [Scene Style Primitives](scene-style-primitives-candidate.md));
 - the bounded Lua composition API and host parity (open,
-  [bitty#2191](https://github.com/bitty-terminal/bitty/issues/2191));
-- the plugin-side Lua component ecosystem (candidate,
-  [Lua UI Component Model](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/lua-ui-component-model-candidate.md)).
-
-## Normative sources this specification must not weaken
-
-- [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md):
-  untrusted-by-default posture and invariants 3 (presentation, never Terminal
-  Truth), 4 (no hot-path execution), 7 (bounded inputs), and 10
-  (`bitty --safe`).
-- [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md):
-  T-01 resource exhaustion and T-06/T-07 plugin authority and hot paths.
-- [Core and Plugin Boundaries](../architecture/core-boundaries.md): mechanism
-  versus policy and the primitive-or-composable test; a plugin alters
-  presentation only.
-- [Rich Presentation RFC](rich-presentation-rfc.md) (accepted): `SceneNode`,
-  SCN-1..SCN-5, and the prohibition on shaders, pipelines, native windows, and
-  global-coordinate drawing.
-- [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
-  (accepted): the closed slot set, the v1 node subset, and the typed
-  `E_UI_COMPONENT_INVALID` rejection for an invalid component.
-- [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md):
-  `left`/`center`/`right` regions, declaration-order rendering, and the
-  `64`-region contribution bound.
-- [Status System Specification](status-system.md) (draft): slot ordering,
-  bounded segment output, and the rule that modules never run on the input or
-  render path.
-- [Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md):
-  the band/overlay surface split and its existing text bounds.
-- [Scene Style Primitives (Candidate)](scene-style-primitives-candidate.md):
-  the candidate style vocabulary whose acceptance is a prerequisite for any
-  style hook here.
-- [bitty#2191](https://github.com/bitty-terminal/bitty/issues/2191): the
-  catalog stays a separate follow-up; the bounded composition API does not
-  absorb it.
-
-This record selects no threshold that moves a requirement between owners and
-creates no bypass. Every cap reuses an accepted or already-drafted bound and
-does not widen it.
-
-## Terminology
-
-| Term            | Meaning in this document                                                                                     |
-| --------------- | ------------------------------------------------------------------------------------------------------------ |
-| Catalog entry   | One closed, named building block (`band`, `pill-row`, ...) with its own contract.                            |
-| Descriptor      | Typed Rust data for one entry: segment, pill, detail, or sheet content.                                      |
-| Composition     | The pure function that turns a descriptor into a bounded `Text`/`Row`/`Column` tree.                         |
-| Canonical shape | The one tree shape `compose` emits for an entry; recognition is strict and rejects every divergence.         |
-| Region / slot   | The ordered `left`, `center`, and `right` groups of a band or status strip.                                  |
-| Pill            | A bracketed text label in a `pill-row`; its active state is redundant bold emphasis, not a second node kind. |
-| Cap             | The inclusive maximum a field accepts; overflow is a typed rejection, never a clamp or silent omission.      |
-| Mutation        | A presented tree that diverges from its declared descriptor (dropped item, changed text, added style).       |
-| Style hook      | A reserved place for the candidate style primitives; **none** is implemented or accepted here.               |
-
-## Catalog model
-
-The catalog is a **closed set of five entries** over the accepted v1 extension
-primitives. It is not an element taxonomy and adds no node kind:
-
-```rust
-// Candidate shape; implemented headlessly in bitty CTX-1416.
-enum CatalogBlock {
-    Band(StripDescriptor),                    // Text/Row only
-    PillRow(PillRowDescriptor),               // Text/Row only
-    TooltipDetailFallback(DetailFallbackDescriptor), // Text only
-    ModalSheet(ModalSheetDescriptor),         // Text/Row/Column only
-    StatusStrip(StripDescriptor),             // Text/Row only
-}
-```
-
-Rules:
-
-1. **Accepted primitives only.** Every emitted node is `Text`, `Row`, or
-   `Column`; `List` remains accepted but no entry needs it. `Block`, `Image`,
-   `CodeBlock`, `Table`, `Rule`, and unknown kinds never appear, matching the
-   accepted v1 exclusions.
-2. **Descriptors are data.** A descriptor is host-side Rust data. No Lua
-   value, function, closure, table, renderer handle, shader, path, image,
-   capability, or command crosses it.
-3. **Composition is pure and cold.** Composition runs once when a host builds
-   or validates a contribution, never per frame, keystroke, PTY read, VT parse,
-   or damage computation. No plugin VM is constructed or called.
-4. **The entry id is declared, never inferred.** A composed tree carries no
-   entry tag. Recognition takes the caller's expected entry; `band` and
-   `status-strip` share a shape and are interchangeable only when their
-   descriptors are identical (both are presentation data with no authority).
-5. **No style surface.** Descriptors carry no padding, radius, border, colour
-   token, background, opacity, or motion field. Bold is the only attribute
-   emitted, as redundant emphasis. Style hooks are reserved below.
-6. **No authority.** No `on_click`, `on_scroll`, `region`, command, argument,
-   coordinate, focus request, modality flag, or capability appears.
-7. **Round-trip is canonical recognition, not a wire format.** `from_scene`
-   re-parses exactly the emitted shape and rejects decoration or omission. There
-   is no new serialization grammar and no plugin-facing parser.
-8. **A declaration is all-or-nothing.** An empty, unknown, over-cap, or
-   mismatched declaration fails closed. A host may never ignore a declared
-   block and present a partial surface.
-
-## Entry contracts
-
-### `band`
-
-**Declaration.** `StripDescriptor { left, center, right }`, each an ordered
-list of `Segment { text, emphasis }`.
-
-**Scene shape.** A `Row` of three to five children: the `left` group, an
-optional structural space, the `center` group, an optional structural space,
-and the `right` group. Each group is itself a `Row` of alternating `Text`
-segments and single-space separators; an empty group is an empty `Row`, so all
-three regions keep their identity. A region separator is emitted only between
-two non-empty regions, so an empty leading or trailing region adds no edge
-blank.
-
-```text
-Row[
-  Row[Text("ws:1"), Text(" "), Text("ws:2")],
-  Text(" "),
-  Row[Text("cpu")],
-  Text(" "),
-  Row[Text("clock")]
-]
-```
-
-**Order.** `left`, then `center`, then `right`; segments keep declaration order.
-Duplicates are preserved; nothing sorts, deduplicates, or evicts.
-
-**Caps.** At most `64` segments across all three regions; each segment is
-`1..=64` bytes. Empty groups are allowed; an all-empty descriptor is rejected.
-
-**Style hooks.** None. No `fg`/`bg` token is emitted; emphasis is
-`bold = true` only. Theme resolution remains host/plugin policy outside the
-catalog.
-
-**Accessibility.** Groups add no role and no focus stop. Reading order is the
-composed order. Emphasis must not be the sole carrier of any state; the segment
-text must remain meaningful without bold.
-
-**Headed example (illustrative, not run evidence).**
-
-```text
-[ws:1] [ws:2]        cpu 42%        clock 12:04
-```
-
-The equivalent hand-rolled tree a bar plugin writes today is the same
-`Text`/`Row` shape; the catalog only fixes the region order and bounds.
-
-### `pill-row`
-
-**Declaration.** `PillRowDescriptor { pills: [Pill { label, active }] }`.
-
-**Scene shape.** A `Row` of alternating `Text` pills and single-space
-separators. A pill renders as `[label]`; `active` renders as `bold = true`.
-
-```text
-Row[Text("[ws:1]"), Text(" "), Text("[ws:2]")]   // ws:2 active -> bold
-```
-
-**Order.** Declaration order, left to right; duplicate labels are preserved.
-
-**Caps.** At most `64` pills; each label is `1..=32` bytes and must not contain
-`[` or `]` (the rendered delimiters are reserved). An empty pill row is
-rejected.
-
-**Style hooks.** None. Active state is redundant bold; a plugin that needs a
-theme token or a click binding composes its own accepted tree instead of this
-entry.
-
-**Accessibility.** A pill is text, not a button. The catalog adds no role, no
-focus, and no activation. The label must identify the item without relying on
-bold; plugins that need interaction use their own `on_click` binding under the
-accepted command path, which this entry never emits.
-
-**Headed example (illustrative, not run evidence).**
-
-```text
-[ws:1] [ws:2] [ws:3]
-```
-
-### `tooltip-detail-fallback`
-
-**Declaration.** `DetailFallbackDescriptor { text }`.
-
-**Scene shape.** One plain `Text` node, no style, no binding.
-
-**Order.** A single line; there is no ordering question.
-
-**Caps.** `1..=128` bytes; an empty detail is rejected.
-
-**Style hooks.** None.
-
-**Accessibility.** This is plain content, not a tooltip. It creates no hover
-surface, no popup, no live region, and no announcement. A host that wants to
-announce it uses its own accepted notification/announcement path and
-capability; the catalog neither calls nor implies one.
-
-**Headed example (illustrative, not run evidence).** The bar's current
-tooltip-without-command fallback shows the module detail as notification text;
-the catalog only standardizes the detail line content, not the notification
-vehicle. A plugin that cannot use a notification may mount this text in its own
-band or overlay subtree.
-
-### `modal-sheet`
-
-**Declaration.** `ModalSheetDescriptor { title, rows }`.
-
-**Scene shape.** A `Column` whose first child is a one-text `Row` with
-`bold = true` (the title), followed by one one-text `Row` per body line.
-
-```text
-Column[
-  Row[Text("Confirm")],   // bold
-  Row[Text("Apply the change?")],
-  Row[Text("[y] yes  [n] no")]
-]
-```
-
-**Order.** Title first, then body rows in declaration order.
-
-**Caps.** Title is `1..=128` bytes; each body row is `1..=128` bytes; at most
-`64` body rows. An empty title, empty row, or empty body is rejected.
-
-**Style hooks.** None. The title's bold is redundant emphasis.
-
-**Accessibility.** This is **content only**. It creates no overlay, no focus
-trap, no modality, no input capture, and no second modal authority. A plugin
-that mounts it into the accepted `overlay` slot still needs `ui.overlay` and
-still obeys the host's overlay capacity, focus routing, and modal rules; a
-plugin that presents it inside its own panel owns that panel's focus contract.
-The title must be meaningful without bold, and body rows read in order.
-
-**Headed example (illustrative, not run evidence).** The host's implemented
-overlay scene path already paints a titled `Column` as one pill row per child;
-this entry fixes that row shape for extension reuse without claiming the host
-path is the catalog consumer.
-
-### `status-strip`
-
-**Declaration.** `StripDescriptor { left, center, right }`, identical to
-`band`.
-
-**Scene shape.** Identical to `band` (three region `Row`s inside one `Row`,
-with a structural space only between non-empty regions).
-
-**Order.** `left`, then `center`, then `right`; modules keep declaration order
-inside a slot, matching the Status System rule.
-
-**Caps.** At most `64` modules across all slots; each module text is
-`1..=64` bytes.
-
-**Style hooks.** None. Per-module cadence, icons, tooltips, and provider
-metrics stay in the Status System; the catalog composes presentation text only.
-
-**Accessibility.** Slot groups add no role. Reading order is `left`, `center`,
-`right`; a module must not rely on position or emphasis alone to convey state.
-
-**Headed example (illustrative, not run evidence).**
-
-```text
-ws:2  git:main*        cpu 42%  mem 61%        clock 12:04
-```
-
-**Relationship to `band`.** The shape is shared on purpose. `band` names an
-edge-band surface contract and `status-strip` names a status-module composition;
-a future contract may add alignment zones or a distinguishing tag. Until then,
-entry ids are declaration metadata, not tree metadata.
-
-## Caps and fail-closed behavior
-
-| Field / dimension             | Accepted range  | Overflow result                   | Anchor                                      |
-| ----------------------------- | --------------- | --------------------------------- | ------------------------------------------- |
-| Strip segments across regions | `0..=64` total  | `TooManyItems { found, cap }`     | chrome-band `BAND_MAX_REGIONS` (`64`)       |
-| Pill count                    | `1..=64`        | `TooManyItems { found, cap }`     | same contribution bound                     |
-| Modal body rows               | `1..=64`        | `TooManyItems { found, cap }`     | same contribution bound                     |
-| Segment text                  | `1..=64` bytes  | `ItemTooLong { index, len, cap }` | status-system draft module text (`64`)      |
-| Pill label                    | `1..=32` bytes  | `ItemTooLong { index, len, cap }` | bar plugin workspace pill-name bound (`32`) |
-| Detail / title / sheet row    | `1..=128` bytes | `ItemTooLong { index, len, cap }` | overlay/tooltip text bound (`128`)          |
-| Composed text                 | `<=256 KiB`     | `TextTooLong { bytes, cap }`      | accepted `SCN-3`                            |
-| Composed nodes                | `<=2048`        | `TooManyNodes { found, cap }`     | accepted `SCN-1`                            |
-| Composed depth                | `<=16`          | `TooDeep { found, cap }`          | accepted v1 bridge budget                   |
-
-Rules:
-
-1. Caps are inclusive at the boundary and enforced by the same typed
-   validation used by composition and recognition.
-2. There is no clamp, truncation, "best effort", or last-write-wins path. A
-   rejected declaration composes nothing and yields a typed diagnostic.
-3. **Empty is a failure, not an omission.** An entry with no content, an empty
-   segment, an empty pill, an empty detail, an empty title, an empty sheet row,
-   or an empty body is rejected. A host may never ignore a declared block.
-4. **Unknown entry names fail closed.** The closed name parser accepts only the
-   five canonical spellings with no aliases or case folding. A host that accepts
-   names from configuration or a package rejects an unknown name rather than
-   dropping the block.
-5. **Reserved delimiters fail closed.** A pill label containing `[` or `]` is
-   rejected so the rendered form stays unambiguous and round-trips.
-6. **Mutation fails closed.** A presented tree that drops, changes, or decorates
-   any item is not the canonical shape; verification returns
-   `ShapeMismatch { entry }` instead of accepting a partial surface.
-7. A style value is not text and does not exist here. The caps add no
-   unbounded collection, no decode path, and no new budget; SCN-1..SCN-5 are
-   unchanged.
-
-## Composition order and determinism
-
-- Declared order is render order everywhere: region order is `left`, `center`,
-  `right`; segments, pills, and sheet rows keep declaration order.
-- Structural separators are fixed single spaces; no alignment, wrapping, or
-  width negotiation is part of this record. Host layout still owns placement
-  and clipping.
-- No sorting, deduplication, eviction, hash iteration, clock, randomness, or
-  platform state participates. The same descriptor composes byte-identical
-  output on every run.
-- Composition is `O(items)` and allocates one bounded tree; recognition walks
-  the supplied tree only until a cap is breached (iteratively, never
-  recursively), so it is `O(min(n, caps))` and cannot grow past the caps.
-- **Unused path is byte-identical.** The catalog is not a global hook. A tree
-  that declares no catalog block composes exactly the bytes it composed before
-  the catalog existed; an empty declaration fails rather than emitting zero
-  nodes. The headless suite pins a frozen baseline encoding.
-
-## Style hooks and accessibility
-
-**Style hooks are reserved, not implemented.** The catalog descriptors have no
-style fields, and composition emits no `fg`/`bg` token. The candidate
-[Scene Style Primitives](scene-style-primitives-candidate.md) set is not
-accepted and has no consumer; when a successor accepts it, a catalog revision
-may add token-only hooks (padding, radius, border, border token) and must state
-its precedence. This record pre-empts none of it:
-
-- no CSS-like shorthand, style string, or arbitrary property bag;
-- no colour literal, gradient, image, shadow/elevation, opacity, blur,
-  transform, or per-node font;
-- no motion or transition field;
-- no style on Core chrome or another plugin's content.
-
-**Accessibility rules for every entry:**
-
-1. Entries add no role, accessible name, focus stop, selection, or search
-   entry. They compose text and containers; the host's existing accessibility
-   mapping for those primitives is unchanged.
-2. Reading order is composition order. Separators are structural and must not
-   become content that changes the reading order.
-3. Bold is redundant emphasis only. No state may be conveyed solely by bold,
-   colour, or position; the text must carry it.
-4. `pill-row` is not a button, `modal-sheet` is not a modal, and
-   `tooltip-detail-fallback` is not a tooltip. Interaction, focus, modality,
-   announcements, and capture stay with the owning accepted contracts.
-5. A future style hook must preserve content, roles, order, selection, search,
-   and contrast; a decoration never hides content from the accessibility tree.
-
-## Security review
-
-| Concern                          | Control                                                                                              |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Arbitrary code surface           | Pure data descriptors; no Lua value, callback, closure, handle, path, image, or shader crosses.      |
-| New input authority              | No `on_click`/`on_scroll`, region, command, argument, coordinate, focus, or capability is emitted.   |
-| Presentation vs truth            | Output is `Text`/`Row`/`Column` presentation data; no grid, cursor, mode, scrollback, or PTY effect. |
-| Hot-path execution               | Composition is cold-path and bounded; no plugin VM on PTY, input, damage, or render paths.           |
-| Unbounded input                  | Documented inclusive caps on items and bytes; aggregate SCN-1/SCN-3 bounds; no clamp.                |
-| Silent degradation               | Empty, unknown, over-cap, reserved-delimiter, and mutated declarations all fail closed with a type.  |
-| Cross-plugin or chrome authority | Entries carry no chrome geometry and no cross-plugin selector; placement remains host-owned.         |
-| Accessibility regression         | Text-only composition, unchanged roles/order; no modal, tooltip, or announcement claim.              |
-| Safe mode                        | Composition is inert data; `bitty --safe` and plugin revocation simply stop calling it.              |
-
-This record adds no capability identifier and no fourth security domain. It
-does not change the plugin host, capability grammar, or admission path.
-
-## Implementation evidence
-
-`bitty` (`CTX-1416`, issue `#2114`) carries the candidate catalog at
-`crates/bitty-lua/src/ui_catalog.rs` with its headless suite in the same module.
-The evidence is **`Implemented`-only**:
-
-- headless, no renderer, no window, no PTY, no VM;
-- no consumer: the band host, overlay path, host bridge, and plugin API do not
-  call the catalog;
-- no Lua exposure, no new capability, and no change to
-  `bitty.ui.mount`/`bitty.ui.update`;
-- not `Verified`, not `Compatible`, and no headed proof;
-- the bar migration is not performed here (the bar lives in `bitty-plugins`,
-  and a Lua-visible catalog needs an accepted SDK surface first).
-
-The suite covers entry-name parse/round-trip, canonical descriptor round-trip,
-inclusive caps and one-past rejection, empty and reserved-delimiter rejection,
-declaration order with duplicates, deterministic repeat composition, accepted
-v1 kinds only, absent style/bindings, mutation and ignored-block verification,
-early rejection of oversized or over-deep trees, and a frozen byte-identical
-unused path.
-
-## Verification plan
-
-| Check                           | Expected result                                                                               | Evidence                       |
-| ------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------ |
-| Entry-name parse and round-trip | Five exact names round-trip; aliases and case variants return `None`.                         | Headless test (this slice)     |
-| Descriptor round-trip           | `compose` then `from_scene` returns the same descriptor for every entry.                      | Headless test (this slice)     |
-| Caps inclusive and overflow     | Boundary values pass; one past is a typed error naming found and cap.                         | Headless test (this slice)     |
-| Empty declaration               | Every empty entry/item is rejected; nothing is omitted silently.                              | Headless test (this slice)     |
-| Reserved pill delimiters        | `[`/`]` in a label is rejected.                                                               | Headless test (this slice)     |
-| Composition order               | Regions and items keep declaration order; duplicates survive; empty edges add no blank space. | Headless test (this slice)     |
-| Deterministic repeat            | Same descriptor composes identical trees and encodings across runs.                           | Headless test (this slice)     |
-| Unused path byte identity       | A no-catalog tree keeps a frozen byte encoding; empty declarations fail.                      | Headless test (this slice)     |
-| Mutation / ignored block        | Dropped or changed items fail verification; an ignored block never passes.                    | Headless test (this slice)     |
-| No authority / accepted kinds   | Every node is `Text`/`Row`/`Column`; no style token or binding appears.                       | Headless test (this slice)     |
-| Oversized/deep recognition      | A node, depth, or text breach rejects early without recursion.                                | Headless test (this slice)     |
-| Host integration                | No host, bridge, band, overlay, or render path calls the catalog.                             | Source inspection (this slice) |
-| Headed bar/status proof         | A bar or statusline renders from catalog entries with plugin-owned policy.                    | **Pending** (bitty-plugins)    |
-| Style-hook acceptance           | A successor accepts the style primitives and the hook precedence.                             | **Pending** (owner)            |
-| Lua surface                     | An accepted additive surface exposes entry names and bounded fields.                          | **Pending** (owner)            |
-
-## Alternatives considered
-
-| Alternative                             | Why it was not selected                                                                                         |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| One new `SceneNode` kind per pattern    | Expands the accepted schema, duplicates composition policy in Core, and needs a version bump for no mechanism.  |
-| Lua library only (`bitty-ui-core`)      | Puts shape and caps inside each plugin VM; host-side admission cannot verify a declaration without parsing Lua. |
-| Arbitrary style/property bag            | Unbounded parser and paint surface; pre-empts the unaccepted style contract and invites untrusted styling.      |
-| Clamp or truncate over-cap input        | Silent degradation hides authoring errors and makes the rendered result depend on an unstated policy.           |
-| Skip empty or unknown blocks            | Presents a partial surface as complete and makes a plugin failure invisible.                                    |
-| Entry inferred from the tree            | `band` and `status-strip` share a shape; inference would guess policy and break round-trip attribution.         |
-| Catalog owns clicks, focus, or modality | Creates input and chrome authority the v1 surface does not grant; those stay with the accepted owners.          |
-| Migrate the bar in this record          | Cross-repository change with no accepted Lua surface; the dogfood needs an actual consumer contract first.      |
+  [bitty#2191](https://github.com/bitty-terminal/bitty/issues/2191)).
+
+## The composition surface
+
+Everything below is read from `bitty` at `origin/main` `af348588`. Line numbers
+are that revision's; a re-read is the only way to keep them honest.
+
+### Slot set — closed at seven
+
+| Fact                                                                                                     | Symbol at `af348588`                                                                                  |
+| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Seven accepted slots, canonical order `terminal`, `top`, `bottom`, `left`, `right`, `tabline`, `overlay` | `UI_SLOTS: [&str; 7]`, `crates/bitty-lua/src/ui.rs:183`; `UiSlot::ALL`, `:143`; `enum UiSlot`, `:114` |
+| Parsing is exact and case-sensitive, with no aliases                                                     | `UiSlot::parse`, `ui.rs:156`; `is_ui_slot`, `:1151`                                                   |
+| `statusline` is retired and rejected, as are `status`, `workspaceline`, `tabs`, and padded spellings     | test `ui_slot_enum_is_the_closed_v1_set`, `ui.rs:1546`, bad-name list at `:1554`-`:1561`              |
+| Whether a host presents an admitted slot is host policy, never a silent drop                             | `ui.rs:104` module note; `ui_slot_placement`, `crates/bitty-runtime/src/runtime/band_slots.rs:154`    |
+
+Slot envelopes, thickness, degradation, and fragment composition stay in the
+[Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md),
+which carries them clause by clause against the same pin. This record cites that
+table rather than restating it — a second copy is how the two drifted apart in
+the first place.
+
+### Node vocabulary — four accepted kinds, five excluded
+
+| Fact                                                                             | Symbol at `af348588`                                                                 |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Accepted v1 kinds: `Text`, `Row`, `Column`, `List`                               | `UI_V1_NODE_KINDS: [&str; 4]`, `ui.rs:209`                                           |
+| Excluded, with a typed rejection: `Block`, `Image`, `CodeBlock`, `Table`, `Rule` | `UI_V1_EXCLUDED_NODE_KINDS: [&str; 5]`, `ui.rs:212`                                  |
+| The node model carries no coordinate, no role, and no renderer handle            | `enum UiNode`, `ui.rs:553`; the fields are text, tokens, children, and bindings only |
+
+The richer nine-kind vocabulary that the `terminal` slot reads is a different
+surface (`crates/bitty-lua/src/ui_rich.rs`, `UI_RICH_NODE_KINDS: [&str; 9]`) and
+is not available to a band, an overlay, or a catalog-style composition. A
+pattern that needs `Table` or `Image` is not a band pattern; it is terminal
+content.
+
+### Style table — ten keys, counted from the parser
+
+The bridge parses **ten** style keys. This is counted from the constant, not
+read from prose, because prose in three records still says four or seven:
+
+| Key            | Cap                                           | Symbol at `af348588`                                                                  |
+| -------------- | --------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `padding`      | 32 cells per side                             | `UI_STYLE_MAX_PADDING_CELLS`, `crates/bitty-lua/src/ui_style.rs:295`                  |
+| `radius`       | 16 px                                         | `UI_STYLE_MAX_RADIUS_PX`, `ui_style.rs:300`                                           |
+| `border`       | 16 px                                         | `UI_STYLE_MAX_BORDER_PX`, `ui_style.rs:305`                                           |
+| `border_token` | 32-byte name, six-name closed set             | `UI_STYLE_MAX_NAME_BYTES`, `ui_style.rs:311`; `UiBorderToken::ALL: [Self; 6]`, `:375` |
+| `min_width`    | 1000 cells                                    | `UI_STYLE_MAX_WIDTH_CELLS`, `ui_style.rs:320`                                         |
+| `max_width`    | 1000 cells                                    | same constant                                                                         |
+| `min_height`   | 1000 cells                                    | `UI_STYLE_MAX_HEIGHT_CELLS`, `ui_style.rs:329`                                        |
+| `max_height`   | 1000 cells                                    | same constant                                                                         |
+| `gap`          | 32 cells                                      | `UI_STYLE_MAX_GAP_CELLS`, `ui_style.rs:340`                                           |
+| `align`        | closed three-value set `start`/`center`/`end` | `UiStyleAlign::ALL: [Self; 3]`, `ui_style.rs:440`                                     |
+
+The closed key list itself is `UI_STYLE_FIELDS: [&str; 10]`
+(`ui_style.rs:279`). Every cap is a declaration ceiling, not a clamp: one past
+it is a typed refusal (`UiStyleError`, `ui_style.rs:600`-`:715`).
+
+Two platform facts follow, and both are refusals rather than grants:
+
+1. **The table is parsed for the rich vocabulary.** On a band, an overlay, or a
+   `List`-less v1 tree the `style` key is an unknown optional key that paints
+   nothing; the mount path reports it once per generation through
+   `HostServices::ui_style_ignored` so the author learns it did not take effect
+   (`ui.rs:60`-`:68`, bitty#3176). It is a diagnostic, never a mount failure.
+2. **A styled node costs one node and one depth level**, because a non-flat
+   declaration lowers to a wrapper (`UiStyle::rich_style_nodes`, `ui.rs:540`).
+   A tree at the node or depth ceiling therefore cannot afford styling, which is
+   a budget consequence no catalog entry can design away.
+
+## What Core owns
+
+Every row is a boundary a composition may not cross, and each is owned by a
+record, not by this one:
+
+| Concern                                           | Owner                                                                                                                      | Boundary in one line                                                                                                                                                                                                                                        |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Placement, thickness, and the resulting PTY inset | [Chrome Band Contract](chrome-band-contract-candidate.md), [Chrome Surface Contract](chrome-surface-contract-candidate.md) | A mount supplies no geometry; `ui_slot_placement` (`band_slots.rs:154`) decides, and a band reservation resizes the PTY rather than rendering over it.                                                                                                      |
+| Slot shape admission                              | [Chrome Surface Contract](chrome-surface-contract-candidate.md)                                                            | `left`/`right` are column bands and refuse a row-shaped root (`band_scene_matches`, `band_slots.rs:241`); `tabline` mounts fail closed.                                                                                                                     |
+| Focus, modality, and input capture                | [Panel Runtime RFC](panel-runtime-rfc.md), [Overlay Ownership Reconciliation](overlay-ownership-reconciliation.md)         | `modal_active` is the single modal authority; overlay capacity is four non-modal plus one modal per window (`MAX_OVERLAYS_PER_WINDOW`, `crates/bitty-ui/src/panel.rs:224`); text truncates at 128 char boundaries (`MAX_OVERLAY_TEXT_LEN`, `panel.rs:225`). |
+| Theme and colour tokens                           | [Theme Token Contract](theme-token-contract-candidate.md)                                                                  | A plugin names closed tokens; it never colours Core chrome or another plugin's content.                                                                                                                                                                     |
+| Status modules and privileged metrics             | [Status System Specification](status-system.md)                                                                            | Modules sample off the input and render paths; a composition receives text, never a provider.                                                                                                                                                               |
+| Accessibility projection                          | [Accessibility Baseline (Candidate)](accessibility-baseline-candidate.md)                                                  | Semantics is derived and read-only; every presented `SceneNode` kind maps to a role (`text`, `list`, `table`, `button`, `input`, `tablist`), chrome is out of the tab order, and nothing routes on the projection.                                          |
+| Command dispatch                                  | [Input and Pointer Contract](input-pointer-rfc.md), [CLI Contract RFC](cli-contract-rfc.md)                                | A pointer interaction routes through the command registry as a validated update; presentation data never carries authority.                                                                                                                                 |
+
+## Composition rules
+
+These hold for any extension tree on any slot, which is why they belong to the
+terminal platform rather than to one pattern:
+
+1. **Presentation is never Terminal Truth.** A composition alters presentation
+   only: no grid cell, cursor position, mode, scrollback, attachment, or IPC
+   policy. Accepted, [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)
+   invariants 3 and 4.
+2. **No hot-path execution.** Composition happens when a host validates or
+   mounts a contribution, never per frame, keystroke, PTY read, VT parse, or
+   damage computation.
+3. **No new authority in data.** A node carries text, closed tokens, children,
+   and a command binding with a region identity. It never carries a coordinate,
+   a renderer handle, a shader, a path, an image, a focus request, or a
+   capability (`enum UiNode`, `ui.rs:553`; command, argument, token, and
+   region-id caps at `ui.rs:236`-`:263`).
+4. **Declared order is render order.** Regions, siblings, and list items keep
+   declaration order; nothing sorts, deduplicates, evicts, or samples a clock.
+   The host's own exception — per-edge band fragments sorting by plugin id
+   (`band_slots.rs:341`) — is a host policy that contradicts the fragment rule
+   and is tracked in the Chrome Surface Contract as S-24, not a licence for a
+   composition to sort.
+5. **Fail closed, never degrade silently.** An unknown kind, an over-cap tree, an
+   unsupported slot, or a missing capability is a typed refusal with nothing
+   mounted (`E_UI_COMPONENT_INVALID`, `E_UI_CLAIM_REQUIRED`,
+   `unsupported_slot_error`, `band_slots.rs:268`). There is no clamp,
+   truncation, best-effort render, or "store but do not paint" path.
+6. **Caps are inherited, not invented.** A composition adds no ceiling and
+   widens none; the budgets below apply to the mounted tree whatever produced
+   it.
+7. **Unused paths are byte-identical.** A tree that declares no extension
+   construct composes exactly the bytes it composed before the construct
+   existed.
+8. **Accessibility is not optional and not a second state.** Ordained by
+   [Accessibility Baseline (Candidate)](accessibility-baseline-candidate.md):
+   every kind has a role, reading order is composition order, and no state may
+   be conveyed by colour, emphasis, or position alone.
+
+## Inherited budgets
+
+| Budget                               | Bound                                      | Enforced at `af348588`                                                                                | Accepted source                                              |
+| ------------------------------------ | ------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Nodes per mounted component          | 2048                                       | `UI_MAX_NODES`, `ui.rs:218`; `check_scene_bounds`, `ui_catalog.rs:508`                                | SCN-1, [Rich Presentation RFC](rich-presentation-rfc.md):585 |
+| Tree depth per block                 | 32 accepted, **16 for the v1 bridge**      | `UI_MAX_DEPTH`, `ui.rs:215` (CSN-2 is 32; the bridge is deliberately stricter, `ui.rs:80`-`:88`)      | SCN-2; bridge `CTX-0428`                                     |
+| Text bytes per component             | 256 KiB                                    | `UI_MAX_TEXT_BYTES`, `ui.rs:221`                                                                      | SCN-3, `rich-presentation-rfc.md`:587                        |
+| Retained string bytes per generation | 2 MiB                                      | `UI_MAX_AGGREGATED_TEXT_BYTES`, `ui.rs:233` — charges every retained string, not only text (CTX-1340) | SCN-4, `rich-presentation-rfc.md`:588                        |
+| Blocks per plugin generation         | 64                                         | `UI_MAX_BLOCKS`, `ui.rs:225`                                                                          | SCN-5, `rich-presentation-rfc.md`:589                        |
+| Click command identifier             | 64 bytes                                   | `UI_CLICK_MAX_COMMAND_BYTES`, `ui.rs:236`                                                             | —                                                            |
+| Click arguments                      | 16 entries, 256-byte strings, 64-byte keys | `UI_CLICK_MAX_ARGS`, `:239`; `UI_CLICK_MAX_ARG_BYTES`, `:242`; `UI_CLICK_MAX_ARG_KEY_BYTES`, `:251`   | —                                                            |
+| Theme token name                     | 32 bytes                                   | `UI_MAX_THEME_TOKEN_BYTES`, `ui.rs:254`                                                               | —                                                            |
+| Hover queue                          | 8 events                                   | `UI_HOVER_QUEUE_MAX`, `ui.rs:323`                                                                     | —                                                            |
+
+SCN-4 and SCN-5 are accepted per terminal; the bridge enforces the same numbers
+per plugin generation, which is a strict subset. Terminal-wide aggregation across
+generations is owned by the host composer and is outside this boundary.
+
+## Implementation evidence: the headless composition slice
+
+`bitty` carries a headless module for bitty#2114 at
+`crates/bitty-lua/src/ui_catalog.rs` (1973 lines including its suite, `CTX-1416`).
+It is evidence of work done, not of a contract, and this record does not
+transcribe its per-entry content — the plugin-facing entries are
+[bitty-plugins-docs' catalog](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/extension-component-catalog-candidate.md).
+What the terminal platform can state about it:
+
+| Fact                                                                                                                        | Symbol at `af348588`                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Five declaration names exist as a closed enum: `band`, `pill-row`, `tooltip-detail-fallback`, `modal-sheet`, `status-strip` | `CatalogEntry`, `ui_catalog.rs:139`; `CatalogEntry::ALL: [Self; 5]`, `:154`; `parse`, `:179`                                                                                                                                                                                                                                                                                     |
+| Typed descriptors hold the declaration as data                                                                              | `CatalogBlock`, `ui_catalog.rs:292`; `StripDescriptor`, `:221`; `PillRowDescriptor`, `:261`; `DetailFallbackDescriptor`, `:268`; `ModalSheetDescriptor`, `:275`                                                                                                                                                                                                                  |
+| Composition emits accepted kinds only                                                                                       | `compose`, `ui_catalog.rs:325`; `compose_strip`, `:565`; `compose_pill_row`, `:590`; `compose_modal_sheet`, `:604`                                                                                                                                                                                                                                                               |
+| Recognition re-parses the canonical shape and refuses decoration                                                            | `from_scene`, `ui_catalog.rs:352`; `verify`, `:401`; `strip_from_scene`, `:735`; `pill_row_from_scene`, `:808`; `modal_sheet_from_scene`, `:835`                                                                                                                                                                                                                                 |
+| Validation is typed and fail-closed                                                                                         | `validate`, `ui_catalog.rs:412`; `validate_strip`, `:424`; `validate_pill_row`, `:448`; `validate_modal_sheet`, `:469`; `CatalogError`                                                                                                                                                                                                                                           |
+| Bounds reuse the bridge constants rather than inventing a ceiling                                                           | `CATALOG_MAX_TEXT_BYTES = UI_MAX_TEXT_BYTES`, `CATALOG_MAX_NODES = UI_MAX_NODES`, `CATALOG_MAX_DEPTH = UI_MAX_DEPTH`, `ui_catalog.rs:117`-`:123`; the item caps (`CATALOG_MAX_SEGMENTS`, `CATALOG_MAX_PILLS`, `CATALOG_MAX_ROWS` at `64`; `CATALOG_MAX_PILL_LABEL_BYTES` at `32`; `CATALOG_MAX_DETAIL_BYTES` at `128`) are module-local candidate constants, not accepted bounds |
+
+**No production consumer exists.** `ui_catalog` is reachable only through the
+crate's own module list and re-export (`crates/bitty-lua/src/lib.rs:87`,
+`:138`-`:146`); a grep of `crates/` outside `bitty-lua/src/ui_catalog.rs` finds
+no `CatalogBlock` use at all, and the `CatalogEntry` hits elsewhere in the tree
+are the unrelated `CommandCatalogEntry` command registry type
+(`crates/bitty-lua/src/host.rs:3534`). No host path, band host, overlay path,
+bridge call, render loop, or Lua surface installs, composes, or paints these
+descriptors, and no plugin can opt in.
+
+## bitty#2114 status
+
+[bitty#2114](https://github.com/bitty-terminal/bitty/issues/2114) carries three
+checkboxes. Read against `af348588`:
+
+| #   | Checkbox                                                                                                          | Verdict                                        | What proves it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Catalog the reusable patterns (band, pill row, tooltip/detail fallback, modal sheet, status strip) with contracts | **Landed** (as a draft, single-corpus catalog) | The five patterns are catalogued once, with a per-entry contract block, in bitty-plugins-docs `extensibility/extension-component-catalog-candidate.md` (`## E-1`..`## E-5`); the five declaration names exist in code as `CatalogEntry::ALL: [Self; 5]` (`ui_catalog.rs:154`). This revision removed the competing copy from this corpus. Neither copy is an accepted contract, which is what "with contracts" can mean today.                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2   | Each catalog entry: Scene shape, style hooks (post style-primitives), accessibility notes, headed example         | **Partial** — two of four landed               | Scene shape: `compose_strip` / `compose_pill_row` / `compose_modal_sheet` (`ui_catalog.rs:565`, `:590`, `:604`) with `from_scene` (`:352`) as the recognizer, and the shapes described per entry in the plugin corpus. Accessibility notes: [Accessibility Baseline (Candidate)](accessibility-baseline-candidate.md) required-mapping table plus per-entry notes in the plugin corpus; the code side adds no role — `enum UiNode` has no role field (`ui.rs:553`). **Style hooks did not land**: the catalog descriptors carry no style field, and the ten-key table is parsed for the rich vocabulary only (`UI_STYLE_FIELDS`, `ui_style.rs:279`; band/overlay drop `style` with `ui_style_ignored`). **Headed example did not land**: there is no screenshot, run log, or headed lane for any entry; the plugin corpus states the same absence. |
+| 3   | Bar migrated onto catalog entries (dogfood proof)                                                                 | **Not landed**                                 | No consumer: see the grep result above (`lib.rs:87`, `:138`-`:146` are the only references). The bar is `plugins/bar` in `bitty-plugins`, and no Lua source there composes a catalog entry; the plugin corpus records the same residual ("the bar still hand-rolls every pattern it is cited for"). A dogfood needs a plugin-facing surface first, and no surface exists — the descriptors are host-side Rust with no Lua binding.                                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+The honest summary: checkbox 1 is satisfied by documentation in the owning
+corpus; checkbox 2 is satisfied for shape and accessibility and open for style
+hooks and headed evidence; checkbox 3 is untouched and cannot be closed from a
+documentation repository.
 
 ## Affected contracts
 
-- [Rich Presentation RFC](rich-presentation-rfc.md) — unchanged; the catalog
-  composes only accepted v1 primitives and adds no `SceneNode` variant.
+- [Rich Presentation RFC](rich-presentation-rfc.md) — unchanged. No
+  `SceneNode` variant, no SCN bound moves.
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
-  — unchanged; no Lua key, slot, capability, or error code is added. A future
-  surface would be additive and versioned.
-- [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md) — the
-  `band` regions and `64`-region bound are reused, not delegated; host geometry
-  and hit-testing are untouched.
-- [Status System Specification](status-system.md) — the `status-strip` slot
-  order and module text bound are reused; sampling, providers, and privileged
-  metrics are untouched.
-- [Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md)
-  — the band/overlay split and text bounds are unchanged; the catalog mounts
-  nothing.
-- [Scene Style Primitives (Candidate)](scene-style-primitives-candidate.md) —
-  hooks are reserved and unimplemented; nothing here accepts or extends that
-  set.
-- [Lua UI Component Model (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/lua-ui-component-model-candidate.md)
-  — a plugin-side component library could consume the catalog later; this
-  record adds no component library and no framework.
-- [UI Runtime Candidate](ui-runtime-candidate.md) — the owner-pending runtime
-  RFC is the acceptance vehicle for a catalog surface, if one is pursued.
+  — unchanged. No slot, capability, error code, or Lua key is added.
+- [Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md) —
+  owns the slot envelopes this record cites; its S-24 and S-25 remain its own
+  findings.
+- [Accessibility Baseline (Candidate)](accessibility-baseline-candidate.md) —
+  unchanged; supplies the role mapping every composition inherits.
+- [Lua UI Style and Layout Vocabulary (Candidate)](lua-ui-style-layout-candidate.md)
+  — unchanged in substance; its bitty#2114 consequence paragraph now points at
+  the plugin corpus for the per-entry hook statements it cites.
+- [Extension Component Catalog (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/extension-component-catalog-candidate.md)
+  — **the owner of the plugin-facing catalog.** This record defers to it and
+  duplicates none of it.
+- [Plugin UI Slot Inventory](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/plugin-ui-slot-inventory-candidate.md)
+  — unchanged; per-slot purpose and multiplicity are its subject.
+
+## Follow-ups
+
+Named so they can be scheduled rather than remembered. All of them are changes
+in other repositories and are out of scope for this revision.
+
+1. **FU-C1 — bitty-plugins-docs: re-pin and re-count the style table.**
+   Path: `bitty-plugins-docs/extensibility/extension-component-catalog-candidate.md`.
+   Its status block, its style-table row, its per-entry style-hook statements
+   (E-1..E-5), and residual 11 all describe the bridge as parsing **seven**
+   style keys at `bitty@90deb814` (`UI_STYLE_FIELDS: [&str; 7]`). At
+   `bitty@af348588` the constant is `UI_STYLE_FIELDS: [&str; 10]`
+   (`crates/bitty-lua/src/ui_style.rs:279`): `min_height`, `max_height`, and
+   `align` exist, and the caps are `32`/`16`/`16`/`32`-byte name/`1000`/`1000`/
+   `1000`/`1000`/`32`. The sibling record in this corpus already carries the
+   ten-key count, so the two corpora currently disagree about the same symbol.
+2. **FU-C1 (continued) — bitty-plugins-docs: state the ownership split.**
+   Same path: add one line naming
+   `bitty-terminal-docs/specifications/extension-component-catalog-candidate.md`
+   as the owner of the composition boundary, slot envelopes, and inherited
+   budgets, so its entries cite that boundary instead of restating caps.
+   `bitty-plugins-docs/extensibility/ui-component-catalog-candidate.md` needs no
+   change: its deprecated-pointer table already resolves to the maintained
+   record.
+3. **FU-C2 — `bitty`: reword one citation.** Path:
+   `crates/bitty-lua/src/ui_catalog.rs` module doc (and the matching line in
+   `crates/bitty-lua/src/lib.rs:21`) still calls this record "the candidate
+   record" it implements. After this revision the entry contracts live in the
+   plugin corpus, so the module doc should cite the plugin-facing catalog for
+   entry semantics and this record for the boundary and budgets. Until that
+   lands the citation is stale but not wrong: the path resolves to a record that
+   still describes the slice.
 
 ## Open points
 
-1. **Acceptance owner and vehicle.** The UI Runtime RFC (owner-pending), the
-   Plugin API v1 successor, or an explicit SDK contract must accept entry names,
-   shapes, caps, and ordering. This record does not.
-2. **Where the catalog lives.** Host-side Rust descriptors (this slice) versus a
-   pure-Lua Level 2 library or both. The split determines whether admission can
-   verify a declaration without parsing Lua.
-3. **Lua surface.** Whether plugins may name a catalog entry and supply bounded
-   fields, and which capability/version carries it. No surface is defined here.
-4. **Style hooks.** Which candidate style primitives become available, at what
-   precedence, and whether a theme content style can override them. Blocked on
-   the style-primitives acceptance.
-5. **`band` versus `status-strip` shape tag.** They share a tree shape today.
-   A future contract may add a tag or alignment zones; that is a shape revision.
-6. **Tooltip/detail vehicle.** Whether a detail fallback becomes a real tooltip,
-   an overlay, or a notification, and which contract owns its announcement and
-   dismissal.
-7. **Modal sheet authority.** Focus, modality, dismissal, and capture remain
-   with the panel/overlay contracts; whether a catalog sheet may be mounted
-   directly into `overlay` is that surface's decision.
-8. **Cap ownership.** Whether the `64`/`32`/`128` bounds stay catalog constants
-   or move to the Chrome Band and Status System contracts when those are
-   accepted.
-9. **Bar and statusline dogfood.** Migration belongs to `bitty-plugins` and
-   needs the accepted surface plus headed evidence; no plugin was changed here.
-10. **Headed evidence.** No screenshot, pixel, or live-host evidence exists for
-    this record. The examples are illustrative.
-
-## Acceptance criteria
-
-A successor can accept this catalog only when:
-
-- the five entries, their shapes, caps, and ordering are reviewed by the
-  UI/architecture owner and a security reviewer;
-- every entry composes only the accepted v1 node set, with no style, input,
-  chrome, focus, or modality authority;
-- fail-closed behavior for empty, unknown, over-cap, and mutated declarations is
-  demonstrated by executable evidence;
-- a Lua surface, if proposed, is additive, versioned, capability-scoped, and
-  does not put a VM on the hot path;
-- the style hooks are either accepted with an owner or explicitly deferred;
-- the bar/statusline dogfood and headed evidence exist, or the entries remain
-  candidate-only with that gap recorded;
-- every verification-plan row has evidence, with pending rows explicitly
-  marked.
+1. **Whether a host-side typed catalog is ever accepted.** The descriptors are
+   candidate Rust data with no Lua binding. If a successor wants an accepted
+   mechanism, the contract belongs to this corpus (terminal platform) and must be
+   proposed and reviewed here; the plugin corpus documents patterns, not
+   mechanisms.
+2. **Where the per-pattern bounds live.** The item caps in the slice (`64`
+   segments, `64` pills, `64` rows, `64`-byte segment text, `32`-byte pill
+   label, `128`-byte detail) are module constants. Whether they become an
+   accepted bound, and in which corpus, is undecided; the accepted budgets above
+   are not affected either way.
+3. **Lua surface.** Whether a plugin may name an entry and supply bounded fields,
+   and which capability and API version would carry it. No surface is defined
+   here or in the plugin corpus.
+4. **Style hooks.** Blocked on the style-primitives acceptance and on the band
+   path consuming the table at all; a hook is meaningless while `style` paints
+   only on the rich vocabulary.
+5. **Headed evidence.** No screenshot, pixel, or live-host artifact exists for
+   any entry. Nothing in either corpus should be read as headed-verified.
+6. **Dogfood vehicle.** The bar migration needs an accepted plugin-facing
+   surface plus headed proof in `bitty-plugins`; neither exists.
 
 ## P0 Review Sign-off
 
@@ -584,16 +399,21 @@ A successor can accept this catalog only when:
 ## References
 
 - [Rich Presentation RFC](rich-presentation-rfc.md)
-- [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md)
 - [Chrome Surface Contract (Candidate)](chrome-surface-contract-candidate.md)
-- [Status System Specification](status-system.md)
+- [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md)
+- [Accessibility Baseline (Candidate)](accessibility-baseline-candidate.md)
 - [Scene Style Primitives (Candidate)](scene-style-primitives-candidate.md)
-- [UI Runtime Candidate](ui-runtime-candidate.md)
+- [Lua UI Style and Layout Vocabulary (Candidate)](lua-ui-style-layout-candidate.md)
+- [Overlay Ownership Reconciliation](overlay-ownership-reconciliation.md)
 - [Panel Runtime RFC](panel-runtime-rfc.md)
+- [Status System Specification](status-system.md)
+- [UI Runtime Candidate](ui-runtime-candidate.md)
 - [Core and Plugin Boundaries](../architecture/core-boundaries.md)
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
-- [Lua UI Component Model (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/lua-ui-component-model-candidate.md)
+- [Extension Component Catalog (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/extension-component-catalog-candidate.md)
+  — the plugin-facing catalog, owned by bitty-plugins-docs
+- [Plugin UI Slot Inventory](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/plugin-ui-slot-inventory-candidate.md)
 - [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)
 - [Threat Model](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/threat-model.md)
-- [bitty#2191](https://github.com/bitty-terminal/bitty/issues/2191)
 - [bitty#2114](https://github.com/bitty-terminal/bitty/issues/2114)
+- [bitty#2191](https://github.com/bitty-terminal/bitty/issues/2191)

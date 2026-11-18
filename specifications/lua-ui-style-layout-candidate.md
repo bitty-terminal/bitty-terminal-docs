@@ -87,7 +87,8 @@ Out of scope and owned elsewhere:
   ([UI Motion and Budget (Candidate)](ui-motion-and-budget-candidate.md),
   [RFC-0002](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/rfcs/RFC-0002-panel-animations.md));
 - reusable composition entries over the v1 node set
-  ([Extension Component Catalog (Candidate)](extension-component-catalog-candidate.md));
+  ([Extension Component Catalog (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/extension-component-catalog-candidate.md),
+  owned by bitty-plugins-docs);
 - panel/floating/fullscreen presentation modes
   ([Panel GUI Content Presentation (Candidate)](panel-gui-content-presentation-candidate.md)).
 
@@ -622,8 +623,9 @@ dedicated capability for style remains OQ-044 territory, cited not decided here.
 - [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md) — owns
   band geometry, thickness, and degradation; a band is still one row.
 - [Rich Presentation RFC](rich-presentation-rfc.md) — `SCN-1..SCN-5` unchanged.
-- [Extension Component Catalog (Candidate)](extension-component-catalog-candidate.md)
-  — its reserved style hooks are what this vocabulary would fill; see below.
+- [Extension Composition Boundary (Candidate)](extension-component-catalog-candidate.md)
+  — the platform boundary this vocabulary composes onto; the per-entry style
+  hooks it would fill are stated in the plugin-facing catalog.
 
 ## Consequences for downstream work
 
@@ -631,10 +633,12 @@ Once this vocabulary is accepted — not before — three open items become
 mechanical rather than open design:
 
 1. **[bitty#2114](https://github.com/bitty-terminal/bitty/issues/2114), the
-   extension component catalog.** Every catalog entry currently states "Style
-   hooks: none" and reserves token-only hooks for padding, radius, border, and a
-   border token. With this vocabulary, the _layout_ half of each hook becomes a
-   mapping rather than a decision, because each entry already emits the shape the
+   extension component catalog.** Every entry in the plugin-facing catalog
+   ([bitty-plugins-docs](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/extension-component-catalog-candidate.md))
+   currently states "Style hooks: none" and reserves token-only hooks for
+   padding, radius, border, and a border token. With this vocabulary, the
+   _layout_ half of each hook becomes a mapping rather than a decision, because
+   each entry already emits the shape the
    field would replace: `band` and `status-strip` pad their region groups with
    `Text(" ")` separators, which become `gap`, and a group that must sit flush to
    an edge uses the existing `anchor`; `pill-row`'s single-space separators
@@ -730,7 +734,9 @@ This candidate can be accepted only when:
 - [Chrome Band Contract (Candidate)](chrome-band-contract-candidate.md)
 - [Rich Presentation RFC](rich-presentation-rfc.md)
 - [UI Runtime Candidate](ui-runtime-candidate.md)
-- [Extension Component Catalog (Candidate)](extension-component-catalog-candidate.md)
+- [Extension Composition Boundary (Candidate)](extension-component-catalog-candidate.md)
+- [Extension Component Catalog (Candidate)](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/extensibility/extension-component-catalog-candidate.md)
+  — the plugin-facing catalog, owned by bitty-plugins-docs
 - [UI Motion and Budget (Candidate)](ui-motion-and-budget-candidate.md)
 - [Plugin API v1 Lua Surface RFC](https://github.com/bitty-terminal/bitty-plugins-docs/blob/main/sdk/plugin-api-v1-lua-surface-rfc.md)
 - [Security Overview](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/security/overview.md)
