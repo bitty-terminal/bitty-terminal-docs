@@ -175,8 +175,8 @@ tolerated extra.
 `PERSIST_MANIFEST_VERSION` becomes `3`. The bump is required, not cosmetic:
 version 2 carries `v`, `id`, `ws`, `pid`, and `title` only, so a version-2
 record has no container kind, no owner, and no provider contract version, and
-its `ws` integer is a slot ordinal rather than a creation sequence. Three of the
-five additions change what the record means, which no tolerant reader can
+its `ws` integer is a slot ordinal rather than a creation sequence. Three added
+fields and one reinterpreted field is not something a tolerant reader can
 absorb.
 
 - **Writer.** Writes `v=3` on every record. It never writes `2` again, never
