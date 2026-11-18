@@ -264,21 +264,38 @@ usable = container inset by gaps_out and the accepted decoration insets,
    placement exactly as the Lua Surface RFC states.
 5. **Band style is flat.** A band node may declare the rich `style` table
    (`padding`, `radius`, `border`, `border_token`, `min_width`, `max_width`,
-   `gap`, `align`), because the v1 surface tolerates an unknown optional field on
-   an additive minor. The host drops it and reports once per generation — a
-   diagnostic, not a refusal, because the tree is already mounted. A band paints
-   `fg`/`bg`/`bold` only: `padding`, a rounded ring, a border width, a
-   content-width bound, sibling spacing, and a cross-axis placement are not
-   painted in a band, a dropped `min_width`/`max_width` sizes nothing, a
-   dropped `gap` separates nothing, and a dropped `align` places nothing. The
-   eight keys host on the `terminal` rich path
-   (`bitty#3175` `a64c283c`, tightened by `bitty#3176` `0f4d64b7`, widened by
-   `bitty#3186` `9ebe5285`, by `bitty#3188` `90deb814`, and by `bitty#3198`
-   `9f407a37`); hosting them on a band is a separate accepted-extension
-   decision and is not done here.
+   `min_height`, `max_height`, `gap`, `align`), because the v1 surface tolerates
+   an unknown optional field on an additive minor. The host drops it and reports
+   once per generation — a diagnostic, not a refusal, because the tree is
+   already mounted. A band paints `fg`/`bg`/`bold` only: `padding`, a rounded
+   ring, a border width, a content-height or content-width bound, sibling
+   spacing, and a cross-axis placement are not painted in a band, a dropped
+   `min_width`/`max_width`/`min_height`/`max_height` sizes nothing, a dropped
+   `gap` separates nothing, and a dropped `align` places nothing. The **ten**
+   keys host on the `terminal` rich path
+   (`crates/bitty-lua/src/ui_style.rs:279` `UI_STYLE_FIELDS: [&str; 10]` at
+   `bitty@af348588`; the first four landed in `bitty#3175` `a64c283c`,
+   tightened by `bitty#3176` `0f4d64b7`, widened by `bitty#3186` `9ebe5285`,
+   by `bitty#3188` `90deb814`, by `bitty#3198` `9f407a37`, and by the height
+   pair that raised the set from eight to ten). Hosting them on a band is a
+   separate accepted-extension decision and is not done here.
    _Added 2026-11-16 at `bitty@0f4d64b7`, widened at `9ebe5285`, `90deb814`,
-   and `9f407a37`; the earlier text said nothing about a band `style` key,
-   which was correct before it existed._
+   `9f407a37`, and re-read at `bitty@af348588`, where the set is ten keys: this
+   item said "eight keys" and listed eight, omitting `min_height`/`max_height`._
+6. **Group distribution on a row band.** A band root `Row` may carry its own
+   `align` field — `start`, `center`, `end`, or `space-between` — which
+   distributes the children the tree already declared across the band's
+   presented width (`crates/bitty-lua/src/ui.rs:1290` `extract_align`;
+   `crates/bitty-lua/src/ui_style.rs:536` `UiAlign::ALL`, four spellings). A
+   wrong type, an unlisted spelling, a non-`Row` kind, a non-band scene, a
+   nested `Row`, or a row that also declares a child `anchor` is refused
+   (`ui.rs:1290`-`1316`, mutual exclusion at `:1028`), so one row is placed by
+   one mechanism. This is a band field, not the `style.align` key of item 5:
+   `space-between` is valid here and refused there, and the two can never meet
+   on one node because the `style` table is hosted on the `terminal` slot only.
+   End-to-end coverage is `crates/bitty-runtime/tests/band_align.rs`.
+   _Added 2026-11-18 at `bitty@af348588`; this item was missing from the record
+   although the field shipped with `bitty#2191` (CTX-1853)._
 
 ## Band interaction
 
@@ -475,6 +492,122 @@ new test.
 5. **`anchor` does not resolve on a column band**, so the three-region
    `left`/`center`/`right` reading above is row-band only in practice
    (`services.rs:6737`-`:6746`).
+
+## Clause status against the shipped bridge (read 2026-11-18 at `bitty@af348588`)
+
+Every geometry, content, interaction, and configuration clause above is labelled
+here against the shipped host at `bitty@af348588` (`origin/main`). The five
+labels are defined in this record so the table reads without a second document:
+
+| Label           | Meaning                                                                                                                      | Evidence this record accepts                                          |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| NORMATIVE       | Accepted and shipped: the host performs the clause and refuses the alternative.                                              | A symbol at the pin plus the gate, refusal, or test that enforces it. |
+| ACCEPTED        | Decided by an accepted source; no host path performs it in this build.                                                       | The accepted source plus the path that omits or refuses it.           |
+| CANDIDATE       | Direction only: nothing accepted requires it and no host path performs it.                                                   | The absence of a host path, named as an absence.                      |
+| DEFERRED        | Postponed by an accepted record or by an implemented boundary, with the blocking contract or slice named.                    | The deferring statement plus the boundary that enforces it.           |
+| NOT-IMPLEMENTED | This record states the clause as a rule, and the shipped host omits or contradicts it, with no decision behind the omission. | The clause plus the symbol that omits or contradicts it.              |
+
+A label describes one clause, never the record. Eighteen of these forty-seven
+clauses are `ACCEPTED` (5), `CANDIDATE` (3), `DEFERRED` (2), or
+`NOT-IMPLEMENTED` (8), so this record keeps `status: draft`: its own acceptance
+criterion 1 is that every rule be backed by the host, and it is not.
+
+| #    | Clause                                                                                                                                      | Label           | Evidence at `af348588`                                                                                                                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B-1  | Edges — four band edges; `top`/`bottom` are row bands, `left`/`right` column bands                                                          | NORMATIVE       | `crates/bitty-runtime/src/runtime/band_slots.rs:86` (`enum BandEdge`), `:130` (`BAND_EDGES: [BandEdge; 4]`), `:121` (`BandEdge::axis`), `crates/bitty-runtime/src/runtime/band_host.rs:744` (`column_band_rows`) |
+| B-2  | Edges — each edge holds at most one band                                                                                                    | NOT-IMPLEMENTED | `band_slots.rs:341`-`:346` keeps every visible block on an edge and sorts it by plugin id; `crates/bitty-runtime/tests/chrome_bands_render.rs:61` (`multiple_top_bands_stack_vertically`) pins the stacking      |
+| B-3  | Thickness — resolved to logical px by Core and clamped by `BAND_MAX_THICKNESS_PX`                                                           | NOT-IMPLEMENTED | no such symbol: a row band is one window row (`band_slots.rs:337` `band_row`), a column band is its widest root child (`band_host.rs:723` `column_band_width`)                                                   |
+| B-4  | Thickness — no plugin, `LayoutProvider`, or Lua mount sets edge or thickness                                                                | NORMATIVE       | `band_slots.rs:154` (`ui_slot_placement`) is the only placement decision, and the accepted node vocabulary has no geometry field (`crates/bitty-lua/src/ui.rs:553`)                                              |
+| B-5  | Container — `usable` is the window minus visible bands minus insets, clamped at zero                                                        | NORMATIVE       | `band_host.rs:2292` (`band_row_container`), `:2317` (`band_exclusive_container`), `tests/band_four_edge_geometry.rs:149` (`expected_content`)                                                                    |
+| B-6  | Container — grid content is never painted under a band                                                                                      | NORMATIVE       | `band_host.rs:2317` (exclusive zone), `tests/band_four_edge_geometry.rs:191` (`intersects`), `tests/float_chrome_occlusion.rs`                                                                                   |
+| B-7  | Container — band rectangles are disjoint; horizontal bands span the width, vertical bands the height between them                           | NORMATIVE       | `band_slots.rs:337` (`band_row`), `:361` (`band_column`), `tests/band_four_edge_geometry.rs:191`                                                                                                                 |
+| B-8  | Floor — one Core-owned content floor per axis, defined in one place                                                                         | NORMATIVE       | `crates/bitty-runtime/src/runtime/layout_focus.rs:4108` (`chrome_min_rows`), `:4131` (`chrome_min_cols`)                                                                                                         |
+| B-9  | Degradation — bands hide before content drops below the floor, in a fixed priority (plugin-only bands first, the `workspace` band last)     | NOT-IMPLEMENTED | rows are all-or-nothing and shed rows before the floor (`band_host.rs:2116` `plugin_band_budget`), columns clip to an equal share (`:2159` `column_band_plan`); neither axis ranks surfaces                      |
+| B-10 | Degradation — the usable extent stays `max(..., 0)` and no band is painted over content to compensate                                       | NORMATIVE       | `band_host.rs:2317`, `tests/band_four_edge_geometry.rs:149`                                                                                                                                                      |
+| B-11 | Degradation — presentation state, never written back to configuration                                                                       | ACCEPTED        | no config-write path exists from the paint walk, and no symbol asserts the absence                                                                                                                               |
+| B-12 | Reflow — showing, hiding, resizing, or moving a band recomputes the container before the next present                                       | NORMATIVE       | `crates/bitty-runtime/tests/host_chrome_gaps.rs:651` (`band_reservation_resizes_the_primary_pty_winsize`)                                                                                                        |
+| B-13 | Reflow — the PTY follows the resulting content area through the ordinary resize path                                                        | NORMATIVE       | the same test drives the primary winsize from the band reservation                                                                                                                                               |
+| B-14 | Reflow — a content update that changes no thickness damages the band only                                                                   | ACCEPTED        | the no-reflow half has no test at this pin                                                                                                                                                                       |
+| B-15 | Reflow — an animated thickness transition commits geometry once at its final value                                                          | NOT-IMPLEMENTED | there is no thickness value and no animation, duration, or easing symbol in `band_host.rs` or `present.rs`                                                                                                       |
+| B-16 | Regions — three regions `left`/`center`/`right`, render order equal to declaration order                                                    | NORMATIVE       | `band_host.rs:529` (`anchored_slots`), `:335` (`flatten_band_runs`); row bands only, see B-29                                                                                                                    |
+| B-17 | Regions — overflow truncates lower-priority segments, then hides them                                                                       | ACCEPTED        | the host clips at the band edge (`band_host.rs:375` `flatten_band_runs_in_width`); no segment-priority model exists                                                                                              |
+| B-18 | Regions — a column band stacks one line per root child, and a module's position is its child index                                          | NORMATIVE       | `band_host.rs:744` (`column_band_rows`), `:867` (`collect_band_regions`), `tests/band_column_input.rs`                                                                                                           |
+| B-19 | The built-in `workspace` module (one pill per workspace, stable names, no counters)                                                         | DEFERRED        | superseded by the Chrome Surface API; Core draws no workspace display (`band_slots.rs:54`, CTX-0979)                                                                                                             |
+| B-20 | Lua mounts use `Text`, `Row`, `Column`, and `List` on `top`/`bottom`/`left`/`right`                                                         | NORMATIVE       | `crates/bitty-lua/src/ui.rs:209` (`UI_V1_NODE_KINDS: [&str; 4]`), `:212` (`UI_V1_EXCLUDED_NODE_KINDS`)                                                                                                           |
+| B-21 | Lua mounts — a `Row` root on `left`/`right` is refused with `E_UI_COMPONENT_INVALID`                                                        | NORMATIVE       | `band_slots.rs:241` (`band_scene_matches`), `:257` (`band_scene_direction_error`), `crates/bitty-runtime/src/plugin_runtime/services.rs:6692`                                                                    |
+| B-22 | `statusline` is not a slot and fails as an unknown name                                                                                     | NORMATIVE       | `ui.rs:1554`-`:1565` (closed-set test rejects `statusline` and `Statusline`)                                                                                                                                     |
+| B-23 | A per-band per-frame render cap (`BAND_MAX_NODES_PER_FRAME`) with a truncation marker and diagnostic                                        | NOT-IMPLEMENTED | no such symbol; the per-generation budgets bound the subtree instead                                                                                                                                             |
+| B-24 | Budgets — 64 retained blocks and a 2 MiB retained-string aggregate per generation                                                           | NORMATIVE       | `ui.rs:225` (`UI_MAX_BLOCKS`), `:233` (`UI_MAX_AGGREGATED_TEXT_BYTES`), `services.rs:1256` (`UiBlocks::mount`)                                                                                                   |
+| B-25 | `tabline` is not a band region and a claimed `tabline` mount still fails closed                                                             | NORMATIVE       | `band_slots.rs:163` (`Unsupported`), `services.rs:6674`-`:6684` (claim gate)                                                                                                                                     |
+| B-26 | `tabline` is an exclusive claim (one declarant)                                                                                             | ACCEPTED        | the claim gate is shipped, but nothing refuses a second claimant across plugins                                                                                                                                  |
+| B-27 | Band style is flat — the ten-key `style` table is tolerated and dropped, with one diagnostic per generation                                 | NORMATIVE       | `ui.rs:956`-`:966` (`rich_style_nodes`), `services.rs:6797` (`ui_style_ignored`), `crates/bitty-lua/src/ui_style.rs:279` (`UI_STYLE_FIELDS: [&str; 10]`)                                                         |
+| B-28 | A band root `Row` distributes its children with its own four-value `align` field                                                            | NORMATIVE       | `ui.rs:1290` (`extract_align`), `ui_style.rs:536` (`UiAlign::ALL`), `tests/band_align.rs`                                                                                                                        |
+| B-29 | Per-item regions — bounded id and kind, host-derived one-row rect, adjacent-span merge, band clip                                           | NORMATIVE       | `band_host.rs:2530` (`band_item_regions`), `:867` (`collect_band_regions`)                                                                                                                                       |
+| B-30 | Regions — one region per pointer column, last-registered wins, 64 per band, fail-closed above the cap                                       | NORMATIVE       | `band_host.rs:141` (`BAND_MAX_REGIONS = 64`), `:922` (over-cap refusal)                                                                                                                                          |
+| B-31 | Click — a band click dispatches a registered command, and bands take no keyboard or IME focus                                               | NORMATIVE       | `tests/host_chrome_gaps.rs:139`, `:242` (`band_press_is_chrome_before_mouse_capture`), `band_slots.rs:220` (`slot_state_rule`)                                                                                   |
+| B-32 | Hit-testing shares the band and pill rectangles of the presented frame                                                                      | NORMATIVE       | `band_host.rs:2388` (`plugin_band_cell_hit`), `:2458` (`band_line_at`)                                                                                                                                           |
+| B-33 | Drag onto a pill — center moves and switches, edge creates a workspace                                                                      | CANDIDATE       | PW-8 candidate; no drag-to-band host path exists                                                                                                                                                                 |
+| B-34 | Horizontal bands resolve the PW-8 edge-zone question                                                                                        | CANDIDATE       | same absent path as B-33                                                                                                                                                                                         |
+| B-35 | Lua event names and payloads for band click and drop                                                                                        | DEFERRED        | `OQ-056` is open; only the command-registry path ships                                                                                                                                                           |
+| B-36 | Buttons — left, right, and middle presses are Core chrome, a non-matching release is consumed, and no clipboard paste happens behind a band | NORMATIVE       | `tests/host_chrome_gaps.rs:290` (`trailing_press_is_consumed_as_chrome_not_selection`), `:318`, `:342`                                                                                                           |
+| B-37 | Overlay scene nodes route no pointer events; click and scroll routing stay band-only                                                        | NORMATIVE       | `band_slots.rs:139`-`:175` (overlay placement is not a band), `present.rs:6762` (`paint_overlay_surface` is paint-only)                                                                                          |
+| B-38 | Wheel — a bound row queues `BandScrollRequest` and consumes the tick, resolving `Hit`/`NoClaim`/`Denied`                                    | NORMATIVE       | `band_host.rs:1423` (`struct BandScrollRequest`), `:3065`-`:3076`, `tests/band_column_input.rs:213`                                                                                                              |
+| B-39 | Wheel — consecutive ticks for one target coalesce with saturating math                                                                      | NORMATIVE       | `band_host.rs:3154`-`:3172` (`scrolls_coalesced`)                                                                                                                                                                |
+| B-40 | Wheel — the drain queue holds 8, drops the newest past the cap, and counts routed, coalesced, denied, unclaimed, and dropped                | NORMATIVE       | `band_host.rs:109` (`BAND_SCROLL_QUEUE_MAX = 8`), `:3176`, `:1883`-`:1891`                                                                                                                                       |
+| B-41 | Overlay-capture parity — wheel capture saturates at `UI_SCROLL_DELTA_SATURATE` (`4096.0`)                                                   | NORMATIVE       | `ui.rs:299`                                                                                                                                                                                                      |
+| B-42 | Configuration — `workspace.show_bar`, `workspace.bar.edge`, `workspace.bar.size`, and `workspace.bar.colors` are candidate keys             | CANDIDATE       | bar-plugin keys; the Core runtime mapping was deleted and `colors` is superseded                                                                                                                                 |
+| B-43 | Configuration — `workspace.bar.edge` takes `left`/`right` only after a later revision                                                       | NOT-IMPLEMENTED | `WorkspaceBarEdge` carries `Top` and `Bottom` only (`crates/bitty-config/src/types.rs:3225`, `:3236`)                                                                                                            |
+| B-44 | Configuration — `edge`, `size`, and `show_bar` changes are live-reconcilable                                                                | ACCEPTED        | no Core runtime mapping remains to observe the key                                                                                                                                                               |
+| B-45 | Verification item 4 — priority-ordered degradation                                                                                          | NOT-IMPLEMENTED | the gap recorded in B-9                                                                                                                                                                                          |
+| B-46 | Verification item 7 — per-frame truncation with a diagnostic                                                                                | NOT-IMPLEMENTED | the gap recorded in B-23                                                                                                                                                                                         |
+| B-47 | Verification items 1, 2, 5, and 8 — geometry, no under-band paint, click routing, scroll routing                                            | NORMATIVE       | `tests/band_four_edge_geometry.rs`, `tests/chrome_bands_render.rs`, `tests/host_chrome_gaps.rs`, `tests/band_column_input.rs`                                                                                    |
+
+### Corrections in this revision
+
+- **`band_host.rs` and `present.rs` line numbers in the Landed surface table are
+  from `0f4d64b7` and have drifted.** At `af348588` the same symbols sit at
+  `band_host.rs:109` (`BAND_SCROLL_QUEUE_MAX`), `:141` (`BAND_MAX_REGIONS`),
+  `:335` (`flatten_band_runs`), `:529` (`anchored_slots`), `:723`
+  (`column_band_width`), `:744` (`column_band_rows`), `:867`
+  (`collect_band_regions`), `:1086` (`BandOrigin`), `:2116`
+  (`plugin_band_budget`), `:2135` (`plugin_band_column_budget`), `:2159`
+  (`column_band_plan`), `:2292` (`band_row_container`), `:2317`
+  (`band_exclusive_container`), `:2388` (`plugin_band_cell_hit`), `:2458`
+  (`band_line_at`), `:2530` (`band_item_regions`), and in `present.rs:6318`
+  (`paint_chrome_bands`), `:6469` (`paint_band_row`), `:6614`
+  (`paint_band_column_rule`), `:6762` (`paint_overlay_surface`). The table is
+  kept as its dated reading; this list is the current offset for each symbol.
+- **The band `style` key count was wrong.** Item 5 of Lua-mounted chrome said
+  "eight keys" and listed eight, omitting `min_height`/`max_height`. The
+  shipped set is ten (`ui_style.rs:279`); the item now lists and cites all ten.
+- **The band root's own `align` field was missing.** It shipped with
+  `bitty#2191` (CTX-1853) and is now item 6 of Lua-mounted chrome and row B-28.
+- **`workspace.bar.edge` still cannot take a vertical value** even though both
+  vertical bands are hosted (B-43) — unchanged, and still a configuration gap
+  rather than a hosting one.
+
+### Named follow-ups (bitty#2191 residual half)
+
+1. **FU-B1 — per-band per-frame render cap (B-23, B-46).** No
+   `BAND_MAX_NODES_PER_FRAME`, no truncation marker, no diagnostic; only the
+   per-generation budgets bound a band today.
+2. **FU-B2 — priority-ordered degradation (B-9, B-45).** Rows shed rows and
+   columns clip to an equal share; nothing ranks a plugin band against the
+   `workspace` band.
+3. **FU-B3 — thickness resolution and one-band-per-edge (B-2, B-3, B-15).**
+   `BAND_MAX_THICKNESS_PX`, the px/row clamp, thickness animation, and
+   single-band-per-edge multiplicity are all unshipped.
+4. **FU-B4 — drag-onto-pill semantics (B-33, B-34).** Center/edge zones, the
+   capacity bound, and undo compose with PW-8 and have no host path.
+5. **FU-B5 — vertical `workspace.bar.edge` (B-43).** The config type carries
+   `Top`/`Bottom` only while the host serves both vertical edges; widening it is
+   a bar-plugin or later-revision decision.
+6. **FU-B6 — overlay pointer routing (B-37).** Declared overlay bindings are
+   retained but route nothing; overlay hit-test geometry is a separate gated
+   slice.
+7. **FU-B7 — the cross-referenced Chrome Surface API still quotes an eight-key
+   `style` set** and omits `min_height`/`max_height`. That record was out of
+   scope for this pass and needs the same correction.
 
 ## Reconciliation (2026-11-14)
 

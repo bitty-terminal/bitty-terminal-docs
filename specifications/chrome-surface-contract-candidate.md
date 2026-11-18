@@ -263,6 +263,104 @@ Geometry stays owned by the [Chrome Band Contract](chrome-band-contract-candidat
 the placement table and the surface facts by the
 [Chrome Surface API](chrome-surface-api-candidate.md).
 
+## Clause status against the shipped bridge (read 2026-11-18 at `bitty@af348588`)
+
+Every rule, slot envelope, and consequence above is labelled here against the
+shipped `bitty.ui` bridge at `bitty@af348588` (`origin/main`). The five labels
+are defined in this record so the table reads without a second document:
+
+| Label           | Meaning                                                                                                                      | Evidence this record accepts                                          |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| NORMATIVE       | Accepted and shipped: the host performs the clause and refuses the alternative.                                              | A symbol at the pin plus the gate, refusal, or test that enforces it. |
+| ACCEPTED        | Decided by an accepted source; no host path performs it in this build.                                                       | The accepted source plus the path that omits or refuses it.           |
+| CANDIDATE       | Direction only: nothing accepted requires it and no host path performs it.                                                   | The absence of a host path, named as an absence.                      |
+| DEFERRED        | Postponed by an accepted record or by an implemented boundary, with the blocking contract or slice named.                    | The deferring statement plus the boundary that enforces it.           |
+| NOT-IMPLEMENTED | This record states the clause as a rule, and the shipped host omits or contradicts it, with no decision behind the omission. | The clause plus the symbol that omits or contradicts it.              |
+
+A label describes one clause, never the record. Sixteen of these thirty-four
+clauses are `ACCEPTED` (5), `CANDIDATE` (6), `DEFERRED` (3), or
+`NOT-IMPLEMENTED` (2), so the record's own promotion gate is unmet: it keeps
+`status: draft`, and no label here promotes it or authorizes behavior.
+
+| #    | Clause                                                                                                                    | Label           | Evidence at `af348588`                                                                                                                                                                                            |
+| ---- | ------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-1  | Rule 1 — chrome mutates no grid, cursor, mode, scrollback, attachment, or IPC policy                                      | NORMATIVE       | `crates/bitty-lua/src/ui.rs:553` (`enum UiNode` is the whole accepted vocabulary), `:209` (`UI_V1_NODE_KINDS: [&str; 4]`), `:212` (`UI_V1_EXCLUDED_NODE_KINDS`)                                                   |
+| S-2  | Rule 2 — placement, thickness, and the resulting `gaps_out` inset are Core-owned, and a mount supplies no geometry        | NORMATIVE       | `crates/bitty-runtime/src/runtime/band_slots.rs:154` (`ui_slot_placement`), `crates/bitty-runtime/src/runtime/band_host.rs:2317` (`band_exclusive_container`); no node field is a coordinate (`ui.rs:553`-`:660`) |
+| S-3  | Rule 2 — a band geometry change reflows, and the reflow resizes the PTY rather than rendering                             | NORMATIVE       | `crates/bitty-runtime/tests/host_chrome_gaps.rs:651` (`band_reservation_resizes_the_primary_pty_winsize`)                                                                                                         |
+| S-4  | Rule 3 — chrome reads identity, title, focus, and order, never grid contents or scrollback                                | NORMATIVE       | the node vocabulary has no content-read field (`ui.rs:553`); colour is a closed theme-token set (`crates/bitty-lua/src/ui_style.rs:357` `UiBorderToken`, six tokens)                                              |
+| S-5  | Rule 4 — window and shell chrome are Core plus user final, with plugin requests only                                      | ACCEPTED        | no grant flows from presentation data (`ui_style.rs:245` "Presentation only" boundary); the final-authority half has no host check in this build                                                                  |
+| S-6  | Rule 5 — the slot set is closed at seven names                                                                            | NORMATIVE       | `ui.rs:183` (`UI_SLOTS: [&str; 7]`), `:156` (`UiSlot::parse`, exact and case-sensitive, no aliases)                                                                                                               |
+| S-7  | Rule 5 — `statusline` is not a slot                                                                                       | NORMATIVE       | `ui.rs:1554`-`:1565` (closed-set test rejects `statusline` and `Statusline`)                                                                                                                                      |
+| S-8  | Rule 5 — an admitted slot the host does not present fails closed at mount, never stored-but-unpainted                     | NORMATIVE       | `crates/bitty-runtime/src/plugin_runtime/services.rs:6692` (`ui_slot_placement` match), `band_slots.rs:163` (`Unsupported`), `:268` (`unsupported_slot_error`)                                                    |
+| S-9  | Rule 5 — the tabline slot is an exclusive declaration (one declarant)                                                     | ACCEPTED        | the claim gate is shipped (`services.rs:6674`-`:6684`, `E_UI_CLAIM_REQUIRED`, test at `:10460`); no reservation refuses a second claimant across plugins                                                          |
+| S-10 | Rule 5 — no slot admits arbitrary rendering, native handles, or global coordinates                                        | NORMATIVE       | `ui.rs:236`-`:263` (command, argument, token, and region-id caps), `ui_style.rs:279` (`UI_STYLE_FIELDS: [&str; 10]`, closed)                                                                                      |
+| S-11 | Rule 6 — no chrome surface is a keyboard or IME focus target                                                              | NORMATIVE       | a band block has no capture path (`band_slots.rs:220` `slot_state_rule`, band arm is visibility only); the only input capture is gated by `ui.overlay.focus` (`services.rs:2890`)                                 |
+| S-12 | Rule 6 — a pointer interaction on chrome routes through the command registry as a validated update                        | NORMATIVE       | `band_host.rs:2388` (`plugin_band_cell_hit`), `:2530` (`band_item_regions`), `crates/bitty-runtime/tests/host_chrome_gaps.rs:139` (`band_click_routes_own_claim_to_the_drain_queue`)                              |
+| S-13 | Rule 7 — chrome never enters the hot path                                                                                 | ACCEPTED        | the band snapshot is flattened from retained blocks at present (`band_host.rs:335` `flatten_band_runs`); no cadence or invalidation host path exists to cite                                                      |
+| S-14 | Rule 8 — notifications use `Messages`, the command surface uses `Palette`, and the overlay root takes no modal gate       | ACCEPTED        | the `4+1` envelope is shipped (`crates/bitty-ui/src/panel.rs:224` `MAX_OVERLAYS_PER_WINDOW`); the tier-to-surface mapping is contract text with no host route                                                     |
+| S-15 | Rule 9 — chrome animation stays in `0..=500` ms and collapses under reduced motion and `bitty --safe`                     | ACCEPTED        | no duration, easing, or animation symbol exists in the band host or the present path (`band_host.rs`, `present.rs`)                                                                                               |
+| S-16 | Rule 10 — the Bar and the rail are two presentations, not one                                                             | CANDIDATE       | `left`/`right` bands are shipped (`band_slots.rs:154`), but no rail presentation and no rail plugin path exists                                                                                                   |
+| S-17 | Envelope `top`, `bottom` — one-row band, no plugin-set geometry, bridge depth 16                                          | NORMATIVE       | `band_slots.rs:121` (`BandEdge::axis`), `band_host.rs:2116` (`plugin_band_budget`), `ui.rs:215` (`UI_MAX_DEPTH = 16`)                                                                                             |
+| S-18 | Envelope `left`, `right` — column band, one content row per direct child, `Row` root refused                              | NORMATIVE       | `band_slots.rs:241` (`band_scene_matches`), `:257` (`band_scene_direction_error`), `band_host.rs:744` (`column_band_rows`), `tests/band_column_input.rs:137`                                                      |
+| S-19 | Envelope `terminal` — one attached `Scene` on the focused leaf, bounded by `SCN-1..5`                                     | NORMATIVE       | `crates/bitty-lua/src/ui_rich.rs:538` (`read_rich_component`), `:151` (`UI_RICH_NODE_KINDS: [&str; 9]`), `services.rs:6715` (`ui_mount_scene`)                                                                    |
+| S-20 | Envelope `overlay` — text truncated at a char boundary to 128, at most four non-modal plus one modal per window           | NORMATIVE       | `crates/bitty-ui/src/panel.rs:225` (`MAX_OVERLAY_TEXT_LEN = 128`), `:224` (`MAX_OVERLAYS_PER_WINDOW = 4`), `present.rs:6762` (`paint_overlay_surface`)                                                            |
+| S-21 | Envelope `tabline` — the canonical claim is `workspaceline`, and a `tabline` mount itself fails closed                    | NORMATIVE       | `services.rs:227` (`WORKSPACELINE_CLAIM`), `:6674`-`:6684` (claim gate), `band_slots.rs:163` (placement refusal)                                                                                                  |
+| S-22 | Envelope `palette` — per-panel command bound 32, one effective picker per invocation                                      | CANDIDATE       | the palette is a Lua plugin composition on `overlay`; no host picker surface exists                                                                                                                               |
+| S-23 | Fragment composition — several fragments per slot are retained, and `update` keeps a block's position                     | NORMATIVE       | `services.rs:1256` (`UiBlocks::mount` appends under the 64-block cap), `:6810` (`ui_update` replaces in place)                                                                                                    |
+| S-24 | Fragment composition — render order is ascending mount sequence                                                           | NOT-IMPLEMENTED | `band_slots.rs:341`-`:346` sorts every edge by plugin id byte order, so mount sequence never reaches the paint walk                                                                                               |
+| S-25 | Fragment composition — overflow truncates from the tail at fragment boundaries; one failing fragment never blanks the bar | CANDIDATE       | no truncation-at-boundary path exists: a band that does not fit is simply not painted (`band_slots.rs:337` `band_row` returns `None`)                                                                             |
+| S-26 | Fragment composition — fragments never claim focus, never receive input routing, never graduate into panels               | NORMATIVE       | `band_slots.rs:220` (`slot_state_rule`: bands are visibility-only), `services.rs:3403` (`ui_block_state`)                                                                                                         |
+| S-27 | A future `StatusProvider` compiles to one `bottom`-slot mount per fragment                                                | CANDIDATE       | no provider interface name, version, metadata, or filtering protocol exists in the host                                                                                                                           |
+| S-28 | Consequence — U-4 chrome keys, Panel Rule grammar, cascade, and safety-policy rank                                        | CANDIDATE       | no host path parses a chrome key or a panel rule                                                                                                                                                                  |
+| S-29 | Consequence — `WorkspaceScene` layers chrome above tiled content and below modal overlays                                 | CANDIDATE       | no `WorkspaceScene` symbol; per-edge stacking is by plugin id (`band_slots.rs:341`), not a global layer order                                                                                                     |
+| S-30 | Verification items 1 and 4                                                                                                | NORMATIVE       | `tests/host_chrome_gaps.rs:651` (item 1), `services.rs:10460` (`tabline_slot_requires_exclusive_claim`, item 4)                                                                                                   |
+| S-31 | Verification items 2, 3, and 5                                                                                            | NOT-IMPLEMENTED | no test in `crates/bitty-runtime/tests` asserts keyboard fall-through from chrome, a source-level identity-only assertion, or a documentation-lint assertion                                                      |
+| S-32 | Open point — whether the notification area is a chrome surface or an overlay-tier consumer only                           | DEFERRED        | owner-pending; `platform.notify` pushes bounded notifications with no chrome-surface route                                                                                                                        |
+| S-33 | Open point — whether the tab strip and the rail are per-`Window` or per-`Workspace`                                       | DEFERRED        | PW-10 keeps it open; the band host resolves per window (`band_host.rs:2116`)                                                                                                                                      |
+| S-34 | Open point — accessibility semantics for chrome surfaces (roles, focus-order exclusion, announcements)                    | DEFERRED        | owned by the accessibility baseline record; no chrome accessibility path exists in the host                                                                                                                       |
+
+### Demotions and corrections in this revision
+
+- **Fragment render order (S-24).** The record said fragments render in
+  ascending mount sequence. The shipped host sorts every edge by plugin id byte
+  order (`band_slots.rs:341`), and its own module note says mount order never
+  affects placement. The clause is `NOT-IMPLEMENTED`; the follow-up is FU-S1.
+- **Tabline exclusivity (S-9).** "One declarant" is the accepted direction, but
+  the host only checks that the mounting plugin's own `[lazy].claims` names
+  `workspaceline`. Nothing refuses a second claimant, so the clause is
+  `ACCEPTED`, not shipped. Follow-up FU-S2.
+- **Verification items 2, 3, and 5 (S-31).** Three of the record's five planned
+  assertions have no test at this pin. They stay unclaimed; follow-up FU-S3.
+- **Rule 7, rule 8's tier mapping, and rule 9 (S-13, S-14, S-15).** Each is
+  recorded as `ACCEPTED`: the shipped host has no cadence, tier route, or
+  animation symbol to point at, so none may be described as implemented.
+- **No widget family is claimed here, so none is demoted.** This record never
+  names a capsule, button, or badge, and the bridge parses no such kind:
+  `Text`, `Row`, `Column`, and `List` are the whole v1 vocabulary (`ui.rs:209`)
+  and the nine accepted `SceneNode` kinds are the rich one (`ui_rich.rs:151`).
+  The component argument lives in the candidate
+  [Chrome Surface API](chrome-surface-api-candidate.md), which this pass does
+  not rewrite.
+
+### Named follow-ups (bitty#2191 residual half)
+
+1. **FU-S1 — fragment ordering.** Either record plugin-id byte order as the
+   contract or add a mount-sequence key; today the two disagree
+   (`band_slots.rs:341`).
+2. **FU-S2 — tabline single-claimant reservation.** Enforce "one declarant" or
+   demote the exclusivity sentence in rule 5 to a claim requirement.
+3. **FU-S3 — verification items 2, 3, and 5.** Keyboard fall-through from
+   chrome, an identity-only source assertion, and the documentation-lint
+   assertion are all unimplemented.
+4. **FU-S4 — notification-area ownership.** Rule 8 and open point S-32 need the
+   owner decision that separates a chrome surface from an overlay-tier consumer.
+5. **FU-S5 — chrome animation contract.** Rule 9 cites an accepted animation
+   contract that no chrome path consumes; it needs an owner and a host slice, or
+   removal from this record.
+6. **FU-S6 — `palette` envelope.** The `palette` row is the last shipped-named
+   surface with no host path; it needs either a plugin-side record or removal
+   from the slot table.
+
 ## Chrome-side consequences of the candidate UI runtime
 
 - U-4's chrome keys, Panel Rule grammar, cascade, and safety-policy rank are
@@ -288,11 +386,11 @@ in this revision, because the corpus contradicted the code:
   deliberate stricter bridge budget than `SCN-2` (`crates/bitty-lua/src/ui.rs`,
   `ui_rich.rs`), and the envelope cites that bound.
 
-Per-clause status — `implemented`, `accepted-but-unimplemented`, `candidate`,
-`deferred`, or `contradicted-by-code` — is in the
-[Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md), which
-is the authority for what the current host does. This record keeps its candidate
-rules and its `status: draft`; this section records evidence, not acceptance.
+Per-clause status for every rule, envelope, and open point in this record is the
+clause-status table above, read at `bitty@af348588`; the
+[Lua UI Composition Reconciliation](lua-ui-composition-reconciliation.md)
+carries the same reconciliation at its own pin. This record keeps its candidate
+rules and its `status: draft`; both sections record evidence, not acceptance.
 
 ## Security review
 
