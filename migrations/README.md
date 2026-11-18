@@ -12,7 +12,7 @@ sidebar_order: 10
 # Migrations
 
 There are no supported versions to migrate between. Pre-alpha releases exist
-(latest `v0.0.44`, released 2026-11-17), but no Stable or `Compatible`
+(latest `v0.0.45`, released 2026-11-18), but no Stable or `Compatible`
 contract is claimed, so this directory remains an empty-state contract until
 a supported upgrade introduces a user, configuration, plugin, package,
 storage, or protocol transition.

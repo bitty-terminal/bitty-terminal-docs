@@ -17,7 +17,7 @@ sidebar_order: 10
   releases exist, but no stable or supported product contract is claimed
 - Implementation status: no stable, supported, or user-ready product is
   claimed; foundation and headless implementation evidence exists and
-  pre-alpha releases exist (latest `v0.0.44`, released 2026-11-17), but this
+  pre-alpha releases exist (latest `v0.0.45`, released 2026-11-18), but this
   document does not claim that any capability is stable, `Compatible`, or
   independently verified
 - Source: the [first eight rounds of discussion between the project initiator and
@@ -70,8 +70,8 @@ unused terminal. Platform interfaces should remain capability-specific instead
 of becoming a single God abstraction.
 
 The project is currently **Pre-alpha / M1 Hardening**. Existing architecture,
-headless test evidence, and pre-alpha releases (latest `v0.0.44`, released
-2026-11-17) record design and implementation progress; they are not proof of a
+headless test evidence, and pre-alpha releases (latest `v0.0.45`, released
+2026-11-18) record design and implementation progress; they are not proof of a
 stable, `Compatible`, or independently verified terminal product. After the
 design gates, priority should transition from architecture-first toward
 dogfooding-first. The working sequence is: Terminal Truth (PTY, VT, and state);

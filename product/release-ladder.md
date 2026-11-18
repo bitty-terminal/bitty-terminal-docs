@@ -1,6 +1,6 @@
 ---
 title: Release Ladder
-description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (re-baselined 2026-11-17 at release v0.0.44, main 67f51b56, 18 workspace crates of which 14 are publish = true) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
+description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (re-baselined 2026-11-18 at release v0.0.45, main 5d19152e, 18 workspace crates of which 14 are publish = true) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
 category: product
 audience: maintainer
 document_type: overview
@@ -87,7 +87,7 @@ sidebar_order: 21
   with focused contracts `W-71` through `W-75`. This decision status does not
   change any row below: no extraction, migration, or relocation is implemented,
   and `W-75`'s contract that externalizes `bitty-compat-lab` and `bitty-perf` is
-  not yet executed (`W-105`). At `v0.0.44` neither verification crate exists in
+  not yet executed (`W-105`). At `v0.0.45` neither verification crate exists in
   the workspace, so the candidate pages below describe no current crate member;
   their implementation status is unchanged by this re-baseline. The affected
   implementation-status candidates
@@ -97,12 +97,14 @@ sidebar_order: 21
   stay candidate. See the
   [small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
 
-**Re-baseline note (2026-11-17, `bitty` `v0.0.44`@`7b3d3df`, `main`@`67f51b56`).**
+**Re-baseline note (2026-11-18, `bitty` `v0.0.45`@`5d19152`, `main`@`5d19152e`).**
 The crate roster and release anchor above are superseded as _current state_.
-`bitty` now tags `v0.0.44` (`7b3d3df`, 2026-11-17) on `main` `67f51b56`, and
-releases `v0.0.38` through `v0.0.44` have all shipped. The workspace holds 18
-crates, 14 of them `publish = true`; the roster is re-derived in
-[Workspace roster at v0.0.44](#workspace-roster-at-v0044-2026-11-17). The
+`bitty` now tags `v0.0.45` (`5d19152`, 2026-11-18) on `main` `5d19152e`, and
+releases `v0.0.38` through `v0.0.45` have all shipped. This re-baseline moves
+the anchor from `67f51b5` (the `v0.0.44` snapshot, `7b3d3df`) to `5d19152`. The
+workspace holds 18 crates, 14 of them `publish = true`; the roster is
+re-derived in
+[Workspace roster at v0.0.45](#workspace-roster-at-v0045-2026-11-18). The
 `2026-10-02` snapshot revision `310bf87` is recorded here as dated provenance
 only: it is not an ancestor of current `main` (the history was rewritten), so
 no statement in this document is re-derived from that tree. Maturity, risk, and
@@ -112,10 +114,10 @@ stay as recorded at the snapshot until
 is re-synchronized by its owning task. Nothing here upgrades a row to
 `Verified`, `Compatible`, or `Release-ready`.
 
-## Workspace roster at v0.0.44 (2026-11-17)
+## Workspace roster at v0.0.45 (2026-11-18)
 
-Re-derived from `bitty` `crates/` and each member manifest at tag `v0.0.44`
-(`7b3d3df`): 18 workspace members, 14 with `publish = true`. Retired members
+Re-derived from `bitty` `crates/` and each member manifest at tag `v0.0.45`
+(`5d19152`): 18 workspace members, 14 with `publish = true`. Retired members
 (`bitty-core`, `bitty-panels`, `bitty-app`, `bitty-agent`, `bitty-compat-lab`,
 `bitty-perf`) no longer exist in the tree, and the extracted `bitty-ipc` /
 `bitty-agent` code lives in independent repositories linked as git dependencies,
@@ -155,7 +157,7 @@ histories (distinct root commits `43739d0` and `9cbcce9`, no merge base), so thi
 section is a historical record, not a description of the `c6db24d` tree.
 
 - **Workspace** (historical; the current 18-crate roster is the
-  [v0.0.44 table](#workspace-roster-at-v0044-2026-11-17) above): 21 members in
+  [v0.0.45 table](#workspace-roster-at-v0045-2026-11-18) above): 21 members in
   `bitty/Cargo.toml` (edition 2024, resolver 3,
   `rust-version` 1.85, toolchain 1.98.1): `bitty-vt`, `bitty-pty`,
   `bitty-platform`, `bitty-config`, `bitty-package`, `bitty-lua` (`phodopus`
@@ -248,7 +250,7 @@ control plane remain post-v1.0 and behind their own separate, strictly later gat
 
 The status column reports the revision-pinned `491c567` evidence recorded in the
 historical section above; it is not re-derived at `310bf87` or at the
-`v0.0.44` (`7b3d3df`, `main` `67f51b56`) re-baseline anchor. No
+`v0.0.45` (`5d19152`, `main` `5d19152e`) re-baseline anchor. No
 row in this ladder claims `Verified`, `Compatible`, or `Release-ready`.
 
 ## Verification gates
@@ -258,7 +260,7 @@ row in this ladder claims `Verified`, `Compatible`, or `Release-ready`.
   repository `justfile` has no `state` recipe), `act -n`
   DRYRUN success for the Docs quality `ci.yml` workflow.
 - Snapshot evidence at the dated `2026-10-02` synchronized `bitty` snapshot
-  (`310bf87`, historical — not re-run for the `v0.0.44` re-baseline):
+  (`310bf87`, historical — not re-run for the `v0.0.45` re-baseline):
   `cargo check --workspace --all-targets --locked` and
   `cargo check --target x86_64-pc-windows-gnu` pass at the synchronized
   `bitty` revision per that repository's CI (merge gates green through
