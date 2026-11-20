@@ -12,8 +12,8 @@ sidebar_order: 10
 # Troubleshooting
 
 No product troubleshooting procedure is `Verified` or `Compatible`: the corpus
-describes experimental and implemented-only behavior for the 0.0.45
-development line, and the pre-alpha release is `v0.0.45`. Planned diagnostic,
+describes experimental and implemented-only behavior for the 0.0.46
+development line, and the pre-alpha release is `v0.0.46`. Planned diagnostic,
 safe-mode, log, and recovery ideas must not be presented as commands users can
 run.
 

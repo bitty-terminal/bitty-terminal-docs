@@ -10,6 +10,32 @@ and this project adheres to
 
 ### Added
 
+- 0.0.46 panel content layers, per-screen margins, and the Windows console
+  companion: a plugin panel swaps its terminal content for a scene layer
+  (`bitty#2388` via `#3249`), chooses and changes its presentation mode
+  (`#3258`), survives the session-restore path (`#3240`, `#3241`), publishes a
+  restart manifest (`#3245`), and declares a provider contract the runtime
+  refuses when it is newer than itself (`#3242`, `#3246`, `#3247`); the layer
+  releases at the generation edge and presents a suspended placeholder instead
+  of a stale frame (`#3255`, `#3256`), and Lua gains `bitty.ui.panel`
+  present/update/release plus a bounded input queue, `bitty.ui.panel.poll`, and
+  `panel.content.*` events (`#3267`, `#3268`). Closing a presented panel
+  restores the displaced PTY (`#3269`). Terminal state keeps `DECSTBM` scroll
+  margins per screen (divergence D-1, `#3260`) and rejects a top margin that is
+  not above the bottom (`#3264`); bottom plugin bands align to the physical
+  window inset (`#3266`), and visible unconfirmed surfaces retry from truth
+  (`#3265`), a generic present-park fix that does not by itself prove the
+  reported `agy` Swarm-to-Esc defect (`bitty#3262`) fixed, because the
+  reporter's exact byte sequence was never captured. Windows ships the
+  `bitty.com` console companion proxy next to `bitty.exe` (`bitty#3224` via
+  `#3234`), a pre-`%LOCALAPPDATA%` plugin store and its `plugins-state` tree are
+  adopted exactly once (`#3230`, `#3238`), plugin inspect methods require
+  `debug.inspect` (`bitty#2921` via `#3248`), the fuzz campaign records
+  P0-AC-002 evidence and a re-seen artifact can no longer report a false clean
+  (`#3233`, `#3237`), and the Markdown lint gate is restored (`#3272`). These
+  entries record implementation evidence only, not a `Verified` or
+  `Compatible` claim.
+
 - 0.0.45 post-release hardening and evidence currency: the `bittyd` daemon
   process is proven to open zero TCP sockets (`bitty#2921` via `#3218`), the
   AC-1 presentation-mode clause is homed at the generation rebind edge
