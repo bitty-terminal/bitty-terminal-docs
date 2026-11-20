@@ -115,9 +115,13 @@ Status: **implemented-only for the data root.** The config-root precedence
 above, including `%APPDATA%` and the last-resort `%LOCALAPPDATA%`, predates
 release `v0.0.44`. The data-root order is newer than the config-root
 precedence: it landed on `bitty` `main` (bitty#3223 via PR #3226) and first
-ships in `v0.0.45` (`5d19152`, 2026-11-18); `v0.0.44` (`7b3d3df`) used
+shipped in `v0.0.45` (`5d19152`, 2026-11-18); `v0.0.44` (`7b3d3df`) used
 `$XDG_DATA_HOME` else `$HOME/.local/share` and therefore preferred `$HOME`
-whenever it was set.
+whenever it was set. The precedence order is unchanged in the current
+`v0.0.46` release (`f854d5a9`, 2026-11-20); that release adds a one-time
+adoption of a pre-`%LOCALAPPDATA%` plugin store and the adjacent
+`plugins-state` tree (bitty#3226 and bitty#3236 via `#3230` and `#3238`)
+instead of reading an empty current root.
 
 Every derived location under those roots:
 

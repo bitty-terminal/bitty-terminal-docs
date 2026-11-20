@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Pre-alpha releases exist (latest `v0.0.45`, released 2026-11-18), but no
+Pre-alpha releases exist (latest `v0.0.46`, released 2026-11-20), but no
 release is stable, `Verified`, `Compatible`, or supported. Normative
 requirements in this policy are `Accepted` contract, not shipped product
 behavior.

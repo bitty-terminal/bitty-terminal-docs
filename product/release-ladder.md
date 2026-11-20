@@ -1,6 +1,6 @@
 ---
 title: Release Ladder
-description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (re-baselined 2026-11-18 at release v0.0.45, main 5d19152e, 18 workspace crates of which 14 are publish = true) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
+description: Maps the Pre-alpha / Engineering Milestones M1-M8 stage (re-baselined 2026-11-20 at release v0.0.46, f854d5a9, 19 workspace crates of which 14 are publish = true) to the v0.1-v1.0 maturity ladder and the Implemented/Verified lifecycle
 category: product
 audience: maintainer
 document_type: overview
@@ -87,7 +87,7 @@ sidebar_order: 21
   with focused contracts `W-71` through `W-75`. This decision status does not
   change any row below: no extraction, migration, or relocation is implemented,
   and `W-75`'s contract that externalizes `bitty-compat-lab` and `bitty-perf` is
-  not yet executed (`W-105`). At `v0.0.45` neither verification crate exists in
+  not yet executed (`W-105`). At `v0.0.46` neither verification crate exists in
   the workspace, so the candidate pages below describe no current crate member;
   their implementation status is unchanged by this re-baseline. The affected
   implementation-status candidates
@@ -97,30 +97,99 @@ sidebar_order: 21
   stay candidate. See the
   [small-core refactor execution handoff](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/handoff/2026-10-02-small-core-refactor.md).
 
-**Re-baseline note (2026-11-18, `bitty` `v0.0.45`@`5d19152`, `main`@`5d19152e`).**
-The crate roster and release anchor above are superseded as _current state_.
-`bitty` now tags `v0.0.45` (`5d19152`, 2026-11-18) on `main` `5d19152e`, and
-releases `v0.0.38` through `v0.0.45` have all shipped. This re-baseline moves
+**Re-baseline note (2026-11-20, `bitty` `v0.0.46`@`f854d5a9`, `main`@`f854d5a9`).**
+The crate roster and release anchor stated above are superseded as _current
+state_. `bitty` tags `v0.0.46` (annotated tag object `70ad5221`) at commit
+`f854d5a9` (2026-11-20), which is also current `main`, and releases `v0.0.38`
+through `v0.0.46` have all shipped. This re-baseline moves the anchor from
+`5d19152` (the `v0.0.45` release) to `f854d5a9`. The workspace holds 19 crates,
+14 of them `publish = true`; `bitty-com`, the Windows `bitty.com` console
+companion proxy, is the one member added since the `v0.0.45` roster and it is
+not published. The roster is re-derived in
+[Workspace roster at v0.0.46](#workspace-roster-at-v0046-2026-11-20), and the
+`v0.0.45` note and table below stay as dated provenance rather than being
+deleted. The release publishes 51 GitHub Release assets, and the mirrored
+[`SHA256SUMS`](https://cdn.bitty.run/releases/v0.0.46/SHA256SUMS) carries 49
+entries, including `cb17346d6e567ad6ff15981cf6c5172a0e9ae692b3ff09fefe0b7e14aef4b36c`
+for `bitty-0.0.46-x86_64-unknown-linux-gnu.tar.zst`, verified against a real
+download of that archive. One post-release defect is known and tracked: the
+Scoop channel's E2E assertion rejects the intentional `bitty.com` shim (`bitty`
+issue #3279, fix in flight), so the channel is recorded here neither as broken
+nor as repaired. The `2026-10-02` snapshot revision `310bf87` remains dated
+provenance only: it is not an ancestor of current `main` (the history was
+rewritten), so no statement in this document is re-derived from that tree.
+Maturity, risk, and open-question judgements are deliberately unchanged by this
+re-baseline; they stay as recorded at the snapshot until
+[`project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
+is re-synchronized by its owning task. Nothing here upgrades a row to
+`Verified`, `Compatible`, or `Release-ready`.
+
+**Re-baseline note (2026-11-18, `bitty` `v0.0.45`@`5d19152`, `main`@`5d19152e`;
+retained as dated provenance).**
+The crate roster and release anchor above were superseded as _current state_,
+first by this `v0.0.45` note and now by the `v0.0.46` note above.
+`bitty` tagged `v0.0.45` (`5d19152`, 2026-11-18) on `main` `5d19152e`, and
+releases `v0.0.38` through `v0.0.45` had all shipped. That re-baseline moved
 the anchor from `67f51b5` (the `v0.0.44` snapshot, `7b3d3df`) to `5d19152`. The
-workspace holds 18 crates, 14 of them `publish = true`; the roster is
-re-derived in
+workspace held 18 crates, 14 of them `publish = true`; that roster is
+preserved in
 [Workspace roster at v0.0.45](#workspace-roster-at-v0045-2026-11-18). The
 `2026-10-02` snapshot revision `310bf87` is recorded here as dated provenance
 only: it is not an ancestor of current `main` (the history was rewritten), so
 no statement in this document is re-derived from that tree. Maturity, risk, and
-open-question judgements are deliberately unchanged by this re-baseline; they
+open-question judgements were deliberately unchanged by that re-baseline; they
 stay as recorded at the snapshot until
 [`project-state.json`](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/project/project-state.json)
 is re-synchronized by its owning task. Nothing here upgrades a row to
 `Verified`, `Compatible`, or `Release-ready`.
 
-## Workspace roster at v0.0.45 (2026-11-18)
+## Workspace roster at v0.0.46 (2026-11-20)
 
-Re-derived from `bitty` `crates/` and each member manifest at tag `v0.0.45`
-(`5d19152`): 18 workspace members, 14 with `publish = true`. Retired members
+Re-derived from `bitty` `Cargo.toml` workspace members and each member manifest
+at tag `v0.0.46` (`f854d5a9`): 19 workspace members, 14 with `publish = true`.
+`bitty-com` is the only member added since the
+[v0.0.45 roster](#workspace-roster-at-v0045-2026-11-18): a dependency-free
+`std`-only Windows console companion proxy shipped as `bitty.com` next to
+`bitty.exe` (bitty#3224 via `#3234`), and it is not published. Retired members
 (`bitty-core`, `bitty-panels`, `bitty-app`, `bitty-agent`, `bitty-compat-lab`,
 `bitty-perf`) no longer exist in the tree, and the extracted `bitty-ipc` /
 `bitty-agent` code lives in independent repositories linked as git dependencies,
+not as workspace members.
+
+| Crate                | Role (manifest description)                                                                       | `publish = true` |
+| -------------------- | ------------------------------------------------------------------------------------------------- | ---------------- |
+| `bitty-terminal`     | Terminal binary, thin composition root                                                            | no               |
+| `bitty-com`          | Windows console companion proxy (`bitty.com`) that launches the sibling Bitty executable          | no               |
+| `bitty-config`       | Typed, validated configuration pipeline                                                           | yes              |
+| `bitty-daemon`       | `bittyd` session-host daemon: service version, capability set, handshake seam                     | no               |
+| `bitty-lua`          | Deterministic phodopus Lua VM budgets for plugins                                                 | yes              |
+| `bitty-package`      | Package lifecycle and integrity verification                                                      | yes              |
+| `bitty-platform`     | Window and event-loop adapter (wraps `winit`)                                                     | yes              |
+| `bitty-plugin-host`  | Draft plugin platform host                                                                        | yes              |
+| `bitty-pty`          | PTY wrapper with backpressure and resize (native ConPTY spawn on Windows, `portable-pty` on Unix) | yes              |
+| `bitty-render`       | GPU rendering pipeline (`wgpu`, `harfrust`/`swash` shaped text, `crossfont` fallback)             | yes              |
+| `bitty-rich`         | Rich presentation helpers (draft)                                                                 | yes              |
+| `bitty-runtime`      | Runtime orchestration for the Correct Terminal                                                    | yes              |
+| `bitty-sandbox`      | Narrow inherited-OS-confinement adapter for plugin-spawned tools (Linux Landlock, fail-closed)    | yes              |
+| `bitty-term-state`   | Terminal truth core: grid, state, damage, scrollback                                              | yes              |
+| `bitty-test-support` | Shared test-harness helpers (live-PTY gating)                                                     | no               |
+| `bitty-test-vm`      | VM test-tier controller: base-image/overlay policy and gated KVM smoke                            | no               |
+| `bitty-ui`           | View, layout, and selection primitives                                                            | yes              |
+| `bitty-vt`           | VT parser producing `TerminalAction` values (wraps `vte`)                                         | yes              |
+| `bitty-winjob`       | Narrow reviewed Win32 adapter: job objects, ConPTY spawn, console adoption                        | yes              |
+
+The publish split is a packaging fact, not a maturity signal: `publish = true`
+marks a crate the publish order can push to the registry, and it says nothing
+about `Verified` or `Compatible` status.
+
+## Workspace roster at v0.0.45 (2026-11-18)
+
+Re-derived at that re-baseline from `bitty` `crates/` and each member manifest
+at tag `v0.0.45` (`5d19152`): 18 workspace members, 14 with `publish = true`,
+preserved here as dated provenance. Retired members
+(`bitty-core`, `bitty-panels`, `bitty-app`, `bitty-agent`, `bitty-compat-lab`,
+`bitty-perf`) did not exist in that tree either, and the extracted `bitty-ipc` /
+`bitty-agent` code lived in independent repositories linked as git dependencies,
 not as workspace members.
 
 | Crate                | Role (manifest description)                                                                       | `publish = true` |
@@ -144,10 +213,6 @@ not as workspace members.
 | `bitty-vt`           | VT parser producing `TerminalAction` values (wraps `vte`)                                         | yes              |
 | `bitty-winjob`       | Narrow reviewed Win32 adapter: job objects, ConPTY spawn, console adoption                        | yes              |
 
-The publish split is a packaging fact, not a maturity signal: `publish = true`
-marks a crate the publish order can push to the registry, and it says nothing
-about `Verified` or `Compatible` status.
-
 ## Revision-pinned implementation state at 491c567 (historical)
 
 Everything in this section is evidence pinned to the `bitty` revision `491c567`
@@ -156,8 +221,8 @@ _Status and provenance_ above. `491c567` and `c6db24d` are separate rewritten
 histories (distinct root commits `43739d0` and `9cbcce9`, no merge base), so this
 section is a historical record, not a description of the `c6db24d` tree.
 
-- **Workspace** (historical; the current 18-crate roster is the
-  [v0.0.45 table](#workspace-roster-at-v0045-2026-11-18) above): 21 members in
+- **Workspace** (historical; the current 19-crate roster is the
+  [v0.0.46 table](#workspace-roster-at-v0046-2026-11-20) above): 21 members in
   `bitty/Cargo.toml` (edition 2024, resolver 3,
   `rust-version` 1.85, toolchain 1.98.1): `bitty-vt`, `bitty-pty`,
   `bitty-platform`, `bitty-config`, `bitty-package`, `bitty-lua` (`phodopus`
@@ -250,8 +315,9 @@ control plane remain post-v1.0 and behind their own separate, strictly later gat
 
 The status column reports the revision-pinned `491c567` evidence recorded in the
 historical section above; it is not re-derived at `310bf87` or at the
-`v0.0.45` (`5d19152`, `main` `5d19152e`) re-baseline anchor. No
-row in this ladder claims `Verified`, `Compatible`, or `Release-ready`.
+`v0.0.45` (`5d19152`, `main` `5d19152e`) and `v0.0.46` (`f854d5a9`) re-baseline
+anchors. No row in this ladder claims `Verified`, `Compatible`, or
+`Release-ready`.
 
 ## Verification gates
 
@@ -260,7 +326,7 @@ row in this ladder claims `Verified`, `Compatible`, or `Release-ready`.
   repository `justfile` has no `state` recipe), `act -n`
   DRYRUN success for the Docs quality `ci.yml` workflow.
 - Snapshot evidence at the dated `2026-10-02` synchronized `bitty` snapshot
-  (`310bf87`, historical — not re-run for the `v0.0.45` re-baseline):
+  (`310bf87`, historical — not re-run for the `v0.0.45`/`v0.0.46` re-baselines):
   `cargo check --workspace --all-targets --locked` and
   `cargo check --target x86_64-pc-windows-gnu` pass at the synchronized
   `bitty` revision per that repository's CI (merge gates green through
