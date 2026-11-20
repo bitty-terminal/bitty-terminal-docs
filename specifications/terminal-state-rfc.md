@@ -11,10 +11,12 @@ sidebar_order: 12
 
 # Terminal state and action invariants
 
+## Document status
+
 > Status: **accepted** on 2026-08-26 by the project initiator. This document is
 > the "Terminal state RFC" that closes
-> [OQ-007](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md). It defines a contract; it does
-> not describe implemented behavior.
+> [OQ-007](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md). It defines a contract;
+> separately labeled implementation evidence does not amend it.
 
 ## Purpose and scope
 
@@ -24,7 +26,11 @@ action interface between the VT parser and terminal state, the invariants
 that state must hold after every action, a damage-tracking model, replay
 determinism guarantees, and a fuzzing/differential-testing strategy.
 
-Normative sources this specification must not weaken:
+Out of scope: image protocol placement semantics (OQ-008), plugin API surface
+(OQ-011), event interception phases (OQ-013), and concrete protocol priority
+ordering.
+
+## Normative sources this specification must not weaken
 
 - [Core and Plugin Boundaries](../architecture/core-boundaries.md): parser,
   semantic actions, grid, cursor, modes, scrollback, damage, and replies are
@@ -40,9 +46,13 @@ Normative sources this specification must not weaken:
   recovery from malformed sequences (T-01), core-owned grid semantics (T-13),
   hard payload/decode limits.
 
-Out of scope: image protocol placement semantics (OQ-008), plugin API surface
-(OQ-011), event interception phases (OQ-013), and concrete protocol priority
-ordering.
+## Terminology
+
+- **Terminal Truth** is the canonical terminal state derived from PTY input and
+  the declared environment; presentation reads it without mutation.
+- **Action** is a typed parser output interpreted by terminal state.
+- **Snapshot** is a versioned view of terminal state for readers. **Damage**
+  describes what changed for rendering; it is not part of replay truth.
 
 ## Pipeline overview
 
@@ -339,9 +349,57 @@ These properties serve debugging (reproduce any session state from its
 recording), testing (corpus replays assert hashes), and the record/replay hooks
 named under Reliability ownership in the core boundaries document.
 
-## Testing strategy
+## Alternate-screen scroll margin implementation evidence
 
-### Fuzzing (untrusted-input surfaces)
+Status: **Implemented-only**. Merged Bitty PR
+[#3260](https://github.com/bitty-terminal/bitty/pull/3260)
+(`81e6aedbf27c95d7c9c3f1f3988927a539f1a8b4`, closing
+[#3259](https://github.com/bitty-terminal/bitty/issues/3259)) records deliberate
+divergence **D-1**, not parity. xterm and Ghostty each keep a single terminal-wide
+margin pair and leave it unchanged when switching screens.
+
+This evidence does not amend accepted invariant 5 or any other part of the
+accepted contract, and does not introduce a normative requirement.
+
+- On `?47` or `?1049` alternate-screen entry, Bitty stashes the primary screen's
+  `DECSTBM` top and bottom margins. The alternate screen starts with full-height
+  margins on every entry, even when `?47` retains its grid. On exit, the primary
+  screen gets its own saved margins back, not the alternate screen's margins.
+- When resize changes the effective grid width or height after clamping the
+  requested dimensions, Bitty resets the active screen's margins to full height
+  under `TERM-ENG-005`. Stashed primary margins are clamped to the new height on
+  shrink and never expanded on growth: the bottom is capped at the last row,
+  then the top is capped at the bottom. If both effective dimensions are
+  unchanged, the resize leaves state unchanged, including both margin pairs.
+- `DECSTR` resets the live margin pair and any stashed primary pair to full
+  height. `RIS` discards the stash as part of the full reset.
+
+Restoring the primary screen's own margins prevents an alternate-screen TUI's
+scroll region from clipping the primary screen after exit. The compatibility
+cost is limited to applications that set primary margins and then enter the
+alternate screen expecting those margins to carry over: they get full-screen
+alternate margins instead.
+
+The merged regression suite `crates/bitty-term-state/tests/scroll_region_per_screen.rs`
+covers screen switches, resize, and both resets. This is workspace code and test
+evidence, not a `Verified` or `Compatible` claim.
+
+## Security review
+
+### Security review notes
+
+This contract strengthens the P0 posture: bounded parsing and panic-free
+recovery answer T-01; the single-writer action path and snapshot-only reads
+enforce T-13 (Terminal Truth is core-owned); reply caps bound reverse-channel
+abuse; OSC clipboard actions pass the normative separate read/write consent
+policies. Fuzzing and differential testing provide the evidence path required by
+boundary acceptance.
+
+## Verification plan
+
+### Testing strategy
+
+#### Fuzzing (untrusted-input surfaces)
 
 - Targets: UTF-8 decoder, VT parser, and action applier (parser + state as one
   harness), matching the boundary acceptance requirement that parser and
@@ -353,7 +411,7 @@ named under Reliability ownership in the core boundaries document.
   vttest-style suites, and prior crash minimizations; corpora are stored with
   the repository and used for both fuzzing and regression replay.
 
-### Differential testing
+#### Differential testing
 
 Reference comparisons run the same byte streams through reference terminals
 (candidates: existing open-source emulators with scriptable state dumps) and
@@ -368,7 +426,7 @@ mode flags after each chunk.
   wraparound at cell boundaries, wide-char splits across wraps and resizes, and
   OSC 8/52/133 handling under the P0 policy gates.
 
-### Property-based and replay tests
+#### Property-based and replay tests
 
 - Randomized action-equivalent byte generators (grammar-guided) assert
   invariants and hash stability across shuffles of independent chunks where the
@@ -377,16 +435,22 @@ mode flags after each chunk.
   Hash changes require deliberate baseline updates reviewed alongside spec
   changes.
 
-## Security review notes
+## Alternatives considered
 
-This contract strengthens the P0 posture: bounded parsing and panic-free
-recovery answer T-01; the single-writer action path and snapshot-only reads
-enforce T-13 (Terminal Truth is core-owned); reply caps bound reverse-channel
-abuse; OSC clipboard actions pass the normative separate read/write consent
-policies. Fuzzing and differential testing provide the evidence path required by
-boundary acceptance.
+The accepted [pipeline](#pipeline-overview) uses one typed action write path
+and excludes direct mutation by readers. The RFC leaves the exact reflow
+algorithm and choice of reference terminals open.
 
-## Open items remaining under OQ-007
+## Affected contracts
+
+The terminal ownership boundary remains in [Core and Plugin Boundaries](../architecture/core-boundaries.md).
+[Rich content and presentation interfaces](../interfaces/rich-content.md) retain
+the read-only presentation boundary. The [Terminal parity matrix](../reference/terminal-parity-matrix.md)
+reports implementation comparisons; it does not define the terminal-state contract.
+
+## Open points
+
+### Open items remaining under OQ-007
 
 - Exact reflow algorithm on resize (must be singular and specified before
   implementation).
@@ -395,3 +459,23 @@ boundary acceptance.
 - Concrete hash serialization version and its evolution policy.
 
 This RFC closes OQ-007 at the design level; the register row links here.
+
+## Acceptance criteria
+
+The existing acceptance obligations are the [grid and state invariants](#grid-and-state-invariants),
+[damage tracking model](#damage-tracking-model), and [deterministic replay guarantees](#deterministic-replay-guarantees),
+with evidence from the [verification plan](#verification-plan). Design acceptance
+does not establish that the implementation meets these obligations.
+
+## P0 Review Sign-off
+
+The design acceptance recorded in [Document status](#document-status) is
+unchanged. Neither this document's structure nor its implementation evidence
+records a new P0 sign-off. The [security requirements](#security-review) and
+[verification plan](#verification-plan) still apply.
+
+## References
+
+- [Open-question register](https://github.com/bitty-terminal/bitty-docs/blob/main/docs/decisions/open-questions.md) — OQ-007 design acceptance and adjacent questions.
+- [Normative sources](#normative-sources-this-specification-must-not-weaken) — ownership, presentation, and security requirements.
+- [Rich Presentation RFC](rich-presentation-rfc.md) — accepted image payload limits referenced by the parser obligations.

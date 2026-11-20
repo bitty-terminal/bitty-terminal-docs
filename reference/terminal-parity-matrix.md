@@ -19,7 +19,8 @@ sidebar_order: 40
   `OQ-010`.
 - Scope: the user-visible configuration and feature surface of Ghostty
   (its configuration reference is the primary comparison axis), plus
-  notable Kitty and WezTerm options that have no Ghostty equivalent.
+  notable Kitty and WezTerm options that have no Ghostty equivalent. Selected
+  terminal behaviors also use xterm as a reference peer.
 - Evidence rule: a row is **implemented** or **partial** only when the
   `bitty` repository contains the named configuration key or behavior, a
   code path, and a test that exercises it. Every other row is **planned**
@@ -66,7 +67,7 @@ sidebar_order: 40
 | Column   | Meaning                                                                                                                |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Feature  | User-visible capability, named neutrally.                                                                              |
-| Peers    | `G` Ghostty, `K` Kitty, `W` WezTerm: which peers expose it as configuration or built-in behavior.                      |
+| Peers    | `G` Ghostty, `K` Kitty, `W` WezTerm, `X` xterm. A peer listing does not imply matching semantics.                      |
 | Bitty    | Bitty configuration key, keymap action, or behavior, when one exists.                                                  |
 | Status   | `implemented`, `partial`, `planned`, `gap`, or `wont-do`.                                                              |
 | Evidence | Repository-relative `bitty` path and test name for implemented/partial rows; a specification link or reason otherwise. |
@@ -75,6 +76,18 @@ Test names are `path::test_name`. Paths are relative to the `bitty`
 repository root.
 
 ## Matrix
+
+### Terminal behavior
+
+| Feature                         | Peers | Bitty                        | Status  | Evidence                                                                                                                                                                                                                                                  |
+| ------------------------------- | ----- | ---------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Alternate-screen scroll margins | G X   | Per-screen `DECSTBM` margins | partial | `crates/bitty-term-state/tests/scroll_region_per_screen.rs::alt_screen_status_region_does_not_leak_into_primary_after_exit`; `crates/bitty-term-state/tests/scroll_region_per_screen.rs::primary_margins_are_restored_after_an_alternate_screen_session`. |
+
+This row records [deliberate divergence D-1](../specifications/terminal-state-rfc.md#alternate-screen-scroll-margin-implementation-evidence)
+as **Implemented-only**: xterm and Ghostty share one margin pair across screens;
+Bitty starts the alternate screen with full margins and restores the primary
+screen's own margins on exit. Bitty PR #3260 does not establish a fix for the
+separate agy stale-frame report [#3262](https://github.com/bitty-terminal/bitty/issues/3262).
 
 ### Window and background
 
@@ -239,20 +252,20 @@ repository root.
 
 ## Summary
 
-Counts cover every feature row in `## Matrix` (106 rows), including the six
-rows with no peer listed. They were re-derived with the 2026-11-17
-`v0.0.44` re-baseline.
+Counts cover every feature row in `## Matrix` (107 rows), including the six
+rows with no peer listed. They include the 2026-11-17 `v0.0.44` re-baseline
+and the subsequent D-1 row.
 
 | Status      | Rows |
 | ----------- | ---- |
 | implemented | 71   |
-| partial     | 10   |
+| partial     | 11   |
 | planned     | 2    |
 | gap         | 22   |
 | wont-do     | 1    |
 
-Restricted to the 100 rows with at least one peer listed, the counts are
-66 implemented, 9 partial, 2 planned, 22 gap, and 1 wont-do.
+Restricted to the 101 rows with at least one peer listed, the counts are
+66 implemented, 10 partial, 2 planned, 22 gap, and 1 wont-do.
 
 ## Follow-up candidates
 
