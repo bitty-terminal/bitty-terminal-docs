@@ -1264,9 +1264,11 @@ return {
   keep their exact spelling and overlay by `context + chord` identity.
 - `keymaps` is set-by-identifier: a user entry with the same `context + chord`
   replaces the shipped entry, anything else appends. The shipped set is
-  93 entries, all context `global` (Core `DEFAULT_KEYMAPS`; CTX-1784 removed
-  the four retired help chords at `bitty` `3101ab26`, see the help bullet
-  below);
+  106 entries at `bitty` `944a4b1f`, all context `global` (Core
+  `DEFAULT_KEYMAPS`; CTX-1784 removed the four retired help chords at `bitty`
+  `3101ab26`, see the help bullet below, and the set this page last counted
+  at 93 has since gained the move-split, split-toggle, tab, scratchpad, and
+  panel-mode chords);
   unknown chords, actions, or contexts fail closed, and single-character keys
   require at least one modifier.
 - Help overlay (CTX-1784, `bitty` `3101ab26`, PR #3105): the Core-drawn
@@ -1296,6 +1298,15 @@ return {
   reserves `alt+v` for `$EDITOR`. Zoom restores before the toggle;
   `Fullscreen`/`Scratchpad` fail closed with a warning and no state
   change. User-overridable by `context + chord` identity.
+- Panel-mode toggle (bitty#2388 residue 3, CTX-1931): `toggle_panel_mode`
+  (alias `panel_mode_toggle`) toggles the FOCUSED presented panel's
+  content-layer mode between tiled and floating through the
+  `bitty.workspace:presentation-{tiled,floating}` command names — the same
+  single mode gate `bitty ctl panel mode` runs, never a second transition
+  path. Shipped on Mod-aware `ctrl+alt+a` (`ctrl+super+a` under
+  `mod_key = "super"`); with no GUI layer presented the gesture is a typed
+  no-op that never falls through into `toggle_floating`. User-overridable by
+  `context + chord` identity.
 - `leader_key` is a fully-optional top-level scalar (CTX-0715, resolved at
   startup per CTX-0723; read-only from `bitty` `origin/main` at `c64dd1e`).
   When present it must be a chord spelling in the shared chord grammar
