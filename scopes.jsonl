@@ -151,3 +151,5 @@
 {"created_at":"2026-10-24T05:41:24.215274142+00:00","id":"01M5P6V63QPS494Q4J77S9MZSK","kind":"include","pattern":"user-guide/faq.md","project_id":"01M2DX0M89VSBG7TB7H5WNKNA4","task_id":"01M5P6TWR48QJ5FQZYCVAVW3HS"}
 {"created_at":"2026-10-24T07:24:27.571013631+00:00","id":"01M5PCQWHKKDD768MG4SKV68F9","kind":"include","pattern":"specifications/text-rendering-rfc.md","project_id":"01M2DX0M89VSBG7TB7H5WNKNA4","task_id":"01M5PCQP41PNQ20DBTWYCJE3RJ"}
 {"created_at":"2026-10-24T07:24:27.612358093+00:00","id":"01M5PCQWJWDYJFMR40F95PD9RX","kind":"include","pattern":"architecture/graphics-appearance.md","project_id":"01M2DX0M89VSBG7TB7H5WNKNA4","task_id":"01M5PCQP41PNQ20DBTWYCJE3RJ"}
+{"created_at":"2026-11-19T18:59:50.653190201+00:00","id":"01M7TJVVQXM46YQ1DGQNHM95SE","kind":"include","pattern":"specifications/terminal-state-rfc.md","project_id":"01M2DX0M89VSBG7TB7H5WNKNA4","task_id":"01M7TJPXG3ZDE0E8VAVH4EFXBV"}
+{"created_at":"2026-11-19T18:59:57.444017197+00:00","id":"01M7TJW2C4VD481P9H7N2TD9NG","kind":"include","pattern":"reference/terminal-parity-matrix.md","project_id":"01M2DX0M89VSBG7TB7H5WNKNA4","task_id":"01M7TJPXG3ZDE0E8VAVH4EFXBV"}
