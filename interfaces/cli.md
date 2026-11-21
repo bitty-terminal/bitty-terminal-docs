@@ -166,7 +166,8 @@ no verb-specific option, and requires the `view.manage` scope — the scope
 `view split` needs, with no elevation. The handler authorizes that scope
 against the live connection grant before it offers the request, so a connection
 without it is refused as `scope/ScopeDenied` and never reaches the app. The
-verb is the only `ctl` verb that does not ride the shared control queue: a
+verb does not ride the shared control queue (the panel-content verbs below
+arrived later on the same lane shape): a
 window is created through the platform context the app thread owns while
 handling an event, so the request travels over a bounded single-slot lane,
 wakes an idle instance, and is serviced on the next event turn through the same
@@ -198,6 +199,39 @@ the stable `code` and message. The success reply states that the instance
 _requested_ the window and reports the registered count; the creation result
 itself is recorded in the instance log, so the human table names the instance
 and points at that log instead of claiming an outcome it cannot observe.
+
+Shipped slice: the panel-content debug verbs `bitty ctl panel present` and
+`bitty ctl panel release` (`bitty` PR #3287, CTX-1913) plus `bitty ctl panel
+mode` (`bitty` PR #3302, CTX-1931,
+[bitty#2388](https://github.com/bitty-terminal/bitty/issues/2388)) are
+implemented at `bitty` `944a4b1f`. `present` takes one `p:N` panel id,
+`release` takes `p:N` plus the receipt token `present` answered, and `mode`
+takes `p:N` plus one canonical mode word — `tiled`, `floating`, `fullscreen`,
+or `scratchpad` — with an optional receipt token as the third positional
+(`crates/bitty-terminal/src/ctl/request.rs:1390` and `:1403`). They map to
+the wire methods `bitty.debug/panelContentPresent`,
+`bitty.debug/panelContentRelease`, and `bitty.debug/panelContentMode`
+(`crates/bitty-terminal/src/ctl/request.rs:103`, `:106`, `:118`) and, like
+`window new`, do not ride the shared control queue, because the `bitty-ipc`
+pin's scope table predates them: each request travels a bounded single-slot
+lane the servo handler fills and the app thread drains on its next event
+turn (`crates/bitty-terminal/src/ctl/panel_content.rs`), with the handler
+authorizing `view.manage` itself against the live connection grant. A second
+concurrent caller is refused busy, a caller that gives up before the app
+claims the request is told nothing was serviced, a caller that gives up after
+is told the outcome is unknown, and a runtime refusal answers with the typed
+error triple, never a silent success. `mode` runs the runtime's single mode
+gate (`Runtime::set_panel_content_presentation`,
+`crates/bitty-runtime/src/runtime/panel_content.rs:484`): `tiled` and
+`floating` answer, `fullscreen` and `scratchpad` parse and refuse typed
+`ContentPresentationUnsupported` at that one gate, and a token that is not
+the layer's refuses `ContentTokenMismatch`. The `ctrl+alt+a`
+`toggle_panel_mode` binding runs the same gate through the
+`bitty.workspace:presentation-{tiled,floating}` command names
+(`crates/bitty-terminal/src/chrome_keys.rs:3054`), so the user gesture and
+the verb cannot diverge. These verbs are the debug reachability for
+[bitty#2388](https://github.com/bitty-terminal/bitty/issues/2388)'s panel
+content layers, not a supported automation contract.
 
 Runtime control should travel over a versioned IPC protocol and share the
 capability model used by agents and plugins. Reading terminal text, sending

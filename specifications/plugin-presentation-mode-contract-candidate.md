@@ -34,8 +34,54 @@ sidebar_order: 91
 > forbids. This record states one row per mode, one owner per row, and what a
 > replacing surface owes the PTY it covers.
 >
-> Nothing here is implemented. The mechanisms it composes are shipped; the
-> contract that composes them is not.
+> Nothing here is accepted. The mechanisms it composes are shipped, or
+> landed as implementation where this revision says so; the contract that
+> composes them is not.
+>
+> The 2026-11-22 sync re-derived that framing read-only against `bitty`
+> `origin/main` `944a4b1f` (2026-11-22). Two mechanism halves landed after
+> this record was drafted, so the blanket sentence above — "nothing here is
+> implemented" — was stale, and this revision corrects it without accepting
+> anything.
+>
+> The producer wire: [bitty#3299](https://github.com/bitty-terminal/bitty/pull/3299)
+> (CTX-1929) installs `RuntimePanelContentBackend` at the composition root
+> before activation (`crates/bitty-terminal/src/plugin_runtime.rs:2155`,
+> contract note at `:2149`) and pumps the runtime's queued `panel.content.*`
+> observations on the app's cold tick
+> (`crates/bitty-terminal/src/terminal_app.rs:2620`, pump at `:3254`), so a
+> granted plugin's `bitty.ui.panel.present`
+> (`crates/bitty-lua/src/host.rs:2253`, gated by `ui.panel` for the content
+> and its input and by `ui.rich` for the scene, `:2238`) now produces a real
+> content layer in the shipped app; the shipped-app test
+> `granted_plugin_presents_and_releases_a_real_content_layer`
+> (`crates/bitty-terminal/src/plugin_runtime.rs:8144`) proves the displaced
+> child and its winsize stay untouched while the layer holds the leaf.
+>
+> The user and ctl mode-choice gesture:
+> [bitty#3302](https://github.com/bitty-terminal/bitty/pull/3302) (CTX-1931)
+> adds the `ctrl+alt+a` `toggle_panel_mode` default binding
+> (`crates/bitty-config/src/keymap.rs:2315`, action at `:1048`) and the
+> `bitty ctl panel mode` verb over the wire method
+> `bitty.debug/panelContentMode`
+> (`crates/bitty-terminal/src/ctl/request.rs:118`, dispatch at
+> `crates/bitty-terminal/src/ctl/apply.rs:845`). Both run the same single
+> transition gate, `Runtime::set_panel_content_presentation`
+> (`crates/bitty-runtime/src/runtime/panel_content.rs:484`): `tiled` and
+> `floating` are answerable (`presented_panel_mode_supported`, `:1021`);
+> `fullscreen` and `scratchpad` parse everywhere and refuse typed
+> `PanelError::ContentPresentationUnsupported` at that one gate (`:519`); and
+> a token that is not the layer's refuses `ContentTokenMismatch` (`:514`).
+> The fullscreen placement (residue item 2) does not ship by this: a mode
+> that parses and refuses typed is the recorded fact, not an implemented
+> placement.
+>
+> The `[presentation]` declaration still does not exist (no such section is
+> in the plugin manifest grammar at `944a4b1f`), the session state names as
+> this record spells them still do not exist, and no acceptance has
+> happened. This revision accepts nothing, promotes nothing to **Verified**
+> or **Compatible**, changes no accepted text, and does not describe the
+> Panel runtime or the fullscreen placement as shipped.
 
 ## Purpose and scope
 
@@ -141,20 +187,20 @@ Disposed` lifecycle, the `4+1` overlay envelope, the closed `panel.*`
 Each claim in this record is either a citation of an accepted or shipped
 mechanism, or it is labelled a candidate. No third kind of claim is made.
 
-| Claim area                                                  | Status                                            | Basis                                                                                        |
-| ----------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Mode vocabulary (`panel`, `floating`, `fullscreen`, `band`) | Candidate grouping of shipped and candidate names | Names come from [bitty#2388](https://github.com/bitty-terminal/bitty/issues/2388)            |
-| Per-mode owner assignment                                   | Candidate                                         | Composes the accepted RFCs and the reconciliation above                                      |
-| `PresentationMode` four variants                            | Accepted                                          | [Drawer Presentation Mode Decision](drawer-presentation-mode-decision.md)                    |
-| Only `Tiled` live today                                     | Accepted, recorded                                | [Workspace Compositor Specification](workspace-compositor.md)                                |
-| Band geometry and reflow                                    | Candidate                                         | [Chrome Band Contract](chrome-band-contract-candidate.md)                                    |
-| Panel content replacement                                   | Candidate                                         | [Panel GUI Content Presentation](panel-gui-content-presentation-candidate.md)                |
-| Declaration spelling `[presentation] surface`               | Candidate                                         | This record                                                                                  |
-| Lifecycle state names                                       | Candidate                                         | This record; mapped onto the content record's `idle`/`active`/`released`                     |
-| Refusal codes                                               | Candidate spellings of accepted error classes     | [Panel GUI Content Presentation](panel-gui-content-presentation-candidate.md)                |
-| Restore gesture                                             | Shipped action, candidate framing                 | [`close_view` in the shipped action catalog](../reference/configuration-options.md)          |
-| Ceilings (`SCN-*`, `4+1`, queue bounds)                     | Accepted and shipped, consumed not redefined      | [Rich Presentation RFC](rich-presentation-rfc.md), [Panel Runtime RFC](panel-runtime-rfc.md) |
-| Plugin-owned placement authority                            | Vision only, not shipped                          | [Panel Vision](../product/panel-vision.md)                                                   |
+| Claim area                                                  | Status                                                                                                                                                   | Basis                                                                                        |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Mode vocabulary (`panel`, `floating`, `fullscreen`, `band`) | Candidate grouping of shipped and candidate names                                                                                                        | Names come from [bitty#2388](https://github.com/bitty-terminal/bitty/issues/2388)            |
+| Per-mode owner assignment                                   | Candidate                                                                                                                                                | Composes the accepted RFCs and the reconciliation above                                      |
+| `PresentationMode` four variants                            | Accepted                                                                                                                                                 | [Drawer Presentation Mode Decision](drawer-presentation-mode-decision.md)                    |
+| Only `Tiled` live today                                     | Accepted, recorded; the 2026-11-22 sync notes `tiled` and `floating` answerable at the content-layer mode gate (see [Document status](#document-status)) | [Workspace Compositor Specification](workspace-compositor.md)                                |
+| Band geometry and reflow                                    | Candidate                                                                                                                                                | [Chrome Band Contract](chrome-band-contract-candidate.md)                                    |
+| Panel content replacement                                   | Mechanism shipped at `bitty` `944a4b1f`; the contract framing stays candidate                                                                            | [Panel GUI Content Presentation](panel-gui-content-presentation-candidate.md)                |
+| Declaration spelling `[presentation] surface`               | Candidate                                                                                                                                                | This record                                                                                  |
+| Lifecycle state names                                       | Candidate                                                                                                                                                | This record; mapped onto the content record's `idle`/`active`/`released`                     |
+| Refusal codes                                               | Candidate spellings of accepted error classes                                                                                                            | [Panel GUI Content Presentation](panel-gui-content-presentation-candidate.md)                |
+| Restore gesture                                             | Shipped action, candidate framing                                                                                                                        | [`close_view` in the shipped action catalog](../reference/configuration-options.md)          |
+| Ceilings (`SCN-*`, `4+1`, queue bounds)                     | Accepted and shipped, consumed not redefined                                                                                                             | [Rich Presentation RFC](rich-presentation-rfc.md), [Panel Runtime RFC](panel-runtime-rfc.md) |
+| Plugin-owned placement authority                            | Vision only, not shipped                                                                                                                                 | [Panel Vision](../product/panel-vision.md)                                                   |
 
 ## Terminology
 
@@ -180,7 +226,9 @@ fifth is introduced here.
 
 1. **Panel content kind on a tiling leaf.** The panel's content is terminal
    content or declarative GUI content, and the presentation never changes the
-   panel's placement, identity, or attachment. Candidate, owned by
+   panel's placement, identity, or attachment. The mechanism ships at `bitty`
+   `944a4b1f` (see [Document status](#document-status)); the contract that
+   governs it stays candidate, owned by
    [Panel GUI Content Presentation](panel-gui-content-presentation-candidate.md).
 2. **Per-leaf presentation mode.** `PresentationMode` on a `View` is the
    requested display mode of one leaf (`Tiled`, `Floating`, `Fullscreen`,
@@ -207,12 +255,12 @@ One row per mode. The `owner` column names the mechanism in the list above; the
 `multiplicity` column names the bound that already exists where one does, and
 labels a candidate bound where none does.
 
-| Mode         | What it may do                                                                                                                                                                                                                                    | What it may not do                                                                                                                                                                               | Multiplicity                                                                                                                            | Owning mechanism                                                                                   |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `panel`      | Present bounded declarative content in place of the focused panel's terminal presentation, while the PTY stays alive, the panel keeps its placement, and exit restores the terminal exactly.                                                      | Change placement, geometry, or identity; resize, signal, detach, write to, or kill the PTY; allocate a second surface; take pointer authority or modal authority; create a window or OS surface. | One GUI surface per panel, and one per plugin generation (candidate, from the content record).                                          | Panel content kind on a tiling leaf (candidate content-kind transition).                           |
-| `floating`   | Present the panel above the workspace in a bounded, centered frame, either as the in-tree `Floating` stamp that keeps its tiled allocation or through the shipped detached-float and pinned-float paths; focus, move, and resize as a panel does. | Invent edge-docked geometry; claim a tier other than the `Float` annotation; set the modal bit; stack a second float for the same leaf; persist as a second presentation of the same panel.      | One `PresentationMode` value per leaf; the pinned store holds at most one entry per pinned leaf; the detached store is workspace-local. | Per-leaf `PresentationMode::Floating` (parseable, transition gated) plus the shipped float stores. |
-| `fullscreen` | Temporarily maximize one surface within its workspace so it fills the whole available area, and return to the previous layout on exit.                                                                                                            | Become an OS fullscreen or borderless window; bypass the gated mode transition; claim the `Messages` tier or the modal bit; survive a workspace switch as a second visible copy.                 | At most one maximized surface at a time per workspace (candidate reading of the accepted one-surface phrasing).                         | Per-leaf `PresentationMode::Fullscreen` (parseable, transition gated).                             |
-| `band`       | Mount bounded declarative content in one edge band (`top`, `bottom`, `left`, `right`), reserving that edge out of the tiling area.                                                                                                                | Replace a panel or its content; displace, freeze, or resize a PTY as a band; overlap panel content; take keyboard or IME focus; become a focus target.                                           | At most one band per edge; `tabline` remains an exclusive single-declarant claim that still fails closed.                               | Chrome band (candidate band contract, Core-owned geometry).                                        |
+| Mode         | What it may do                                                                                                                                                                                                                                    | What it may not do                                                                                                                                                                               | Multiplicity                                                                                                                            | Owning mechanism                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `panel`      | Present bounded declarative content in place of the focused panel's terminal presentation, while the PTY stays alive, the panel keeps its placement, and exit restores the terminal exactly.                                                      | Change placement, geometry, or identity; resize, signal, detach, write to, or kill the PTY; allocate a second surface; take pointer authority or modal authority; create a window or OS surface. | One GUI surface per panel, and one per plugin generation (candidate, from the content record).                                          | Panel content kind on a tiling leaf (mechanism shipped at `bitty` `944a4b1f`; the content-kind contract stays candidate). |
+| `floating`   | Present the panel above the workspace in a bounded, centered frame, either as the in-tree `Floating` stamp that keeps its tiled allocation or through the shipped detached-float and pinned-float paths; focus, move, and resize as a panel does. | Invent edge-docked geometry; claim a tier other than the `Float` annotation; set the modal bit; stack a second float for the same leaf; persist as a second presentation of the same panel.      | One `PresentationMode` value per leaf; the pinned store holds at most one entry per pinned leaf; the detached store is workspace-local. | Per-leaf `PresentationMode::Floating` (parseable, transition gated) plus the shipped float stores.                        |
+| `fullscreen` | Temporarily maximize one surface within its workspace so it fills the whole available area, and return to the previous layout on exit.                                                                                                            | Become an OS fullscreen or borderless window; bypass the gated mode transition; claim the `Messages` tier or the modal bit; survive a workspace switch as a second visible copy.                 | At most one maximized surface at a time per workspace (candidate reading of the accepted one-surface phrasing).                         | Per-leaf `PresentationMode::Fullscreen` (parseable, transition gated).                                                    |
+| `band`       | Mount bounded declarative content in one edge band (`top`, `bottom`, `left`, `right`), reserving that edge out of the tiling area.                                                                                                                | Replace a panel or its content; displace, freeze, or resize a PTY as a band; overlap panel content; take keyboard or IME focus; become a focus target.                                           | At most one band per edge; `tabline` remains an exclusive single-declarant claim that still fails closed.                               | Chrome band (candidate band contract, Core-owned geometry).                                                               |
 
 Rules that apply to every row:
 
@@ -513,16 +561,16 @@ the shipped scoped forms (`fs.read` with a path glob, `network.connect` with a
 host); panel-scoped grants are keyed by `(PanelId, Generation)` in the
 registry, which is a grant-scope key and not a manifest field.
 
-| Authority                                       | Capability                                                     | Status                                                                 |
-| ----------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Replace a panel's content and own its keys      | one panel-content grant, candidate spelling `ui.panel`         | Candidate; content record's decision `D2`/`D3`                         |
-| Validate and render the declarative scene       | `ui.rich`                                                      | Shipped gate                                                           |
-| Draw a non-modal surface above the focused view | `ui.present`                                                   | Shipped gate                                                           |
-| Take a transient focusable capture              | `ui.overlay.focus`                                             | Shipped gate; never implied by `ui.overlay`                            |
-| Mount band content                              | `ui.mount` on `top`, `bottom`, `left`, `right`                 | Shipped; `tabline` still requires its exclusive claim and fails closed |
-| Contribute a panel type                         | `panel.provider`                                               | Shipped; closed `panel.*` family                                       |
-| Create, focus, or attach a panel overlay        | `panel.create`, `panel.focus`, `panel.overlay`                 | Shipped; closed family, no implication between heads                   |
-| Request a presentation-mode change              | `panel.focus` gates the shipped `bitty.panel.set_presentation` | Shipped verb; see `PPM-OQ-6`                                           |
+| Authority                                       | Capability                                                     | Status                                                                                                                                      |
+| ----------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Replace a panel's content and own its keys      | `ui.panel`                                                     | Shipped id at `bitty` `944a4b1f` (`crates/bitty-plugin-host/src/capability.rs:168`); the content record's `D2`/`D3` framing stays candidate |
+| Validate and render the declarative scene       | `ui.rich`                                                      | Shipped gate                                                                                                                                |
+| Draw a non-modal surface above the focused view | `ui.present`                                                   | Shipped gate                                                                                                                                |
+| Take a transient focusable capture              | `ui.overlay.focus`                                             | Shipped gate; never implied by `ui.overlay`                                                                                                 |
+| Mount band content                              | `ui.mount` on `top`, `bottom`, `left`, `right`                 | Shipped; `tabline` still requires its exclusive claim and fails closed                                                                      |
+| Contribute a panel type                         | `panel.provider`                                               | Shipped; closed `panel.*` family                                                                                                            |
+| Create, focus, or attach a panel overlay        | `panel.create`, `panel.focus`, `panel.overlay`                 | Shipped; closed family, no implication between heads                                                                                        |
+| Request a presentation-mode change              | `panel.focus` gates the shipped `bitty.panel.set_presentation` | Shipped verb; see `PPM-OQ-6`                                                                                                                |
 
 Explicitly denied, for every mode in the matrix:
 
@@ -560,28 +608,42 @@ Each item is a decision for the owner of the cited contract, not a preference
 of this record. The recommendation is the smallest answer that keeps one owner
 per mode.
 
-| ID         | Question                                                                                                                                                                                                                                    | Recommended answer                                                                                                                                                                                                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PPM-OQ-1` | Which modes ship in the first slice? `panel` needs a content-kind transition that does not exist; `floating` and `fullscreen` parse behind a gated transition; `band` already mounts.                                                       | Ship `band` first (it is a mounting story, not a session), then `panel` once the content record is accepted; leave `floating` and `fullscreen` to the gated transition work rather than inventing a second path for them. |
-| `PPM-OQ-2` | Does `floating` reuse `PresentationMode` or become an `OverlayKind` and tier entry?                                                                                                                                                         | Reuse `PresentationMode`. A new overlay kind would be a fourth overlay-shaped system, which the reconciliation forbids, and the accepted drawer decision already rejected a fifth mode.                                   |
-| `PPM-OQ-3` | Who owns band geometry when a plugin declares `band`: does the plugin pick an edge, or does it request a band and Core choose?                                                                                                              | The plugin requests; Core and the user's rules choose the edge. Geometry stays Core-owned per the chrome contract, and `tabline` stays an exclusive claim.                                                                |
-| `PPM-OQ-4` | Is the declaration a manifest section, or is it derived from the requested capability ids?                                                                                                                                                  | A manifest section, because it is auditable before any request and cannot be re-read as authority. Deriving it from grants would couple a declaration to a grant the plugin may hold for other reasons.                   |
-| `PPM-OQ-5` | Does a replacing surface restore on focus loss, or persist while hidden?                                                                                                                                                                    | Persist. Release on focus loss would turn an alt-tab into data churn and force every dashboard to re-open; the content record's rule 3 already says focus loss never releases.                                            |
-| `PPM-OQ-6` | The shipped `bitty.panel.set_presentation` verb is gated on `panel.focus` and already lets a plugin request a placement change, while the content record states placement is panel and user authority. Which is the contract going forward? | Keep the verb as the placement request, add no new one, and amend whichever text is wrong in the accepting wave. Two authorities for one transition is the defect; this record does not resolve it.                       |
-| `PPM-OQ-7` | Is `fullscreen` a panel presentation or a window-level state, and what does "full-window surface layer" mean with more than one window?                                                                                                     | A per-workspace maximized surface, not a window state, until a multi-window contract says otherwise. The multi-window scope decision is not extended here.                                                                |
-| `PPM-OQ-8` | Where do the author guide, the user-facing mode matrix, and the manual page live, and which corpus owns them?                                                                                                                               | The plugin corpus owns the author guide; this corpus owns the mode matrix as specification text and links it; the manual owns the user-facing page.                                                                       |
+| ID         | Question                                                                                                                                                                                                                                      | Recommended answer                                                                                                                                                                                                        |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PPM-OQ-1` | Which modes ship in the first slice? `panel`'s content-kind transition now ships as a mechanism at `bitty` `944a4b1f` while its contract stays candidate; `floating` and `fullscreen` parse behind a gated transition; `band` already mounts. | Ship `band` first (it is a mounting story, not a session), then `panel` once the content record is accepted; leave `floating` and `fullscreen` to the gated transition work rather than inventing a second path for them. |
+| `PPM-OQ-2` | Does `floating` reuse `PresentationMode` or become an `OverlayKind` and tier entry?                                                                                                                                                           | Reuse `PresentationMode`. A new overlay kind would be a fourth overlay-shaped system, which the reconciliation forbids, and the accepted drawer decision already rejected a fifth mode.                                   |
+| `PPM-OQ-3` | Who owns band geometry when a plugin declares `band`: does the plugin pick an edge, or does it request a band and Core choose?                                                                                                                | The plugin requests; Core and the user's rules choose the edge. Geometry stays Core-owned per the chrome contract, and `tabline` stays an exclusive claim.                                                                |
+| `PPM-OQ-4` | Is the declaration a manifest section, or is it derived from the requested capability ids?                                                                                                                                                    | A manifest section, because it is auditable before any request and cannot be re-read as authority. Deriving it from grants would couple a declaration to a grant the plugin may hold for other reasons.                   |
+| `PPM-OQ-5` | Does a replacing surface restore on focus loss, or persist while hidden?                                                                                                                                                                      | Persist. Release on focus loss would turn an alt-tab into data churn and force every dashboard to re-open; the content record's rule 3 already says focus loss never releases.                                            |
+| `PPM-OQ-6` | The shipped `bitty.panel.set_presentation` verb is gated on `panel.focus` and already lets a plugin request a placement change, while the content record states placement is panel and user authority. Which is the contract going forward?   | Keep the verb as the placement request, add no new one, and amend whichever text is wrong in the accepting wave. Two authorities for one transition is the defect; this record does not resolve it.                       |
+| `PPM-OQ-7` | Is `fullscreen` a panel presentation or a window-level state, and what does "full-window surface layer" mean with more than one window?                                                                                                       | A per-workspace maximized surface, not a window state, until a multi-window contract says otherwise. The multi-window scope decision is not extended here.                                                                |
+| `PPM-OQ-8` | Where do the author guide, the user-facing mode matrix, and the manual page live, and which corpus owns them?                                                                                                                                 | The plugin corpus owns the author guide; this corpus owns the mode matrix as specification text and links it; the manual owns the user-facing page.                                                                       |
 
 ## Acceptance and gates
 
-Nothing in this record is implemented, and nothing here promotes a mechanism.
-The shipped facts it composes are: the four `PresentationMode` variants with
-only `Tiled` live, the four band edges, the `ui.mount` slot set, the
-`ui.present` draw-only surface, the `ui.overlay.focus` capture, the
-`bitty.panel.set_presentation` verb, and the `close_view` action. The things
-that do not exist are: the `[presentation]` declaration, any panel content-kind
-replacement, the displaced record and restore path, one-surface-per-panel
-enforcement, the session state names, and any test that a hidden PTY survives a
-replacing surface.
+Nothing here promotes a mechanism, and nothing here is accepted. The
+shipped facts it composes are: the four `PresentationMode` variants —
+`tiled` and `floating` answerable at the single content-layer mode gate at
+`bitty` `944a4b1f`, `fullscreen` and `scratchpad` parsing and refusing typed
+there — the four band edges, the `ui.mount` slot set, the `ui.present`
+draw-only surface, the `ui.overlay.focus` capture, the
+`bitty.panel.set_presentation` verb, and the `close_view` action. The
+2026-11-22 sync at the same revision moves four facts from the
+does-not-exist list this paragraph carried, each pinned in
+[Document status](#document-status): a panel content-kind replacement
+(`present_panel_content` and `release_panel_content`,
+`crates/bitty-runtime/src/runtime/panel_content.rs:154` and `:250`), the
+displaced record and restore path (the presented-layer token plus
+`RestoredPanelContent`, same file), one-surface-per-panel enforcement
+(`PanelError::ContentBusy`, `:152`), and a shipped-app test that the
+displaced child and its frozen winsize survive a presented layer and
+restore with exactly one measured resize
+(`crates/bitty-terminal/src/plugin_runtime.rs:8144`). The things that
+still do not exist are: the `[presentation]` declaration, the session
+state names as this record spells them, the fullscreen and scratchpad
+placements for a presented layer (both parse and refuse typed
+`ContentPresentationUnsupported` at the single gate), and any acceptance
+of this record's contract.
 
 Promotion to **accepted** requires all of the following evidence:
 

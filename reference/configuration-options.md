@@ -647,15 +647,15 @@ candidate contract under OQ-047
 
 ### `mod_key`, `leader_key`, `leader_timeout_ms`, `input.leader`, `input.timeout_len`, `keymaps`, `plugins`
 
-| Key path            | Type                                  | Default                                                  | Valid range                                                                                                                                                                                                                                                                                                  | Fail-closed                    | Reload  |
-| ------------------- | ------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | ------- |
-| `mod_key`           | string                                | `alt`                                                    | `alt` (`opt`/`option`) \| `super` (`meta`/`cmd`/`command`/`win`/`windows`), trimmed, case-insensitive, at most 32 bytes; `ctrl`/`shift` rejected (they would steal shell typing)                                                                                                                             | ignore element / reject reload | live    |
-| `leader_key`        | string                                | unset (`alt+space`; `ctrl+space` on Windows)             | shared chord grammar (see keymap rules)                                                                                                                                                                                                                                                                      | ignore element / reject reload | live    |
-| `leader_timeout_ms` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms                                                                                                                                                                                                                                                                                            | ignore element / reject reload | live    |
-| `input.leader`      | string                                | unset (same platform default as `leader_key`)            | shared chord grammar; wins over `leader_key` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                                | ignore element / reject reload | live    |
-| `input.timeout_len` | integer                               | unset (`1000`)                                           | `[100, 60000]` ms; wins over `leader_timeout_ms` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                            | ignore element / reject reload | live    |
-| `keymaps[]`         | array of `{ chord, action, context }` | 93 shipped bindings (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                 | ignore element / reject reload | live    |
-| `plugins[]`         | array of `{ id, enabled }`            | empty                                                    | Top-level `plugins` is a normal Lua declaration path. `id` is trimmed, non-empty, at most 128 bytes; `enabled` is a boolean; at most 1024 entries; entries merge by `id`. An invalid table is ignored at startup and denied for the launch (see [Startup salvage](#startup-salvage-and-strict-diagnostics)). | ignore element / reject reload | restart |
+| Key path            | Type                                  | Default                                                                         | Valid range                                                                                                                                                                                                                                                                                                  | Fail-closed                    | Reload  |
+| ------------------- | ------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | ------- |
+| `mod_key`           | string                                | `alt`                                                                           | `alt` (`opt`/`option`) \| `super` (`meta`/`cmd`/`command`/`win`/`windows`), trimmed, case-insensitive, at most 32 bytes; `ctrl`/`shift` rejected (they would steal shell typing)                                                                                                                             | ignore element / reject reload | live    |
+| `leader_key`        | string                                | unset (`alt+space`; `ctrl+space` on Windows)                                    | shared chord grammar (see keymap rules)                                                                                                                                                                                                                                                                      | ignore element / reject reload | live    |
+| `leader_timeout_ms` | integer                               | unset (`1000`)                                                                  | `[100, 60000]` ms                                                                                                                                                                                                                                                                                            | ignore element / reject reload | live    |
+| `input.leader`      | string                                | unset (same platform default as `leader_key`)                                   | shared chord grammar; wins over `leader_key` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                                | ignore element / reject reload | live    |
+| `input.timeout_len` | integer                               | unset (`1000`)                                                                  | `[100, 60000]` ms; wins over `leader_timeout_ms` when both are present (`bitty#1650` via `#1748`)                                                                                                                                                                                                            | ignore element / reject reload | live    |
+| `keymaps[]`         | array of `{ chord, action, context }` | 106 shipped bindings at `bitty` `944a4b1f` (Alt-as-Mod map; see defaults below) | chord at most 64 bytes (`<mod>+...+<key>`, single-character keys need a modifier; named keys may stand alone), action at most 64 bytes from the closed catalog, `context` must be `global`; at most 1024 entries; merge by `context + chord`                                                                 | ignore element / reject reload | live    |
+| `plugins[]`         | array of `{ id, enabled }`            | empty                                                                           | Top-level `plugins` is a normal Lua declaration path. `id` is trimmed, non-empty, at most 128 bytes; `enabled` is a boolean; at most 1024 entries; entries merge by `id`. An invalid table is ignored at startup and denied for the launch (see [Startup salvage](#startup-salvage-and-strict-diagnostics)). | ignore element / reject reload | restart |
 
 `schema_version` current is `1` (absent assumes `0` and migrates; newer
 than `1` is rejected). Profile `extends` is a single-parent chain with
@@ -678,6 +678,12 @@ Bindable actions: `goto_split:<left|right|up|down>`,
 `close_view` (aliases `close_surface`, `close_panel`, `exit_panel`, `close_focused_panel`),
 `toggle_zoom` (aliases `toggle_split_zoom`, `suspend_panel`, `detach_panel`, `suspend_focused_panel`, `detach_focused_panel`),
 `toggle_floating` (alias `floating_toggle`; CTX-0962),
+`toggle_panel_mode` (alias `panel_mode_toggle`; bitty#2388 residue 3,
+CTX-1931; shipped on `ctrl+alt+a`, Mod-aware — `ctrl+super+a` under
+`mod_key = "super"` — and toggles the focused presented panel's
+content-layer mode between tiled and floating through the same single mode
+gate as `bitty ctl panel mode`; with no GUI layer presented it is a typed
+no-op that never falls through into `toggle_floating`),
 `focus_next`, `focus_prev`,
 `focus:<1..=256>`, `copy_to_clipboard`, `paste_from_clipboard`,
 `paste_from_primary` (no shipped chord; the `mouse.middle` default),
@@ -739,15 +745,25 @@ panes close or exit, clamp drag coordinates to `0..=u16::MAX`, receive panel
 rule fixed-size/dimension updates, and resolve through `find_view` across
 overlay/background-image validation, `search_host`, unbound `search_refresh`,
 `cw_latest_command_id` / command-zone hints, `copy_mode`, and `bitty ctl`
-(`bitty#3078` / `bitty#3074`, `bitty#3085`). It carries no shipped default
-chord; bind it through a user `keymaps` entry by `context + chord` identity
-like any other action.
+(`bitty#3078` / `bitty#3074`, `bitty#3085`). It carries the shipped
+`shift+alt+s` chord since `bitty` #3205 (spelled
+`toggle_scratchpad` on the chrome key path), and `ctrl+alt+s` moves the
+focused panel into the shown slot or returns it to the tiling; a user
+`keymaps` entry still overrides either by `context + chord` identity like
+any other action.
 
-Shipped defaults (93 bindings, Alt spelling; `mod_key = "super"`
-rebinds every `alt`-bearing chord, `alt`-free chords pass through):
+Shipped defaults (106 bindings at `bitty` `944a4b1f`, Alt spelling; the set
+this page last counted at 93 has since gained the move-split chords
+(`ctrl+alt+h/j/k/l`, plus `ctrl+alt+left/down/up/right` rebound from
+navigate, `bitty` #3155), the split toggle (`alt+s`, `bitty` #3155), the
+tab chords (`ctrl+shift+t`, `ctrl+alt+tab`, `ctrl+shift+w`, CTX-1836,
+`bitty` #3169), the scratchpad chords (`shift+alt+s`, `ctrl+alt+s`,
+`bitty` #3205), and the panel-mode toggle (`ctrl+alt+a`, bitty#2388
+residue 3); `mod_key = "super"` rebinds every `alt`-bearing chord,
+`alt`-free chords pass through):
 
-- Navigate: `alt+h/j/k/l` and `alt+arrows`, `ctrl+alt+arrows`;
-  `ctrl+tab` / `ctrl+shift+tab` cycle focus. Directional chords rank a
+- Navigate: `alt+h/j/k/l` and `alt+arrows`; `ctrl+tab` / `ctrl+shift+tab`
+  cycle focus. Directional chords rank a
   candidate by facing-edge distance, then dwindle tree adjacency, then
   shared-edge overlap, then perpendicular center.
 - New panel: `alt+n` (`new_panel`) applies the `Spiral` adaptive policy
@@ -773,7 +789,12 @@ rebinds every `alt`-bearing chord, `alt`-free chords pass through):
   `exit_panel`) requests view close with confirmation gating (`close_confirm` or
   running process; revokes overlay capture if modal capture is active);
   `alt+a` toggles the focused panel tiled/floating (`super+a` under
-  `mod_key = "super"`); `alt+v` stays free for fish.
+  `mod_key = "super"`); `ctrl+alt+a` (`toggle_panel_mode`) toggles the focused
+  presented panel's content-layer mode between tiled and floating — the
+  sibling slot of `alt+a`'s placement toggle, running the same single mode gate
+  as `bitty ctl panel mode`, and a typed no-op when the focused panel presents
+  no GUI layer (bitty#2388 residue 3, at `944a4b1f`); `alt+v` stays free for
+  fish.
 - Zoom and Suspend: `alt+z` / `alt+m` / `alt+f` zoom (and temporarily
   suspends/releases active overlay capture, aliases `suspend_panel`,
   `detach_panel`), `alt+u` / `alt+i` page up/down,
@@ -787,7 +808,7 @@ rebinds every `alt`-bearing chord, `alt`-free chords pass through):
   binding still wins and `mod_key = "super"` yields the `super+` spellings.
 
 `toggle_palette`, `toggle_pinned`, and `paste_from_primary` ship without a
-chord (manual bind only), so they add no entry to the 93;
+chord (manual bind only), so they add no entry to the shipped set;
 `paste_from_primary` is still the shipped `mouse.middle` default.
 
 `alt+n` is not a workspace verb; the new-workspace chord is `alt+t`. The
