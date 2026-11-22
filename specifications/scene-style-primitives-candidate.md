@@ -205,8 +205,11 @@ Resolution is per field, from lowest to highest:
    content. The extension may style its own content; it cannot style Core
    chrome or another plugin's content.
 4. **`bitty --safe`** — forces every geometry primitive flat (`0`, no
-   border), regardless of the layers below. This row is specified, not wired:
-   see [Extension wire half](#extension-wire-half).
+   border), regardless of the layers below. The flattening arm is implemented
+   and pinned at the scene paint layer since
+   [bitty#3305](https://github.com/bitty-terminal/bitty/pull/3305); the
+   process `--safe` latch through the shipped present path is still in flight
+   in the owning repository: see [Extension wire half](#extension-wire-half).
 
 Rules:
 
@@ -317,8 +320,12 @@ Rules:
    accessibility tree.
 6. On a band or overlay mount the key is accepted and ignored: the accepted
    additive-minor rule tolerates an unknown optional field there, and the v1
-   tree is unchanged by its presence. The declaration takes no effect, and no
-   diagnostic reports the omission yet (see [Open points](#open-points)).
+   tree is unchanged by its presence. The declaration takes no effect; since
+   [bitty#3179](https://github.com/bitty-terminal/bitty/pull/3179) the drop
+   is not silent — a one-shot non-fatal diagnostic reports it once per VM
+   generation through `HostServices::ui_style_ignored`
+   (`crates/bitty-lua/src/host.rs`), and the `terminal` rich path, where
+   `style` is honoured, never fires it.
 
 ### Scene-layer authoring (implemented candidate evidence)
 
@@ -514,9 +521,19 @@ promoted, and no compatibility promise attaches to it.
 - **Safe mode.** The declaration surface is now **plugin-reachable**: a plugin
   can put a non-flat style into the scene path, so the `bitty --safe` row of
   the resolution order below acts on real content instead of a hypothetical
-  one. The flattening itself is not wired in this build — `bitty --safe` does
-  not force scene style geometry flat today, bitty#3175 left that path
-  unchanged, and this record does not claim it. It is an open follow-up (see
+  one. The flattening exists at the paint layer since
+  [bitty#3305](https://github.com/bitty-terminal/bitty/pull/3305): the
+  `Styled` arms of `crates/bitty-render/src/scene.rs` paint through
+  `bitty_ui::scene_style::resolve`, and `ScenePaintStyle::safe` drives the
+  resolver's flat arm, pinned by the 33-row suite
+  `crates/bitty-render/tests/scene_style_paint.rs` (four `safe_mode_*` rows;
+  the frozen v1 golden is unmodified). The still-unwired half is the process
+  `--safe` latch through the shipped present path
+  (`TerminalApp::with_safe_mode` -> `install_shared_scene_host` ->
+  `PanelRuntime::scene_paint_for` -> `ScenePaintCache`), in flight as
+  carryctx task `CTX-1935` in the `bitty` repository; until it lands,
+  `bitty --safe` does not force plugin-declared scene style flat on the
+  shipped path, and this record does not claim it (see
   [Open points](#open-points)).
 
 Evidence paths: `crates/bitty-lua/src/ui_style.rs` (`UI_STYLE_FIELDS`,
@@ -527,24 +544,37 @@ Evidence paths: `crates/bitty-lua/src/ui_style.rs` (`UI_STYLE_FIELDS`,
 placement kind refusals, and the post-walk depth re-check),
 `crates/bitty-rich/src/scene.rs` (`SceneStyleAlign`, `offset`),
 `crates/bitty-runtime/src/scene_bridge.rs`
-(`scene_style_of`), `crates/bitty-runtime/tests/lua_ui_style_vocab.rs` (14
+(`scene_style_of`), `crates/bitty-runtime/tests/lua_ui_style_vocab.rs` (15
 integration tests through the shipped chain), the gap's end-to-end coverage
 in `crates/bitty-runtime/tests/lua_ui_gap.rs`, and the placement's coverage in
 `crates/bitty-runtime/tests/lua_ui_style_align.rs`.
 
-Two follow-ups from the review of that landing ([bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176))
-are recorded here as gaps, not claimed as done:
+The review of that landing tracked its follow-ups in
+[bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176), closed
+completed on 2026-11-15 by
+[bitty#3179](https://github.com/bitty-terminal/bitty/pull/3179) (merged
+`0f4d64b7`). Both halves are now implemented and pinned in the owning code
+repository, and neither promotes this record:
 
-- **Border composition is undecided.** `Block { border }` (cells, cap `8`) and
-  `style.border` (physical px, cap `16`) can both be set on one node, and both
-  paint: a rounded ring plus the four-op cell frame. No composition rule and
-  no typed refusal exists yet, and this record prescribes neither.
-- **The band/overlay tolerance is silent.** A plugin author who writes `style`
-  on a band or overlay mount gets no signal that it was dropped. A one-shot
-  non-fatal diagnostic is tracked; it is not implemented.
+- **The plugin-declared double-border pair is refused typed.** `Block { border }`
+  (cells, cap `8`) and `style.border` (physical px, cap `16`) can no longer be
+  declared together on one wire node: `ui.rich` admission refuses the pair
+  with a typed `E_UI_COMPONENT_INVALID` naming both widths, pinned in
+  `crates/bitty-runtime/tests/lua_ui_style_vocab.rs` ("two borders refused").
+  The genuinely remaining gap is documentation only — a scene layer constructed
+  by Core rather than through the wire sits outside that admission refusal,
+  and no composition rule is documented for that path. This record does not
+  prescribe one.
+- **The band/overlay drop is reported.** The tolerance is unchanged — a band
+  or overlay mount still accepts and ignores `style` — but since bitty#3179 a
+  one-shot non-fatal diagnostic reports the drop once per VM generation
+  through the defaulted `HostServices::ui_style_ignored`
+  (`crates/bitty-lua/src/host.rs`), and the `terminal` rich path, where
+  `style` is honoured, never fires it.
 
-Both belong to the owning code repository; this record records the boundary
-rather than describing a behaviour nobody has implemented.
+The refusal and the diagnostic belong to the owning code repository; the
+undocumented core-constructed composition rule remains this record's open
+boundary.
 
 ## Accessibility, input, and safety
 
@@ -567,29 +597,33 @@ rather than describing a behaviour nobody has implemented.
   unthemed colour.
 - **Safe mode.** The rule is that `bitty --safe` forces all style geometry
   flat, so extension content degrades to plain themed text without a second
-  policy path. The declaration surface this rule governs is now
-  plugin-reachable (the wire key ships), but the flattening is not wired in
-  the present build: `bitty --safe` does not force plugin-declared scene style
-  flat today. The rule stays specified and unimplemented, and it is an open
-  follow-up rather than a shipped behavior.
+  policy path. The declaration surface this rule governs is
+  plugin-reachable (the wire key ships), and the flattening is implemented
+  at the scene paint layer since
+  [bitty#3305](https://github.com/bitty-terminal/bitty/pull/3305)
+  (`ScenePaintStyle::safe` drives the resolver's flat arm). The remaining
+  unwired half is the process `--safe` latch through the shipped present
+  path, in flight as carryctx task `CTX-1935` in the `bitty` repository;
+  until it lands, the shipped path does not yet force plugin-declared scene
+  style flat.
 - **No hot path.** No PTY read, VT parse, damage computation, keystroke, or
   render-per-frame path invokes the extension runtime for style. Resolution
   happens at mount/update, not per frame.
 
 ## Security review
 
-| Concern                     | Control                                                                                                                                                |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Arbitrary styling surface   | Closed eight-key vocabulary; unknown and duplicate keys fail closed.                                                                                   |
-| Untrusted colour input      | Token-only colour from a closed content set; literals and Core chrome tokens rejected.                                                                 |
-| Unbounded input             | Documented inclusive caps on every integer; typed overflow errors; no clamp.                                                                           |
-| Renderer or platform escape | No handle, path, image, shader, pipeline, or function crosses the wire form.                                                                           |
-| Privilege escalation        | Presentation data scoped to owned content; no capability, command, or input binding.                                                                   |
-| Hot-path execution          | Pure cold-path resolution; no plugin VM, callback, or per-frame script.                                                                                |
-| Silent degradation          | Missing token, bad type, duplicate key, and overflow all reject with a typed diagnostic.                                                               |
-| Safe mode                   | All geometry forced flat, independent of declarations. Specified rule; the present build does not wire the flattening for plugin-declared scene style. |
-| Resource exhaustion         | O(1) bounded values per node; SCN-1..SCN-5 unchanged; no new collection or decode path.                                                                |
-| Accessibility regression    | Paint-only changes; content, roles, order, selection, and search are untouched.                                                                        |
+| Concern                     | Control                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Arbitrary styling surface   | Closed eight-key vocabulary; unknown and duplicate keys fail closed.                                                                                                                                                                                                                                                                                 |
+| Untrusted colour input      | Token-only colour from a closed content set; literals and Core chrome tokens rejected.                                                                                                                                                                                                                                                               |
+| Unbounded input             | Documented inclusive caps on every integer; typed overflow errors; no clamp.                                                                                                                                                                                                                                                                         |
+| Renderer or platform escape | No handle, path, image, shader, pipeline, or function crosses the wire form.                                                                                                                                                                                                                                                                         |
+| Privilege escalation        | Presentation data scoped to owned content; no capability, command, or input binding.                                                                                                                                                                                                                                                                 |
+| Hot-path execution          | Pure cold-path resolution; no plugin VM, callback, or per-frame script.                                                                                                                                                                                                                                                                              |
+| Silent degradation          | Missing token, bad type, duplicate key, and overflow all reject with a typed diagnostic.                                                                                                                                                                                                                                                             |
+| Safe mode                   | All geometry forced flat, independent of declarations. The flattening is implemented and pinned at the scene paint layer since [bitty#3305](https://github.com/bitty-terminal/bitty/pull/3305); the remaining unwired half is the process `--safe` latch through the shipped present path (carryctx task `CTX-1935`, in flight in the `bitty` repo). |
+| Resource exhaustion         | O(1) bounded values per node; SCN-1..SCN-5 unchanged; no new collection or decode path.                                                                                                                                                                                                                                                              |
+| Accessibility regression    | Paint-only changes; content, roles, order, selection, and search are untouched.                                                                                                                                                                                                                                                                      |
 
 This record adds no capability identifier and no fourth security domain. Any
 future capability for plugin-supplied appearance remains OQ-044 and follows
@@ -630,14 +664,14 @@ beyond candidate status.
 The scene-model and paint half (`CTX-1659`, issue `#2112`) is also
 **`Implemented`-only** headless evidence:
 
-| Piece                                   | Location                                                                                                      | Evidence                                                                                                                                                                                                |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Additive v2 node and bounded style data | `crates/bitty-rich/src/scene.rs` (`SceneNode::Styled`, `SceneNodeStyle`, `ContentToken`, `SCENE_STYLE_MAX_*`) | unit tests: literal caps `32/16/16`, per-primitive parent-block rejection, unchecked block rejected at `Scene::insert` and `Scene::replace_content`, literal schema values `1/2`, unknown-kind fallback |
-| Admission and budget accounting         | the same module, `check_block_content_limits`                                                                 | style bounds checked at every entry point; wrapper = one node/one depth level, zero SCN-3 bytes                                                                                                         |
-| Measurement and paint                   | `crates/bitty-render/src/scene.rs` (`ScenePaintOp::Rounded`, `ContentPalette`, `ScenePaint::append_into`)     | 20 tests in `crates/bitty-render/tests/scene_style_paint.rs`: paint output per primitive, parent/leaf clipping, leaf bounds, op budget, frozen v1 golden, flat-style identity, text-projection parity   |
-| Present composition                     | `crates/bitty-runtime/src/runtime/scene_present.rs`, `present.rs`                                             | styled ring lands in the compositor's existing rounded pass; `crates/bitty-runtime/tests/scene_paint_path.rs` samples the frame pixel                                                                   |
-| One closed vocabulary                   | `crates/bitty-runtime/tests/scene_style_vocabulary.rs`                                                        | every cap and token spelling pinned equal between the resolver and the scene model                                                                                                                      |
-| Accessibility parity                    | `crates/bitty-render/tests/scene_style_paint.rs`, `crates/bitty-runtime/tests/scene_paint_path.rs`            | painted text lines are unchanged and the panel a11y run keeps one `SceneKind::Column` with the same clipped lines; no production per-node `SceneKind` projection exists                                 |
+| Piece                                   | Location                                                                                                                     | Evidence                                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Additive v2 node and bounded style data | `crates/bitty-rich/src/scene.rs` (`SceneNode::Styled`, `SceneNodeStyle`, `ContentToken`, `SCENE_STYLE_MAX_*`)                | unit tests: literal caps `32/16/16`, per-primitive parent-block rejection, unchecked block rejected at `Scene::insert` and `Scene::replace_content`, literal schema values `1/2`, unknown-kind fallback                                                                                                                                                                                |
+| Admission and budget accounting         | the same module, `check_block_content_limits`                                                                                | style bounds checked at every entry point; wrapper = one node/one depth level, zero SCN-3 bytes                                                                                                                                                                                                                                                                                        |
+| Measurement and paint                   | `crates/bitty-render/src/scene.rs` (`ScenePaintOp::Rounded`, `ContentPalette`, `ScenePaintStyle`, `ScenePaint::append_into`) | 33 tests in `crates/bitty-render/tests/scene_style_paint.rs`: paint output per primitive, parent/leaf clipping, leaf bounds, op budget, frozen v1 golden, flat-style identity, text-projection parity, and since [bitty#3305](https://github.com/bitty-terminal/bitty/pull/3305) the resolver-backed `Styled` arms with the `ScenePaintStyle::safe` flat arm (four `safe_mode_*` rows) |
+| Present composition                     | `crates/bitty-runtime/src/runtime/scene_present.rs`, `present.rs`                                                            | styled ring lands in the compositor's existing rounded pass; `crates/bitty-runtime/tests/scene_paint_path.rs` samples the frame pixel                                                                                                                                                                                                                                                  |
+| One closed vocabulary                   | `crates/bitty-runtime/tests/scene_style_vocabulary.rs`                                                                       | every cap and token spelling pinned equal between the resolver and the scene model                                                                                                                                                                                                                                                                                                     |
+| Accessibility parity                    | `crates/bitty-render/tests/scene_style_paint.rs`, `crates/bitty-runtime/tests/scene_paint_path.rs`                           | painted text lines are unchanged and the panel a11y run keeps one `SceneKind::Column` with the same clipped lines; no production per-node `SceneKind` projection exists                                                                                                                                                                                                                |
 
 Limits recorded by the evidence: the palette used by the paint path is the
 Bitty Dark reference resolution (`ContentPalette::from_theme_palette`), not yet
@@ -710,20 +744,27 @@ this record and are not claimed as done.
 8. **Schema placement.** Whether style is a new `SceneNode` field, a wrapper,
    or a per-block attribute is a Rich Presentation RFC minor-version
    decision.
-9. **Border composition.** `Block { border }` (cells, cap `8`) and
-   `style.border` (physical px, cap `16`) can both be set on one node and both
-   paint, so one node can carry a rounded ring and a four-op cell frame at
-   once. Whether the pair composes, or is refused as a typed error, is
-   undecided; `bitty` issue
-   [bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176) tracks it
-   in the owning repository. Until that decision, nothing in this record
-   describes a composition rule.
+9. **Border composition.** The plugin-declared pair — `Block { border }`
+   (cells, cap `8`) plus `style.border` (physical px, cap `16`) on one wire
+   node — is no longer undecided: `ui.rich` admission refuses it with a typed
+   `E_UI_COMPONENT_INVALID` naming both widths, pinned in
+   `crates/bitty-runtime/tests/lua_ui_style_vocab.rs` ("two borders
+   refused"); [bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176)
+   tracked it and is closed completed. The remaining gap is documentation
+   only: a scene layer constructed by Core rather than through the wire sits
+   outside that admission refusal, and no composition rule is documented for
+   it. Nothing in this record describes one.
 10. **Safe-mode flattening of plugin-declared style.** The `bitty --safe` row
-    of the resolution order is specified but not wired: the declaration
-    surface is plugin-reachable, and the present build does not force
-    plugin-declared scene style flat. bitty#3175 left the path unchanged;
-    [bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176) tracks
-    the follow-up.
+    of the resolution order is implemented at the scene paint layer since
+    [bitty#3305](https://github.com/bitty-terminal/bitty/pull/3305):
+    `ScenePaintStyle::safe` drives the resolver's flat arm, pinned by the
+    33-row suite `crates/bitty-render/tests/scene_style_paint.rs`. The
+    remaining follow-up is the process `--safe` latch through the shipped
+    present path (`TerminalApp::with_safe_mode` ->
+    `install_shared_scene_host` -> `PanelRuntime::scene_paint_for` ->
+    `ScenePaintCache`), in flight as carryctx task `CTX-1935` in the `bitty`
+    repository; until it lands, the shipped present path does not force
+    plugin-declared scene style flat.
 
 ## Acceptance criteria
 
@@ -764,5 +805,14 @@ This candidate can be accepted only when:
 - [bitty#3175](https://github.com/bitty-terminal/bitty/pull/3175) — the landed
   `style` table on the `terminal`-slot rich reader (merged `a64c283c`).
 - [bitty#3176](https://github.com/bitty-terminal/bitty/issues/3176) — review
-  follow-ups for that landing: border composition, the silent band/overlay
-  tolerance, and safe-mode flattening.
+  follow-ups for that landing, closed completed on 2026-11-15 by
+  [bitty#3179](https://github.com/bitty-terminal/bitty/pull/3179): the
+  double-border pair is refused typed and the band/overlay drop is reported
+  once per VM generation.
+- [bitty#3179](https://github.com/bitty-terminal/bitty/pull/3179) — the
+  typed double-border refusal and the one-shot band/overlay drop diagnostic
+  that closed bitty#3176 (merged `0f4d64b7`).
+- [bitty#3305](https://github.com/bitty-terminal/bitty/pull/3305) — the
+  paint-arms consumption of `bitty_ui::scene_style::resolve` in
+  `crates/bitty-render/src/scene.rs`, pinned by the 33-row suite
+  `crates/bitty-render/tests/scene_style_paint.rs` (merged `5032318c`).
