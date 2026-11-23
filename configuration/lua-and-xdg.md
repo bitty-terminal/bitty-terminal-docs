@@ -593,16 +593,16 @@ Fail-closed rules:
   bound, the human output adds a truncation note, and the JSON result carries
   `"truncated":true` when a bound cut the scan short.
 
-`get` and `set` accept 37 documented dotted scalar paths:
+`get` and `set` accept 38 documented dotted paths:
 
 ```text
 appearance.theme
 appearance.animations.enabled
 font.family, font.size, font.line_height, font.letter_spacing, font.fallback
 window.opacity, window.padding, window.radius_px
-terminal.scrollback, terminal.shell, terminal.scroll_lines_per_notch,
-terminal.scroll_pixels_per_notch, terminal.page_scroll_percent,
-terminal.cursor_style, terminal.bell
+terminal.scrollback, terminal.shell, terminal.shell_args,
+terminal.scroll_lines_per_notch, terminal.scroll_pixels_per_notch,
+terminal.page_scroll_percent, terminal.cursor_style, terminal.bell
 selection.auto_copy
 history.capture.transcript, history.capture.commands
 layout.gaps_in, layout.gaps_out, layout.resize_step
@@ -616,8 +616,8 @@ mod_key, close_confirm, session.restore_on_startup
 
 Keymaps, plugins, panel rules, views, the inline theme colour map
 (`appearance.colors`), local theme files, and background-image paths are not
-settable. `font.fallback` takes a comma-separated list; text values may be
-quoted and are written as short-quoted Lua strings.
+settable. `font.fallback` and `terminal.shell_args` take a comma-separated
+list; text values may be quoted and are written as short-quoted Lua strings.
 
 **Table pinning.** `font`, `window`, `terminal`, `layout`, `decoration`,
 `scrollbar`, and `appearance` merge as complete tables
@@ -791,11 +791,16 @@ above.
 minimal|dark|light` seeds a deterministic preset without prompting. On
   Windows, when `$SHELL` is unset, interactive `bitty init` probes and seeds
   the resolved Windows default shell (`pwsh.exe` -> `powershell.exe` ->
-  `cmd.exe`) instead of `/bin/sh` (if none resolves, it warns naming the tried
-  candidates and leaves `terminal.shell` unset unless the user enters an
-  explicit path; the post-init shell-completion hint is suppressed for
-  `cmd.exe`). Without `--force`, an existing target is an error, never a silent
-  overwrite; `--force` copies the previous bytes to a collision-free
+  `cmd.exe`, with a `wsl.exe` entry when WSL is installed) instead of
+  `/bin/sh` (if none resolves, it warns naming the tried candidates and leaves
+  `terminal.shell` unset unless the user enters an explicit path; the post-init
+  shell-completion hint is suppressed for `cmd.exe`). Accepting the detected
+  default records "use the platform chain" instead of pinning that executable
+  path, so a later `winget install --id Microsoft.PowerShell --source winget`
+  becomes the default on the next start with no profile edit; the wizard
+  summary prints that upgrade line while the resolved default is Windows
+  PowerShell 5.1. Without `--force`, an existing target is an error, never a
+  silent overwrite; `--force` copies the previous bytes to a collision-free
   `<file>.bak[.N]` sibling before atomically replacing the file. A legacy
   `init.lua` is never replaced implicitly; `--migrate` is the explicit
   conversion. A program literally named `init` must be invoked as
@@ -1459,7 +1464,7 @@ Shipped leaf inventory:
 | `appearance.animations.easing.*`                                                             | live     | built-in default     |
 | `mod_key`, `keymaps`                                                                         | live     | built-in default     |
 | `leader_key`, `leader_timeout_ms`                                                            | live     | built-in default     |
-| `terminal.scrollback`, `terminal.shell`                                                      | restart  | built-in default     |
+| `terminal.scrollback`, `terminal.shell`, `terminal.shell_args`                               | restart  | built-in default     |
 | `terminal.scroll_lines_per_notch`, `terminal.scroll_pixels_per_notch`                        | restart  | built-in default     |
 | `selection.auto_copy`                                                                        | restart  | built-in default     |
 | `close_confirm`                                                                              | restart  | built-in default     |
@@ -1480,9 +1485,45 @@ Shipped leaf inventory:
   defaults, but every external layer is skipped entirely (`fallback_builtin`,
   R-009), so the built-in default is the value in effect.
 - Restart-required keys are accepted and persisted but need the next process
-  start: `terminal.shell` and `terminal.scrollback` are spawn-time state, and
+  start: `terminal.shell`, `terminal.shell_args`, and `terminal.scrollback`
+  are spawn-time state, and
   `selection.auto_copy`, `layout.gaps_in`/`gaps_out`, `scrollbar.*`, and
   `mouse.*` are adopted into the runtime configuration once at startup.
+
+### Child shell selection and WSL2
+
+Status: **implemented** (`crates/bitty-terminal/src/spawn.rs`; bitty#3310,
+CTX-1930).
+
+The child program resolves in this order: `terminal.shell`, then `$SHELL`, then
+the platform default — `/bin/sh` on Unix, and on Windows the first of
+`pwsh.exe`, `powershell.exe`, `cmd.exe` that resolves on `PATH`. A configured
+program that fails to spawn retries once with the platform default, so a stale
+path never leaves a window without a shell.
+
+`terminal.shell_args` supplies direct argv entries for the configured program
+only. It is a Lua sequence of strings, at most 16 entries of at most 1024 bytes
+each, and rejects NUL and control characters; declaring arguments without
+`terminal.shell` fails closed at load. Entries are never split, joined, or
+passed through a shell, so a distribution name with spaces or a command that
+needs `-d`/`/k`/`-l` stays exactly one argument.
+
+```lua
+return {
+    terminal = {
+        shell = "wsl.exe",
+        shell_args = { "-d", "Ubuntu" },
+    },
+}
+```
+
+`wsl.exe` with no arguments starts the default WSL2 distribution; the explicit
+distribution form above is the multi-distro case. `bitty init` leaves
+`terminal.shell` unset when the user accepts the detected Windows default, so
+the chain re-resolves on every start and a later PowerShell 7 install becomes
+the default without a profile edit (`bitty doctor` prints the `winget` upgrade
+line while Windows PowerShell 5.1 is resolved).
+
 - **Activation status.** "Live-reconcilable" is the declared class, and every
   `Live` key has a runtime adopter. `reconcile_live` has a production caller:
   the composition root installs a reload context at startup (skipped under
