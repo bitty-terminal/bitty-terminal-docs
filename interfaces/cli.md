@@ -639,6 +639,17 @@ First-class preset seeds from Core issue #2371 are implemented (0.0.25):
   naming the tried candidates and leaves `terminal.shell` unset unless the user
   explicitly types a path; the post-init shell-completion hint is suppressed
   for shells without a `CompletionShell` (`cmd.exe`).
+- The Windows shell step offers `pwsh.exe`, `powershell.exe`, `cmd.exe`, and
+  `wsl.exe` resolved on `PATH` (`bitty#3310`, CTX-1930), and accepting the
+  detected host default records "use the platform chain" instead of pinning
+  that executable path: a later `winget install --id Microsoft.PowerShell
+--source winget` changes the resolved shell on the next start with no profile
+  edit. When the resolved default is Windows PowerShell 5.1 the summary prints
+  that upgrade line. Interactive steps on a live Windows console run the same
+  single-keypress picker and checkbox multi-select as Unix (`Space` toggles,
+  arrows/`j`/`k` move, `Enter` confirms, frames repaint in place) through the
+  reviewed `bitty-winjob` console adapter; a host that rejects virtual-terminal
+  input keeps the line loop, which stays byte-identical for scripted input.
 - The wizard still writes only the documented configuration surface and keeps
   its bounded-attempt and fail-closed behavior. These are implementation
   observations, not an acceptance of the candidate CLI grammar.
