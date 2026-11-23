@@ -1522,11 +1522,15 @@ needs `-d`/`/k`/`-l` stays exactly one argument.
 ```lua
 return {
     terminal = {
+        scrollback = 10000,
         shell = "wsl.exe",
         shell_args = { "-d", "Ubuntu" },
     },
 }
 ```
+
+A `terminal` table always states `scrollback`; a table without it is refused
+rather than given an implicit capacity.
 
 `wsl.exe` with no arguments starts the default WSL2 distribution; the explicit
 distribution form above is the multi-distro case. `bitty init` leaves
